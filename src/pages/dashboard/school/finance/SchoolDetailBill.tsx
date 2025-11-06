@@ -284,9 +284,6 @@ export default function SchoolDetailBill() {
   const gregorianISO = toLocalNoonISO(new Date());
 
   const [openReceipt, setOpenReceipt] = useState(false);
-  const [selectedPaymentId, setSelectedPaymentId] = React.useState<
-    string | undefined
-  >(undefined);
 
   // ===== Query =====
   const invoiceQuery = useQuery({
@@ -310,12 +307,6 @@ export default function SchoolDetailBill() {
     },
   });
 
-  const deleteInvoice = useMutation({
-    mutationFn: async (_payload: { id: string }) => {
-      await new Promise((r) => setTimeout(r, 600));
-    },
-    onSuccess: () => navigate("/keuangan"),
-  });
 
   // ===== Handlers =====
   const handleGoBack = () => navigate(-1);
@@ -325,8 +316,9 @@ export default function SchoolDetailBill() {
     markPaid.mutate({ id: invoice.id, amount: remaining });
   };
 
-  const handleDownloadReceipt = (paymentId: string) => {
-    setSelectedPaymentId(paymentId);
+  // --- Ubah handler ini ---
+  const handleDownloadReceipt = (_paymentId: string) => {
+    // sebelumnya: setSelectedPaymentId(paymentId);
     setOpenReceipt(true);
   };
 

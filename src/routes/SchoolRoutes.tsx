@@ -9,6 +9,23 @@ import SchoolDetailBill from "@/pages/dashboard/school/finance/SchoolDetailBill"
 import SchoolSpp from "@/pages/dashboard/school/finance/SchoolSpp";
 import SchoolTeacher from "@/pages/dashboard/school/teacher/SchoolTeacher";
 import SchoolDetailTeacher from "@/pages/dashboard/school/teacher/details/SchoolDetailTeacher";
+import SchoolMenuGrids from "@/pages/dashboard/school/menu/SchoolMenuGrids";
+import SchoolClass from "@/pages/dashboard/school/class/SchoolClass";
+import SchoolSection from "@/pages/dashboard/school/class/section/SchoolSection";
+import SchoolSectionDetail from "@/pages/dashboard/school/class/section/SchoolSectionDetail";
+import SchoolParent from "@/pages/dashboard/school/class/parent/SchoolParent";
+import SchoolAllSchedule from "@/pages/dashboard/school/schedule/SchoolAllSchedule";
+import SchoolDetailSchedule from "@/pages/dashboard/school/schedule/SchoolDetailSchedule";
+import SchoolAcademic from "@/pages/dashboard/school/academic/SchoolAcademic";
+import SchoolDetailAcademic from "@/pages/dashboard/school/academic/SchoolDetailAcademic";
+import SchoolManagementAcademicDetail from "@/pages/dashboard/school/academic/SchoolManagementAcademic";
+import SchoolBooks from "@/pages/dashboard/school/academic/books/SchoolBooks";
+import SchoolRoom from "@/pages/dashboard/school/academic/rooms/SchoolRoom";
+import SchoolSubject from "@/pages/dashboard/school/subject/SchoolSubject";
+import SchoolDetailRoom from "@/pages/dashboard/school/academic/rooms/SchoolDetailRoom";
+import SchoolBookDetail from "@/pages/dashboard/school/academic/books/detail/SchoolDetailBook";
+import SchoolActiveClass from "@/pages/dashboard/school/class/active-class/SchoolActiveClass";
+import SchoolCalenderAcademic from "@/pages/dashboard/school/calender/SchoolCalenderAcademic";
 // import SchoolStudent from "@/pages/pendidikanku-dashboard/dashboard-school/coming-soon/student-(pending)/SchoolStudent";
 // import SchoolAllSchedule from "@/pages/pendidikanku-dashboard/dashboard-school/academic/schedule/SchoolAllSchedule";
 // import SchoolProfile from "@/pages/pendidikanku-dashboard/dashboard-school/profile/SchoolProfile";
@@ -61,10 +78,78 @@ export const SchoolRoutes = (
 
     <Route path="spp" element={<SchoolSpp />} />
 
+    {/* === Jadwal === */}
+    <Route path="jadwal" element={<SchoolAllSchedule />} />
+    <Route
+      path="jadwal/detail/:scheduleId"
+      element={<SchoolDetailSchedule />}
+    />
+
     {/* === Guru === */}
     <Route path="guru">
       <Route index element={<SchoolTeacher />} />
       <Route path=":id" element={<SchoolDetailTeacher />} />
+    </Route>
+
+    <Route path="menu" element={<SchoolMenuGrids />} />
+
+    {/* === Akademik === */}
+    <Route path="akademik">
+      <Route index element={<SchoolAcademic />} />
+      <Route path="detail/:id" element={<SchoolDetailAcademic />} />
+      <Route path="kelola" element={<SchoolManagementAcademicDetail />} />
+    </Route>
+
+    <Route path="kelas">
+      <Route index element={<SchoolClass />} />
+      <Route path="kelola/:id" element={<SchoolSection />} />
+      <Route path="section/:id" element={<SchoolSectionDetail />} />
+      // di file routes dashboard school
+      <Route path="tingkat/:levelId" element={<SchoolParent />} />
+      <Route path="kelas/:classId" element={<SchoolClass />} />
+    </Route>
+
+    {/* === Buku === */}
+    <Route path="buku">
+      <Route index element={<SchoolBooks />} />
+      <Route path="detail/:id" element={<SchoolBookDetail />} />
+    </Route>
+
+    {/* === MENU UTAMA === */}
+    <Route path="menu-utama">
+      <Route index element={<SchoolMenuGrids />} />
+      <Route path="profil-sekolah" element={<SchoolProfile showBack />} />
+      <Route path="keuangan" element={<SchoolFinance />} />
+      <Route path="keuangan/detail/:id" element={<SchoolDetailBill />} />
+      <Route path="guru" element={<SchoolTeacher showBack />} />
+      {/* <Route path="all-announcement" element={<AllAnnouncement />} /> */}
+      <Route path="sekolah" element={<SchoolDashboard showBack />} />
+      <Route path="ruangan" element={<SchoolRoom />} />
+      <Route path="ruangan/:id" element={<SchoolDetailRoom />} />
+      <Route path="spp" element={<SchoolSpp />} />
+      <Route path="pelajaran" element={<SchoolSubject />} />
+      <Route path="kalender" element={<SchoolCalenderAcademic />} />
+      {/* <Route path="statistik" element={<SchoolStatistik />} /> */}
+      <Route path="kelas-aktif" element={<SchoolActiveClass />} />
+
+      <Route path="buku">
+        <Route index element={<SchoolBooks showBack />} />
+        <Route path="detail/:id" element={<SchoolBookDetail />} />
+      </Route>
+
+      <Route path="akademik">
+        <Route index element={<SchoolAcademic />} />
+        <Route path="detail/:id" element={<SchoolDetailAcademic />} />
+        <Route path="kelola" element={<SchoolManagementAcademicDetail />} />
+      </Route>
+      <Route path="kelas">
+        <Route index element={<SchoolClass />} />
+        <Route path="kelola/:id" element={<SchoolSection />} />
+        <Route path="section/:id" element={<SchoolSectionDetail />} />
+        // di file routes dashboard school
+        <Route path="tingkat/:levelId" element={<SchoolParent />} />
+        <Route path="kelas/:classId" element={<SchoolClass />} />
+      </Route>
     </Route>
   </Route>
 );
