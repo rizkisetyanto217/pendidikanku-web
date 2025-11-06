@@ -20,7 +20,6 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 
 /* ================= Types ================ */
-type AttendanceStatus = "hadir" | "sakit" | "izin" | "alpa" | "online";
 
 interface ReportFetch {
   student: { id: string; name: string; className: string };
