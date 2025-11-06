@@ -1,7 +1,7 @@
 //src/routes/IndexRoute.tsx
 
 import { Routes, Route } from "react-router-dom";
-import ProtectedRoute from "./ProtectedRoutes";
+
 import Unauthorized from "@/pages/UnAuthorized";
 import NotFound from "@/pages/NotFound";
 
