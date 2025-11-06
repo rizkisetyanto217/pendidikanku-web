@@ -20,14 +20,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 
 /* ================= Date/Time Utils ================ */
-const atLocalNoon = (d: Date) => {
-  const x = new Date(d);
-  x.setHours(12, 0, 0, 0);
-  return x;
-};
-const toLocalNoonISO = (d: Date) => atLocalNoon(d).toISOString();
-const normalizeISOToLocalNoon = (iso?: string) =>
-  iso ? toLocalNoonISO(new Date(iso)) : undefined;
 
 /* ==========================================
    MAIN COMPONENT

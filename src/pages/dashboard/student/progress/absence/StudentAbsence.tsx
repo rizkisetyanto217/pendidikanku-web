@@ -1,5 +1,5 @@
 // src/pages/StudentAbsenceDetail.tsx
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, CalendarDays, Filter, Percent } from "lucide-react";
 import { useMemo } from "react";

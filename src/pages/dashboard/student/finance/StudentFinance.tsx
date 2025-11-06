@@ -1,5 +1,5 @@
 // src/pages/sekolahislamku/student/StudentFinance.tsx
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Wallet, CheckCircle2, Clock, ArrowLeft } from "lucide-react";
@@ -179,7 +179,7 @@ export default function StudentFinance() {
                       <Separator />
                       <CardContent className="p-0">
                         <div className="rounded-lg border m-4 overflow-hidden">
-                          {(data.items ?? []).map((it, idx) => (
+                          {(data.items ?? []).map((it) => (
                             <div
                               key={it.id}
                               className="grid grid-cols-12 px-3 py-2 border-b last:border-b-0 text-sm"

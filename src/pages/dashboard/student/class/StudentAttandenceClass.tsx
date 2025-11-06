@@ -37,7 +37,7 @@ const CLASS_INFO: Record<
 type Status = "hadir" | "izin" | "sakit";
 
 const StudentAttandenceClass: React.FC = () => {
-  const { slug, id } = useParams<{ slug: string; id: string }>();
+  const { id } = useParams<{ slug: string; id: string }>();
   const navigate = useNavigate();
 
   const cls = useMemo(

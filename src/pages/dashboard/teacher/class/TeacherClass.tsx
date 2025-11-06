@@ -17,10 +17,9 @@ import {
     CalendarDays,
     Clock,
     MapPin,
-    GraduationCap,
     ArrowLeft,
     ChevronRight,
-    Filter,
+  
     LayoutList,
     LayoutGrid,
     Search,
@@ -181,7 +180,7 @@ function ViewModeToggle({
 function ClassCard({
     c,
     students,
-    viewMode,
+ 
 }: {
     c: TeacherClassSummary;
     students: StudentSummary[];

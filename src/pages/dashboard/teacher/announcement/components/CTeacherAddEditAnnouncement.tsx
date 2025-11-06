@@ -1,5 +1,5 @@
 // src/pages/sekolahislamku/announcement/CTeacherAddEditAnnouncement.tsx
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
     Dialog,
     DialogContent,
