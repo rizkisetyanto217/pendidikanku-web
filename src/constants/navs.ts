@@ -11,14 +11,22 @@ import {
   ChartBar,
   School,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react"; // ⬅️ tambahkan
+import type { LucideIcon } from "lucide-react";
+
+export type NavChild = {
+  path: string; // relatif ke parent, tanpa leading slash, contoh: "terms"
+  label: string;
+  end?: boolean; // opsional: untuk exact match
+};
 
 export type NavItem = {
   path: "" | "." | string;
   label: string;
-  icon: LucideIcon; // ⬅️ ganti dari React.ComponentType<any> ke LucideIcon
+  icon: LucideIcon;
   end?: boolean;
+  children?: NavChild[]; // ← tambahkan ini
 };
+
 export type NavDict = {
   sekolah: NavItem[];
   murid: NavItem[];
@@ -32,8 +40,19 @@ export const NAVS: NavDict = {
     { path: "guru", label: "Guru", icon: UserCog },
     { path: "kelas", label: "Kelas", icon: BookOpen },
     { path: "buku", label: "Buku", icon: BookOpen },
+    {
+      path: "akademik",
+      label: "Akademik",
+      icon: FileSpreadsheet,
+      // ↓ contoh anak path (semua relatif ke "akademik")
+      children: [
+        { path: "terms", label: "Tahun Ajaran" },
+        { path: "mapel", label: "Mata Pelajaran" },
+        { path: "kelas-section", label: "Kelas & Section" },
+        { path: "kalender", label: "Kalender Akademik" },
+      ],
+    },
     { path: "keuangan", label: "Keuangan", icon: Wallet },
-    { path: "akademik", label: "Akademik", icon: FileSpreadsheet },
     { path: "profil-sekolah", label: "Profil", icon: School },
   ],
   murid: [

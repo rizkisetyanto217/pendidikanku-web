@@ -1,6 +1,6 @@
 // src/components/layout/dashboard/app-sidebar.tsx
 import * as React from "react";
-import { useParams } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -25,27 +25,75 @@ import {
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar>;
 
-// ⬇️ TODO: ganti ke sumber role yang sesungguhnya (context/store)
-function useActiveRole(): keyof NavDict {
-  return "sekolah"; // "murid" | "guru"
+/** Normalisasi string segmen ke role NAVS */
+const ROLE_ALIASES: Record<string, keyof NavDict> = {
+  // sekolah/admin
+  sekolah: "sekolah",
+  school: "sekolah",
+  admin: "sekolah",
+
+  // murid/student
+  murid: "murid",
+  student: "murid",
+  siswa: "murid",
+
+  // guru/teacher
+  guru: "guru",
+  teacher: "guru",
+  pengajar: "guru",
+};
+
+/** Cari role & base langsung dari path apapun bentuknya */
+function useRoleAndBaseFromPath(): { role: keyof NavDict; base: string } {
+  const location = useLocation();
+  const segs = location.pathname.split("/").filter(Boolean);
+
+  // cari segmen yang match alias role
+  const roleIdx = segs.findIndex((s) => ROLE_ALIASES[s] !== undefined);
+  if (roleIdx >= 0) {
+    const role = ROLE_ALIASES[segs[roleIdx]];
+    const base = "/" + segs.slice(0, roleIdx + 1).join("/");
+    return { role, base };
+  }
+
+  // fallback lama: coba segs[1] atau segs[0]
+  const candidate = (segs[1] ?? segs[0]) as keyof NavDict | undefined;
+  if (
+    candidate === "sekolah" ||
+    candidate === "murid" ||
+    candidate === "guru"
+  ) {
+    return {
+      role: candidate,
+      base: "/" + segs.slice(0, (segs[0] ? 1 : 0) + 1).join("/"),
+    };
+  }
+
+  // fallback terakhir
+  return { role: "sekolah", base: "/sekolah" };
 }
 
 export function AppSidebar(props: AppSidebarProps) {
-  const { schoolId } = useParams();
-  const role = useActiveRole();
+  const { role, base } = useRoleAndBaseFromPath();
 
-  // base path sesuai namespace (contoh: /:schoolId/sekolah)
-  const base = schoolId ? `/${schoolId}/${role}` : `/${role}`;
+  // Bentuk data untuk NavMain (pakai prop `items`, bukan `children`)
+  const items = NAVS[role].map((it) => {
+    const parentUrl =
+      it.path === "" || it.path === "." ? `${base}` : `${base}/${it.path}`;
 
-  // Map NAVS → NavMain items
-  const navMain = NAVS[role].map((it) => ({
-    title: it.label,
-    url: it.path === "" || it.path === "." ? `${base}` : `${base}/${it.path}`,
-    icon: it.icon,
-    // optional: isActive ditentukan oleh NavMain sendiri via NavLink
-  }));
+    return {
+      title: it.label,
+      url: parentUrl,
+      icon: it.icon,
+      end: it.end ?? false,
+      items: it.children?.map((c) => ({
+        title: c.label,
+        url: `${parentUrl}/${c.path.replace(/^\/+/, "")}`,
+        end: c.end ?? false,
+      })),
+    };
+  });
 
-  // Data dummy (Team/User/Projects) — bebas kamu ganti/disable
   const data = {
     user: {
       name: "User",
@@ -71,8 +119,7 @@ export function AppSidebar(props: AppSidebarProps) {
       </SidebarHeader>
 
       <SidebarContent>
-        <NavMain items={navMain} />
-        {/* opsional: bagian projects kalau mau dipakai */}
+        <NavMain items={items} />
         <NavProjects projects={data.projects} />
       </SidebarContent>
 
