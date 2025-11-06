@@ -1,0 +1,56 @@
+// src/constants/navs.ts
+import {
+  LayoutDashboard,
+  Users,
+  UserCog,
+  BookOpen,
+  Wallet,
+  ClipboardCheck,
+  FileSpreadsheet,
+  CalendarDays,
+  ChartBar,
+  School,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react"; // ⬅️ tambahkan
+
+export type NavItem = {
+  path: "" | "." | string;
+  label: string;
+  icon: LucideIcon; // ⬅️ ganti dari React.ComponentType<any> ke LucideIcon
+  end?: boolean;
+};
+export type NavDict = {
+  sekolah: NavItem[];
+  murid: NavItem[];
+  guru: NavItem[];
+};
+
+export const NAVS: NavDict = {
+  sekolah: [
+    { path: "", label: "Dashboard", icon: LayoutDashboard, end: true },
+    { path: "menu-utama", label: "Menu Utama", icon: ChartBar },
+    { path: "guru", label: "Guru", icon: UserCog },
+    { path: "kelas", label: "Kelas", icon: BookOpen },
+    { path: "buku", label: "Buku", icon: BookOpen },
+    { path: "keuangan", label: "Keuangan", icon: Wallet },
+    { path: "akademik", label: "Akademik", icon: FileSpreadsheet },
+    { path: "profil-sekolah", label: "Profil", icon: School },
+  ],
+  murid: [
+    { path: "", label: "Dashboard", icon: LayoutDashboard, end: true },
+    { path: "menu-utama", label: "Menu Utama", icon: ChartBar },
+    { path: "progress", label: "Progress", icon: ClipboardCheck },
+    { path: "keuangan", label: "Pembayaran", icon: Wallet },
+    { path: "jadwal", label: "Jadwal", icon: CalendarDays },
+    { path: "tugas", label: "Tugas", icon: ClipboardCheck },
+    { path: "profil-murid", label: "Profil", icon: Users },
+  ],
+  guru: [
+    { path: "", label: "Dashboard", icon: LayoutDashboard, end: true },
+    { path: "menu-utama", label: "Menu Utama", icon: ChartBar },
+    { path: "kelas", label: "Kelas Saya", icon: Users },
+    { path: "guru-mapel", label: "Guru Mapel", icon: UserCog },
+    { path: "jadwal", label: "Jadwal", icon: CalendarDays },
+    { path: "profil-guru", label: "Profil", icon: Users },
+  ],
+};
