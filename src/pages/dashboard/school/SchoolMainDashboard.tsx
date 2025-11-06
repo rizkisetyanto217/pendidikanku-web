@@ -38,20 +38,6 @@ export type AnnouncementUI = {
   slug?: string;
 };
 
-type AnnouncementAPI = {
-  announcement_id: string;
-  announcement_title: string;
-  announcement_date: string;
-  announcement_content: string;
-  announcement_theme_id?: string | null;
-  theme?: { id: string; name: string; color?: string | null } | null;
-};
-
-type AnnouncementsAPIResponse = {
-  data: AnnouncementAPI[];
-  pagination: { limit: number; offset: number; total: number };
-};
-
 type BillItem = {
   id: string;
   title: string;
@@ -104,26 +90,12 @@ type SessionsResponse = {
 const QK = {
   HOME: ["school-home"] as const,
   STATS: ["lembaga-stats"] as const,
-  TODAY_SESSIONS: (d: string) => ["class-attendance-sessions", "today", d] as const,
+  TODAY_SESSIONS: (d: string) =>
+    ["class-attendance-sessions", "today", d] as const,
   ANNOUNCEMENTS: ["announcements", "u"] as const,
 };
 
 /* =================== Utils =================== */
-const slugify = (text: string) =>
-  text
-    .toLowerCase()
-    .trim()
-    .replace(/[_—–]/g, "-")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-+|-+$/g, "");
-
-const themeToType = (a: AnnouncementAPI): AnnouncementUI["type"] => {
-  const n = a.theme?.name?.toLowerCase() ?? "";
-  if (n.includes("warning") || n.includes("perhatian")) return "warning";
-  if (n.includes("success") || n.includes("berhasil")) return "success";
-  return "info";
-};
 
 const yyyyMmDdLocal = (d = new Date()) => {
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -147,36 +119,18 @@ const dateFmt = (iso: string): string =>
 /* =================== API Hooks =================== */
 
 // 🔹 Pengumuman
-function useAnnouncements() {
-  return useQuery<AnnouncementUI[]>({
-    queryKey: QK.ANNOUNCEMENTS,
-    queryFn: async () => {
-      const res = await axios.get<AnnouncementsAPIResponse>(
-        "/api/a/announcements",
-        { params: { limit: 20, offset: 0 }, withCredentials: true }
-      );
-      const items = res.data?.data ?? [];
-      return items.map<AnnouncementUI>((a) => ({
-        id: a.announcement_id,
-        title: a.announcement_title,
-        date: a.announcement_date,
-        body: a.announcement_content,
-        themeId: a.announcement_theme_id ?? undefined,
-        type: themeToType(a),
-        slug: slugify(a.announcement_title),
-      }));
-    },
-  });
-}
 
 // 🔹 Statistik lembaga
 function useLembagaStats() {
   return useQuery<LembagaStats | null>({
     queryKey: QK.STATS,
     queryFn: async () => {
-      const res = await axios.get<LembagaStatsResponse>("/api/a/lembaga-stats", {
-        withCredentials: true,
-      });
+      const res = await axios.get<LembagaStatsResponse>(
+        "/api/a/lembaga-stats",
+        {
+          withCredentials: true,
+        }
+      );
       return res.data?.found ? res.data.data : null;
     },
   });
@@ -229,8 +183,18 @@ async function fetchSchoolHome(): Promise<SchoolHome> {
       ],
     },
     todaySchedule: [
-      { id: "s1", subject: "Matematika", teacher: "Ust. Fajar", time: "07.30 - 09.00" },
-      { id: "s2", subject: "Bahasa Arab", teacher: "Ust. Rahma", time: "09.15 - 10.30" },
+      {
+        id: "s1",
+        subject: "Matematika",
+        teacher: "Ust. Fajar",
+        time: "07.30 - 09.00",
+      },
+      {
+        id: "s2",
+        subject: "Bahasa Arab",
+        teacher: "Ust. Rahma",
+        time: "09.15 - 10.30",
+      },
       { id: "s3", subject: "IPA", teacher: "Ust. Dwi", time: "10.45 - 12.00" },
     ],
     announcements: [],
@@ -248,8 +212,9 @@ function Flash({
   return (
     <div className="mx-auto max-w-6xl px-4">
       <div
-        className={`mb-3 rounded-lg px-3 py-2 text-sm ${isOk ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-          }`}
+        className={`mb-3 rounded-lg px-3 py-2 text-sm ${
+          isOk ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+        }`}
       >
         {flash.msg}
       </div>
@@ -286,9 +251,10 @@ const SchoolMainDashboard: React.FC<SchoolDashboardProps> = ({
   backLabel = "Kembali",
 }) => {
   const navigate = useNavigate();
-  const [flash, setFlash] = useState<{ type: "success" | "error"; msg: string } | null>(
-    null
-  );
+  const [flash, setFlash] = useState<{
+    type: "success" | "error";
+    msg: string;
+  } | null>(null);
 
   useEffect(() => {
     if (flash) {
@@ -318,12 +284,33 @@ const SchoolMainDashboard: React.FC<SchoolDashboardProps> = ({
           {/* === Statistik Utama === */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { label: "Guru", value: lembagaStatsQ.data?.lembaga_stats_active_teachers ?? 0, icon: <UserCog size={18} /> },
-              { label: "Siswa", value: lembagaStatsQ.data?.lembaga_stats_active_students ?? 0, icon: <Users size={18} /> },
-              { label: "Program", value: lembagaStatsQ.data?.lembaga_stats_active_sections ?? 0, icon: <GraduationCap size={18} /> },
-              { label: "Kelas", value: lembagaStatsQ.data?.lembaga_stats_active_classes ?? 0, icon: <BookOpen size={18} /> },
+              {
+                label: "Guru",
+                value: lembagaStatsQ.data?.lembaga_stats_active_teachers ?? 0,
+                icon: <UserCog size={18} />,
+              },
+              {
+                label: "Siswa",
+                value: lembagaStatsQ.data?.lembaga_stats_active_students ?? 0,
+                icon: <Users size={18} />,
+              },
+              {
+                label: "Program",
+                value: lembagaStatsQ.data?.lembaga_stats_active_sections ?? 0,
+                icon: <GraduationCap size={18} />,
+              },
+              {
+                label: "Kelas",
+                value: lembagaStatsQ.data?.lembaga_stats_active_classes ?? 0,
+                icon: <BookOpen size={18} />,
+              },
             ].map((k) => (
-              <KpiTile key={k.label} label={k.label} value={k.value} icon={k.icon} />
+              <KpiTile
+                key={k.label}
+                label={k.label}
+                value={k.value}
+                icon={k.icon}
+              />
             ))}
           </div>
 
@@ -378,7 +365,9 @@ const SchoolMainDashboard: React.FC<SchoolDashboardProps> = ({
                     </div>
                   </div>
                   <div>
-                    <div className="text-sm text-muted-foreground">Tunggakan</div>
+                    <div className="text-sm text-muted-foreground">
+                      Tunggakan
+                    </div>
                     <div className="font-semibold">
                       {homeQ.data?.finance.unpaidCount ?? 0} tagihan
                     </div>

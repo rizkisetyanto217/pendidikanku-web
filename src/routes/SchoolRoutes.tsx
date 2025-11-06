@@ -3,6 +3,12 @@ import DashboardLayout from "@/components/layout/dashboard/DashboardLayout";
 
 // Pages
 import SchoolDashboard from "@/pages/dashboard/school/SchoolMainDashboard";
+import SchoolProfile from "@/pages/dashboard/school/profile/SchoolProfile";
+import SchoolFinance from "@/pages/dashboard/school/finance/SchoolFinance";
+import SchoolDetailBill from "@/pages/dashboard/school/finance/SchoolDetailBill";
+import SchoolSpp from "@/pages/dashboard/school/finance/SchoolSpp";
+import SchoolTeacher from "@/pages/dashboard/school/teacher/SchoolTeacher";
+import SchoolDetailTeacher from "@/pages/dashboard/school/teacher/details/SchoolDetailTeacher";
 // import SchoolStudent from "@/pages/pendidikanku-dashboard/dashboard-school/coming-soon/student-(pending)/SchoolStudent";
 // import SchoolAllSchedule from "@/pages/pendidikanku-dashboard/dashboard-school/academic/schedule/SchoolAllSchedule";
 // import SchoolProfile from "@/pages/pendidikanku-dashboard/dashboard-school/profile/SchoolProfile";
@@ -44,5 +50,21 @@ export const SchoolRoutes = (
   <Route path="sekolah" element={<DashboardLayout />}>
     {/* === Dashboard Utama === */}
     <Route index element={<SchoolDashboard />} />
+
+    {/* === Profil Sekolah === */}
+    <Route path="profil-sekolah" element={<SchoolProfile />} />
+
+    {/* === Keuangan === */}
+    <Route path="keuangan" element={<SchoolFinance />} />
+    {/* Halaman belum bisa */}
+    <Route path="keuangan/detail/:id" element={<SchoolDetailBill />} />
+
+    <Route path="spp" element={<SchoolSpp />} />
+
+    {/* === Guru === */}
+    <Route path="guru">
+      <Route index element={<SchoolTeacher />} />
+      <Route path=":id" element={<SchoolDetailTeacher />} />
+    </Route>
   </Route>
 );

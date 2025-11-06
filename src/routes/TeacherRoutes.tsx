@@ -32,20 +32,49 @@ import TeacherDashboard from "@/pages/dashboard/teacher/TeacherMainDashboard";
 // import TeacherScheduleSevenDays from "@/pages/pendidikanku-dashboard/dashboard-teacher/schedule/components/CTeacherScheduleSevenDays";
 // import TeacherDetailScheduleSevenDays from "@/pages/pendidikanku-dashboard/dashboard-teacher/schedule/TeacherDetailScheduleSevenDays";
 
-// // Menu utama guru
-// import TeacherMenuGrids from "@/pages/pendidikanku-dashboard/dashboard-teacher/menu/TeacherMenuGrids";
+// Menu utama guru
+import TeacherMenuGrids from "@/pages/dashboard/teacher/menu/TeacherMenuGrids";
+import TeacherClass from "@/pages/dashboard/teacher/class/TeacherClass";
+import TeacherSubjects from "@/pages/dashboard/teacher/teacher-subject/TeacherSubjects";
+import TeacherSchedule from "@/pages/dashboard/teacher/schedule/TeacherSchedule";
 
 // import TeacherClassDetail from "@/pages/pendidikanku-dashboard/dashboard-teacher/menu/TeacherDetailClasses";
 // import TeacherSettings from "@/pages/pendidikanku-dashboard/dashboard-teacher/menu/settings/TeacherSettings";
 // import TeacherAssignment from "@/pages/pendidikanku-dashboard/dashboard-teacher/menu/assignments/TeacherAssignment";
 // import TeacherCertificate from "@/pages/pendidikanku-dashboard/dashboard-teacher/menu/certificate/TeacherCertificate";
-// import TeacherSubjectsList from "@/pages/pendidikanku-dashboard/dashboard-teacher/TeacherSubject/TeacherSubjects";
 // import TeacherRoutesPlayground from "@/pages/pendidikanku-dashboard/dashboard-teacher/TeacherRoutesPlayground";
 
 export const TeacherRoutes = (
     <Route path="guru" element={<DashboardLayout />}>
         {/* Dashboard */}
         <Route index element={<TeacherDashboard />} />
+
+        {/* Menu Utama Guru */}
+        <Route path="menu-utama" element={<TeacherMenuGrids />} />
+        <Route path="kelas">
+            <Route index element={<TeacherClass />} />
+            {/* <Route path=":id" element={<TeacherDetailClass />} /> */}
+            <Route path="guru-mapel">
+                <Route index element={<TeacherSubjects />} />
+            </Route>
+            <Route path="jadwal" element={<TeacherSchedule />} />
+        </Route>
+
+        {/* Kelas */}
+        <Route path="kelas">
+            <Route index element={<TeacherClass />} />
+            {/* <Route path=":id" element={<TeacherDetailClass />} />
+      <Route path=":id/absensi" element={<TeacherClassAttandence />} />
+      <Route path=":id/tugas" element={<TeacherAssignmentClass />} /> */}
+        </Route>
+
+        {/* Guru Mapel */}
+        <Route path="guru-mapel">
+            <Route index element={<TeacherSubjects />} />
+        </Route>
+
+        {/* Jadwal */}
+        <Route path="jadwal" element={<TeacherSchedule />} />
 
 
     </Route>

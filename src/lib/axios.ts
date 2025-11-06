@@ -1,5 +1,4 @@
 // src/lib/axios.ts
-// src/lib/axios.ts
 import axiosLib from "axios";
 import type { AxiosError, AxiosInstance } from "axios";
 
@@ -29,7 +28,7 @@ function pathOf(u: string): string {
     if (u.startsWith("http://") || u.startsWith("https://")) {
       return new URL(u).pathname || "/";
     }
-  } catch {}
+  } catch { }
   return u;
 }
 function stripApiPrefix(p: string): string {
@@ -69,7 +68,9 @@ function setCookie(
 ) {
   const maxAge = days * 24 * 60 * 60;
   document.cookie =
-    `${name}=${encodeURIComponent(value)}; Path=${path}; Max-Age=${maxAge}; SameSite=${sameSite};` +
+    `${name}=${encodeURIComponent(
+      value
+    )}; Path=${path}; Max-Age=${maxAge}; SameSite=${sameSite};` +
     (secure ? " Secure;" : "");
 }
 function delCookie(name: string, path = "/") {
@@ -140,21 +141,37 @@ export function clearActiveschoolContext() {
 }
 
 /* ==========================================
-   🔐 ACCESS TOKEN — IN MEMORY ONLY
+   🔐 ACCESS TOKEN — PERSIST di sessionStorage
 ========================================== */
 let accessToken: string | null = null;
 
 export function setTokens(access: string) {
   accessToken = access;
+  try {
+    sessionStorage.setItem("access_token", access);
+  } catch { }
   (api.defaults.headers.common as any).Authorization = `Bearer ${access}`;
   console.debug("[auth] set access token");
   window.dispatchEvent(new CustomEvent("auth:authorized"));
 }
 export function getAccessToken() {
-  return accessToken;
+  // fallback ke sessionStorage saat memory null (mis. setelah refresh tab)
+  if (accessToken) return accessToken;
+  try {
+    const s = sessionStorage.getItem("access_token");
+    if (s) {
+      accessToken = s;
+      (api.defaults.headers.common as any).Authorization = `Bearer ${s}`;
+      return s;
+    }
+  } catch { }
+  return null;
 }
 export function clearTokens() {
   accessToken = null;
+  try {
+    sessionStorage.removeItem("access_token");
+  } catch { }
   delete (api.defaults.headers.common as any).Authorization;
   console.debug("[auth] cleared access token");
 }
@@ -444,6 +461,7 @@ export default api;
    Utils
 ========================================== */
 export async function restoreSession(): Promise<boolean> {
+  // jika sudah ada (termasuk hasil bootstrap sessionStorage), langsung true
   if (getAccessToken()) return true;
   const t0 = performance.now();
   const t = await doRefresh();
@@ -456,3 +474,19 @@ export async function restoreSession(): Promise<boolean> {
   );
   return Boolean(t);
 }
+
+/* ==========================================
+   🔰 BOOTSTRAP (saat halaman pertama kali load)
+   - jika ada token di sessionStorage, set ke header
+========================================== */
+(() => {
+  try {
+    const saved = sessionStorage.getItem("access_token");
+    if (saved) {
+      accessToken = saved;
+      (api.defaults.headers.common as any).Authorization = `Bearer ${saved}`;
+      // tidak trigger event "auth:authorized" di sini agar tidak memicu efek tak diinginkan
+      console.debug("[auth] bootstrap access token from sessionStorage");
+    }
+  } catch { }
+})();

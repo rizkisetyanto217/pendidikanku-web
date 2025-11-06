@@ -26,11 +26,13 @@ import NotFound from "@/pages/NotFound";
 import { SchoolRoutes } from "./SchoolRoutes";
 import Login from "@/pages/dashboard/auth/Login";
 import Forbidden403 from "@/pages/Forbidden403";
-import RequireschoolRoles from "./RequireSchoolRoles";
+// import RequireschoolRoles from "./RequireSchoolRoles";
 import Register from "@/pages/dashboard/auth/Register";
 import SchoolMainDashboard from "@/pages/dashboard/school/SchoolMainDashboard";
 import { TeacherRoutes } from "./TeacherRoutes";
 import { StudentRoutes } from "./StudentRoutes";
+import ProtectedRoute from "./ProtectedRoutes";
+import RequireschoolRoles from "./RequireSchoolRoles";
 
 export default function AppRoutes() {
   return (
@@ -70,23 +72,23 @@ export default function AppRoutes() {
 
       {/* --- Protected (dengan schoolId) --- */}
       {/* Ganti :schoolId -> :schoolId agar konsisten */}
-      {/* --- Protected (dengan schoolId) --- */}
-      {/* Ganti :schoolId -> :schoolId agar konsisten */}
-      <Route>
+      <Route path=":schoolId" element={<ProtectedRoute />}>
         {/* ===== Guru cluster: hanya teacher/admin/dkm ===== */}
-        <Route>
+        <Route
+          element={<RequireschoolRoles allow={["teacher", "admin", "dkm"]} />}
+        >
           {TeacherRoutes}
         </Route>
 
         {/* ===== Murid cluster: student/admin/dkm ===== */}
         <Route
-
+          element={<RequireschoolRoles allow={["student", "admin", "dkm"]} />}
         >
           {StudentRoutes}
         </Route>
 
         {/* ===== Sekolah/Manajemen: admin/dkm ===== */}
-        <Route>
+        <Route element={<RequireschoolRoles allow={["admin", "dkm"]} />}>
           {SchoolRoutes}
         </Route>
       </Route>
