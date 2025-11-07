@@ -1,6 +1,8 @@
 // src/pages/sekolahislamku/school/SchoolProfile.shadcn.tsx
-import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import axios from "@/lib/axios";
 import {
   Building2,
   Award,
@@ -11,13 +13,12 @@ import {
   UserCog,
   ExternalLink,
   Navigation,
-  Image as ImageIcon,
   X,
   ArrowLeft,
+  Users,
+  Home,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-// ===== shadcn/ui =====
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,153 +39,108 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import type {
+  ApiSchool,
+  ApiSchoolProfile,
+  SchoolUi,
+} from "./types/schoolProfile";
+import { adaptToUi, adaptFromUi } from "./types/schoolProfile";
 
-/* ================= Helpers ================= */
+/* =================== Helpers =================== */
+type ApiList<T> = { message: string; data: T[]; pagination?: any };
 
-
-const fullAddress = (p?: SchoolProfileForm["address"]) => {
-  if (!p) return "-";
-  const parts = [
-    p.line,
-    p.village,
-    p.district,
-    p.city,
-    p.province,
-    p.postal,
-  ].filter(Boolean);
-  return parts.length ? parts.join(", ") : "-";
+/* =================== Data Fetch =================== */
+const fetchSchool = async (id: string): Promise<ApiSchool | null> => {
+  const { data } = await axios.get<ApiList<ApiSchool>>(
+    `/public/schools/list?id=${id}`
+  );
+  return data?.data?.[0] ?? null;
 };
 
-const isoToYmd = (iso?: string | null) => (iso ? iso.slice(0, 10) : "");
-const ymdToIsoUTC = (ymd: string | null | undefined) =>
-  ymd ? new Date(`${ymd}T00:00:00.000Z`).toISOString() : null;
-
-/* ================= Types ================= */
-export type SchoolProfileForm = {
-  name: string;
-  npsn?: string | null;
-  accreditation?: "A" | "B" | "C" | "-" | "" | null;
-  foundedAt?: string | null; // ISO
-
-  address?: {
-    line?: string | null;
-    village?: string | null;
-    district?: string | null;
-    city?: string | null;
-    province?: string | null;
-    postal?: string | null;
-  };
-
-  contact?: {
-    phone?: string | null;
-    email?: string | null;
-    website?: string | null;
-  };
-
-  headmaster?: {
-    name?: string | null;
-    phone?: string | null;
-    email?: string | null;
-  };
-
-  vision?: string | null;
-  mission?: string[] | null;
-  logoUrl?: string | null;
-
-  mapEmbedUrl?: string | null;
-  gallery?: Array<{ id: string; url: string; caption?: string }>;
+const fetchProfile = async (id: string): Promise<ApiSchoolProfile | null> => {
+  try {
+    const { data } = await axios.get<ApiSchoolProfile>(
+      `/api/schools/${id}/profile`
+    );
+    return data ?? null;
+  } catch (e: any) {
+    if (e?.response?.status === 404) return null;
+    throw e;
+  }
 };
 
-type SchoolProfileProps = {
-  showBack?: boolean; // default: false
-  backTo?: string; // optional: kalau diisi, navigate ke path ini, kalau tidak pakai nav(-1)
-  backLabel?: string; // teks tombol
+const upsertProfile = async (
+  schoolId: string,
+  payload: Partial<ApiSchoolProfile> & { school_profile_id?: string }
+) => {
+  if (payload.school_profile_id) {
+    const { data } = await axios.patch<ApiSchoolProfile>(
+      `/api/school-profiles/${payload.school_profile_id}`,
+      payload
+    );
+    return data;
+  }
+  // create new
+  const { data } = await axios.post<ApiSchoolProfile>(
+    `/api/schools/${schoolId}/profile`,
+    payload
+  );
+  return data;
 };
 
-/* ================= Page ================= */
-const SchoolProfile: React.FC<SchoolProfileProps> = ({
-  showBack = false,
-  backTo,
-}) => {
+const patchSchool = async (schoolId: string, payload: Partial<ApiSchool>) => {
+  const { data } = await axios.patch<ApiSchool>(
+    `/api/schools/${schoolId}`,
+    payload
+  );
+  return data;
+};
+
+/* =================== Page =================== */
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
+
+const SchoolProfile: React.FC<Props> = ({ showBack = false, backTo }) => {
   const navigate = useNavigate();
-  const handleBack = () => {
-    if (backTo) navigate(backTo);
-    else navigate(-1);
-  };
+  const { schoolId } = useParams<{ schoolId: string }>();
+  const q = useQueryClient();
 
-  // ------ DATA DUMMY disimpan di state ------
-  const [data, setData] = useState<SchoolProfileForm>({
-    name: "Sekolah Islamku",
-    npsn: "20251234",
-    accreditation: "A",
-    foundedAt: "2010-07-01T00:00:00.000Z",
-    address: {
-      line: "Jl. Cendekia No. 10",
-      village: "Mekarjaya",
-      district: "Cibeunying",
-      city: "Bandung",
-      province: "Jawa Barat",
-      postal: "40111",
-    },
-    contact: {
-      phone: "0812-3456-7890",
-      email: "info@sekolahislamku.sch.id",
-      website: "https://sekolahislamku.sch.id",
-    },
-    headmaster: {
-      name: "Ust. Ahmad Fulan, S.Pd",
-      phone: "0812-1111-2222",
-      email: "ahmad@sekolahislamku.sch.id",
-    },
-    vision:
-      "Mewujudkan generasi berakhlak mulia, berilmu, dan berdaya saing global.",
-    mission: [
-      "Pendidikan berlandaskan Al-Qur'an dan Sunnah.",
-      "Mengembangkan karakter berakhlak mulia.",
-    ],
-    logoUrl: null,
-    mapEmbedUrl:
-      "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3952.1804!2d110.370!3d-7.867!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zN8KwNTInMDAuMCJTIDExMMKwMjInMTIuMCJF!5e0!3m2!1sen!2sid!4v1690000000000",
-    gallery: [
-      {
-        id: "g1",
-        url: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=1200&auto=format&fit=crop",
-        caption: "Perpustakaan",
-      },
-      {
-        id: "g2",
-        url: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?q=80&w=1200&auto=format&fit=crop",
-        caption: "Lapangan",
-      },
-      {
-        id: "g3",
-        url: "https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?q=80&w=1200&auto=format&fit=crop",
-        caption: "Kelas",
-      },
-    ],
+  // Queries
+  const qSchool = useQuery({
+    queryKey: ["school", schoolId],
+    queryFn: () => fetchSchool(schoolId!),
+    enabled: !!schoolId,
+  });
+  const qProfile = useQuery({
+    queryKey: ["school-profile", schoolId],
+    queryFn: () => fetchProfile(schoolId!),
+    enabled: !!schoolId,
   });
 
+  const isLoading = qSchool.isLoading || qProfile.isLoading;
+  const error = (qSchool.error || qProfile.error) as any | null;
+
+  const ui: SchoolUi | null = useMemo(() => {
+    if (!qSchool.data) return null;
+    return adaptToUi(qSchool.data, qProfile.data ?? undefined);
+  }, [qSchool.data, qProfile.data]);
+
   const [editOpen, setEditOpen] = useState(false);
-  const foundedYear = useMemo(() => {
-    if (!data?.foundedAt) return "-";
-    const d = new Date(data.foundedAt);
-    return Number.isNaN(d.getTime()) ? "-" : d.getFullYear();
-  }, [data?.foundedAt]);
+
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
   return (
     <div className="w-full">
       <main className="w-full">
         <div className="max-w-screen-2xl mx-auto flex flex-col lg:flex-row gap-4 lg:gap-6">
-          {/* Main Content */}
           <section className="flex-1 flex flex-col space-y-6 min-w-0">
-            {/* Header Section */}
+            {/* Header */}
             <div className="md:flex hidden gap-3 items-center">
               {showBack && (
                 <Button
                   onClick={handleBack}
                   variant="ghost"
-                  className="cursor-pointer self-start"
                   size="icon"
+                  className="cursor-pointer self-start"
                 >
                   <ArrowLeft size={20} />
                 </Button>
@@ -194,252 +150,252 @@ const SchoolProfile: React.FC<SchoolProfileProps> = ({
               </h1>
             </div>
 
-            {/* Header Card */}
-            <Card className="overflow-hidden">
-              <CardContent className="p-4 md:p-6">
-                <div className="flex flex-col sm:flex-row items-start gap-4">
-                  {/* Logo */}
-                  <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl grid place-items-center overflow-hidden border shrink-0 mx-auto sm:mx-0 bg-card text-card-foreground">
-                    {data?.logoUrl ? (
-                      <img
-                        src={data.logoUrl}
-                        alt="Logo Sekolah"
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <Building2 size={28} />
-                    )}
-                  </div>
+            {/* States */}
+            {isLoading && (
+              <Card>
+                <CardContent className="p-6">Memuat…</CardContent>
+              </Card>
+            )}
+            {error && (
+              <Card>
+                <CardContent className="p-6 text-sm text-destructive">
+                  Gagal memuat data: {error?.message ?? "Unknown error"}
+                </CardContent>
+              </Card>
+            )}
 
-                  {/* Info Sekolah */}
-                  <div className="flex-1 min-w-0 space-y-3 text-center sm:text-left">
-                    <h1 className="text-xl md:text-2xl lg:text-3xl font-semibold leading-tight">
-                      {data?.name ?? "Sekolah"}
-                    </h1>
+            {ui && (
+              <>
+                {/* Header Card */}
+                <Card className="overflow-hidden">
+                  <CardContent className="p-4 md:p-6">
+                    <div className="flex flex-col sm:flex-row items-start gap-4">
+                      {/* Logo */}
+                      <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl grid place-items-center overflow-hidden border shrink-0 mx-auto sm:mx-0 bg-card text-card-foreground">
+                        {ui.logoUrl ? (
+                          <img
+                            src={ui.logoUrl}
+                            alt="Logo Sekolah"
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <Building2 size={28} />
+                        )}
+                      </div>
 
-                    {/* Badges */}
-                    <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 justify-center sm:justify-start">
-                      {data?.accreditation && (
-                        <Badge variant="default">
-                          Akreditasi {data.accreditation}
-                        </Badge>
-                      )}
-                      <Badge variant="outline">Berdiri {foundedYear}</Badge>
-                    </div>
+                      {/* Info */}
+                      <div className="flex-1 min-w-0 space-y-3 text-center sm:text-left">
+                        <h1 className="text-xl md:text-2xl lg:text-3xl font-semibold leading-tight">
+                          {ui.name}
+                        </h1>
 
-                    {/* NPSN & Alamat */}
-                    <div className="space-y-2">
-                      {data?.npsn && (
-                        <div className="flex justify-center sm:justify-start">
-                          <Badge variant="outline">
-                            <span>NPSN: {data.npsn}</span>
-                          </Badge>
+                        <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 justify-center sm:justify-start">
+                          {ui.accreditation && (
+                            <Badge>Akreditasi {ui.accreditation}</Badge>
+                          )}
+                          {typeof ui.foundedYear === "number" && (
+                            <Badge variant="outline">
+                              Berdiri {ui.foundedYear}
+                            </Badge>
+                          )}
+                          {ui.isBoarding && (
+                            <Badge
+                              variant="secondary"
+                              className="inline-flex gap-1"
+                            >
+                              <Home className="h-3 w-3" /> Boarding
+                            </Badge>
+                          )}
+                          {ui.capacity != null && (
+                            <Badge variant="outline">
+                              <Users className="h-3 w-3 mr-1" /> Kapasitas{" "}
+                              {ui.capacity}
+                            </Badge>
+                          )}
                         </div>
-                      )}
-                      <div className="text-sm flex items-start justify-center sm:justify-start gap-1 text-muted-foreground">
-                        <MapPin size={14} className="mt-0.5 shrink-0" />
-                        <span className="text-center sm:text-left leading-relaxed">
-                          {fullAddress(data?.address)}
-                        </span>
+
+                        <div className="space-y-2">
+                          {!!ui?.npsn && (
+                            <div className="flex justify-center sm:justify-start">
+                              <Badge variant="outline">
+                                <span>NPSN: {ui.npsn}</span>
+                              </Badge>
+                            </div>
+                          )}
+                          <div className="text-sm flex items-start justify-center sm:justify-start gap-1 text-muted-foreground">
+                            <MapPin size={14} className="mt-0.5 shrink-0" />
+                            <span className="text-center sm:text-left leading-relaxed">
+                              {ui.address || "-"}
+                              {ui.city ? `, ${ui.city}` : ""}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
 
-            {/* Kontak & Kepala Sekolah */}
-            <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Phone size={18} />
-                    Kontak Sekolah
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm text-muted-foreground">
-                  <InfoRow
-                    icon={<Phone size={16} />}
-                    label="Telepon"
-                    value={data?.contact?.phone ?? "-"}
-                  />
-                  <InfoRow
-                    icon={<Mail size={16} />}
-                    label="Email"
-                    value={data?.contact?.email ?? "-"}
-                  />
-                  <InfoRow
-                    icon={<Globe size={16} />}
-                    label="Website"
-                    value={
-                      data?.contact?.website ? (
-                        <a
-                          href={data.contact.website}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 underline break-all text-primary"
-                        >
-                          {data.contact.website}{" "}
-                          <ExternalLink size={12} className="shrink-0" />
-                        </a>
-                      ) : (
-                        "-"
-                      )
-                    }
-                  />
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Award size={18} />
-                    Kepala Sekolah
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm text-muted-foreground">
-                  <InfoRow
-                    icon={<UserCog size={16} />}
-                    label="Nama"
-                    value={data?.headmaster?.name ?? "-"}
-                  />
-                  <InfoRow
-                    icon={<Phone size={16} />}
-                    label="Kontak"
-                    value={data?.headmaster?.phone ?? "-"}
-                  />
-                  <InfoRow
-                    icon={<Mail size={16} />}
-                    label="Email"
-                    value={data?.headmaster?.email ?? "-"}
-                  />
-                </CardContent>
-              </Card>
-            </section>
-
-            {/* Visi & Misi */}
-            <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Visi</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm leading-relaxed text-muted-foreground">
-                    {data?.vision ?? "-"}
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Misi</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {data?.mission?.length ? (
-                    <ul className="list-disc pl-5 space-y-2 text-sm leading-relaxed text-muted-foreground">
-                      {data.mission.map((m, i) => (
-                        <li key={i}>{m}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <div className="text-sm text-muted-foreground">-</div>
-                  )}
-                </CardContent>
-              </Card>
-            </section>
-
-            {/* Peta & Galeri */}
-            <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Navigation size={18} />
-                    Lokasi
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {data?.mapEmbedUrl ? (
-                    <div className="rounded-xl overflow-hidden border">
-                      <iframe
-                        src={data.mapEmbedUrl}
-                        title="Peta Sekolah"
-                        width="100%"
-                        height="220"
-                        className="md:h-64"
-                        loading="lazy"
-                        referrerPolicy="no-referrer-when-downgrade"
-                        allowFullScreen
+                {/* Kontak & Kepala Sekolah */}
+                <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <Phone size={18} />
+                        Kontak
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3 text-sm text-muted-foreground">
+                      <InfoRow
+                        icon={<Phone size={16} />}
+                        label="Telepon"
+                        value={ui.contactPhone ?? "-"}
                       />
-                    </div>
-                  ) : (
-                    <EmptyBlock icon={<Navigation />} text="Belum ada peta." />
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <ImageIcon size={18} />
-                    Galeri
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {data?.gallery && data.gallery.length > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-2 md:gap-3">
-                      {data.gallery.slice(0, 6).map((g) => (
-                        <figure
-                          key={g.id}
-                          className="rounded-lg overflow-hidden border"
-                        >
-                          <img
-                            src={g.url}
-                            alt={g.caption ?? "Foto"}
-                            className="w-full h-24 sm:h-32 lg:h-28 object-cover"
-                            loading="lazy"
-                          />
-                          {g.caption && (
-                            <figcaption
-                              className="px-2 py-1 text-sm truncate text-muted-foreground"
-                              title={g.caption}
+                      <InfoRow
+                        icon={<Mail size={16} />}
+                        label="Email"
+                        value={ui.contactEmail ?? "-"}
+                      />
+                      <InfoRow
+                        icon={<Globe size={16} />}
+                        label="Website"
+                        value={
+                          ui.website ? (
+                            <a
+                              href={ui.website}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 underline break-all text-primary"
                             >
-                              {g.caption}
-                            </figcaption>
-                          )}
-                        </figure>
-                      ))}
-                    </div>
-                  ) : (
-                    <EmptyBlock icon={<ImageIcon />} text="Belum ada foto." />
-                  )}
-                </CardContent>
-              </Card>
-            </section>
+                              {ui.website}{" "}
+                              <ExternalLink size={12} className="shrink-0" />
+                            </a>
+                          ) : (
+                            "-"
+                          )
+                        }
+                      />
+                    </CardContent>
+                  </Card>
 
-            {/* Actions */}
-            <div className="flex items-center justify-center sm:justify-end">
-              <Button
-                variant="outline"
-                onClick={() => setEditOpen(true)}
-                className="w-full sm:w-auto"
-              >
-                Edit Profil
-              </Button>
-            </div>
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <Award size={18} />
+                        Kepala Sekolah
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3 text-sm text-muted-foreground">
+                      {/* Kita hanya punya principal_user_id di BE */}
+                      <InfoRow
+                        icon={<UserCog size={16} />}
+                        label="User ID"
+                        value={ui.principalUserId ?? "-"}
+                      />
+                      <div className="text-xs text-muted-foreground">
+                        *Untuk menampilkan nama/email kepala sekolah, lakukan
+                        fetch detail user berdasarkan{" "}
+                        <code>principal_user_id</code>.
+                      </div>
+                    </CardContent>
+                  </Card>
+                </section>
+
+                {/* Deskripsi & Peta */}
+                <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base">Deskripsi</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm leading-relaxed text-muted-foreground">
+                        {ui.description || "-"}
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <Navigation size={18} /> Lokasi
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {ui.mapsUrl ? (
+                        <div className="rounded-xl overflow-hidden border">
+                          <iframe
+                            src={ui.mapsUrl}
+                            title="Peta Sekolah"
+                            width="100%"
+                            height="220"
+                            className="md:h-64"
+                            loading="lazy"
+                            referrerPolicy="no-referrer-when-downgrade"
+                            allowFullScreen
+                          />
+                        </div>
+                      ) : (
+                        <EmptyBlock
+                          icon={<Navigation />}
+                          text="Belum ada peta."
+                        />
+                      )}
+                    </CardContent>
+                  </Card>
+                </section>
+
+                {/* Aksi */}
+                <div className="flex items-center justify-center sm:justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={() => setEditOpen(true)}
+                    className="w-full sm:w-auto"
+                  >
+                    Edit Profil
+                  </Button>
+                </div>
+              </>
+            )}
           </section>
         </div>
       </main>
 
-      {/* ===== Modal Edit Profil (shadcn Dialog) ===== */}
-      <ModalEditProfilSchool
-        open={editOpen}
-        onOpenChange={setEditOpen}
-        initial={data}
-        onSubmit={(v) => {
-          setData(v); // TODO: ganti ke PUT API
-          setEditOpen(false);
-        }}
-      />
+      {!!ui && (
+        <ModalEditProfilSchool
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          initial={ui}
+          onSubmit={async (v) => {
+            // validasi ringan sesuai constraint
+            if (
+              v.foundedYear &&
+              (v.foundedYear < 1800 || v.foundedYear > new Date().getFullYear())
+            ) {
+              throw new Error("Tahun berdiri harus 1800..tahun saat ini.");
+            }
+            if (v.capacity != null && v.capacity < 0) {
+              throw new Error("Kapasitas siswa minimal 0.");
+            }
+
+            const { schoolsPatch, profilePatch } = adaptFromUi(v);
+
+            // patch paralel (profile bisa create or patch)
+            const currentProfileId = qProfile.data?.school_profile_id;
+            await Promise.all([
+              patchSchool(v.id, schoolsPatch),
+              upsertProfile(v.id, {
+                ...profilePatch,
+                school_profile_id: currentProfileId,
+              }),
+            ]);
+
+            await Promise.all([
+              q.invalidateQueries({ queryKey: ["school", v.id] }),
+              q.invalidateQueries({ queryKey: ["school-profile", v.id] }),
+            ]);
+            setEditOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 };
@@ -468,7 +424,6 @@ function InfoRow({
     </div>
   );
 }
-
 function EmptyBlock({ icon, text }: { icon?: React.ReactNode; text: string }) {
   return (
     <div
@@ -485,72 +440,51 @@ function EmptyBlock({ icon, text }: { icon?: React.ReactNode; text: string }) {
 }
 
 /* =========================================================
-   ModalEditProfilSchool — shadcn Dialog + form controls
+   ModalEditProfilSchool — hanya field yg ada di BE
    ========================================================= */
 function ModalEditProfilSchool({
   open,
   onOpenChange,
   initial,
   onSubmit,
-  saving = false,
-  error = null,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  initial: SchoolProfileForm;
-  onSubmit: (v: SchoolProfileForm) => void | Promise<void>;
-  saving?: boolean;
-  error?: string | null;
+  initial: SchoolUi;
+  onSubmit: (v: SchoolUi) => Promise<void> | void;
 }) {
-  const [form, setForm] = useState<SchoolProfileForm>(initial);
-  const [missionText, setMissionText] = useState(
-    (initial.mission ?? []).join("\n")
-  );
+  const [form, setForm] = useState<SchoolUi>(initial);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!open) return;
     setForm(initial);
-    setMissionText((initial.mission ?? []).join("\n"));
+    setErr(null);
+    setSaving(false);
   }, [open, initial]);
+
+  const set = <K extends keyof SchoolUi>(k: K, v: SchoolUi[K]) =>
+    setForm((s) => ({ ...s, [k]: v }));
 
   const canSubmit = !!form.name && !saving;
 
-  const set = <K extends keyof SchoolProfileForm>(
-    k: K,
-    v: SchoolProfileForm[K]
-  ) => setForm((s) => ({ ...s, [k]: v }));
-
-  const setAddr = <K extends keyof NonNullable<SchoolProfileForm["address"]>>(
-    k: K,
-    v: NonNullable<SchoolProfileForm["address"]>[K]
-  ) => setForm((s) => ({ ...s, address: { ...(s.address ?? {}), [k]: v } }));
-
-  const setContact = <
-    K extends keyof NonNullable<SchoolProfileForm["contact"]>
-  >(
-    k: K,
-    v: NonNullable<SchoolProfileForm["contact"]>[K]
-  ) => setForm((s) => ({ ...s, contact: { ...(s.contact ?? {}), [k]: v } }));
-
-  const setHead = <
-    K extends keyof NonNullable<SchoolProfileForm["headmaster"]>
-  >(
-    k: K,
-    v: NonNullable<SchoolProfileForm["headmaster"]>[K]
-  ) =>
-    setForm((s) => ({ ...s, headmaster: { ...(s.headmaster ?? {}), [k]: v } }));
-
-  const missionsFromText = (s: string) =>
-    s
-      .split("\n")
-      .map((x) => x.trim())
-      .filter(Boolean);
+  const submit = async () => {
+    try {
+      setSaving(true);
+      setErr(null);
+      await onSubmit(form);
+    } catch (e: any) {
+      setErr(e?.message ?? "Gagal menyimpan.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden p-0">
         <div className="flex flex-col h-full">
-          {/* Header */}
           <div className="px-4 sm:px-6 py-4 border-b flex items-center justify-between">
             <DialogHeader className="p-0">
               <DialogTitle className="flex items-center gap-3">
@@ -568,16 +502,15 @@ function ModalEditProfilSchool({
             </Button>
           </div>
 
-          {/* Body */}
           <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6">
             <div className="space-y-6 sm:space-y-8">
-              {!!error && (
+              {!!err && (
                 <div className="rounded-lg px-4 py-3 text-sm bg-destructive/10 text-destructive">
-                  {error}
+                  {err}
                 </div>
               )}
 
-              {/* Identitas Sekolah */}
+              {/* Identitas */}
               <section>
                 <BlockTitle title="Identitas Sekolah" />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -590,7 +523,7 @@ function ModalEditProfilSchool({
                   <FieldText
                     label="NPSN"
                     value={form.npsn ?? ""}
-                    onChange={(v) => set("npsn", v)}
+                    onChange={(v) => set("npsn", v || null)}
                   />
 
                   <div className="grid gap-2">
@@ -609,63 +542,62 @@ function ModalEditProfilSchool({
                         <SelectItem value="A">A</SelectItem>
                         <SelectItem value="B">B</SelectItem>
                         <SelectItem value="C">C</SelectItem>
+                        <SelectItem value="Ungraded">Ungraded</SelectItem>
                         <SelectItem value="-">-</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
-                  <div className="grid gap-2">
-                    <Label className="text-sm font-medium">
-                      Tanggal Berdiri
-                    </Label>
-                    <Input
-                      type="date"
-                      value={isoToYmd(form.foundedAt)}
-                      onChange={(e) =>
-                        set("foundedAt", ymdToIsoUTC(e.target.value))
-                      }
-                      className="rounded-xl"
-                    />
-                  </div>
+                  <FieldNumber
+                    label="Tahun Berdiri"
+                    value={form.foundedYear ?? ""}
+                    onChange={(v) =>
+                      set("foundedYear", v === "" ? null : Number(v))
+                    }
+                    placeholder="mis. 2010"
+                  />
                 </div>
               </section>
 
-              {/* Alamat */}
+              {/* Alamat & Kapasitas */}
               <section>
-                <BlockTitle title="Alamat" />
+                <BlockTitle title="Alamat & Kapasitas" />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="sm:col-span-2">
                     <FieldText
-                      label="Alamat"
-                      value={form.address?.line ?? ""}
-                      onChange={(v) => setAddr("line", v)}
+                      label="Alamat Sekolah"
+                      value={form.address ?? ""}
+                      onChange={(v) => set("address", v || null)}
                     />
                   </div>
                   <FieldText
-                    label="Kelurahan / Desa"
-                    value={form.address?.village ?? ""}
-                    onChange={(v) => setAddr("village", v)}
+                    label="Kota/Kabupaten (tampil)"
+                    value={form.city ?? ""}
+                    onChange={(v) => set("city", v || null)}
                   />
-                  <FieldText
-                    label="Kecamatan"
-                    value={form.address?.district ?? ""}
-                    onChange={(v) => setAddr("district", v)}
+                  <FieldNumber
+                    label="Kapasitas Siswa"
+                    value={form.capacity ?? ""}
+                    onChange={(v) =>
+                      set("capacity", v === "" ? null : Number(v))
+                    }
+                    placeholder="mis. 500"
                   />
-                  <FieldText
-                    label="Kota / Kabupaten"
-                    value={form.address?.city ?? ""}
-                    onChange={(v) => setAddr("city", v)}
-                  />
-                  <FieldText
-                    label="Provinsi"
-                    value={form.address?.province ?? ""}
-                    onChange={(v) => setAddr("province", v)}
-                  />
-                  <FieldText
-                    label="Kode Pos"
-                    value={form.address?.postal ?? ""}
-                    onChange={(v) => setAddr("postal", v)}
-                  />
+                  <div className="grid gap-2">
+                    <Label className="text-sm font-medium">Boarding</Label>
+                    <Select
+                      value={form.isBoarding ? "yes" : "no"}
+                      onValueChange={(val) => set("isBoarding", val === "yes")}
+                    >
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="no">Tidak</SelectItem>
+                        <SelectItem value="yes">Ya</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </section>
 
@@ -675,27 +607,20 @@ function ModalEditProfilSchool({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FieldText
                     label="Telepon"
-                    value={form.contact?.phone ?? ""}
-                    onChange={(v) => setContact("phone", v)}
+                    value={form.contactPhone ?? ""}
+                    onChange={(v) => set("contactPhone", v || null)}
                   />
                   <FieldText
                     label="Email"
-                    value={form.contact?.email ?? ""}
-                    onChange={(v) => setContact("email", v)}
+                    value={form.contactEmail ?? ""}
+                    onChange={(v) => set("contactEmail", v || null)}
                   />
                   <div className="sm:col-span-2">
                     <FieldText
                       label="Website"
-                      value={form.contact?.website ?? ""}
-                      onChange={(v) => setContact("website", v)}
+                      value={form.website ?? ""}
+                      onChange={(v) => set("website", v || null)}
                       placeholder="https://…"
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <FieldText
-                      label="URL Logo (opsional)"
-                      value={form.logoUrl ?? ""}
-                      onChange={(v) => set("logoUrl", v)}
                     />
                   </div>
                 </div>
@@ -705,58 +630,124 @@ function ModalEditProfilSchool({
               <section>
                 <BlockTitle title="Kepala Sekolah" />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="sm:col-span-2">
-                    <FieldText
-                      label="Nama"
-                      value={form.headmaster?.name ?? ""}
-                      onChange={(v) => setHead("name", v)}
-                    />
-                  </div>
                   <FieldText
-                    label="Telepon"
-                    value={form.headmaster?.phone ?? ""}
-                    onChange={(v) => setHead("phone", v)}
-                  />
-                  <FieldText
-                    label="Email"
-                    value={form.headmaster?.email ?? ""}
-                    onChange={(v) => setHead("email", v)}
+                    label="Principal User ID"
+                    value={form.principalUserId ?? ""}
+                    onChange={(v) => set("principalUserId", v || null)}
+                    placeholder="UUID user kepala sekolah"
                   />
                 </div>
               </section>
 
-              {/* Visi & Misi */}
+              {/* Deskripsi & Peta */}
               <section>
-                <BlockTitle title="Visi & Misi" />
+                <BlockTitle title="Deskripsi & Peta" />
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label className="text-sm font-medium">Visi</Label>
+                    <Label className="text-sm font-medium">Deskripsi</Label>
                     <Textarea
                       rows={5}
-                      value={form.vision ?? ""}
-                      onChange={(e) => set("vision", e.target.value)}
+                      value={form.description ?? ""}
+                      onChange={(e) =>
+                        set("description", e.target.value || null)
+                      }
                       className="rounded-xl resize-none"
-                      placeholder="Tulis visi sekolah…"
+                      placeholder="Gambaran singkat sekolah…"
                     />
                   </div>
                   <div className="grid gap-2">
                     <Label className="text-sm font-medium">
-                      Misi (satu baris satu poin)
+                      Google Maps URL
                     </Label>
-                    <Textarea
-                      rows={5}
-                      value={missionText}
-                      onChange={(e) => setMissionText(e.target.value)}
-                      className="rounded-xl resize-none"
-                      placeholder={"Tulis misi 1\nTulis misi 2\n…"}
+                    <Input
+                      value={form.mapsUrl ?? ""}
+                      onChange={(e) => set("mapsUrl", e.target.value || null)}
+                      className="rounded-xl"
+                      placeholder="https://maps.google.com/…"
                     />
                   </div>
+                </div>
+              </section>
+
+              {/* Sosial */}
+              <section>
+                <BlockTitle title="Sosial Media" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FieldText
+                    label="Instagram"
+                    value={form.socials?.instagram ?? ""}
+                    onChange={(v) =>
+                      set("socials", {
+                        ...(form.socials || {}),
+                        instagram: v || null,
+                      })
+                    }
+                  />
+                  <FieldText
+                    label="YouTube"
+                    value={form.socials?.youtube ?? ""}
+                    onChange={(v) =>
+                      set("socials", {
+                        ...(form.socials || {}),
+                        youtube: v || null,
+                      })
+                    }
+                  />
+                  <FieldText
+                    label="Facebook"
+                    value={form.socials?.facebook ?? ""}
+                    onChange={(v) =>
+                      set("socials", {
+                        ...(form.socials || {}),
+                        facebook: v || null,
+                      })
+                    }
+                  />
+                  <FieldText
+                    label="TikTok"
+                    value={form.socials?.tiktok ?? ""}
+                    onChange={(v) =>
+                      set("socials", {
+                        ...(form.socials || {}),
+                        tiktok: v || null,
+                      })
+                    }
+                  />
+                  <FieldText
+                    label="WhatsApp"
+                    value={form.socials?.whatsapp ?? ""}
+                    onChange={(v) =>
+                      set("socials", {
+                        ...(form.socials || {}),
+                        whatsapp: v || null,
+                      })
+                    }
+                  />
+                  <FieldText
+                    label="WA Group Ikhwan"
+                    value={form.socials?.waIkhwan ?? ""}
+                    onChange={(v) =>
+                      set("socials", {
+                        ...(form.socials || {}),
+                        waIkhwan: v || null,
+                      })
+                    }
+                  />
+                  <FieldText
+                    label="WA Group Akhwat"
+                    value={form.socials?.waAkhwat ?? ""}
+                    onChange={(v) =>
+                      set("socials", {
+                        ...(form.socials || {}),
+                        waAkhwat: v || null,
+                      })
+                    }
+                  />
                 </div>
               </section>
             </div>
           </div>
 
-          {/* Footer */}
           <div className="px-4 sm:px-6 py-4 border-t flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3">
             <Button
               variant="ghost"
@@ -768,14 +759,7 @@ function ModalEditProfilSchool({
             </Button>
             <Button
               disabled={!canSubmit}
-              onClick={() =>
-                onSubmit({
-                  ...form,
-                  npsn: form.npsn?.trim() || null,
-                  vision: (form.vision?.trim() || null) as string | null,
-                  mission: missionsFromText(missionText),
-                })
-              }
+              onClick={submit}
               className="w-full sm:w-auto order-1 sm:order-2"
             >
               {saving ? "Menyimpan…" : "Simpan"}
@@ -783,12 +767,11 @@ function ModalEditProfilSchool({
           </div>
         </div>
       </DialogContent>
-      <DialogFooter /> {/* (opsional) menjaga struktur konsisten */}
+      <DialogFooter />
     </Dialog>
   );
 }
 
-/* ---- sub-komponen kecil untuk modal ---- */
 function FieldText({
   label,
   value,
@@ -816,7 +799,30 @@ function FieldText({
     </div>
   );
 }
-
+function FieldNumber({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: number | "";
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <div className="grid gap-2">
+      <Label className="text-sm font-medium">{label}</Label>
+      <Input
+        type="number"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="rounded-xl"
+      />
+    </div>
+  );
+}
 function BlockTitle({ title }: { title: string }) {
   return <div className="font-semibold text-base opacity-90 mb-4">{title}</div>;
 }

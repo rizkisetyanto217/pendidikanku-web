@@ -40,7 +40,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
 import {
@@ -50,7 +49,6 @@ import {
   type AssignmentStatus,
 } from "@/pages/dashboard/teacher/class/types/assignments";
 
-// gunakan versi shadcn yg sudah kamu buat sebelumnya
 import ModalEditAssignmentClass, {
   type EditAssignmentPayload,
 } from "@/pages/dashboard/teacher/class/asssigment/components/CTeacherModalEditAssignmentClass";
@@ -272,20 +270,30 @@ export default function AssignmentClassShadcn() {
     <div className="w-full">
       {/* Top actions */}
       <div className="px-4 md:px-6 pt-4 md:pt-6">
-        <div className="max-w-screen-2xl mx-auto flex items-center gap-3">
+        <div className="w-full flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-lg font-semibold tracking-tight">
             {cls ? `Tugas: ${cls.name}` : "Tugas Kelas"}
           </h1>
-          <div className="ml-auto text-sm text-muted-foreground">
-            {new Date(todayISO).toLocaleDateString("id-ID", {
-              weekday: "long",
-              day: "2-digit",
-              month: "long",
-              year: "numeric",
-            })}
+          <div className="ml-auto flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setOpenAdd(true)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Tambah Tugas
+            </Button>
+            <div className="text-sm text-muted-foreground">
+              {new Date(todayISO).toLocaleDateString("id-ID", {
+                weekday: "long",
+                day: "2-digit",
+                month: "long",
+                year: "numeric",
+              })}
+            </div>
           </div>
         </div>
       </div>
@@ -332,205 +340,170 @@ export default function AssignmentClassShadcn() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Full-width content */}
       <main className="w-full px-4 md:px-6 pb-8 md:py-8">
-        <div className="max-w-screen-2xl mx-auto grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
-          {/* Sidebar ringkas (optional info kelas) */}
-          <div className="space-y-4">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Info Kelas</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm text-muted-foreground space-y-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="outline">{cls?.room ?? "-"}</Badge>
-                  <span>Wali: {cls?.homeroom ?? "-"}</span>
+        <div className="w-full space-y-6">
+          {/* Controls */}
+          <Card>
+            <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="search" className="sr-only">
+                  Cari tugas
+                </Label>
+                <div className="flex items-center gap-3 h-10 rounded-md border px-3">
+                  <Search className="h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="search"
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    placeholder="Cari tugas…"
+                    className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-0"
+                  />
                 </div>
-                <div>{cls?.academicTerm ?? "-"}</div>
-                <div>Angkatan {cls?.cohortYear ?? "-"}</div>
-              </CardContent>
-              <CardFooter className="justify-end">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setOpenAdd(true)}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Tambah Tugas
-                </Button>
-              </CardFooter>
-            </Card>
-          </div>
+              </div>
 
-          {/* Konten utama */}
-          <div className="space-y-6">
-            {/* Controls */}
-            <Card>
-              <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="search" className="sr-only">
-                    Cari tugas
-                  </Label>
-                  <div className="flex items-center gap-3 h-10 rounded-md border px-3">
-                    <Search className="h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="search"
-                      value={q}
-                      onChange={(e) => setQ(e.target.value)}
-                      placeholder="Cari tugas…"
-                      className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-0"
-                    />
+              <div className="space-y-2">
+                <Label className="sr-only">Filter status</Label>
+                <div className="flex items-center gap-3 h-10">
+                  <div className="h-10 aspect-square grid place-items-center rounded-md border">
+                    <Filter className="h-4 w-4 text-muted-foreground" />
                   </div>
+                  <Select
+                    value={status}
+                    onValueChange={(v) => setStatus(v as any)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Semua status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Semua status</SelectItem>
+                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="terbit">Terbit</SelectItem>
+                      <SelectItem value="selesai">Selesai</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
 
-                <div className="space-y-2">
-                  <Label className="sr-only">Filter status</Label>
-                  <div className="flex items-center gap-3 h-10">
-                    <div className="h-10 aspect-square grid place-items-center rounded-md border">
-                      <Filter className="h-4 w-4 text-muted-foreground" />
+          {/* List tugas */}
+          <div className="grid gap-4">
+            {isFetching && filtered.length === 0 && (
+              <Card>
+                <CardContent className="p-8">
+                  <div className="text-sm text-muted-foreground text-center">
+                    Memuat tugas…
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {filtered.map((a) => {
+              const dueBadge = a.dueDate
+                ? new Date(a.dueDate).toDateString() ===
+                  new Date().toDateString()
+                  ? "Hari ini"
+                  : dateShort(a.dueDate)
+                : null;
+
+              const statusVariant =
+                a.status === "terbit"
+                  ? "default"
+                  : a.status === "draft"
+                  ? "secondary"
+                  : "outline";
+
+              return (
+                <Card key={a.id} className="transition-shadow hover:shadow-md">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <CardTitle className="text-base truncate">
+                          {a.title}
+                        </CardTitle>
+                        {a.description && (
+                          <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
+                            {a.description}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={statusVariant as any} className="h-6">
+                          {a.status.toUpperCase()}
+                        </Badge>
+                        {dueBadge && (
+                          <Badge variant="outline" className="h-6">
+                            tempo: {dueBadge}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                    <Select
-                      value={status}
-                      onValueChange={(v) => setStatus(v as any)}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Semua status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Semua status</SelectItem>
-                        <SelectItem value="draft">Draft</SelectItem>
-                        <SelectItem value="terbit">Terbit</SelectItem>
-                        <SelectItem value="selesai">Selesai</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                  </CardHeader>
 
-            {/* List tugas */}
-            <div className="grid gap-4">
-              {isFetching && filtered.length === 0 && (
-                <Card>
-                  <CardContent className="p-8">
-                    <div className="text-sm text-muted-foreground text-center">
-                      Memuat tugas…
+                  <CardContent className="pt-0">
+                    <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <CalendarDays className="h-3.5 w-3.5" />
+                        <span>Dibuat: {dateLong(a.createdAt)}</span>
+                      </div>
+                      {a.author && <span>• Oleh {a.author}</span>}
+                      {(a.totalSubmissions ?? 0) > 0 && (
+                        <span>• {a.totalSubmissions} pengumpulan</span>
+                      )}
+                      {a.attachments?.length ? (
+                        <span>• {a.attachments.length} lampiran</span>
+                      ) : null}
                     </div>
                   </CardContent>
+
+                  <CardFooter className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="text-xs text-muted-foreground">
+                      Aksi cepat untuk tugas ini
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() =>
+                          window.alert("Unduh belum diimplementasikan")
+                        }
+                      >
+                        <Download className="h-4 w-4" />
+                        Unduh
+                      </Button>
+
+                      <Link to={`../assignment/${a.id}`} relative="path">
+                        <Button size="sm" className="gap-2">
+                          Buka
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </Link>
+
+                      <Button size="sm" onClick={() => onEdit(a)}>
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => setDeleteTarget(a)}
+                      >
+                        Hapus
+                      </Button>
+                    </div>
+                  </CardFooter>
                 </Card>
-              )}
+              );
+            })}
 
-              {filtered.map((a) => {
-                const dueBadge = a.dueDate
-                  ? new Date(a.dueDate).toDateString() ===
-                    new Date().toDateString()
-                    ? "Hari ini"
-                    : dateShort(a.dueDate)
-                  : null;
-
-                const statusVariant =
-                  a.status === "terbit"
-                    ? "default"
-                    : a.status === "draft"
-                    ? "secondary"
-                    : "outline";
-
-                return (
-                  <Card
-                    key={a.id}
-                    className="transition-shadow hover:shadow-md"
-                  >
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0">
-                          <CardTitle className="text-base truncate">
-                            {a.title}
-                          </CardTitle>
-                          {a.description && (
-                            <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
-                              {a.description}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={statusVariant as any} className="h-6">
-                            {a.status.toUpperCase()}
-                          </Badge>
-                          {dueBadge && (
-                            <Badge variant="outline" className="h-6">
-                              tempo: {dueBadge}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </CardHeader>
-
-                    <CardContent className="pt-0">
-                      <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                          <CalendarDays className="h-3.5 w-3.5" />
-                          <span>Dibuat: {dateLong(a.createdAt)}</span>
-                        </div>
-                        {a.author && <span>• Oleh {a.author}</span>}
-                        {(a.totalSubmissions ?? 0) > 0 && (
-                          <span>• {a.totalSubmissions} pengumpulan</span>
-                        )}
-                        {a.attachments?.length ? (
-                          <span>• {a.attachments.length} lampiran</span>
-                        ) : null}
-                      </div>
-                    </CardContent>
-
-                    <CardFooter className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                      <div className="text-xs text-muted-foreground">
-                        Aksi cepat untuk tugas ini
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-2"
-                          onClick={() =>
-                            window.alert("Unduh belum diimplementasikan")
-                          }
-                        >
-                          <Download className="h-4 w-4" />
-                          Unduh
-                        </Button>
-
-                        <Link to={`../assignment/${a.id}`} relative="path">
-                          <Button size="sm" className="gap-2">
-                            Buka
-                            <ChevronRight className="h-4 w-4" />
-                          </Button>
-                        </Link>
-
-                        <Button size="sm" onClick={() => onEdit(a)}>
-                          Edit
-                        </Button>
-
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => setDeleteTarget(a)}
-                          >
-                            Hapus
-                          </Button>
-                        </AlertDialogTrigger>
-                      </div>
-                    </CardFooter>
-                  </Card>
-                );
-              })}
-
-              {filtered.length === 0 && !isFetching && (
-                <Alert>
-                  <AlertDescription>
-                    Belum ada tugas untuk kelas ini.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
+            {filtered.length === 0 && !isFetching && (
+              <Alert>
+                <AlertDescription>
+                  Belum ada tugas untuk kelas ini.
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
         </div>
       </main>

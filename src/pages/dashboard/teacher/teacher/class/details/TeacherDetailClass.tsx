@@ -11,6 +11,11 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import {
+  StatsGrid, // alias dari StatsCardGrid
+  type StatItem, // alias dari StatCardItem
+} from "@/components/costum/card/StatsCardGrid";
+
+import {
   Users,
   CalendarDays,
   Clock,
@@ -59,7 +64,7 @@ import {
   fetchStudentsByClasses,
   type ClassStudentsMap,
   type StudentSummary,
-} from "./types/teacherClass";
+} from "../types/teacherClass";
 
 /* ========= Dummy fetch kelas ========= */
 async function fetchTeacherClasses(): Promise<TeacherClassSummary[]> {
@@ -181,6 +186,73 @@ export default function TeacherDetailClass() {
   const loadingAny = isLoadingClasses || isLoadingStudents;
   const fetchingAny = isFetchingClasses || isFetchingStudents;
 
+  // 4) Items STAT — DIPINDAH KE DALAM KOMPONEN
+  const items: StatItem[] = useMemo(
+    () => [
+      {
+        label: "Jumlah Siswa",
+        metric: total,
+        hint:
+          students.length === 0 && fallbackTotal > 0
+            ? `(fallback: ${fallbackTotal})`
+            : undefined,
+        icon: <Users className="h-4 w-4" />,
+        to: "semua-siswa",
+        ariaLabel: "Lihat daftar siswa",
+      },
+      {
+        label: "Kehadiran Hari Ini",
+        metric: `${hadir}/${total || 0}`,
+        icon: <ClipboardList className="h-4 w-4" />,
+        to: "semua-kehadiran",
+        ariaLabel: "Lihat kehadiran hari ini",
+      },
+      {
+        label: "Materi",
+        metric: `${cls?.materialsCount ?? 0} • ${cls?.assignmentsCount ?? 0}`,
+        icon: <BookOpen className="h-4 w-4" />,
+        to: "materi",
+        ariaLabel: "Lihat materi",
+      },
+      {
+        label: "Tugas",
+        metric: `${cls?.materialsCount ?? 0} • ${cls?.assignmentsCount ?? 0}`,
+        icon: <BookOpen className="h-4 w-4" />,
+        to: "tugas",
+        ariaLabel: "Lihat tugas",
+      },
+      {
+        label: "Ujian",
+        metric: `${cls?.materialsCount ?? 0} • ${cls?.assignmentsCount ?? 0}`,
+        icon: <BookOpen className="h-4 w-4" />,
+        to: "ujian",
+        ariaLabel: "Lihat Ujian",
+      },
+      {
+        label: "Buku",
+        metric: `${cls?.materialsCount ?? 0} • ${cls?.assignmentsCount ?? 0}`,
+        icon: <BookOpen className="h-4 w-4" />,
+        to: "buku",
+        ariaLabel: "Lihat Buku",
+      },
+      {
+        label: "Profil",
+        metric: `${cls?.materialsCount ?? 0} • ${cls?.assignmentsCount ?? 0}`,
+        icon: <BookOpen className="h-4 w-4" />,
+        to: "profil",
+        ariaLabel: "Lihat Profil",
+      },
+    ],
+    [
+      students.length,
+      fallbackTotal,
+      hadir,
+      total,
+      cls?.materialsCount,
+      cls?.assignmentsCount,
+    ]
+  );
+
   return (
     <div className="w-full bg-background text-foreground">
       <main className="w-full px-4 md:px-6 md:py-8">
@@ -219,21 +291,9 @@ export default function TeacherDetailClass() {
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
-                <Link to="absensi">
+                <Link to="absensi-hari-ini">
                   <Button size="sm" variant="secondary">
-                    Absensi <ChevronRight className="ml-1 h-4 w-4" />
-                  </Button>
-                </Link>
-                <Link to="materi">
-                  <Button size="sm" variant="outline">
-                    <BookOpen className="mr-1 h-4 w-4" />
-                    Materi
-                  </Button>
-                </Link>
-                <Link to="tugas">
-                  <Button size="sm" variant="outline">
-                    <ClipboardList className="mr-1 h-4 w-4" />
-                    Tugas
+                    Absensi Hari Ini <ChevronRight className="ml-1 h-4 w-4" />
                   </Button>
                 </Link>
               </div>
@@ -241,60 +301,14 @@ export default function TeacherDetailClass() {
           </Card>
 
           {/* Stat ringkas */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-sm text-muted-foreground">
-                      Jumlah Siswa
-                    </div>
-                    <div className="text-xl font-semibold">
-                      {fetchingAny ? "…" : total || "—"}
-                    </div>
-                    {students.length === 0 && fallbackTotal > 0 && (
-                      <div className="text-sm text-muted-foreground mt-0.5">
-                        (fallback: {fallbackTotal})
-                      </div>
-                    )}
-                  </div>
-                  <Users className="h-4 w-4" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-sm text-muted-foreground">
-                      Kehadiran Hari Ini
-                    </div>
-                    <div className="text-xl font-semibold">
-                      {hadir}/{total || 0}
-                    </div>
-                  </div>
-                  <ClipboardList className="h-4 w-4" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-sm text-muted-foreground">
-                      Materi • Tugas
-                    </div>
-                    <div className="text-xl font-semibold">
-                      {cls?.materialsCount ?? 0} • {cls?.assignmentsCount ?? 0}
-                    </div>
-                  </div>
-                  <BookOpen className="h-4 w-4" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <StatsGrid
+            items={items}
+            loading={fetchingAny}
+            minCardWidth="16rem" // opsional (default 14rem). Boleh juga 240, "18rem", "220px", dll.
+            formatMetric={(n) =>
+              new Intl.NumberFormat("id-ID", { notation: "compact" }).format(n)
+            }
+          />
 
           {/* Jadwal terdekat */}
           <Card>

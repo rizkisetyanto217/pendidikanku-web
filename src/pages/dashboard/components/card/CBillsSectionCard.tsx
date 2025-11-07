@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import CButtonAllUnderline from "@/components/CButtonAllUnderline";
+import { ReceiptText } from "lucide-react";
+import { CMainTitleIcon } from "@/components/CMainTitleIcon";
 
 type BillItem = {
   id: string;
@@ -11,14 +12,22 @@ type BillItem = {
 };
 
 type BillsSectionCardProps = {
+  /** daftar tagihan */
   bills: BillItem[];
+  /** fungsi format tanggal */
   dateFmt: (iso: string) => string;
+  /** fungsi format rupiah */
   formatIDR: (n: number) => string;
+  /** path tombol lihat semua */
   seeAllPath?: string;
+  /** link pembayaran per tagihan */
   getPayHref?: (b: BillItem) => string;
+  /** judul section (opsional) */
+  title?: string;
 };
 
 export default function BillsSectionCard({
+  title = "Tagihan Belum Dibayar",
   bills,
   dateFmt,
   formatIDR,
@@ -27,19 +36,21 @@ export default function BillsSectionCard({
 }: BillsSectionCardProps) {
   return (
     <Card className="p-4 border border-border bg-card text-card-foreground">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-base font-semibold">Tagihan Belum Dibayar</h2>
-        {seeAllPath && (
-          <Button variant="ghost" size="sm" asChild>
-            <a href={seeAllPath} className="inline-flex items-center gap-1">
-              Lihat Semua <ArrowRight size={14} />
-            </a>
-          </Button>
-        )}
+      {/* Header */}
+      <div className="flex justify-between items-center mb-3">
+        <CMainTitleIcon
+          icon={<ReceiptText size={18} />}
+          title={title}
+          size="md"
+        />
+        {seeAllPath && <CButtonAllUnderline to={seeAllPath} />}
       </div>
 
+      {/* Isi */}
       {bills.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Tidak ada tagihan aktif.</p>
+        <p className="text-sm text-muted-foreground">
+          Tidak ada tagihan aktif.
+        </p>
       ) : (
         <div className="space-y-3">
           {bills.map((b) => (

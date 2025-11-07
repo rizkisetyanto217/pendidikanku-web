@@ -1,12 +1,15 @@
 import * as React from "react"
-
 import { cn } from "@/lib/utils"
+
+/* ======================================================
+   🧱 Komponen Tabel Theme-Aware + Zebra Row
+====================================================== */
 
 const Table = React.forwardRef<
   HTMLTableElement,
   React.HTMLAttributes<HTMLTableElement>
 >(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-auto">
+  <div className="relative w-full overflow-auto rounded-lg border border-border">
     <table
       ref={ref}
       className={cn("w-full caption-bottom text-sm", className)}
@@ -16,26 +19,53 @@ const Table = React.forwardRef<
 ))
 Table.displayName = "Table"
 
+/* ======================================================
+   HEADER: Warna mengikuti CSS variable tema aktif
+====================================================== */
 const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn("[&_tr]:border-b", className)} {...props} />
+  <thead
+    ref={ref}
+    className={cn(
+      // Style umum
+      "text-left font-semibold text-primary-foreground",
+      // Gunakan var(--primary) agar menyesuaikan dengan tema aktif
+      "bg-primary/10 border-b border-border",
+      "[&_th]:text-primary [&_th]:font-medium [&_th]:px-3 [&_th]:py-2",
+      className
+    )}
+    {...props}
+  />
 ))
 TableHeader.displayName = "TableHeader"
 
+/* ======================================================
+   BODY: Zebra stripe + hover
+====================================================== */
 const TableBody = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
   <tbody
     ref={ref}
-    className={cn("[&_tr:last-child]:border-0", className)}
+    className={cn(
+      // Zebra pattern otomatis
+      "[&_tr:nth-child(odd)]:bg-card [&_tr:nth-child(even)]:bg-muted/40",
+      // Hover lembut
+      "[&_tr:hover]:bg-accent/30",
+      "[&_tr:last-child]:border-0",
+      className
+    )}
     {...props}
   />
 ))
 TableBody.displayName = "TableBody"
 
+/* ======================================================
+   FOOTER
+====================================================== */
 const TableFooter = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
@@ -51,6 +81,9 @@ const TableFooter = React.forwardRef<
 ))
 TableFooter.displayName = "TableFooter"
 
+/* ======================================================
+   ROW
+====================================================== */
 const TableRow = React.forwardRef<
   HTMLTableRowElement,
   React.HTMLAttributes<HTMLTableRowElement>
@@ -58,7 +91,7 @@ const TableRow = React.forwardRef<
   <tr
     ref={ref}
     className={cn(
-      "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
+      "border-b transition-colors data-[state=selected]:bg-accent",
       className
     )}
     {...props}
@@ -66,6 +99,9 @@ const TableRow = React.forwardRef<
 ))
 TableRow.displayName = "TableRow"
 
+/* ======================================================
+   HEAD CELL
+====================================================== */
 const TableHead = React.forwardRef<
   HTMLTableCellElement,
   React.ThHTMLAttributes<HTMLTableCellElement>
@@ -73,7 +109,8 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "h-10 px-2 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+      "h-10 px-3 text-left align-middle text-sm font-semibold text-primary",
+      "[&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
       className
     )}
     {...props}
@@ -81,6 +118,9 @@ const TableHead = React.forwardRef<
 ))
 TableHead.displayName = "TableHead"
 
+/* ======================================================
+   BODY CELL
+====================================================== */
 const TableCell = React.forwardRef<
   HTMLTableCellElement,
   React.TdHTMLAttributes<HTMLTableCellElement>
@@ -88,7 +128,8 @@ const TableCell = React.forwardRef<
   <td
     ref={ref}
     className={cn(
-      "p-2 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+      "p-3 align-middle text-sm text-foreground",
+      "[&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
       className
     )}
     {...props}
@@ -96,6 +137,9 @@ const TableCell = React.forwardRef<
 ))
 TableCell.displayName = "TableCell"
 
+/* ======================================================
+   CAPTION
+====================================================== */
 const TableCaption = React.forwardRef<
   HTMLTableCaptionElement,
   React.HTMLAttributes<HTMLTableCaptionElement>
@@ -108,6 +152,9 @@ const TableCaption = React.forwardRef<
 ))
 TableCaption.displayName = "TableCaption"
 
+/* ======================================================
+   EXPORT ALL
+====================================================== */
 export {
   Table,
   TableHeader,

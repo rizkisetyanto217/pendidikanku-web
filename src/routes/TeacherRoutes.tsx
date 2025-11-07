@@ -41,10 +41,15 @@ import TeacherClassAttendanceDetail from "@/pages/dashboard/teacher/class/attend
 import TeacherProfil from "@/pages/dashboard/teacher/profil/TeacherProfil";
 import TeacherGrading from "@/pages/dashboard/teacher/grade/TeacherGrade";
 import TeacherDetailGrading from "@/pages/dashboard/teacher/grade/TeacherDetailGrading";
-import TeacherDetailClass from "@/pages/dashboard/teacher/class/TeacherDetailClass";
+import TeacherDetailClass from "@/pages/dashboard/teacher/class/details/TeacherDetailClass";
 import TeacherAssignmentClass from "@/pages/dashboard/teacher/class/asssigment/TeacherAssignmentClass";
 import TeacherManagementClass from "@/pages/dashboard/teacher/class/management/TeacherManagementClass";
 import TeacherDetailClassQuiz from "@/pages/dashboard/teacher/class/TeacherDetailClassQuiz";
+import TeacherClassStudentsList from "@/pages/dashboard/teacher/class/list/TeacherClassStudentList";
+import TeacherClassStudentAttendanceList from "@/pages/dashboard/teacher/class/list/TeacherClassStudentAttendanceList";
+import TeacherMaterialList from "@/pages/dashboard/teacher/class/list/TeacherMaterialList";
+import TeacherExamList from "@/pages/dashboard/teacher/class/list/TeacherExamList";
+import TeacherBookList from "@/pages/dashboard/teacher/class/list/TeacherBookList";
 
 // import TeacherClassDetail from "@/pages/pendidikanku-dashboard/dashboard-teacher/menu/TeacherDetailClasses";
 // import TeacherSettings from "@/pages/pendidikanku-dashboard/dashboard-teacher/menu/settings/TeacherSettings";
@@ -101,8 +106,19 @@ export const TeacherRoutes = (
     <Route path="kelas">
       <Route index element={<TeacherClass />} />
       <Route path=":id" element={<TeacherDetailClass />} />
-      <Route path=":id/absensi" element={<TeacherClassAttendance />} />
+      <Route path=":id/absensi-hari-ini" element={<TeacherClassAttendance />} />
       <Route path=":id/tugas" element={<TeacherAssignmentClass />} />
+      <Route path=":id/quiz" element={<TeacherDetailClassQuiz />} />
+      <Route path=":id/semua-siswa" element={<TeacherClassStudentsList />} />
+      <Route path=":id/nilai" element={<TeacherGrading />} />
+      <Route path=":id/detail-nilai" element={<TeacherDetailGrading />} />
+      <Route
+        path=":id/semua-kehadiran"
+        element={<TeacherClassStudentAttendanceList />}
+      />
+      <Route path=":id/materi" element={<TeacherMaterialList />} />
+      <Route path=":id/ujian" element={<TeacherExamList />} />
+      <Route path=":id/buku" element={<TeacherBookList />} />
     </Route>
 
     <Route path="kelola-kelas/:name" element={<TeacherManagementClass />} />

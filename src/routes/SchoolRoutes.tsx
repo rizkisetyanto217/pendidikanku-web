@@ -134,7 +134,7 @@ export const SchoolRoutes = (
       <Route path="jadwal" element={<SchoolAllSchedule />} />
 
       <Route path="buku">
-        <Route index element={<SchoolBooks showBack />} />
+        <Route index element={<SchoolBooks />} />
         <Route path="detail/:id" element={<SchoolBookDetail />} />
       </Route>
 

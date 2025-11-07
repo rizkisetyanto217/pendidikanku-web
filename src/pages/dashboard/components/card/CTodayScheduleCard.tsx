@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { CalendarDays, ArrowRight } from "lucide-react";
+import CButtonAllUnderline from "@/components/CButtonAllUnderline";
+import { CalendarDays } from "lucide-react";
+import { CMainTitleIcon } from "@/components/CMainTitleIcon";
 
 export type ScheduleItem = {
     id: string;
@@ -29,22 +30,19 @@ export default function TodayScheduleCard({
         <Card className="p-4 border border-border bg-card text-card-foreground">
             {/* Header */}
             <div className="flex justify-between items-center mb-3">
-                <div className="flex items-center gap-2">
-                    <CalendarDays size={18} className="text-primary" />
-                    <h2 className="text-base font-semibold">{title}</h2>
-                </div>
-                {seeAllPath && (
-                    <Button variant="ghost" size="sm" asChild>
-                        <a href={seeAllPath} className="inline-flex items-center gap-1">
-                            Lihat Semua <ArrowRight size={14} />
-                        </a>
-                    </Button>
-                )}
+                <CMainTitleIcon
+                    icon={<CalendarDays size={18} />}
+                    title={title}
+                    size="md"
+                />
+                {seeAllPath && <CButtonAllUnderline to={seeAllPath} />}
             </div>
 
             {/* Isi Jadwal */}
             {visibleItems.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Tidak ada jadwal hari ini.</p>
+                <p className="text-sm text-muted-foreground">
+                    Tidak ada jadwal hari ini.
+                </p>
             ) : (
                 <div className="space-y-3">
                     {visibleItems.map((s) => (
@@ -56,7 +54,9 @@ export default function TodayScheduleCard({
                                 <p className="font-medium">{s.title}</p>
                                 <span className="text-xs text-muted-foreground">{s.time}</span>
                             </div>
-                            <p className="text-xs text-muted-foreground">Guru: {s.teacher}</p>
+                            <p className="text-xs text-muted-foreground">
+                                Guru: {s.teacher}
+                            </p>
                         </div>
                     ))}
                 </div>

@@ -109,10 +109,10 @@ const TERMS_QKEY = (schoolId?: string) =>
 const dateShort = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
     : "-";
 
 function normalizeAcademicYear(input: string) {
@@ -235,15 +235,15 @@ function useUpdateTerm(schoolId?: string) {
           previous.map((t) =>
             t.id === id
               ? {
-                  ...t,
-                  academic_year: normalizeAcademicYear(payload.academic_year),
-                  name: payload.name,
-                  start_date: toZDate(payload.start_date),
-                  end_date: toZDate(payload.end_date),
-                  angkatan: Number(payload.angkatan),
-                  is_active: Boolean(payload.is_active),
-                  slug: payload.slug ?? t.slug,
-                }
+                ...t,
+                academic_year: normalizeAcademicYear(payload.academic_year),
+                name: payload.name,
+                start_date: toZDate(payload.start_date),
+                end_date: toZDate(payload.end_date),
+                angkatan: Number(payload.angkatan),
+                is_active: Boolean(payload.is_active),
+                slug: payload.slug ?? t.slug,
+              }
               : t
           )
         );
@@ -321,32 +321,7 @@ function SearchBar({
   );
 }
 
-function PerPageSelect({
-  value,
-  onChange,
-}: {
-  value: number;
-  onChange: (n: number) => void;
-}) {
-  const options = [10, 20, 50, 100, 200];
-  return (
-    <div className="flex items-center gap-2">
-      <span className="text-sm text-muted-foreground">Per halaman</span>
-      <Select value={String(value)} onValueChange={(v) => onChange(Number(v))}>
-        <SelectTrigger className="h-10 w-[110px]">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((n) => (
-            <SelectItem key={n} value={String(n)}>
-              {n}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  );
-}
+
 
 function PaginationBar({
   pageStart,
@@ -370,7 +345,7 @@ function PaginationBar({
   return (
     <div className="mt-4 flex items-center justify-between">
       <div className="text-sm text-muted-foreground">
-        Menampilkan {pageStart}–{pageEnd} dari {total}
+        Menampilkan {pageStart}–{pageEnd} dari {total} data
       </div>
       <div className="flex items-center gap-3">
         {rightExtra}
@@ -721,7 +696,7 @@ const SchoolAcademic: React.FC = () => {
                 value={q}
                 onChange={setQ}
                 placeholder="Cari tahun, nama, atau angkatan…"
-                rightExtra={<PerPageSelect value={limit} onChange={setLimit} />}
+
               />
             </div>
 
@@ -794,116 +769,53 @@ const SchoolAcademic: React.FC = () => {
           </Card>
 
           {/* ===== Daftar semua terms + aksi ===== */}
-          <Card>
-            <CardHeader className="py-3 px-4 md:px-5">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Layers size={18} /> Daftar Periode
-                <span className="text-sm font-normal text-muted-foreground">
-                  {termsQ.isFetching ? "memuat…" : `${total} total`}
-                </span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 md:p-5">
-              {termsQ.isLoading ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="animate-spin" size={16} /> Memuat…
-                </div>
-              ) : total === 0 ? (
-                <div className="rounded-xl border p-4 text-sm text-muted-foreground flex items-center gap-2">
-                  <Info size={16} /> Belum ada data.
-                </div>
-              ) : (
-                <>
-                  {/* Mobile: Cards */}
-                  <div className="grid gap-3 md:hidden">
-                    {pageTerms.map((t) => (
-                      <Card key={t.id}>
-                        <CardContent className="p-4">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0">
-                              <div className="font-semibold truncate">
-                                {t.academic_year} — {t.name}
-                              </div>
-                              <div className="text-sm mt-0.5 text-muted-foreground">
-                                {dateShort(t.start_date)} —{" "}
-                                {dateShort(t.end_date)}
-                              </div>
-                            </div>
-                            <Badge
-                              variant={t.is_active ? "default" : "outline"}
-                            >
+          {/* ===== Daftar semua terms + aksi ===== */}
+
+
+
+          <CardContent>
+            {termsQ.isLoading ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="animate-spin" size={16} /> Memuat…
+              </div>
+            ) : total === 0 ? (
+              <div className="rounded-xl border p-4 text-sm text-muted-foreground flex items-center gap-2">
+                <Info size={16} /> Belum ada data.
+              </div>
+            ) : (
+              <>
+                {/* ✅ Table responsive seperti SchoolBooks */}
+                <div className="overflow-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="min-w-[160px]">Tahun Ajaran</TableHead>
+                        <TableHead className="min-w-[140px]">Nama</TableHead>
+                        <TableHead className="min-w-[200px]">Tanggal</TableHead>
+                        <TableHead className="min-w-[120px]">Angkatan</TableHead>
+                        <TableHead className="min-w-[120px]">Status</TableHead>
+                        <TableHead className="min-w-[80px] text-right">Aksi</TableHead>
+                      </TableRow>
+                    </TableHeader>
+
+                    <TableBody>
+                      {pageTerms.map((t) => (
+                        <TableRow key={t.id}>
+                          <TableCell className="font-medium">
+                            {t.academic_year}
+                          </TableCell>
+                          <TableCell>{t.name}</TableCell>
+                          <TableCell>
+                            {dateShort(t.start_date)} — {dateShort(t.end_date)}
+                          </TableCell>
+                          <TableCell>{t.angkatan}</TableCell>
+                          <TableCell>
+                            <Badge variant={t.is_active ? "default" : "outline"}>
                               {t.is_active ? "Aktif" : "Nonaktif"}
                             </Badge>
-                          </div>
-
-                          <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                            <span className="inline-flex items-center gap-1">
-                              <Users size={14} /> Angkatan {t.angkatan}
-                            </span>
-                            {t.slug && (
-                              <span className="inline-flex items-center gap-1">
-                                <LinkIcon size={14} /> {t.slug}
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="pt-2 flex justify-end">
-                            <ActionsMenu
-                              onView={() =>
-                                navigate(
-                                  `/${schoolId}/sekolah/menu-utama/akademik/detail/${t.id}`,
-                                  { state: { term: t } }
-                                )
-                              }
-                              onEdit={() =>
-                                setModal({ mode: "edit", editing: t })
-                              }
-                              onDelete={() => {
-                                setToDelete(t);
-                                setConfirmOpen(true);
-                              }}
-                            />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-
-                  {/* Tablet/Desktop: Table */}
-                  <div className="hidden md:block">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Tahun Ajaran</TableHead>
-                          <TableHead>Nama</TableHead>
-                          <TableHead>Tanggal</TableHead>
-                          <TableHead>Angkatan</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead className="w-12 text-right">
-                            Aksi
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {pageTerms.map((t) => (
-                          <TableRow key={t.id}>
-                            <TableCell className="font-medium">
-                              {t.academic_year}
-                            </TableCell>
-                            <TableCell>{t.name}</TableCell>
-                            <TableCell>
-                              {dateShort(t.start_date)} —{" "}
-                              {dateShort(t.end_date)}
-                            </TableCell>
-                            <TableCell>{t.angkatan}</TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={t.is_active ? "default" : "outline"}
-                              >
-                                {t.is_active ? "Aktif" : "Nonaktif"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end">
                               <ActionsMenu
                                 onView={() =>
                                   navigate(
@@ -911,39 +823,35 @@ const SchoolAcademic: React.FC = () => {
                                     { state: { term: t } }
                                   )
                                 }
-                                onEdit={() =>
-                                  setModal({ mode: "edit", editing: t })
-                                }
+                                onEdit={() => setModal({ mode: "edit", editing: t })}
                                 onDelete={() => {
                                   setToDelete(t);
                                   setConfirmOpen(true);
                                 }}
                               />
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
 
-                  <PaginationBar
-                    pageStart={pageStart}
-                    pageEnd={pageEnd}
-                    total={total}
-                    canPrev={canPrev}
-                    canNext={canNext}
-                    onPrev={handlePrev}
-                    onNext={handleNext}
-                    rightExtra={
-                      <span className="text-sm text-muted-foreground">
-                        {termsQ.isFetching ? "memuat…" : `${total} total`}
-                      </span>
-                    }
-                  />
-                </>
-              )}
-            </CardContent>
-          </Card>
+                <PaginationBar
+                  pageStart={pageStart}
+                  pageEnd={pageEnd}
+                  total={total}
+                  canPrev={canPrev}
+                  canNext={canNext}
+                  onPrev={handlePrev}
+                  onNext={handleNext}
+
+                />
+              </>
+            )}
+          </CardContent>
+
+
         </div>
       </main>
 

@@ -186,7 +186,7 @@ const SchoolFinance: React.FC = () => {
   return (
     <div className="min-h-screen w-full overflow-x-hidden">
       {/* ===== Header ===== */}
-      <div className="p-4 md:p-5 pb-3 border-b">
+      <div className="md:p-5 pb-4 ">
         <div className="flex flex-wrap items-center gap-2">
           <div className="hidden md:flex items-center gap-2 font-semibold">
             <Button
@@ -200,58 +200,57 @@ const SchoolFinance: React.FC = () => {
             </Button>
             <h1>Keuangan Sekolah</h1>
           </div>
-
-          <div className="w-full sm:w-auto flex-1 min-w-0 order-3 sm:order-2">
-            <div className="flex items-center gap-2">
-              <Input
-                value={q}
-                onChange={(e) => {
-                  setQ(e.target.value);
+        </div>
+        <div className="w-full sm:w-auto flex-1 min-w-0 order-3 sm:order-2">
+          <div className="flex items-center gap-2">
+            <Input
+              value={q}
+              onChange={(e) => {
+                setQ(e.target.value);
+                setPage(1);
+              }}
+              placeholder={
+                tab === "invoices"
+                  ? "Cari tagihan atau siswa…"
+                  : "Cari pembayaran…"
+              }
+              className="w-full"
+            />
+            <div className="hidden sm:flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                Per halaman
+              </span>
+              <Select
+                value={String(limit)}
+                onValueChange={(v) => {
+                  setLimit(Number(v));
                   setPage(1);
                 }}
-                placeholder={
-                  tab === "invoices"
-                    ? "Cari tagihan atau siswa…"
-                    : "Cari pembayaran…"
-                }
-                className="w-full"
-              />
-              <div className="hidden sm:flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">
-                  Per halaman
-                </span>
-                <Select
-                  value={String(limit)}
-                  onValueChange={(v) => {
-                    setLimit(Number(v));
-                    setPage(1);
-                  }}
-                >
-                  <SelectTrigger className="w-[96px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[10, 20, 50, 100].map((n) => (
-                      <SelectItem key={n} value={String(n)}>
-                        {n}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              >
+                <SelectTrigger className="w-[96px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[10, 20, 50, 100].map((n) => (
+                    <SelectItem key={n} value={String(n)}>
+                      {n}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
+        </div>
 
-          <div className="ml-auto order-2 sm:order-3">
-            <Button size="sm" className="gap-1">
-              <Download size={14} /> Export
-            </Button>
-          </div>
+        <div className="ml-auto order-2 mt-4 sm:order-3">
+          <Button size="sm" className="gap-1">
+            <Download size={14} /> Export
+          </Button>
         </div>
       </div>
 
       <main className="w-full">
-        <div className="max-w-screen-2xl mx-auto flex flex-col gap-6 p-4 md:p-5">
+        <div className="max-w-screen-2xl mx-auto flex flex-col gap-6  md:p-5">
           {/* ===== Ringkasan Keuangan ===== */}
           <Card>
             <CardContent className="p-5 grid sm:grid-cols-3 gap-4 text-center">
