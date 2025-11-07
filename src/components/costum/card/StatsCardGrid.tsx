@@ -66,10 +66,10 @@ export function StatsCardGrid({
   return (
     <div
       className={cn(
-        // Mobile: fixed columns per prop; md+: pakai auto-fit + minmax
         "grid gap-3",
-        mobileColsClass,
-        "md:[grid-template-columns:repeat(auto-fit,minmax(var(--mw),1fr))] md:grid-cols-none",
+        mobileColsClass, // mobile: grid-cols-1/2/3/4
+        // md+: auto-fit + minmax pakai CSS var --mw (tidak perlu md:grid-cols-none)
+        "md:[grid-template-columns:repeat(auto-fit,minmax(var(--mw),1fr))]",
         className
       )}
       style={

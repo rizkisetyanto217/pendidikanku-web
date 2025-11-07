@@ -7,7 +7,7 @@ import SchoolProfile from "@/pages/dashboard/school/profile/SchoolProfile";
 import SchoolFinance from "@/pages/dashboard/school/finance/SchoolFinance";
 import SchoolDetailBill from "@/pages/dashboard/school/finance/SchoolDetailBill";
 import SchoolSpp from "@/pages/dashboard/school/finance/SchoolSpp";
-import SchoolTeacher from "@/pages/dashboard/school/teacher/SchoolTeacher";
+import SchoolTeacher from "@/pages/dashboard/school/teacher/SchoolDashboard";
 import SchoolDetailTeacher from "@/pages/dashboard/school/teacher/details/SchoolDetailTeacher";
 import SchoolMenuGrids from "@/pages/dashboard/school/menu/SchoolMenuGrids";
 import SchoolClass from "@/pages/dashboard/school/class/SchoolClass";

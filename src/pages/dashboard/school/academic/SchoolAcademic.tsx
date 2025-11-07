@@ -6,14 +6,11 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   CalendarDays,
   CheckCircle2,
-  Layers,
   Info,
   Loader2,
   ArrowLeft,
   Plus,
   MoreHorizontal,
-  Link as LinkIcon,
-  Users,
   Pencil,
   Trash2,
   Eye,
@@ -22,15 +19,9 @@ import {
 /* ---------- shadcn/ui ---------- */
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 import {
   Dialog,
   DialogContent,
@@ -109,10 +100,10 @@ const TERMS_QKEY = (schoolId?: string) =>
 const dateShort = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    })
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
     : "-";
 
 function normalizeAcademicYear(input: string) {
@@ -235,15 +226,15 @@ function useUpdateTerm(schoolId?: string) {
           previous.map((t) =>
             t.id === id
               ? {
-                ...t,
-                academic_year: normalizeAcademicYear(payload.academic_year),
-                name: payload.name,
-                start_date: toZDate(payload.start_date),
-                end_date: toZDate(payload.end_date),
-                angkatan: Number(payload.angkatan),
-                is_active: Boolean(payload.is_active),
-                slug: payload.slug ?? t.slug,
-              }
+                  ...t,
+                  academic_year: normalizeAcademicYear(payload.academic_year),
+                  name: payload.name,
+                  start_date: toZDate(payload.start_date),
+                  end_date: toZDate(payload.end_date),
+                  angkatan: Number(payload.angkatan),
+                  is_active: Boolean(payload.is_active),
+                  slug: payload.slug ?? t.slug,
+                }
               : t
           )
         );
@@ -320,8 +311,6 @@ function SearchBar({
     </div>
   );
 }
-
-
 
 function PaginationBar({
   pageStart,
@@ -598,7 +587,7 @@ const SchoolAcademic: React.FC = () => {
 
   /* Pagination */
   const total = filtered.length;
-  const [limit, setLimit] = useState(20);
+  const [limit] = useState(20);
   const [offset, setOffset] = useState(0);
   useEffect(() => {
     setOffset(0); // reset ke halaman pertama saat filter/limit berubah
@@ -696,7 +685,6 @@ const SchoolAcademic: React.FC = () => {
                 value={q}
                 onChange={setQ}
                 placeholder="Cari tahun, nama, atau angkatan…"
-
               />
             </div>
 
@@ -771,8 +759,6 @@ const SchoolAcademic: React.FC = () => {
           {/* ===== Daftar semua terms + aksi ===== */}
           {/* ===== Daftar semua terms + aksi ===== */}
 
-
-
           <CardContent>
             {termsQ.isLoading ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -789,12 +775,18 @@ const SchoolAcademic: React.FC = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="min-w-[160px]">Tahun Ajaran</TableHead>
+                        <TableHead className="min-w-[160px]">
+                          Tahun Ajaran
+                        </TableHead>
                         <TableHead className="min-w-[140px]">Nama</TableHead>
                         <TableHead className="min-w-[200px]">Tanggal</TableHead>
-                        <TableHead className="min-w-[120px]">Angkatan</TableHead>
+                        <TableHead className="min-w-[120px]">
+                          Angkatan
+                        </TableHead>
                         <TableHead className="min-w-[120px]">Status</TableHead>
-                        <TableHead className="min-w-[80px] text-right">Aksi</TableHead>
+                        <TableHead className="min-w-[80px] text-right">
+                          Aksi
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
 
@@ -810,7 +802,9 @@ const SchoolAcademic: React.FC = () => {
                           </TableCell>
                           <TableCell>{t.angkatan}</TableCell>
                           <TableCell>
-                            <Badge variant={t.is_active ? "default" : "outline"}>
+                            <Badge
+                              variant={t.is_active ? "default" : "outline"}
+                            >
                               {t.is_active ? "Aktif" : "Nonaktif"}
                             </Badge>
                           </TableCell>
@@ -823,7 +817,9 @@ const SchoolAcademic: React.FC = () => {
                                     { state: { term: t } }
                                   )
                                 }
-                                onEdit={() => setModal({ mode: "edit", editing: t })}
+                                onEdit={() =>
+                                  setModal({ mode: "edit", editing: t })
+                                }
                                 onDelete={() => {
                                   setToDelete(t);
                                   setConfirmOpen(true);
@@ -845,13 +841,10 @@ const SchoolAcademic: React.FC = () => {
                   canNext={canNext}
                   onPrev={handlePrev}
                   onNext={handleNext}
-
                 />
               </>
             )}
           </CardContent>
-
-
         </div>
       </main>
 
