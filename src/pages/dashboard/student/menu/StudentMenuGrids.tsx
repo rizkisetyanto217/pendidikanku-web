@@ -71,13 +71,13 @@ export default function StudentMenuGrids() {
       {
         key: "tugas",
         label: "Daftar Tugas",
-        to: "/murid/tugas",
+        to: "tugas",
         icon: <NotebookPen />,
       },
       {
         key: "keuangan-list",
         label: "Daftar Tagihan",
-        to: "/murid/keuangan-list",
+        to: "keuangan",
         icon: <FileStack />,
       },
 
@@ -85,25 +85,25 @@ export default function StudentMenuGrids() {
       {
         key: "progress",
         label: "Progress Akademik",
-        to: "/murid/progress",
+        to: "progress",
         icon: <ListChecks />,
       },
       {
         key: "raport",
         label: "Raport",
-        to: "/murid/progress/raport",
+        to: "progress/raport",
         icon: <FileText />,
       },
       {
         key: "absensi",
         label: "Absensi",
-        to: "/murid/progress/absensi",
+        to: "progress/absensi",
         icon: <UserCheck />,
       },
       {
         key: "catatan-hasil",
         label: "Catatan Hasil",
-        to: "/murid/progress/catatan-hasil",
+        to: "progress/catatan-hasil",
         icon: <StickyNote />,
       },
 
@@ -111,7 +111,7 @@ export default function StudentMenuGrids() {
       {
         key: "jadwal-root",
         label: "Jadwal (Root)",
-        to: "/murid/jadwal",
+        to: "jadwal",
         icon: <CalendarDays />,
       },
 

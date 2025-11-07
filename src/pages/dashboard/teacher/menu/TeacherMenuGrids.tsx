@@ -8,10 +8,7 @@ import {
   CalendarDays,
   Settings,
   NotebookPen,
-  ClipboardList,
-  Target,
   CheckCheck,
-  ListChecks,
 } from "lucide-react";
 
 /* ================= Types ================= */
@@ -33,13 +30,6 @@ export default function TeacherMenuGrids() {
   // - Untuk rute root /guru/* -> pakai absolute: "/guru/penilaian", "/guru/kehadiran", dst
   const items: MenuItem[] = useMemo(
     () => [
-      // ===== Dashboard & Menu Utama =====
-      {
-        key: "menu-utama",
-        label: "Menu Utama",
-        to: ".",
-        icon: <ListChecks className="w-5 h-5" />,
-      },
 
       // ===== Kelas (di bawah menu-utama) =====
       {
@@ -96,30 +86,17 @@ export default function TeacherMenuGrids() {
       {
         key: "profil-guru",
         label: "Profil Guru",
-        to: "/guru/profil-guru",
+        to: "profil-guru",
         icon: <IdCard className="w-5 h-5" />,
         absolute: true,
       },
-      {
-        key: "penilaian",
-        label: "Penilaian",
-        to: "/guru/penilaian",
-        icon: <Target className="w-5 h-5" />,
-        absolute: true,
-      },
-      {
-        key: "penilaian-detail",
-        label: "Detail Penilaian",
-        icon: <ClipboardList className="w-5 h-5" />,
-        requiresParam: true,
-        note: "Buka dari Penilaian",
-      },
+
 
       // ===== Kehadiran (root /guru/kehadiran) =====
       {
         key: "kehadiran",
         label: "Kehadiran",
-        to: "/guru/kehadiran",
+        to: "kehadiran",
         icon: <CheckCheck className="w-5 h-5" />,
         absolute: true,
       },
@@ -145,7 +122,7 @@ export default function TeacherMenuGrids() {
       {
         key: "quiz-class-detail",
         label: "QuizClass Detail",
-        to: "/guru/quizClass/detail",
+        to: "quizClass/detail",
         icon: <NotebookPen className="w-5 h-5" />,
         absolute: true,
       },

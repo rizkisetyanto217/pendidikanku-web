@@ -29,6 +29,9 @@ export interface ApiPagination {
   total_pages: number;
   has_next: boolean;
   has_prev: boolean;
+  // Tambahan (sesuai contoh payload)
+  count?: number;
+  per_page_options?: number[];
 }
 
 export interface ApiSchedule {
@@ -208,8 +211,9 @@ export interface ApiIncludes {
 }
 
 export interface ApiSectionListWithIncludes {
+  message?: string;
   pagination?: ApiPagination;
-  includes?: ApiIncludes;
+  includes?: ApiIncludes; // optional (future-proof)
   data: ApiClassSection[];
 }
 
@@ -221,17 +225,28 @@ export interface SectionDetailView {
   csst: ApiCSSTItem[];
 }
 
+// Cari berdasarkan id ATAU slug (supaya URL fleksibel)
+function findSectionFromList(
+  list: ApiClassSection[] | undefined,
+  sectionIdOrSlug: string
+): ApiClassSection | null {
+  if (!list || list.length === 0) return null;
+  const byId = list.find((it) => it.class_section_id === sectionIdOrSlug);
+  if (byId) return byId;
+  const bySlug = list.find((it) => it.class_section_slug === sectionIdOrSlug);
+  return bySlug ?? null;
+}
+
 export function toSectionDetailView(
   resp: ApiSectionListWithIncludes,
-  sectionId: string
+  sectionIdOrSlug: string
 ): SectionDetailView | null {
-  const section = resp?.data?.[0];
+  const section =
+    findSectionFromList(resp?.data, sectionIdOrSlug) ?? resp?.data?.[0] ?? null;
   if (!section) return null;
 
-  const csst =
-    resp?.includes?.csst_by_section?.[sectionId] ??
-    section.class_sections_csst ??
-    [];
+  // Payload sudah menaruh csst di dalam section
+  const csst = section.class_sections_csst ?? [];
 
   return { section, csst };
 }
@@ -241,13 +256,26 @@ export function toSectionDetailView(
 ========================================================= */
 export async function fetchSectionDetail(
   schoolId: string,
-  id: string
+  idOrSlug: string
 ): Promise<SectionDetailView | null> {
   const res = await axiosInstance.get<ApiSectionListWithIncludes>(
     `/public/${schoolId}/class-sections/list`,
-    { params: { id, with_csst: true } }
+    {
+      // Kirim idOrSlug sebagai id (future-proof kalau BE nanti filter by id),
+      // dan aktifkan with_csst agar BE menaruh CSST di section.
+      params: { id: idOrSlug, with_csst: true },
+    }
   );
-  return toSectionDetailView(res.data, id);
+
+  // Logging ringan kalau kosong (opsional)
+  if (!res.data?.data?.length) {
+    console.warn("[academic-detail] API mengembalikan data kosong", {
+      schoolId,
+      idOrSlug,
+    });
+  }
+
+  return toSectionDetailView(res.data, idOrSlug);
 }
 
 /* =========================================================

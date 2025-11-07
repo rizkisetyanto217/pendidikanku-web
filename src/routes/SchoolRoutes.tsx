@@ -131,6 +131,7 @@ export const SchoolRoutes = (
       <Route path="kalender" element={<SchoolCalenderAcademic />} />
       {/* <Route path="statistik" element={<SchoolStatistik />} /> */}
       <Route path="kelas-aktif" element={<SchoolActiveClass />} />
+      <Route path="jadwal" element={<SchoolAllSchedule />} />
 
       <Route path="buku">
         <Route index element={<SchoolBooks showBack />} />

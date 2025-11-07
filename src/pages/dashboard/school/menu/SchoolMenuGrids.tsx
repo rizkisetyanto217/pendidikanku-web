@@ -9,7 +9,6 @@ import {
   CreditCard,
   Banknote,
   UserCog,
-  Users,
   IdCard,
   BookOpen,
   LibraryBig,
@@ -79,7 +78,7 @@ export default function SchoolMenuGrids() {
       {
         key: "kelas-aktif",
         label: "Kelas Aktif",
-        to: "menu-utama/kelas-aktif",
+        to: "kelas-aktif",
         icon: CheckCircle2,
       },
       {
@@ -130,13 +129,12 @@ export default function SchoolMenuGrids() {
         requiresParam: true,
         note: "Buka dari daftar guru",
       },
-      { key: "murid", label: "Murid", to: "murid", icon: Users },
 
       // ======== AKADEMIK: INVENTORI ========
       {
         key: "ruangan",
         label: "Ruangan",
-        to: "menu-utama/ruangan",
+        to: "ruangan",
         icon: Building2,
       },
       {
@@ -149,10 +147,10 @@ export default function SchoolMenuGrids() {
       {
         key: "pelajaran",
         label: "Pelajaran",
-        to: "menu-utama/pelajaran",
+        to: "pelajaran",
         icon: LibraryBig,
       },
-      { key: "buku", label: "Buku", to: "menu-utama/buku", icon: BookOpen },
+      { key: "buku", label: "Buku", to: "buku", icon: BookOpen },
       {
         key: "buku-detail",
         label: "Detail Buku",
@@ -165,7 +163,7 @@ export default function SchoolMenuGrids() {
       {
         key: "kalender",
         label: "Kalender Akademik",
-        to: "menu-utama/kalender",
+        to: "kalender",
         icon: CalendarRange,
       },
     ],

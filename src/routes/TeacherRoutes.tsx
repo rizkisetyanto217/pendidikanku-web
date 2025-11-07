@@ -78,6 +78,8 @@ export const TeacherRoutes = (
       {/* <Route path="pengaturan" element={<TeacherSettings />} /> */}
       <Route path="tugas" element={<TeacherAssignmentClass />} />
       {/* <Route path="sertifikat" element={<TeacherCertificate />} /> */}
+      <Route path="kehadiran" element={<TeacherClassAttendance />} />
+      <Route path="quizClass/detail" element={<TeacherDetailClassQuiz />} />
     </Route>
     <Route path="kelas">
       <Route index element={<TeacherClass />} />
