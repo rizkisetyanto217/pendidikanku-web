@@ -86,7 +86,7 @@ const hijriLong = (iso?: string) =>
       })
     : "-";
 
-async function fetchTeacherGrading(): Promise<GradingPayload> {
+async function fetchTeacherAssignment(): Promise<GradingPayload> {
   const now = new Date();
   const iso = toLocalNoonISO(now);
   const plusDays = (n: number) =>
@@ -269,10 +269,10 @@ function FilterChip({
 }
 
 /* ================= Page ================= */
-export default function TeacherGrading() {
+export default function TeacherAssignment() {
   const { data, isLoading } = useQuery({
     queryKey: ["teacher-grading"],
-    queryFn: fetchTeacherGrading,
+    queryFn: fetchTeacherAssignment,
     staleTime: 60_000,
   });
 

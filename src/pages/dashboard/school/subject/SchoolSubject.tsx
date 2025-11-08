@@ -1,7 +1,12 @@
 // src/pages/sekolahislamku/pages/academic/SchoolSubject.tsx
 import React, { useMemo, useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import {
+  useNavigate,
+  useParams,
+  useLocation,
+  useSearchParams,
+} from "react-router-dom";
 import axios from "@/lib/axios";
 
 /* icons */
@@ -11,17 +16,16 @@ import {
   Pencil,
   Plus,
   Trash2,
-
   BookOpen,
-  Search,
   Filter,
   ArrowUpDown,
   Loader2,
   AlertCircle,
+  MoreHorizontal,
 } from "lucide-react";
 
 /* shadcn/ui */
-import { Card, CardContent} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -51,6 +55,20 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+
+/* ✅ DataTable seperti Class Room */
+import {
+  DataTable,
+  type ColumnDef,
+  type ViewMode,
+} from "@/components/costum/table/CDataTable";
 
 /* ================= Types ================= */
 export type SubjectStatus = "active" | "inactive";
@@ -321,90 +339,6 @@ function SubjectDetailDialog({
   );
 }
 
-/* ================= Card ================= */
-function SubjectCard({
-  row,
-  onDetail,
-  onEdit,
-  onDelete,
-}: {
-  row: SubjectRow;
-  onDetail: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
-}) {
-  return (
-    <Card className="overflow-hidden">
-      <CardContent className="p-4 flex items-start gap-3">
-        <div className="shrink-0 rounded-xl p-2 border">
-          <BookOpen size={20} />
-        </div>
-        <div className="flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <div className="font-semibold leading-snug">{row.name}</div>
-              <div className="text-xs text-muted-foreground">
-                Kode: {row.code || "-"}
-              </div>
-            </div>
-            {row.status === "active" ? (
-              <Badge>Aktif</Badge>
-            ) : (
-              <Badge variant="secondary">Nonaktif</Badge>
-            )}
-          </div>
-
-          <div className="mt-3 grid grid-cols-3 gap-3 text-sm">
-            <div className="rounded-lg border p-2">
-              <div className="text-xs text-muted-foreground">Kelas</div>
-              <div className="font-medium">{row.class_count}</div>
-            </div>
-            <div className="rounded-lg border p-2">
-              <div className="text-xs text-muted-foreground">Jam/Minggu</div>
-              <div className="font-medium">
-                {row.total_hours_per_week ?? "-"}
-              </div>
-            </div>
-            <div className="rounded-lg border p-2">
-              <div className="text-xs text-muted-foreground">Buku</div>
-              <div className="font-medium">{row.book_count}</div>
-            </div>
-          </div>
-
-          <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onDetail}
-              className="gap-1"
-            >
-              <Eye size={14} /> Detail
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onEdit}
-              className="gap-1"
-              title="Edit Subject"
-            >
-              <Pencil size={14} /> Edit
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={onDelete}
-              className="gap-1"
-              title="Hapus Subject"
-            >
-              <Trash2 size={14} /> Hapus
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 /* ================= Create Modal (Dialog) ================= */
 function CreateSubjectDialog({
   open,
@@ -666,6 +600,42 @@ function ConfirmDeleteDialog({
   );
 }
 
+/* ============== Actions menu (sama pola Class Room) ============== */
+function ActionsMenu({
+  onView,
+  onEdit,
+  onDelete,
+}: {
+  onView: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" aria-label="Aksi">
+          <MoreHorizontal size={18} />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={onView} className="gap-2">
+          <Eye size={14} /> Lihat
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={onEdit} className="gap-2">
+          <Pencil size={14} /> Edit
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={onDelete}
+          className="gap-2 text-destructive focus:text-destructive"
+        >
+          <Trash2 size={14} /> Hapus
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 /* ================= Page ================= */
 const SchoolSubject: React.FC = () => {
   const navigate = useNavigate();
@@ -676,15 +646,38 @@ const SchoolSubject: React.FC = () => {
   const [editData, setEditData] = useState<SubjectRow | null>(null);
   const [deleteData, setDeleteData] = useState<SubjectRow | null>(null);
 
-  // controls
-  const [q, setQ] = useState("");
-  const [onlyActive, setOnlyActive] = useState<"1" | "0">("1");
+  // 🔍 sinkron dengan URL seperti Room
+  const [sp, setSp] = useSearchParams();
+  const qUrl = sp.get("q") ?? "";
+  const [q, setQ] = useState(qUrl);
+  useEffect(() => setQ(qUrl), [qUrl]);
+  const handleQueryChange = (val: string) => {
+    setQ(val);
+    const copy = new URLSearchParams(sp);
+    if (val) copy.set("q", val);
+    else copy.delete("q");
+    setSp(copy, { replace: true });
+  };
+
+  // filter status & sort (sinkron URL juga biar konsisten)
+  const [onlyActive, setOnlyActive] = useState<"1" | "0">(
+    (sp.get("active") as "1" | "0") || "1"
+  );
   const [sortBy, setSortBy] = useState<
     "name-asc" | "name-desc" | "code-asc" | "code-desc"
-  >("name-asc");
+  >((sp.get("sort") as any) || "name-asc");
+
+  useEffect(() => {
+    const copy = new URLSearchParams(sp);
+    copy.set("active", onlyActive);
+    copy.set("sort", sortBy);
+    setSp(copy, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onlyActive, sortBy]);
 
   const delMut = useDeleteSubjectMutation(schoolId ?? "", deleteData?.id ?? "");
 
+  /* ====== Query gabungan (tetap seperti sebelumnya) ====== */
   const mergedQ = useQuery({
     queryKey: ["subjects-merged", schoolId],
     enabled: !!schoolId,
@@ -742,20 +735,13 @@ const SchoolSubject: React.FC = () => {
     },
   });
 
+  /* ===== client-side filter & sort; search via DataTable ===== */
+  const baseRows = mergedQ.data ?? [];
   const filtered = useMemo(() => {
-    let arr = (mergedQ.data ?? []).slice();
-
+    let arr = baseRows.slice();
     if (onlyActive === "1") {
       arr = arr.filter((s) => s.status === "active");
     }
-    if (q.trim()) {
-      const k = q.trim().toLowerCase();
-      arr = arr.filter(
-        (s) =>
-          s.name.toLowerCase().includes(k) || s.code.toLowerCase().includes(k)
-      );
-    }
-
     const [key, dir] = (sortBy || "name-asc").split("-") as [
       "name" | "code",
       "asc" | "desc"
@@ -768,88 +754,250 @@ const SchoolSubject: React.FC = () => {
       if (A > B) return asc ? 1 : -1;
       return 0;
     });
-
     return arr;
-  }, [mergedQ.data, q, onlyActive, sortBy]);
+  }, [baseRows, onlyActive, sortBy]);
+
+  /* ===== Columns for DataTable ===== */
+  const columns = useMemo<ColumnDef<SubjectRow>[]>(() => {
+    return [
+      {
+        id: "subject",
+        header: "Mata Pelajaran",
+        minW: "240px",
+        align: "left",
+        cell: (r) => (
+          <div className="text-left">
+            <div className="font-medium flex items-center gap-2">
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border">
+                <BookOpen size={16} />
+              </span>
+              {r.name}
+            </div>
+            <div className="text-xs text-muted-foreground mt-0.5">
+              Kode: {r.code || "-"}
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: "classes",
+        header: "Kelas",
+        minW: "96px",
+        align: "center",
+        cell: (r) => r.class_count,
+      },
+      {
+        id: "hours",
+        header: "Jam/Minggu",
+        minW: "110px",
+        align: "center",
+        cell: (r) => r.total_hours_per_week ?? "-",
+      },
+      {
+        id: "books",
+        header: "Buku",
+        minW: "80px",
+        align: "center",
+        cell: (r) => r.book_count,
+      },
+      {
+        id: "status",
+        header: "Status",
+        minW: "110px",
+        align: "center",
+        cell: (r) => (
+          <span
+            className={[
+              "inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ring-1",
+              r.status === "active"
+                ? "bg-sky-500/15 text-sky-400 ring-sky-500/25"
+                : "bg-zinc-500/10 text-zinc-400 ring-zinc-500/20",
+            ].join(" ")}
+          >
+            {r.status === "active" ? "Aktif" : "Nonaktif"}
+          </span>
+        ),
+      },
+    ];
+  }, []);
+
+  /* ===== Stats Slot ===== */
+  const statsSlot = mergedQ.isLoading ? (
+    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <Loader2 className="animate-spin" size={16} /> Memuat mapel…
+    </div>
+  ) : mergedQ.isError ? (
+    <div className="rounded-xl border p-4 text-sm space-y-2">
+      <div className="flex items-center gap-2">
+        <AlertCircle size={16} /> Gagal memuat data.
+      </div>
+      <Button size="sm" onClick={() => mergedQ.refetch()}>
+        Coba lagi
+      </Button>
+    </div>
+  ) : (
+    <div className="flex items-center gap-3 text-sm text-muted-foreground">
+      <span>{baseRows.length} total</span>
+      <span className="inline-flex items-center gap-1">
+        <span className="inline-block h-3 w-3 rounded-full bg-sky-600" />{" "}
+        {baseRows.filter((x) => x.status === "active").length}
+      </span>
+      <span className="inline-flex items-center gap-1">
+        <span className="inline-block h-3 w-3 rounded-full bg-zinc-500" />{" "}
+        {baseRows.filter((x) => x.status === "inactive").length}
+      </span>
+    </div>
+  );
+
+  /* ===== Right controls (filter & sort) ===== */
+  const RightControls = (
+    <div className="flex items-center gap-2">
+      <div className="hidden sm:flex items-center gap-2">
+        <Filter size={16} className="text-muted-foreground" />
+        <Select
+          value={onlyActive}
+          onValueChange={(v) => setOnlyActive(v as "1" | "0")}
+        >
+          <SelectTrigger className="h-9 w-[140px]">
+            <SelectValue placeholder="Filter status" />
+          </SelectTrigger>
+          <SelectContent align="end">
+            <SelectItem value="1">Aktif saja</SelectItem>
+            <SelectItem value="0">Semua</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="hidden sm:flex items-center gap-2">
+        <ArrowUpDown size={16} className="text-muted-foreground" />
+        <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+          <SelectTrigger className="h-9 w-[160px]">
+            <SelectValue placeholder="Urutkan" />
+          </SelectTrigger>
+          <SelectContent align="end">
+            <SelectItem value="name-asc">Nama A→Z</SelectItem>
+            <SelectItem value="name-desc">Nama Z→A</SelectItem>
+            <SelectItem value="code-asc">Kode A→Z</SelectItem>
+            <SelectItem value="code-desc">Kode Z→A</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <Button size="sm" className="gap-1" onClick={() => setOpenCreate(true)}>
+        <Plus size={16} /> Tambah
+      </Button>
+    </div>
+  );
 
   return (
     <div className="w-full">
       <main className="w-full">
         <div className="max-w-screen-2xl mx-auto flex flex-col gap-6 p-4 md:p-6">
-          {/* Toolbar */}
-          <div className="flex items-center justify-between">
-            <div className="md:flex hidden items-center gap-3">
-              <Button
-                variant="ghost"
-                onClick={() => navigate(-1)}
-                className="gap-1.5"
-              >
-                <ArrowLeft size={18} />
-                Kembali
-              </Button>
-              <h1 className="font-semibold text-lg">Daftar Pelajaran</h1>
-            </div>
+          {/* Header */}
+          <div className="md:flex hidden items-center gap-3">
             <Button
-              size="sm"
-              className="gap-1"
-              onClick={() => setOpenCreate(true)}
+              variant="ghost"
+              onClick={() => navigate(-1)}
+              className="gap-1.5"
             >
-              <Plus size={16} /> Tambah
+              <ArrowLeft size={18} />
+              Kembali
             </Button>
+            <h1 className="font-semibold text-lg">Daftar Pelajaran</h1>
           </div>
 
-          {/* Controls */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="flex items-center gap-2 rounded-xl border px-3 py-2">
-                  <Search size={16} className="text-muted-foreground" />
-                  <Input
-                    value={q}
-                    onChange={(e) => setQ(e.target.value)}
-                    placeholder="Cari nama/kode…"
-                    className="border-0 shadow-none focus-visible:ring-0"
-                  />
+          {/* DataTable */}
+          <DataTable<SubjectRow>
+            title="Pelajaran"
+            onBack={() => navigate(-1)}
+            /* Search sinkron URL */
+            defaultQuery={q}
+            onQueryChange={handleQueryChange}
+            searchPlaceholder="Cari nama/kode…"
+            searchByKeys={["name", "code"]}
+            /* Toolbar & stats */
+            controlsPlacement="above"
+            rightSlot={RightControls}
+            statsSlot={statsSlot}
+            /* Data */
+            loading={mergedQ.isLoading}
+            error={
+              mergedQ.isError
+                ? (mergedQ.error as any)?.message ?? "Error"
+                : null
+            }
+            columns={columns}
+            rows={filtered}
+            getRowId={(r) => r.id}
+            /* UX */
+            defaultAlign="left"
+            stickyHeader
+            zebra
+            pageSize={20}
+            pageSizeOptions={[10, 20, 50, 100, 200]}
+            viewModes={["table", "card"] as ViewMode[]}
+            defaultView="table"
+            storageKey={`subjects:${schoolId}`}
+            /* Click -> Detail */
+            onRowClick={(r) => setDetailData(r)}
+            /* Actions menu ala Class Room */
+            renderActions={(r) => (
+              <ActionsMenu
+                onView={() => setDetailData(r)}
+                onEdit={() => setEditData(r)}
+                onDelete={() => setDeleteData(r)}
+              />
+            )}
+            /* Card renderer (mobile) */
+            renderCard={(r) => (
+              <div className="rounded-xl border p-4 space-y-2">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="font-medium flex items-center gap-2">
+                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border">
+                        <BookOpen size={16} />
+                      </span>
+                      {r.name}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      Kode: {r.code || "-"}
+                    </div>
+                  </div>
+                  <span
+                    className={[
+                      "inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ring-1",
+                      r.status === "active"
+                        ? "bg-sky-500/15 text-sky-400 ring-sky-500/25"
+                        : "bg-zinc-500/10 text-zinc-400 ring-zinc-500/20",
+                    ].join(" ")}
+                  >
+                    {r.status === "active" ? "Aktif" : "Nonaktif"}
+                  </span>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <Filter size={16} className="text-muted-foreground" />
-                  <Select
-                    value={onlyActive}
-                    onValueChange={(v) => setOnlyActive(v as "1" | "0")}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Filter status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">Aktif saja</SelectItem>
-                      <SelectItem value="0">Semua</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <ArrowUpDown size={16} className="text-muted-foreground" />
-                  <Select
-                    value={sortBy}
-                    onValueChange={(v) => setSortBy(v as any)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Urutkan" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="name-asc">Nama A→Z</SelectItem>
-                      <SelectItem value="name-desc">Nama Z→A</SelectItem>
-                      <SelectItem value="code-asc">Kode A→Z</SelectItem>
-                      <SelectItem value="code-desc">Kode Z→A</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-3 gap-3 text-sm">
+                  <div className="rounded-lg border p-2">
+                    <div className="text-xs text-muted-foreground">Kelas</div>
+                    <div className="font-medium">{r.class_count}</div>
+                  </div>
+                  <div className="rounded-lg border p-2">
+                    <div className="text-xs text-muted-foreground">
+                      Jam/Minggu
+                    </div>
+                    <div className="font-medium">
+                      {r.total_hours_per_week ?? "-"}
+                    </div>
+                  </div>
+                  <div className="rounded-lg border p-2">
+                    <div className="text-xs text-muted-foreground">Buku</div>
+                    <div className="font-medium">{r.book_count}</div>
+                  </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            )}
+          />
 
-          {/* State: loading / error / empty */}
+          {/* State fallback (optional cards sudah digantikan oleh DataTable) */}
           {mergedQ.isLoading && (
             <Card>
               <CardContent className="p-6 text-center flex items-center justify-center gap-2 text-muted-foreground">
@@ -863,28 +1011,6 @@ const SchoolSubject: React.FC = () => {
                 <AlertCircle /> Gagal memuat data.
               </CardContent>
             </Card>
-          )}
-          {!mergedQ.isLoading && !mergedQ.isError && filtered.length === 0 && (
-            <Card>
-              <CardContent className="p-6 text-center text-muted-foreground">
-                Tidak ada data yang cocok.
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Grid Cards */}
-          {!mergedQ.isLoading && !mergedQ.isError && filtered.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-              {filtered.map((r) => (
-                <SubjectCard
-                  key={r.id}
-                  row={r}
-                  onDetail={() => setDetailData(r)}
-                  onEdit={() => setEditData(r)}
-                  onDelete={() => setDeleteData(r)}
-                />
-              ))}
-            </div>
           )}
         </div>
       </main>
@@ -917,7 +1043,7 @@ const SchoolSubject: React.FC = () => {
         open={!!deleteData}
         title={`Hapus "${deleteData?.name}"?`}
         message="Yakin ingin menghapus pelajaran ini? Tindakan tidak dapat dibatalkan."
-        confirmLabel={delMut.isPending ? "Menghapus…" : "Hapus"}
+        confirmLabel={"Hapus"}
         loading={delMut.isPending}
         onClose={() => setDeleteData(null)}
         onConfirm={async () => {

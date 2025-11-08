@@ -11,18 +11,16 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import {
-  StatsGrid, // alias dari StatsCardGrid
-  type StatItem, // alias dari StatCardItem
-} from "@/components/costum/card/StatsCardGrid";
-
-import {
   Users,
   CalendarDays,
   Clock,
   ClipboardList,
   BookOpen,
+  ClipboardCheck,
+  GraduationCap,
   ChevronRight,
   ArrowLeft,
+  UserSquare2,
 } from "lucide-react";
 
 /* ========= Shared helpers ========= */
@@ -154,7 +152,7 @@ export default function TeacherDetailClass() {
   const {
     data: classes = [],
     isLoading: isLoadingClasses,
-    isFetching: isFetchingClasses,
+    // isFetching: isFetchingClasses,
   } = useQuery({
     queryKey: QK.CLASSES,
     queryFn: fetchTeacherClasses,
@@ -166,7 +164,7 @@ export default function TeacherDetailClass() {
   // 2) Siswa per kelas
   const {
     data: studentsMap = {},
-    isFetching: isFetchingStudents,
+    // isFetching: isFetchingStudents,
     isLoading: isLoadingStudents,
   } = useQuery({
     queryKey: QK.CLASS_STUDENTS(id),
@@ -184,74 +182,67 @@ export default function TeacherDetailClass() {
   const hadir = cls?.todayAttendance.hadir ?? 0;
 
   const loadingAny = isLoadingClasses || isLoadingStudents;
-  const fetchingAny = isFetchingClasses || isFetchingStudents;
+  // const fetchingAny = isFetchingClasses || isFetchingStudents;
 
-  // 4) Items STAT — DIPINDAH KE DALAM KOMPONEN
-  const items: StatItem[] = useMemo(
-    () => [
-      {
-        label: "Jumlah Siswa",
-        metric: total,
-        hint:
-          students.length === 0 && fallbackTotal > 0
-            ? `(fallback: ${fallbackTotal})`
-            : undefined,
-        icon: <Users className="h-4 w-4" />,
-        to: "semua-siswa",
-        ariaLabel: "Lihat daftar siswa",
-      },
-      {
-        label: "Kehadiran Hari Ini",
-        metric: `${hadir}/${total || 0}`,
-        icon: <ClipboardList className="h-4 w-4" />,
-        to: "semua-kehadiran",
-        ariaLabel: "Lihat kehadiran hari ini",
-      },
-      {
-        label: "Materi",
-        metric: `${cls?.materialsCount ?? 0} • ${cls?.assignmentsCount ?? 0}`,
-        icon: <BookOpen className="h-4 w-4" />,
-        to: "materi",
-        ariaLabel: "Lihat materi",
-      },
-      {
-        label: "Tugas",
-        metric: `${cls?.materialsCount ?? 0} • ${cls?.assignmentsCount ?? 0}`,
-        icon: <BookOpen className="h-4 w-4" />,
-        to: "tugas",
-        ariaLabel: "Lihat tugas",
-      },
-      {
-        label: "Ujian",
-        metric: `${cls?.materialsCount ?? 0} • ${cls?.assignmentsCount ?? 0}`,
-        icon: <BookOpen className="h-4 w-4" />,
-        to: "ujian",
-        ariaLabel: "Lihat Ujian",
-      },
-      {
-        label: "Buku",
-        metric: `${cls?.materialsCount ?? 0} • ${cls?.assignmentsCount ?? 0}`,
-        icon: <BookOpen className="h-4 w-4" />,
-        to: "buku",
-        ariaLabel: "Lihat Buku",
-      },
-      {
-        label: "Profil",
-        metric: `${cls?.materialsCount ?? 0} • ${cls?.assignmentsCount ?? 0}`,
-        icon: <BookOpen className="h-4 w-4" />,
-        to: "profil",
-        ariaLabel: "Lihat Profil",
-      },
-    ],
-    [
-      students.length,
-      fallbackTotal,
-      hadir,
-      total,
-      cls?.materialsCount,
-      cls?.assignmentsCount,
-    ]
-  );
+  // 4) Quick links (sesuai parent; semua path RELATIF ke /guru/kelas/:id)
+  const quick = [
+    {
+      key: "siswa",
+      label: "Jumlah Siswa",
+      metric: total.toString(),
+      icon: <Users className="h-4 w-4" />,
+      to: "siswa", // → /guru/kelas/:id/siswa
+      aria: "Lihat daftar siswa",
+    },
+    {
+      key: "kehadiran",
+      label: "Kehadiran Hari Ini",
+      metric: `${hadir}/${total || 0}`,
+      icon: <ClipboardList className="h-4 w-4" />,
+      to: "absensi-hari-ini", // → /guru/kelas/:id/absensi-hari-ini
+      aria: "Lihat kehadiran hari ini",
+    },
+    {
+      key: "materi",
+      label: "Materi",
+      metric: `${cls?.materialsCount ?? 0}`,
+      icon: <BookOpen className="h-4 w-4" />,
+      to: "materi",
+      aria: "Lihat materi",
+    },
+    {
+      key: "tugas",
+      label: "Tugas",
+      metric: `${cls?.assignmentsCount ?? 0}`,
+      icon: <ClipboardCheck className="h-4 w-4" />,
+      to: "tugas",
+      aria: "Lihat tugas",
+    },
+    {
+      key: "ujian",
+      label: "Ujian",
+      metric: `${cls?.assignmentsCount ?? 0}`,
+      icon: <GraduationCap className="h-4 w-4" />,
+      to: "ujian",
+      aria: "Lihat ujian",
+    },
+    {
+      key: "buku",
+      label: "Buku",
+      metric: "-",
+      icon: <BookOpen className="h-4 w-4" />,
+      to: "buku", // → /guru/kelas/:id/buku
+      aria: "Lihat buku kelas",
+    },
+    {
+      key: "profil",
+      label: "Profil",
+      metric: "-",
+      icon: <UserSquare2 className="h-4 w-4" />,
+      to: "profil",
+      aria: "Lihat profil kelas",
+    },
+  ] as const;
 
   return (
     <div className="w-full bg-background text-foreground">
@@ -296,19 +287,37 @@ export default function TeacherDetailClass() {
                     Absensi Hari Ini <ChevronRight className="ml-1 h-4 w-4" />
                   </Button>
                 </Link>
+                <Link to="buku">
+                  <Button size="sm">
+                    Buku Kelas <ChevronRight className="ml-1 h-4 w-4" />
+                  </Button>
+                </Link>
               </div>
             </CardContent>
           </Card>
 
-          {/* Stat ringkas */}
-          <StatsGrid
-            items={items}
-            loading={fetchingAny}
-            minCardWidth="16rem" // opsional (default 14rem). Boleh juga 240, "18rem", "220px", dll.
-            formatMetric={(n) =>
-              new Intl.NumberFormat("id-ID", { notation: "compact" }).format(n)
-            }
-          />
+          {/* Quick Links (gaya parent, klik → navigate(relative)) */}
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {quick.map((q) => (
+              <Card
+                key={q.key}
+                className="cursor-pointer transition hover:shadow-md"
+                onClick={() => navigate(q.to)}
+                aria-label={q.aria}
+              >
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="space-y-1">
+                    <div className="text-sm text-muted-foreground flex items-center gap-2">
+                      {q.icon}
+                      <span>{q.label}</span>
+                    </div>
+                    <div className="text-xl font-semibold">{q.metric}</div>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
           {/* Jadwal terdekat */}
           <Card>

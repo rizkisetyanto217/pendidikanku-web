@@ -33,9 +33,9 @@ export default function TeacherMenuGrids() {
 
       // ===== Kelas (di bawah menu-utama) =====
       {
-        key: "kelas",
-        label: "Kelas Saya",
-        to: "kelas",
+        key: "Wali Kelas",
+        label: "Wali Kelas",
+        to: "wali-kelas",
         icon: <Users className="w-5 h-5" />,
       },
       {

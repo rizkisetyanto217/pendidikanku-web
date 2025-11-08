@@ -26,16 +26,17 @@ type Item = {
   icon?: LucideIcon;
   end?: boolean;
   isActive?: boolean;
-  items?: {
-    title: string;
-    url: string;
-    end?: boolean;
-  }[];
+  items?: { title: string; url: string; end?: boolean }[];
 };
 
-export function NavMain({ items }: { items: Item[] }) {
-  const location = useLocation();
-  const pathname = location.pathname;
+export function NavMain({
+  items,
+  onNavigate, // ⬅️ optional: dipanggil saat klik link untuk nutup sheet mobile
+}: {
+  items: Item[];
+  onNavigate?: () => void;
+}) {
+  const { pathname } = useLocation();
 
   const isUrlActive = (url: string, end?: boolean) =>
     !!matchPath({ path: url, end: !!end }, pathname);
@@ -43,24 +44,29 @@ export function NavMain({ items }: { items: Item[] }) {
   const anyChildActive = (children?: Item["items"]) =>
     (children ?? []).some((c) => isUrlActive(c.url, c.end));
 
-  // utility kelas untuk state aktif: lebih mencolok
+  // 🔥 aktif style: pill + ring + strip kiri — versi rounded lebih kecil
   const activeClasses =
+    // radius utama ↓
+    "rounded-lg " +
     // bg & text
     "data-[active=true]:bg-primary/15 data-[active=true]:text-primary " +
-    // ring & shadow
+    // ring & subtle inner shadow
     "data-[active=true]:ring-1 data-[active=true]:ring-primary/50 data-[active=true]:shadow-sm " +
-    // indikator strip kiri
+    // indikator strip kiri (radius lebih kecil) ↓
     "relative data-[active=true]:before:absolute data-[active=true]:before:left-0 " +
     "data-[active=true]:before:inset-y-1 data-[active=true]:before:w-1 " +
-    "data-[active=true]:before:rounded-r-md data-[active=true]:before:bg-primary";
+    "data-[active=true]:before:rounded-r data-[active=true]:before:bg-primary";
 
   const subActiveClasses =
+    // radius sub ↓
+    "rounded-md " +
     "data-[active=true]:bg-primary/12 data-[active=true]:text-primary " +
     "data-[active=true]:font-medium data-[active=true]:ring-1 data-[active=true]:ring-primary/30";
 
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Platform</SidebarGroupLabel>
+
       <SidebarMenu>
         {items.map((item) => {
           const parentActive =
@@ -68,11 +74,12 @@ export function NavMain({ items }: { items: Item[] }) {
               ? item.isActive
               : isUrlActive(item.url, item.end);
 
-          const hasChildren = !!(item.items && item.items.length > 0);
+          const hasChildren = !!(item.items && item.items.length);
           const open =
             hasChildren && (anyChildActive(item.items) || parentActive);
 
           if (hasChildren) {
+            // Parent hanya toggle submenu → jangan panggil onNavigate di sini
             return (
               <Collapsible
                 key={item.title}
@@ -84,7 +91,7 @@ export function NavMain({ items }: { items: Item[] }) {
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton
                       isActive={open}
-                      className={activeClasses}
+                      className={activeClasses + " px-3 py-2.5 gap-3"}
                     >
                       {item.icon && <item.icon />}
                       <span>{item.title}</span>
@@ -93,25 +100,25 @@ export function NavMain({ items }: { items: Item[] }) {
                   </CollapsibleTrigger>
 
                   <CollapsibleContent>
-                    <SidebarMenuSub>
-                      {item.items!.map((sub) => (
-                        <SidebarMenuSubItem key={sub.title}>
-                          <SidebarMenuSubButton
-                            asChild
-                            className={subActiveClasses}
-                          >
-                            <NavLink
-                              to={sub.url}
-                              end={sub.end}
-                              className={({ isActive }) =>
-                                isActive ? "data-[active=true]" : undefined
-                              }
+                    <SidebarMenuSub className="mt-1">
+                      {item.items!.map((sub) => {
+                        const subActive = isUrlActive(sub.url, sub.end);
+                        return (
+                          <SidebarMenuSubItem key={sub.title}>
+                            {/* Link submenu → panggil onNavigate saat klik */}
+                            <SidebarMenuSubButton
+                              asChild
+                              isActive={subActive}
+                              onClick={onNavigate}
+                              className={subActiveClasses + " px-3 py-2"}
                             >
-                              <span>{sub.title}</span>
-                            </NavLink>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
+                              <NavLink to={sub.url} end={sub.end}>
+                                <span>{sub.title}</span>
+                              </NavLink>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        );
+                      })}
                     </SidebarMenuSub>
                   </CollapsibleContent>
                 </SidebarMenuItem>
@@ -119,13 +126,14 @@ export function NavMain({ items }: { items: Item[] }) {
             );
           }
 
-          // Tanpa anak → link biasa, tetap highlight kuat saat aktif
+          // Top-level tanpa submenu → link langsung, panggil onNavigate saat klik
           return (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton
                 asChild
                 isActive={parentActive}
-                className={activeClasses}
+                onClick={onNavigate}
+                className={activeClasses + " px-3 py-2.5 gap-3"}
               >
                 <NavLink to={item.url} end={item.end}>
                   {item.icon && <item.icon />}

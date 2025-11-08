@@ -2,26 +2,50 @@
 import { useMemo, useState, useEffect } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams, useParams, useNavigate } from "react-router-dom";
 import {
-  useSearchParams,
-  Link,
-  useParams,
-  useNavigate,
-} from "react-router-dom";
-import { Plus, Layers, ArrowLeft, Pencil } from "lucide-react";
+  Plus,
+  Layers,
+  ArrowLeft,
+  Pencil,
+  Info,
+  Loader2,
+  Eye,
+  MoreHorizontal,
+} from "lucide-react";
 import axios from "@/lib/axios";
 
-// ⬇️ shadcn
+/* shadcn/ui */
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
-// Modal-mu tetap dipakai
+/* Modal-mu tetap dipakai */
 import TambahKelas, {
   type ClassRow as NewClassRow,
 } from "./components/CSchoolAddClass";
 import TambahLevel from "./components/CSchoolAddLevel";
+
+/* DataTable (gaya Room/Academic) */
+import {
+  CDataTable as DataTable,
+  type ColumnDef,
+  type ViewMode,
+} from "@/components/costum/table/CDataTable";
 
 /* ================= Types ================= */
 export type ClassStatus = "active" | "inactive";
@@ -35,7 +59,6 @@ export interface ClassRow {
   studentCount: number;
   schedule: string;
   status: ClassStatus;
-  /** id class (middle layer) */
   classId?: string;
 }
 
@@ -63,37 +86,30 @@ type ApiClassSection = {
   class_section_assistant_teacher_id?: string | null;
   class_section_class_room_id?: string | null;
   class_section_leader_student_id?: string | null;
-
   class_section_slug: string;
   class_section_name: string;
   class_section_code?: string | null;
-
   class_section_schedule?: ApiSchedule | null;
   class_section_capacity?: number | null;
   class_section_total_students?: number | null;
-
   class_section_group_url?: string | null;
   class_section_image_url?: string | null;
-
   class_section_is_active: boolean;
   class_section_created_at: string;
   class_section_updated_at: string;
-
-  // snapshot ringkas parent (LEVEL)
   class_section_parent_name_snap?: string | null;
   class_section_parent_code_snap?: string | null;
   class_section_parent_slug_snap?: string | null;
-
-  // (opsional) snapshot class (middle) bila backend kirim
   class_section_class_slug_snap?: string | null;
   class_section_class_name_snap?: string | null;
 };
 
 type ApiListSections = {
   data: ApiClassSection[];
+  pagination?: { total?: number; total_pages?: number };
 };
 
-/* ====== PUBLIC class-parents (levels) ====== */
+/* PUBLIC class-parents (levels) */
 type ApiClassParent = {
   class_parent_id: string;
   class_parent_school_id: string;
@@ -120,13 +136,13 @@ function mapClassParent(x: ApiClassParent): Level {
   };
 }
 
-/* ====== PUBLIC classes (middle layer) ====== */
+/* PUBLIC classes (middle layer) */
 type ApiClass = {
   class_id: string;
   class_school_id: string;
   class_parent_id: string;
   class_slug: string;
-  class_name: string; // bisa kosong
+  class_name: string;
   class_start_date?: string | null;
   class_end_date?: string | null;
   class_term_id?: string | null;
@@ -135,18 +151,14 @@ type ApiClass = {
   class_quota_taken?: number | null;
   class_status: "active" | "inactive";
   class_image_url?: string | null;
-
-  // snapshots
   class_parent_code_snapshot?: string | null;
   class_parent_name_snapshot?: string | null;
   class_parent_slug_snapshot?: string | null;
   class_parent_level_snapshot?: number | null;
-
   class_term_academic_year_snapshot?: string | null;
   class_term_name_snapshot?: string | null;
   class_term_slug_snapshot?: string | null;
   class_term_angkatan_snapshot?: string | null;
-
   class_created_at: string;
   class_updated_at: string;
 };
@@ -159,13 +171,22 @@ type MiddleClassChip = {
   count: number;
 };
 
-/* ================= Helpers ================= */
-const parseGrade = (code?: string | null, name?: string): string => {
-  const from = (code ?? name ?? "").toString();
-  const m = from.match(/\d+/);
-  return m ? m[0] : "-";
+/* NEW: SectionRow untuk DataTable */
+type SectionRow = {
+  id: string;
+  code: string;
+  name: string;
+  level?: string | null;
+  clazz?: string | null;
+  scheduleText: string;
+  shift: "Pagi" | "Sore" | "-";
+  capacity?: number | null;
+  studentCount: number;
+  status: "active" | "inactive";
+  classId?: string;
 };
 
+/* ================= Helpers ================= */
 const scheduleToText = (sch?: ApiSchedule | null): string => {
   if (!sch) return "-";
   const days = (sch?.days ?? []).join(", ");
@@ -195,21 +216,28 @@ async function fetchClassSections({
   q,
   status,
   classId,
+  page,
+  perPage,
 }: {
   schoolId: string;
   q?: string;
   status?: ClassStatus | "all";
-  classId?: string; // kalau BE support filter by class_parent_id (level) akan ikut dipakai
-}): Promise<ApiClassSection[]> {
+  classId?: string;
+  page?: number;
+  perPage?: number;
+}): Promise<ApiListSections> {
   const params: Record<string, any> = {};
   if (q?.trim()) params.search = q.trim();
   if (status && status !== "all") params.active_only = status === "active";
   if (classId) params.class_parent_id = classId;
+  if (page) params.page = page;
+  if (perPage) params.per_page = perPage;
+
   const res = await axios.get<ApiListSections>(
     `/public/${schoolId}/class-sections/list`,
     { params }
   );
-  return res.data?.data ?? [];
+  return res.data ?? { data: [] };
 }
 
 async function fetchLevelsPublic(schoolId: string): Promise<Level[]> {
@@ -235,82 +263,86 @@ async function fetchClassesPublic(
   return res.data?.data ?? [];
 }
 
-/* ================= Small UI: FilterChip ================= */
-function FilterChip({
+/* =========== UI: Chips yang lebih clean + counter kecil =========== */
+function ChipWithCount({
   active,
-  children,
+  label,
+  count,
   onClick,
+  onEdit,
   title,
-  className,
 }: {
   active?: boolean;
-  children: React.ReactNode;
+  label: string;
+  count?: number;
   onClick?: () => void;
+  onEdit?: (e: ReactMouseEvent<HTMLButtonElement>) => void;
   title?: string;
-  className?: string;
 }) {
   return (
-    <Button
-      variant={active ? "secondary" : "outline"}
-      size="sm"
-      title={title}
-      onClick={onClick}
+    <div
       className={cn(
-        "rounded-lg px-3 py-1.5 h-auto",
-        active && "font-semibold",
-        className
+        "inline-flex items-stretch overflow-hidden rounded-lg ring-1",
+        active
+          ? "bg-secondary text-secondary-foreground ring-border"
+          : "bg-background ring-border"
       )}
+      title={title}
     >
-      {children}
-    </Button>
+      <Button
+        variant={active ? "secondary" : "outline"}
+        size="sm"
+        onClick={onClick}
+        className={cn("rounded-none h-8 px-3", active && "font-semibold")}
+      >
+        <span className="truncate max-w-[14rem]">{label}</span>
+        {typeof count === "number" && (
+          <span className="ml-2 rounded-md bg-muted px-1.5 text-xs text-muted-foreground tabular-nums">
+            {count}
+          </span>
+        )}
+      </Button>
+      {onEdit && (
+        <Button
+          variant={active ? "secondary" : "outline"}
+          size="icon"
+          className="rounded-none h-8 w-8 -ml-px"
+          onClick={onEdit}
+          aria-label="Edit"
+          title="Edit"
+        >
+          <Pencil size={14} />
+        </Button>
+      )}
+    </div>
   );
 }
 
-/* ================= Card ================= */
-function ClassCard({ r }: { r: ClassRow }) {
+/* ====== Actions Menu (lihat / edit) ====== */
+function SectionActions({
+  onView,
+  onEdit,
+}: {
+  onView: () => void;
+  onEdit: () => void;
+}) {
   return (
-    <Card className="min-w-0">
-      <CardContent className="p-3 space-y-2">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <div className="text-xs text-muted-foreground">Kode • Tingkat</div>
-            <div className="font-semibold text-sm truncate">
-              {r.code} • {r.grade}
-            </div>
-          </div>
-          <Badge variant={r.status === "active" ? "default" : "outline"}>
-            {r.status === "active" ? "Aktif" : "Nonaktif"}
-          </Badge>
-        </div>
-
-        <div className="min-w-0">
-          <div className="text-xs text-muted-foreground">Nama Kelas</div>
-          <div className="text-sm font-medium truncate">{r.name}</div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div className="min-w-0">
-            <div className="text-xs text-muted-foreground">Wali Kelas</div>
-            <div className="text-sm truncate">{r.homeroom}</div>
-          </div>
-          <div>
-            <div className="text-xs text-muted-foreground">Siswa</div>
-            <div className="text-sm">{r.studentCount}</div>
-          </div>
-        </div>
-
-        <div className="min-w-0">
-          <div className="text-xs text-muted-foreground">Jadwal</div>
-          <div className="text-sm break-words">{r.schedule || "-"}</div>
-        </div>
-
-        <div className="pt-1 flex justify-end gap-2">
-          <Link to={`kelola/${r.id}`} state={{ classData: r }}>
-            <Button size="sm">Kelola</Button>
-          </Link>
-        </div>
-      </CardContent>
-    </Card>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" aria-label="Aksi">
+          <MoreHorizontal size={18} />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={onView} className="gap-2">
+          <Eye size={14} /> Lihat
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={onEdit} className="gap-2">
+          <Pencil size={14} /> Edit
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -327,66 +359,76 @@ const SchoolClass: React.FC<{
   const [openTambah, setOpenTambah] = useState(false);
   const [openTambahLevel, setOpenTambahLevel] = useState(false);
 
-  // ✅ Ambil :schoolId dari protected route
   const { schoolId } = useParams<{ schoolId: string }>();
   const hasSchool = Boolean(schoolId);
 
   const q = (sp.get("q") ?? "").trim();
   const status = (sp.get("status") ?? "all") as ClassStatus | "all";
   const shift = (sp.get("shift") ?? "all") as "Pagi" | "Sore" | "all";
-
-  // filter chip
   const levelId = sp.get("level_id") ?? "";
   const classId = sp.get("class_id") ?? "";
 
-  // Levels dari endpoint publik
+  const [page, setPage] = useState(() => Number(sp.get("page") ?? 1) || 1);
+  const [perPage, setPerPage] = useState(
+    () => Number(sp.get("per") ?? 20) || 20
+  );
+  useEffect(() => {
+    const copy = new URLSearchParams(sp);
+    copy.set("page", String(page));
+    copy.set("per", String(perPage));
+    setSp(copy, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, perPage]);
+
+  /* ===== Data ===== */
   const levelsQ = useQuery({
     queryKey: ["levels-public", schoolId],
     enabled: hasSchool,
     queryFn: () => fetchLevelsPublic(schoolId!),
     staleTime: 60_000,
-    refetchOnWindowFocus: false,
   });
 
-  // slug level terpilih (untuk filter client-side via snapshot)
   const selectedLevelSlug = useMemo(() => {
     const lv = (levelsQ.data ?? []).find((x) => x.id === levelId);
     return lv?.slug ?? null;
   }, [levelsQ.data, levelId]);
 
-  // Class sections
+  const classesQ = useQuery({
+    queryKey: ["classes-public", schoolId, q, status, levelId],
+    enabled: hasSchool,
+    queryFn: () => fetchClassesPublic(schoolId!, { q, status, levelId }),
+    staleTime: 60_000,
+  });
+
   const {
-    data: apiItems = [],
-    isFetching,
+    data: apiRes,
     refetch,
+    isLoading,
+    isError,
+    error,
   } = useQuery({
-    queryKey: ["class-sections", schoolId, q, status, levelId],
+    queryKey: ["class-sections", schoolId, q, status, levelId, page, perPage],
     enabled: hasSchool,
     queryFn: () =>
       fetchClassSections({
         schoolId: schoolId!,
         q,
         status,
-        classId: levelId || undefined, // kalau BE belum support, tetap aman
+        classId: levelId || undefined,
+        page,
+        perPage,
       }),
     staleTime: 60_000,
-    refetchOnWindowFocus: false,
   });
 
-  // Classes (middle layer)
-  const classesQ = useQuery({
-    queryKey: ["classes-public", schoolId, q, status, levelId],
-    enabled: hasSchool,
-    queryFn: () => fetchClassesPublic(schoolId!, { q, status, levelId }),
-    staleTime: 60_000,
-    refetchOnWindowFocus: false,
-  });
+  const apiItems = apiRes?.data ?? [];
+  const serverTotal = apiRes?.pagination?.total;
+  const serverTotalPages = apiRes?.pagination?.total_pages;
 
   useEffect(() => {
     if (!openTambah) refetch();
   }, [openTambah, refetch]);
 
-  // Hitung jumlah section per CLASS ID (untuk chip count)
   const sectionCountByClassId = useMemo(() => {
     const m = new Map<string, number>();
     (apiItems ?? []).forEach((s) => {
@@ -403,7 +445,6 @@ const SchoolClass: React.FC<{
     return m;
   }, [apiItems, selectedLevelSlug]);
 
-  // Daftar chip class
   const classChips: MiddleClassChip[] = useMemo(() => {
     const arr = (classesQ.data ?? [])
       .filter(
@@ -435,7 +476,6 @@ const SchoolClass: React.FC<{
     );
   }, [classesQ.data, selectedLevelSlug, sectionCountByClassId]);
 
-  // Reset class_id kalau tidak relevan dengan level terpilih
   useEffect(() => {
     if (classId && !classChips.find((c) => c.id === classId)) {
       const next = new URLSearchParams(sp);
@@ -445,41 +485,36 @@ const SchoolClass: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLevelSlug, classChips.length]);
 
-  // Map ke row grid (section)
-  const mappedRows: ClassRow[] = useMemo(
+  const mappedRows: SectionRow[] = useMemo(
     () =>
       (apiItems ?? []).map((it) => ({
         id: it.class_section_id,
-        classId: it.class_section_class_id, // id "class" (middle layer)
+        classId: it.class_section_class_id,
         code: it.class_section_code ?? "-",
         name: it.class_section_name,
-        grade: parseGrade(it.class_section_code, it.class_section_name),
-        homeroom: "-", // endpoint publik belum kirim nama wali
+        level: it.class_section_parent_name_snap ?? null,
+        clazz: it.class_section_class_name_snap ?? null,
+        scheduleText: scheduleToText(it.class_section_schedule),
+        shift: getShiftFromSchedule(it.class_section_schedule),
+        capacity: it.class_section_capacity ?? null,
         studentCount: it.class_section_total_students ?? 0,
-        schedule: scheduleToText(it.class_section_schedule),
         status: it.class_section_is_active ? "active" : "inactive",
       })),
     [apiItems]
   );
 
-  // FILTER: level + class + shift
   const filteredRows = useMemo(() => {
     return mappedRows.filter((r) => {
       const apiItem = (apiItems ?? []).find((x) => x.class_section_id === r.id);
       const okLevel =
         !selectedLevelSlug ||
         apiItem?.class_section_parent_slug_snap === selectedLevelSlug;
-
       const okClass = !classId || r.classId === classId;
-
-      const rowShift = getShiftFromSchedule(apiItem?.class_section_schedule);
-      const okShift = shift === "all" || rowShift === shift;
-
+      const okShift = shift === "all" || r.shift === shift;
       return okLevel && okClass && okShift;
     });
   }, [mappedRows, apiItems, selectedLevelSlug, classId, shift]);
 
-  // Counter section per level (chip level)
   const sectionCountByLevel = useMemo(() => {
     const m = new Map<string, number>();
     (apiItems ?? []).forEach((it) => {
@@ -493,13 +528,13 @@ const SchoolClass: React.FC<{
   const setParam = (k: string, v: string) => {
     const next = new URLSearchParams(sp);
     v ? next.set(k, v) : next.delete(k);
-    if (k === "level_id") next.delete("class_id"); // reset class saat level berubah
+    if (k === "level_id") next.delete("class_id");
+    next.set("page", "1");
     setSp(next, { replace: true });
+    if (k === "level_id" || k === "class_id") setPage(1);
   };
 
-  const items = filteredRows;
   const levels = levelsQ.data ?? [];
-
   const toSlug = (s: string) =>
     (s || "level-baru").toLowerCase().trim().replace(/\s+/g, "-");
 
@@ -520,7 +555,6 @@ const SchoolClass: React.FC<{
   };
 
   const handleClassCreated = (row: NewClassRow) => {
-    // dummy untuk optimistic UI
     const dummy: ApiClassSection = {
       class_section_id: (row as any).id ?? uid("sec"),
       class_section_class_id: (row as any).classId ?? "",
@@ -542,208 +576,353 @@ const SchoolClass: React.FC<{
       class_section_parent_slug_snap: selectedLevelSlug ?? undefined,
     };
 
-    qc.setQueryData<ApiClassSection[]>(
-      ["class-sections", schoolId, q, status, levelId],
-      (old = []) => [dummy, ...(old ?? [])]
+    qc.setQueryData<ApiListSections>(
+      ["class-sections", schoolId, q, status, levelId, page, perPage],
+      (old) => ({
+        data: [dummy, ...((old?.data ?? []) as ApiClassSection[])],
+        pagination: old?.pagination,
+      })
     );
 
     setOpenTambah(false);
   };
 
-  /* ==== helper: go edit without changing filter ==== */
   const goEditLevel = (e: ReactMouseEvent<HTMLButtonElement>, id: string) => {
     e.stopPropagation();
     e.preventDefault();
     navigate(`/${schoolId}/sekolah/kelas/tingkat/${id}`);
   };
-
   const goEditClass = (e: ReactMouseEvent<HTMLButtonElement>, id: string) => {
     e.stopPropagation();
     e.preventDefault();
     navigate(`/${schoolId}/sekolah/kelas/kelas/${id}`);
   };
 
+  /* ===== Columns: compact & rapi ===== */
+  const columns: ColumnDef<SectionRow>[] = useMemo(
+    () => [
+      {
+        id: "name",
+        header: "Nama Section",
+        align: "left",
+        minW: "280px",
+        cell: (r) => (
+          <div className="text-left">
+            <div className="font-medium truncate">{r.name}</div>
+            <div className="mt-0.5 text-xs text-muted-foreground truncate">
+              Kode: {r.code}
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: "level",
+        header: "Tingkat",
+        align: "left",
+        minW: "160px",
+        cell: (r) => <span className="truncate">{r.level ?? "-"}</span>,
+      },
+      {
+        id: "clazz",
+        header: "Kelas (Middle)",
+        align: "left",
+        minW: "180px",
+        cell: (r) => <span className="truncate">{r.clazz ?? "-"}</span>,
+      },
+      {
+        id: "schedule",
+        header: "Jadwal",
+        align: "left",
+        minW: "240px",
+        cell: (r) => <span className="truncate">{r.scheduleText}</span>,
+      },
+      {
+        id: "capacity",
+        header: "Kapasitas",
+        align: "center",
+        minW: "100px",
+        cell: (r) => r.capacity ?? "-",
+      },
+      {
+        id: "studentCount",
+        header: "Siswa",
+        align: "center",
+        minW: "90px",
+        cell: (r) => r.studentCount,
+      },
+      {
+        id: "shift",
+        header: "Shift",
+        align: "center",
+        minW: "90px",
+        cell: (r) => r.shift,
+      },
+      {
+        id: "status",
+        header: "Status",
+        align: "center",
+        minW: "100px",
+        cell: (r) => (
+          <span
+            className={cn(
+              "inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ring-1",
+              r.status === "active"
+                ? "bg-sky-500/15 text-sky-500 ring-sky-500/25"
+                : "bg-zinc-500/10 text-zinc-500 ring-zinc-500/20"
+            )}
+          >
+            {r.status === "active" ? "Aktif" : "Nonaktif"}
+          </span>
+        ),
+      },
+    ],
+    []
+  );
+
+  /* ===== Query handler (sinkron URL) ===== */
+  const handleQueryChange = (val: string) => {
+    const copy = new URLSearchParams(sp);
+    if (val) copy.set("q", val);
+    else copy.delete("q");
+    copy.set("page", "1");
+    setSp(copy, { replace: true });
+    setPage(1);
+  };
+
+  /* ===== Stats Slot ===== */
+  const totalFromServer = serverTotal;
+  const totalLocal = filteredRows.length;
+  const total = totalFromServer ?? totalLocal;
+
+  const statsSlot = isLoading ? (
+    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <Loader2 className="animate-spin" size={16} /> Memuat section…
+    </div>
+  ) : isError ? (
+    <div className="rounded-xl border p-4 text-sm space-y-2">
+      <div className="flex items-center gap-2">
+        <Info size={16} /> Gagal memuat section.
+      </div>
+      <Button size="sm" onClick={() => refetch()}>
+        Coba lagi
+      </Button>
+    </div>
+  ) : (
+    <div className="text-sm text-muted-foreground">{total} total</div>
+  );
+
+  /* ===== Pagination: server atau client ===== */
+  const totalPages =
+    serverTotalPages ??
+    Math.max(1, Math.ceil((totalLocal || 0) / Math.max(1, perPage)));
+
+  const pagedRows =
+    serverTotalPages != null
+      ? filteredRows
+      : filteredRows.slice((page - 1) * perPage, page * perPage);
+
+  /* ===== Layout ===== */
   return (
     <div className="h-full w-full overflow-x-hidden bg-background text-foreground">
-      <main className="w-full overflow-x-hidden">
-        <div className="max-w-screen-2xl mx-auto flex flex-col lg:flex-row gap-4 lg:gap-6">
-          {/* Main Content */}
-          <section className="flex-1 flex flex-col space-y-6 min-w-0">
-            {/* ================= Header ================= */}
-            <div className="flex items-center justify-between">
-              <div className="font-semibold text-lg flex items-center">
-                <div className="items-center md:flex">
-                  {showBack && (
-                    <Button
-                      onClick={() => (backTo ? navigate(backTo) : navigate(-1))}
-                      variant="ghost"
-                      size="icon"
-                      className="mr-2"
-                      aria-label={backLabel}
-                    >
-                      <ArrowLeft size={20} />
-                    </Button>
-                  )}
-                </div>
-                <h1>Seluruh Kelas</h1>
-              </div>
+      <main className="w-full">
+        <div className="max-w-screen-2xl mx-auto flex flex-col gap-6 px-4 md:px-6 py-4 md:py-6">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 font-semibold">
+              {showBack && (
+                <Button
+                  onClick={() => (backTo ? navigate(backTo) : navigate(-1))}
+                  variant="ghost"
+                  size="icon"
+                  aria-label={backLabel}
+                >
+                  <ArrowLeft size={20} />
+                </Button>
+              )}
+              <h1 className="text-lg">Seluruh Kelas</h1>
             </div>
+            <div className="hidden sm:block">
+              <Button size="sm" onClick={() => setOpenTambah(true)}>
+                <Plus size={16} className="mr-2" /> Tambah Section
+              </Button>
+            </div>
+          </div>
 
-            {/* ===== Panel Tingkat (LEVEL) ===== */}
-            <Card>
-              <CardHeader className="py-3 px-4 md:px-5">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Layers size={18} /> Tingkat
-                  </CardTitle>
-                  <Button onClick={() => setOpenTambahLevel(true)} size="sm">
-                    <Plus size={16} className="mr-2" /> Tambah Level
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="pb-4 px-4 md:px-5">
-                <div className="flex flex-wrap gap-2 min-w-0">
-                  {/* Semua Tingkat */}
-                  <FilterChip
-                    active={!levelId}
-                    onClick={() => setParam("level_id", "")}
-                  >
-                    Semua Tingkat
-                  </FilterChip>
-
-                  {/* Item Level + ✏️ */}
-                  {(levels ?? []).map((lv) => {
-                    const cnt = sectionCountByLevel.get(lv.slug) ?? 0;
-                    const active = levelId === lv.id;
-                    return (
-                      <div
-                        key={lv.id}
-                        className={cn(
-                          "inline-flex items-center gap-1 rounded-lg border border-border"
-                        )}
-                      >
-                        <FilterChip
-                          active={active}
-                          onClick={() => setParam("level_id", lv.id)}
-                          title={lv.slug}
-                          className="rounded-r-none"
-                        >
-                          {lv.name}{" "}
-                          <span className="text-muted-foreground">({cnt})</span>
-                        </FilterChip>
-                        <Button
-                          variant={active ? "secondary" : "outline"}
-                          size="icon"
-                          className="rounded-l-none h-auto p-1 pr-2"
-                          title="Edit Tingkat"
-                          onClick={(e) => goEditLevel(e, lv.id)}
-                        >
-                          <Pencil size={14} />
-                        </Button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* ===== Panel CLASS (middle chips) ===== */}
-            <Card>
-              <CardHeader className="py-3 px-4 md:px-5">
+          {/* Panel Tingkat (LEVEL) */}
+          <Card>
+            <CardHeader className="py-3 px-4 md:px-5">
+              <div className="flex items-center justify-between">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Layers size={18} /> Kelas (Dalam Tingkat)
+                  <Layers size={18} /> Tingkat
                 </CardTitle>
-              </CardHeader>
-              <CardContent className="pb-4 px-4 md:px-5">
-                <div className="flex flex-wrap gap-2 min-w-0">
-                  {/* Semua Kelas */}
-                  <FilterChip
-                    active={!classId}
-                    onClick={() => setParam("class_id", "")}
-                  >
-                    Semua Kelas
-                  </FilterChip>
+                <Button onClick={() => setOpenTambahLevel(true)} size="sm">
+                  <Plus size={16} className="mr-2" /> Tambah Level
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="pb-4 px-4 md:px-5">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant={levelId ? "outline" : "secondary"}
+                  size="sm"
+                  className="h-8"
+                  onClick={() => setParam("level_id", "")}
+                >
+                  Semua Tingkat
+                </Button>
+                {(levels ?? []).map((lv) => {
+                  const cnt = sectionCountByLevel.get(lv.slug) ?? 0;
+                  const active = levelId === lv.id;
+                  return (
+                    <ChipWithCount
+                      key={lv.id}
+                      active={active}
+                      label={lv.name}
+                      count={cnt}
+                      title={lv.slug}
+                      onClick={() => setParam("level_id", lv.id)}
+                      onEdit={(e) => goEditLevel(e, lv.id)}
+                    />
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
 
-                  {/* Item Class + ✏️ */}
-                  {classChips.map((c) => {
-                    const active = classId === c.id;
-                    return (
-                      <div
-                        key={c.id}
-                        className="inline-flex items-center gap-1 rounded-lg border border-border"
-                      >
-                        <FilterChip
-                          active={active}
-                          onClick={() => setParam("class_id", c.id)}
-                          title={c.slug ?? c.name}
-                          className="rounded-r-none"
-                        >
-                          {c.name}{" "}
-                          <span className="text-muted-foreground">
-                            ({c.count})
-                          </span>
-                        </FilterChip>
-                        <Button
-                          variant={active ? "secondary" : "outline"}
-                          size="icon"
-                          className="rounded-l-none h-auto p-1 pr-2"
-                          title="Edit Kelas (middle)"
-                          onClick={(e) => goEditClass(e, c.id)}
-                        >
-                          <Pencil size={14} />
-                        </Button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
+          {/* Panel Kelas (middle) */}
+          <Card>
+            <CardHeader className="py-3 px-4 md:px-5">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Layers size={18} /> Kelas (Dalam Tingkat)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pb-4 px-4 md:px-5">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant={classId ? "outline" : "secondary"}
+                  size="sm"
+                  className="h-8"
+                  onClick={() => setParam("class_id", "")}
+                >
+                  Semua Kelas
+                </Button>
+                {classChips.map((c) => {
+                  const active = classId === c.id;
+                  return (
+                    <ChipWithCount
+                      key={c.id}
+                      active={active}
+                      label={c.name}
+                      count={c.count}
+                      title={c.slug ?? c.name}
+                      onClick={() => setParam("class_id", c.id)}
+                      onEdit={(e) => goEditClass(e, c.id)}
+                    />
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
 
-            {/* ===== Daftar Section (grid) ===== */}
-            <Card>
-              <CardHeader className="py-3 px-4 md:px-5">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">
-                    Daftar Kelas Paralel (Section)
-                  </CardTitle>
-                  <Button onClick={() => setOpenTambah(true)} size="sm">
-                    <Plus className="mr-2" size={16} /> Tambah Section
-                  </Button>
-                </div>
-              </CardHeader>
+          {/* Daftar Section (DataTable) */}
+          <Card>
+            <CardHeader className="py-3 px-4 md:px-5">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">
+                  Daftar Kelas Paralel (Section)
+                </CardTitle>
+                <Button
+                  className="sm:hidden"
+                  size="sm"
+                  onClick={() => setOpenTambah(true)}
+                >
+                  <Plus size={16} className="mr-2" /> Tambah
+                </Button>
+              </div>
+            </CardHeader>
 
-              <CardContent className="px-4 md:px-5 pb-4">
-                {items.length === 0 ? (
-                  <div className="py-6 text-center text-muted-foreground">
-                    Tidak ada data yang cocok.
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-3 md:gap-4">
-                    {items.map((r) => (
-                      <ClassCard key={r.id} r={r} />
-                    ))}
-                  </div>
+            <CardContent className="px-4 md:px-5 pb-4">
+              <DataTable<SectionRow>
+                onAdd={() => setOpenTambah(true)}
+                addLabel="Tambah"
+                controlsPlacement="above"
+                defaultQuery={q}
+                onQueryChange={handleQueryChange}
+                filterer={() => true}
+                searchPlaceholder="Cari nama/kode/jadwal…"
+                statsSlot={statsSlot}
+                loading={isLoading}
+                error={isError ? (error as any)?.message ?? "Error" : null}
+                columns={columns}
+                rows={pagedRows}
+                getRowId={(r) => r.id}
+                defaultAlign="left"
+                stickyHeader
+                zebra
+                viewModes={["table", "card"] as ViewMode[]}
+                defaultView="table"
+                storageKey={`sections:${schoolId}`}
+                onRowClick={(r) => navigate(`kelola/${r.id}`)}
+                renderActions={(r) => (
+                  <SectionActions
+                    onView={() => navigate(`kelola/${r.id}`)}
+                    onEdit={() => navigate(`kelola/${r.id}`)}
+                  />
                 )}
+                pageSize={perPage}
+                pageSizeOptions={[10, 20, 50, 100, 200]}
+              />
 
-                <div className="pt-3 flex items-center justify-between text-sm text-muted-foreground">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="truncate">
-                      Menampilkan {items.length} section
-                    </span>
-                    {isFetching && <span>• Menyegarkan…</span>}
-                  </div>
-                  <Button
-                    variant="link"
-                    className="px-0 h-auto"
-                    onClick={() => refetch()}
-                    disabled={isFetching}
+              {/* Footer pagination (kanan) */}
+              <div className="mt-2 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
+                <div className="order-2 sm:order-1">
+                  {pagedRows.length
+                    ? `${(page - 1) * perPage + 1}-${Math.min(
+                        page * perPage,
+                        total
+                      )} dari ${total}`
+                    : `0 dari ${total}`}
+                </div>
+                <div className="order-1 sm:order-2 flex items-center gap-2">
+                  <span className="hidden sm:inline">Baris/hal</span>
+                  <Select
+                    value={String(perPage)}
+                    onValueChange={(v) => {
+                      setPerPage(Number(v));
+                      setPage(1);
+                    }}
                   >
-                    {isFetching ? "Menyegarkan…" : "Refresh"}
+                    <SelectTrigger className="h-9 w-[96px] text-sm">
+                      <SelectValue placeholder={String(perPage)} />
+                    </SelectTrigger>
+                    <SelectContent align="end">
+                      {[10, 20, 50, 100, 200].map((n) => (
+                        <SelectItem key={n} value={String(n)}>
+                          {n}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page <= 1}
+                  >
+                    Sebelumnya
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page >= totalPages}
+                  >
+                    Berikutnya
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
-          </section>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </main>
 

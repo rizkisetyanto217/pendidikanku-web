@@ -4,21 +4,17 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import axios from "@/lib/axios";
 import {
-  Building2,
   MapPin,
-  Loader2,
   Eye,
-  ArrowLeft,
-  Edit3,
+  Pencil,
   Trash2,
-  Plus,
+  MoreHorizontal,
   Info,
+  Loader2,
 } from "lucide-react";
 
 /* shadcn/ui */
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -37,21 +33,29 @@ import {
   AlertDialogTitle,
   AlertDialogDescription,
 } from "@/components/ui/alert-dialog";
-import { Separator } from "@/components/ui/separator";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Checkbox } from "@/components/ui/checkbox";
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
-/* ===================== CONFIG ===================== */
-const USE_DUMMY = false;
+/* ✅ DataTable (gaya Academic) */
+import {
+  CDataTable as DataTable,
+  type ColumnDef,
+  type ViewMode,
+} from "@/components/costum/table/CDataTable";
 
-/* ===================== TYPES (UI) ================= */
+/* ===================== TYPES ===================== */
 export type Room = {
   id: string;
   school_id?: string;
@@ -63,7 +67,7 @@ export type Room = {
   platform?: string | null;
 };
 
-/* ================== API QUERY (public) ============ */
+/* ===================== API QUERY ===================== */
 function usePublicRoomsQuery(
   schoolId: string,
   q: string,
@@ -72,9 +76,8 @@ function usePublicRoomsQuery(
 ) {
   return useQuery({
     queryKey: ["public-rooms", schoolId, q, page, perPage],
-    enabled: !!schoolId && !USE_DUMMY,
+    enabled: !!schoolId,
     staleTime: 60_000,
-    retry: 1,
     queryFn: async () => {
       const res = await axios.get(`/public/${schoolId}/class-rooms/list`, {
         params: { q: q || undefined, page, per_page: perPage },
@@ -87,7 +90,7 @@ function usePublicRoomsQuery(
   });
 }
 
-/* ===================== DIALOG FORM ======================= */
+/* ===================== DIALOG FORM ===================== */
 function RoomDialog({
   open,
   onOpenChange,
@@ -122,12 +125,7 @@ function RoomDialog({
   }, [open, initial?.id]);
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(v) => {
-        if (!submitting) onOpenChange(v);
-      }}
-    >
+    <Dialog open={open} onOpenChange={(v) => !submitting && onOpenChange(v)}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>
@@ -137,9 +135,8 @@ function RoomDialog({
 
         <div className="grid gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="room-name">Nama Ruangan *</Label>
+            <Label>Nama Ruangan *</Label>
             <Input
-              id="room-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="cth. Lab Komputer"
@@ -148,9 +145,8 @@ function RoomDialog({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="room-capacity">Kapasitas *</Label>
+            <Label>Kapasitas *</Label>
             <Input
-              id="room-capacity"
               type="number"
               inputMode="numeric"
               value={Number.isFinite(capacity) ? capacity : 0}
@@ -160,9 +156,8 @@ function RoomDialog({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="room-location">Lokasi</Label>
+            <Label>Lokasi</Label>
             <Input
-              id="room-location"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="Gedung A, Lt. 2 / Link Zoom"
@@ -170,16 +165,18 @@ function RoomDialog({
           </div>
 
           <div className="flex items-center gap-2">
-            <Checkbox
+            <input
               id="room-active"
+              type="checkbox"
+              className="h-4 w-4 rounded border"
               checked={active}
-              onCheckedChange={(v) => setActive(Boolean(v))}
+              onChange={(e) => setActive(e.target.checked)}
             />
             <Label htmlFor="room-active">Aktif</Label>
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 mt-4">
+        <div className="mt-4 flex justify-end gap-2">
           <Button
             variant="ghost"
             onClick={() => onOpenChange(false)}
@@ -207,41 +204,72 @@ function RoomDialog({
   );
 }
 
-/* ===================== PAGE ======================= */
+/* ===================== ACTIONS MENU ===================== */
+function ActionsMenu({
+  onView,
+  onEdit,
+  onDelete,
+}: {
+  onView: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" aria-label="Aksi">
+          <MoreHorizontal size={18} />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={onView} className="gap-2">
+          <Eye size={14} /> Lihat
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={onEdit} className="gap-2">
+          <Pencil size={14} /> Edit
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={onDelete}
+          className="gap-2 text-destructive focus:text-destructive"
+        >
+          <Trash2 size={14} /> Hapus
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+/* ===================== PAGE ===================== */
 export default function SchoolRoom() {
   const { schoolId } = useParams<{ schoolId?: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
 
-  /* 🔎 Search sinkron ke URL (?q=), dengan debounce ringan */
+  /* 🔍 Query (sinkron URL) */
   const [sp, setSp] = useSearchParams();
   const qUrl = sp.get("q") ?? "";
   const [q, setQ] = useState(qUrl);
   useEffect(() => setQ(qUrl), [qUrl]);
-  useEffect(() => {
-    const t = setTimeout(() => {
-      const copy = new URLSearchParams(sp);
-      if (q) copy.set("q", q);
-      else copy.delete("q");
-      setSp(copy, { replace: true });
-      // reset ke halaman 1 kalau ganti query
-      setPage(1);
-    }, 400);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q]);
+  const handleQueryChange = (val: string) => {
+    setQ(val);
+    const copy = new URLSearchParams(sp);
+    if (val) copy.set("q", val);
+    else copy.delete("q");
+    copy.set("page", "1");
+    setSp(copy, { replace: true });
+  };
 
-  /* ⏭ Pagination sederhana */
+  /* Pagination server-side */
   const [page, setPage] = useState(() => Number(sp.get("page") ?? 1) || 1);
   const [perPage, setPerPage] = useState(
-    () => Number(sp.get("per") ?? 10) || 10
+    () => Number(sp.get("per") ?? 20) || 20
   );
   useEffect(() => {
     const copy = new URLSearchParams(sp);
     copy.set("page", String(page));
     copy.set("per", String(perPage));
     setSp(copy, { replace: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, perPage]);
 
   const roomsQ = usePublicRoomsQuery(schoolId ?? "", q, page, perPage);
@@ -264,15 +292,7 @@ export default function SchoolRoom() {
     [data]
   );
 
-  // ====== Modal Tambah/Edit
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalInitial, setModalInitial] = useState<Room | null>(null);
-  const closeModal = () => {
-    setModalOpen(false);
-    setModalInitial(null);
-  };
-
-  // ====== Create / Update
+  /* CRUD */
   const createOrUpdate = useMutation({
     mutationFn: async (form: {
       id?: string;
@@ -294,14 +314,12 @@ export default function SchoolRoom() {
       }
     },
     onSuccess: async () => {
-      closeModal();
       await qc.invalidateQueries({
         queryKey: ["public-rooms", schoolId, q, page, perPage],
       });
     },
   });
 
-  // ====== Delete
   const delRoom = useMutation({
     mutationFn: async (id: string) => {
       await axios.delete(`/a/${schoolId}/class-rooms/${id}`);
@@ -312,279 +330,206 @@ export default function SchoolRoom() {
       });
     },
   });
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalInitial, setModalInitial] = useState<Room | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Room | null>(null);
 
-  /* ====== Layout ====== */
+  /* Kolom tabel */
+  const columns: ColumnDef<Room>[] = useMemo(
+    () => [
+      {
+        id: "name",
+        header: "Nama Ruangan",
+        align: "left",
+        minW: "220px",
+        cell: (r) => (
+          <div className="text-left">
+            <div className="font-medium">{r.name}</div>
+            <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+              <MapPin size={12} /> {r.location ?? "-"}
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: "capacity",
+        header: "Kapasitas",
+        align: "left",
+        minW: "100px",
+        cell: (r) => r.capacity,
+      },
+      {
+        id: "jenis",
+        header: "Jenis",
+        align: "left",
+        minW: "100px",
+        cell: (r) => (r.is_virtual ? "Virtual" : "Fisik"),
+      },
+      {
+        id: "platform",
+        header: "Platform",
+        align: "left",
+        minW: "140px",
+        cell: (r) => r.platform ?? "-",
+      },
+      {
+        id: "status",
+        header: "Status",
+        align: "left",
+        minW: "110px",
+        cell: (r) => (
+          <span
+            className={[
+              "inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ring-1",
+              r.is_active
+                ? "bg-sky-500/15 text-sky-400 ring-sky-500/25"
+                : "bg-zinc-500/10 text-zinc-400 ring-zinc-500/20",
+            ].join(" ")}
+          >
+            {r.is_active ? "Aktif" : "Nonaktif"}
+          </span>
+        ),
+      },
+    ],
+    []
+  );
+
+  /* Stats Slot */
+  const statsSlot = roomsQ.isLoading ? (
+    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <Loader2 className="animate-spin" size={16} /> Memuat ruangan…
+    </div>
+  ) : roomsQ.isError ? (
+    <div className="rounded-xl border p-4 text-sm space-y-2">
+      <div className="flex items-center gap-2">
+        <Info size={16} /> Gagal memuat ruangan.
+      </div>
+      <Button size="sm" onClick={() => roomsQ.refetch()}>
+        Coba lagi
+      </Button>
+    </div>
+  ) : (
+    <div className="text-sm text-muted-foreground">{total} total</div>
+  );
+
+  /* Layout */
   return (
-    <div className="min-h-screen w-full bg-background text-foreground">
-      {/* ===== Header ===== */}
-      <div className="p-4 md:p-5 pb-3 flex flex-wrap items-center gap-3">
-        <div className="hidden md:flex items-center gap-2 font-semibold">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft size={18} />
-          </Button>
-          <h1>Daftar Ruangan</h1>
-        </div>
-
-        {/* Search */}
-        <div className="w-full md:flex-1 md:min-w-0">
-          <div className="relative">
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Cari nama atau lokasi ruangan…"
-              className="pl-3"
-            />
-          </div>
-        </div>
-
-        {/* Per halaman + Tambah */}
-        <div className="ml-auto flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <Label htmlFor="perpage" className="text-sm text-muted-foreground">
-              Per halaman
-            </Label>
-            <select
-              id="perpage"
-              className="h-9 rounded-md border bg-background px-2 text-sm"
-              value={perPage}
-              onChange={(e) => {
-                setPerPage(Number(e.target.value));
-                setPage(1);
-              }}
-            >
-              {[10, 20, 50, 100, 200].map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <Button
-            size="sm"
-            className="gap-1"
-            onClick={() => {
+    <div className="min-h-screen w-full overflow-x-hidden bg-background text-foreground">
+      <main className="w-full px-4 md:px-6 py-4 md:py-8">
+        <div className="mx-auto flex max-w-screen-2xl flex-col gap-4 lg:gap-6">
+          <DataTable<Room>
+            title="Daftar Ruangan"
+            onBack={() => navigate(-1)}
+            onAdd={() => {
               setModalInitial(null);
               setModalOpen(true);
             }}
-          >
-            <Plus size={16} /> Tambah
-          </Button>
-        </div>
-      </div>
+            addLabel="Tambah"
+            controlsPlacement="above"
+            defaultQuery={q}
+            onQueryChange={handleQueryChange}
+            filterer={() => true}
+            searchPlaceholder="Cari nama, lokasi, atau platform…"
+            statsSlot={statsSlot}
+            loading={roomsQ.isLoading}
+            error={
+              roomsQ.isError ? (roomsQ.error as any)?.message ?? "Error" : null
+            }
+            columns={columns}
+            rows={rooms}
+            getRowId={(r) => r.id}
+            defaultAlign="left"
+            stickyHeader
+            zebra={false}
+            viewModes={["table", "card"] as ViewMode[]}
+            defaultView="table"
+            storageKey={`rooms:${schoolId}`}
+            onRowClick={(r) => navigate(`./${r.id}`)}
+            renderActions={(r) => (
+              <ActionsMenu
+                onView={() => navigate(`./${r.id}`)}
+                onEdit={() => {
+                  setModalInitial(r);
+                  setModalOpen(true);
+                }}
+                onDelete={() => {
+                  setDeleteTarget(r);
+                  setConfirmOpen(true);
+                }}
+              />
+            )}
+          />
 
-      {/* ===== Content ===== */}
-      <main className="w-full">
-        <div className="max-w-screen-2xl mx-auto flex flex-col gap-6 p-4">
-          <Card>
-            <CardHeader className="py-3 flex-row items-center justify-between">
-              <CardTitle className="text-base font-semibold inline-flex items-center gap-2">
-                <Building2 size={18} /> Ruangan Sekolah
-              </CardTitle>
-              <div className="text-sm text-muted-foreground">
-                {roomsQ.isFetching ? "memuat…" : `${total} total`}
-              </div>
-            </CardHeader>
-            <Separator />
-            <CardContent className="p-4 md:p-5">
-              {roomsQ.isLoading ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="animate-spin" size={16} /> Memuat ruangan…
-                </div>
-              ) : rooms.length === 0 ? (
-                <div className="rounded-md border p-4 text-sm text-muted-foreground inline-flex items-center gap-2">
-                  <Info size={16} /> Belum ada ruangan.
-                </div>
-              ) : (
-                <>
-                  {/* Mobile Cards */}
-                  <div className="grid grid-cols-1 gap-3 md:hidden">
-                    {rooms.map((r) => (
-                      <Card key={r.id} className="overflow-hidden">
-                        <CardContent className="p-4 flex flex-col gap-2">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <div className="font-semibold">{r.name}</div>
-                              <div className="text-sm text-muted-foreground mt-0.5 flex items-center gap-1">
-                                <MapPin size={14} /> {r.location ?? "-"}
-                              </div>
-                            </div>
-                            <Badge
-                              variant={r.is_active ? "default" : "outline"}
-                            >
-                              {r.is_active ? "Aktif" : "Nonaktif"}
-                            </Badge>
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            Kapasitas: {r.capacity} •{" "}
-                            {r.is_virtual ? "Virtual" : "Fisik"}
-                          </div>
-                          <div className="pt-1 flex justify-end gap-1">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => navigate(`./${r.id}`)}
-                            >
-                              <Eye size={14} />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              onClick={() => {
-                                setModalInitial(r);
-                                setModalOpen(true);
-                              }}
-                            >
-                              <Edit3 size={14} />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => {
-                                setDeleteTarget(r);
-                                setConfirmOpen(true);
-                              }}
-                            >
-                              <Trash2 size={14} />
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-
-                  {/* Desktop Table */}
-                  <div className="hidden md:block overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Nama Ruangan</TableHead>
-                          <TableHead className="w-[120px]">Kapasitas</TableHead>
-                          <TableHead className="w-[120px]">Jenis</TableHead>
-                          <TableHead className="w-[160px]">Platform</TableHead>
-                          <TableHead className="w-[120px]">Status</TableHead>
-                          <TableHead className="w-[200px] text-right">
-                            Aksi
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {rooms.map((r) => (
-                          <TableRow key={r.id}>
-                            <TableCell>
-                              <div className="font-medium">{r.name}</div>
-                              <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-                                <MapPin size={12} /> {r.location ?? "-"}
-                              </div>
-                            </TableCell>
-                            <TableCell>{r.capacity}</TableCell>
-                            <TableCell>
-                              {r.is_virtual ? "Virtual" : "Fisik"}
-                            </TableCell>
-                            <TableCell>{r.platform ?? "-"}</TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={r.is_active ? "default" : "outline"}
-                              >
-                                {r.is_active ? "Aktif" : "Nonaktif"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex justify-end gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => navigate(`./${r.id}`)}
-                                >
-                                  <Eye size={16} />
-                                </Button>
-                                <Button
-                                  variant="secondary"
-                                  size="sm"
-                                  onClick={() => {
-                                    setModalInitial(r);
-                                    setModalOpen(true);
-                                  }}
-                                >
-                                  <Edit3 size={16} />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    setDeleteTarget(r);
-                                    setConfirmOpen(true);
-                                  }}
-                                >
-                                  <Trash2 size={16} />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-
-                  {/* Pagination */}
-                  <div className="mt-4 flex items-center justify-between gap-3">
-                    <div className="text-sm text-muted-foreground">
-                      {rooms.length
-                        ? `${(page - 1) * perPage + 1}-${Math.min(
-                            page * perPage,
-                            total
-                          )} dari ${total}`
-                        : `0 dari ${total}`}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPage((p) => Math.max(1, p - 1))}
-                        disabled={page <= 1}
-                      >
-                        Sebelumnya
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          setPage((p) => Math.min(totalPages, p + 1))
-                        }
-                        disabled={page >= totalPages}
-                      >
-                        Berikutnya
-                      </Button>
-                    </div>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+          {/* Pagination */}
+          <div className="mt-2 flex items-center justify-between gap-3 text-sm text-muted-foreground">
+            <div>
+              {rooms.length
+                ? `${(page - 1) * perPage + 1}-${Math.min(
+                    page * perPage,
+                    total
+                  )} dari ${total}`
+                : `0 dari ${total}`}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="hidden sm:inline">Baris/hal</span>
+              <Select
+                value={String(perPage)}
+                onValueChange={(v) => {
+                  setPerPage(Number(v));
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="h-9 w-[96px] text-sm">
+                  <SelectValue placeholder={String(perPage)} />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  {[10, 20, 50, 100, 200].map((n) => (
+                    <SelectItem key={n} value={String(n)}>
+                      {n}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+              >
+                Sebelumnya
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+              >
+                Berikutnya
+              </Button>
+            </div>
+          </div>
         </div>
       </main>
 
-      {/* Dialog Tambah/Edit */}
+      {/* Modal */}
       <RoomDialog
         open={modalOpen}
-        onOpenChange={(v) => (v ? setModalOpen(true) : closeModal())}
+        onOpenChange={(v) => (v ? setModalOpen(true) : setModalOpen(false))}
         initial={modalInitial}
         submitting={createOrUpdate.isPending}
-        onSubmit={async (form) => {
-          await createOrUpdate.mutateAsync(form);
-        }}
+        onSubmit={async (form) => await createOrUpdate.mutateAsync(form)}
       />
 
-      {/* AlertDialog Konfirmasi Hapus */}
+      {/* Hapus Dialog */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Ruangan?</AlertDialogTitle>
             <AlertDialogDescription>
-              Data ruangan "{deleteTarget?.name}" akan dihapus permanen.
-              Tindakan ini tidak dapat dibatalkan.
+              Data ruangan "{deleteTarget?.name}" akan dihapus permanen dan
+              tidak dapat dipulihkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -594,6 +539,7 @@ export default function SchoolRoom() {
             <AlertDialogAction
               onClick={() => deleteTarget && delRoom.mutate(deleteTarget.id)}
               disabled={delRoom.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {delRoom.isPending ? "Menghapus…" : "Hapus"}
             </AlertDialogAction>

@@ -176,7 +176,7 @@ export default function CMenuDropdown({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
-            variant={withBg ? "secondary" : "ghost"}
+            variant={withBg ? "ghost" : "ghost"}
             size="icon"
             className="h-9 w-9 rounded-xl"
             aria-label="Buka menu pengguna"

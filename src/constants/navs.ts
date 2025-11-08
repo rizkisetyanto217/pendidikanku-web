@@ -67,7 +67,7 @@ export const NAVS: NavDict = {
   guru: [
     { path: "", label: "Dashboard", icon: LayoutDashboard, end: true },
     { path: "menu-utama", label: "Menu Utama", icon: ChartBar },
-    { path: "kelas", label: "Kelas Saya", icon: Users },
+    { path: "wali-kelas", label: "Wali Kelas", icon: Users },
     { path: "guru-mapel", label: "Guru Mapel", icon: UserCog },
     { path: "jadwal", label: "Jadwal", icon: CalendarDays },
     { path: "profil-guru", label: "Profil", icon: Users },

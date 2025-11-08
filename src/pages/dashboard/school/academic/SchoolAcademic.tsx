@@ -8,8 +8,6 @@ import {
   CheckCircle2,
   Info,
   Loader2,
-  ArrowLeft,
-  Plus,
   MoreHorizontal,
   Pencil,
   Trash2,
@@ -19,9 +17,6 @@ import {
 /* ---------- shadcn/ui ---------- */
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-
 import {
   Dialog,
   DialogContent,
@@ -47,14 +42,13 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+
+/* ---------- DataTable (baru) ---------- */
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  CDataTable,
+  type ColumnDef,
+  type Align,
+} from "@/components/costum/table/CDataTable";
 
 /* ===================== Types ===================== */
 type AcademicTerm = {
@@ -287,80 +281,7 @@ function useDeleteTerm(schoolId?: string) {
   });
 }
 
-/* ===================== Small shadcn helpers ===================== */
-function SearchBar({
-  value,
-  onChange,
-  placeholder,
-  rightExtra,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  rightExtra?: React.ReactNode;
-}) {
-  return (
-    <div className="flex w-full items-center gap-3">
-      <Input
-        placeholder={placeholder || "Cari…"}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="h-10"
-      />
-      {rightExtra}
-    </div>
-  );
-}
-
-function PaginationBar({
-  pageStart,
-  pageEnd,
-  total,
-  canPrev,
-  canNext,
-  onPrev,
-  onNext,
-  rightExtra,
-}: {
-  pageStart: number;
-  pageEnd: number;
-  total: number;
-  canPrev: boolean;
-  canNext: boolean;
-  onPrev: () => void;
-  onNext: () => void;
-  rightExtra?: React.ReactNode;
-}) {
-  return (
-    <div className="mt-4 flex items-center justify-between">
-      <div className="text-sm text-muted-foreground">
-        Menampilkan {pageStart}–{pageEnd} dari {total} data
-      </div>
-      <div className="flex items-center gap-3">
-        {rightExtra}
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onPrev}
-            disabled={!canPrev}
-          >
-            Prev
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onNext}
-            disabled={!canNext}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
+/* ===================== Actions Menu ===================== */
 function ActionsMenu({
   onView,
   onEdit,
@@ -457,7 +378,8 @@ function TermFormDialog({
         <div className="grid gap-3">
           <div className="grid gap-1.5">
             <label className="text-sm">Tahun Ajaran</label>
-            <Input
+            <input
+              className="h-9 rounded-md border bg-background px-3 text-sm outline-none"
               value={values.academic_year}
               onChange={(e) => set("academic_year", e.target.value)}
               placeholder="2025/2026"
@@ -466,7 +388,8 @@ function TermFormDialog({
 
           <div className="grid gap-1.5">
             <label className="text-sm">Nama Periode</label>
-            <Input
+            <input
+              className="h-9 rounded-md border bg-background px-3 text-sm outline-none"
               value={values.name}
               onChange={(e) => set("name", e.target.value)}
               placeholder="Ganjil / Genap"
@@ -476,7 +399,8 @@ function TermFormDialog({
           <div className="grid md:grid-cols-2 gap-3">
             <div className="grid gap-1.5">
               <label className="text-sm">Mulai</label>
-              <Input
+              <input
+                className="h-9 rounded-md border bg-background px-3 text-sm outline-none"
                 type="date"
                 value={values.start_date}
                 onChange={(e) => set("start_date", e.target.value)}
@@ -484,7 +408,8 @@ function TermFormDialog({
             </div>
             <div className="grid gap-1.5">
               <label className="text-sm">Selesai</label>
-              <Input
+              <input
+                className="h-9 rounded-md border bg-background px-3 text-sm outline-none"
                 type="date"
                 value={values.end_date}
                 onChange={(e) => set("end_date", e.target.value)}
@@ -495,7 +420,8 @@ function TermFormDialog({
           <div className="grid md:grid-cols-2 gap-3">
             <div className="grid gap-1.5">
               <label className="text-sm">Angkatan</label>
-              <Input
+              <input
+                className="h-9 rounded-md border bg-background px-3 text-sm outline-none"
                 type="number"
                 value={values.angkatan}
                 onChange={(e) => set("angkatan", Number(e.target.value || 0))}
@@ -516,7 +442,8 @@ function TermFormDialog({
 
           <div className="grid gap-1.5">
             <label className="text-sm">Slug (opsional)</label>
-            <Input
+            <input
+              className="h-9 rounded-md border bg-background px-3 text-sm outline-none"
               value={values.slug || ""}
               onChange={(e) => set("slug", e.target.value)}
               placeholder="ganjil-2025"
@@ -544,7 +471,7 @@ function TermFormDialog({
   );
 }
 
-/* ===================== Page ===================== */
+/* ===================== Page (pakai DataTable) ===================== */
 const SchoolAcademic: React.FC = () => {
   const { schoolId } = useParams<{ schoolId: string }>();
   const navigate = useNavigate();
@@ -571,41 +498,6 @@ const SchoolAcademic: React.FC = () => {
 
   const terms: AcademicTerm[] = termsQ.data ?? [];
 
-  /* Search (sinkron ?q=) — sederhanakan: state lokal saja */
-  const [q, setQ] = useState("");
-
-  const filtered: AcademicTerm[] = useMemo(() => {
-    const s = (q || "").toLowerCase().trim();
-    if (!s) return terms;
-    return terms.filter(
-      (t) =>
-        t.academic_year.toLowerCase().includes(s) ||
-        t.name.toLowerCase().includes(s) ||
-        String(t.angkatan).includes(s)
-    );
-  }, [terms, q]);
-
-  /* Pagination */
-  const total = filtered.length;
-  const [limit] = useState(20);
-  const [offset, setOffset] = useState(0);
-  useEffect(() => {
-    setOffset(0); // reset ke halaman pertama saat filter/limit berubah
-  }, [q, limit]);
-  const pageStart = total === 0 ? 0 : offset + 1;
-  const pageEnd = Math.min(offset + limit, total);
-  const canPrev = offset > 0;
-  const canNext = offset + limit < total;
-  const handlePrev = () => canPrev && setOffset((v) => Math.max(0, v - limit));
-  const handleNext = () =>
-    canNext &&
-    setOffset((v) => Math.min(total - (total % limit || limit), v + limit));
-
-  const pageTerms: AcademicTerm[] = useMemo(
-    () => filtered.slice(offset, Math.min(offset + limit, total)),
-    [filtered, offset, limit, total]
-  );
-
   const activeTerm: AcademicTerm | null = useMemo(() => {
     if (!terms.length) return null;
     const actives = terms.filter((t) => t.is_active);
@@ -631,20 +523,6 @@ const SchoolAcademic: React.FC = () => {
     setConfirmOpen(false);
   };
 
-  const modalInitial = useMemo(() => {
-    if (!(modal?.mode === "edit" && modal.editing)) return undefined;
-    const e = modal.editing;
-    return {
-      academic_year: e.academic_year,
-      name: e.name,
-      start_date: e.start_date?.slice(0, 10) ?? "",
-      end_date: e.end_date?.slice(0, 10) ?? "",
-      angkatan: e.angkatan,
-      is_active: e.is_active,
-      slug: e.slug ?? "",
-    } as Partial<TermPayload>;
-  }, [modal?.mode, modal?.editing?.id]);
-
   const handleSubmit = useCallback(
     (v: TermPayload) => {
       if (modal?.mode === "edit" && modal.editing) {
@@ -667,184 +545,153 @@ const SchoolAcademic: React.FC = () => {
     [modal, updateTerm, createTerm]
   );
 
+  /* ======= Definisi kolom untuk DataTable ======= */
+  const columns: ColumnDef<AcademicTerm>[] = [
+    {
+      id: "academic_year",
+      header: "Tahun Ajaran",
+      minW: "160px",
+      cell: (t) => <span className="font-medium">{t.academic_year}</span>,
+    },
+    {
+      id: "name",
+      header: "Nama",
+      minW: "140px",
+      cell: (t) => t.name,
+    },
+    {
+      id: "date_range",
+      header: "Tanggal",
+      minW: "200px",
+      cell: (t) => (
+        <span>
+          {dateShort(t.start_date)} — {dateShort(t.end_date)}
+        </span>
+      ),
+    },
+    {
+      id: "angkatan",
+      header: "Angkatan",
+      minW: "120px",
+      align: "center" as Align,
+      cell: (t) => t.angkatan,
+    },
+    {
+      id: "status",
+      header: "Status",
+      minW: "120px",
+      cell: (t) => (
+        <Badge variant={t.is_active ? "default" : "outline"}>
+          {t.is_active ? "Aktif" : "Nonaktif"}
+        </Badge>
+      ),
+    },
+  ];
+
+  /* ======= Slot ringkasan (akan dibungkus CardContent oleh DataTable) ======= */
+  const statsSlot = termsQ.isLoading ? (
+    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <Loader2 className="animate-spin" size={16} /> Memuat periode akademik…
+    </div>
+  ) : termsQ.isError ? (
+    <div className="rounded-xl border p-4 text-sm space-y-2">
+      <div className="flex items-center gap-2">
+        <Info size={16} /> Gagal memuat periode akademik.
+      </div>
+      <pre className="text-xs opacity-70 overflow-auto">
+        {extractErrorMessage(termsQ.error)}
+      </pre>
+      <Button size="sm" onClick={() => termsQ.refetch()}>
+        Coba lagi
+      </Button>
+    </div>
+  ) : !activeTerm ? (
+    <div className="text-sm text-muted-foreground flex items-center gap-2">
+      <Info size={16} /> Belum ada periode akademik.
+    </div>
+  ) : (
+    <div className="grid md:grid-cols-2 gap-4">
+      <div className="space-y-2">
+        <div className="text-sm text-muted-foreground">Tahun Ajaran</div>
+        <div className="text-xl font-semibold">
+          {activeTerm.academic_year} — {activeTerm.name}
+        </div>
+        <div className="text-sm flex items-center gap-2 text-muted-foreground">
+          <CalendarDays size={16} /> {dateShort(activeTerm.start_date)} s/d{" "}
+          {dateShort(activeTerm.end_date)}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <div className="text-sm text-muted-foreground">Angkatan</div>
+        <div className="text-xl font-semibold">{activeTerm.angkatan}</div>
+        <div className="text-sm flex items-center gap-2 text-muted-foreground">
+          <CheckCircle2 size={16} /> Status:{" "}
+          {activeTerm.is_active ? "Aktif" : "Nonaktif"}
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-background text-foreground">
       <main className="w-full px-4 md:px-6 py-4 md:py-8">
         <div className="mx-auto flex max-w-screen-2xl flex-col gap-4 lg:gap-6">
-          {/* ===== Header ===== */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="hidden md:flex items-center gap-2 font-semibold">
-              <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-                <ArrowLeft size={18} />
-              </Button>
-              <h1 className="text-lg">Periode Akademik</h1>
-            </div>
-
-            <div className="flex-1 min-w-0">
-              <SearchBar
-                value={q}
-                onChange={setQ}
-                placeholder="Cari tahun, nama, atau angkatan…"
+          <CDataTable<AcademicTerm>
+            /* ===== Toolbar ===== */
+            title="Periode Akademik"
+            onBack={() => navigate(-1)}
+            onAdd={() => setModal({ mode: "create" })}
+            addLabel="Tambah"
+            controlsPlacement="above" // ⬅️ kontrol persis di atas tabel
+            /* Search */
+            defaultQuery=""
+            searchByKeys={["academic_year", "name", "angkatan"]}
+            /* Stats area */
+            statsSlot={statsSlot}
+            /* ===== Data ===== */
+            loading={termsQ.isLoading}
+            error={termsQ.isError ? extractErrorMessage(termsQ.error) : null}
+            columns={columns}
+            rows={terms}
+            getRowId={(t) => t.id}
+            /* ⬇️ Klik baris/card langsung ke detail */
+            onRowClick={(row) =>
+              navigate(`/${schoolId}/sekolah/akademik/detail/${row.id}`, {
+                state: { term: row },
+              })
+            }
+            renderActions={(t) => (
+              <ActionsMenu
+                onView={() =>
+                  navigate(`/${schoolId}/sekolah/akademik/detail/${t.id}`, {
+                    state: { term: t },
+                  })
+                }
+                onEdit={() => setModal({ mode: "edit", editing: t })}
+                onDelete={() => {
+                  setToDelete(t);
+                  setConfirmOpen(true);
+                }}
               />
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                className="gap-1"
-                onClick={() => setModal({ mode: "create" })}
-              >
-                <Plus size={16} /> Tambah
-              </Button>
-            </div>
-          </div>
-
-          {/* ===== Ringkasan term aktif ===== */}
-          <Card>
-            <CardContent className="p-5">
-              {termsQ.isLoading ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="animate-spin" size={16} /> Memuat periode
-                  akademik…
-                </div>
-              ) : termsQ.isError ? (
-                <div className="rounded-xl border p-4 text-sm space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Info size={16} /> Gagal memuat periode akademik.
-                  </div>
-                  <pre className="text-xs opacity-70 overflow-auto">
-                    {extractErrorMessage(termsQ.error)}
-                  </pre>
-                  <Button size="sm" onClick={() => termsQ.refetch()}>
-                    Coba lagi
-                  </Button>
-                </div>
-              ) : !activeTerm ? (
-                <div className="rounded-xl border p-4 text-sm text-muted-foreground flex items-center gap-2">
-                  <Info size={16} /> Belum ada periode akademik.
-                </div>
-              ) : (
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <div className="text-sm text-muted-foreground">
-                      Tahun Ajaran
-                    </div>
-                    <div className="text-xl font-semibold">
-                      {activeTerm.academic_year} — {activeTerm.name}
-                    </div>
-                    <div className="text-sm flex items-center gap-2 text-muted-foreground">
-                      <CalendarDays size={16} />{" "}
-                      {dateShort(activeTerm.start_date)} s/d{" "}
-                      {dateShort(activeTerm.end_date)}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="text-sm text-muted-foreground">
-                      Angkatan
-                    </div>
-                    <div className="text-xl font-semibold">
-                      {activeTerm.angkatan}
-                    </div>
-                    <div className="text-sm flex items-center gap-2 text-muted-foreground">
-                      <CheckCircle2 size={16} /> Status:{" "}
-                      {activeTerm.is_active ? "Aktif" : "Nonaktif"}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* ===== Daftar semua terms + aksi ===== */}
-          {/* ===== Daftar semua terms + aksi ===== */}
-
-          <CardContent>
-            {termsQ.isLoading ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="animate-spin" size={16} /> Memuat…
-              </div>
-            ) : total === 0 ? (
-              <div className="rounded-xl border p-4 text-sm text-muted-foreground flex items-center gap-2">
-                <Info size={16} /> Belum ada data.
-              </div>
-            ) : (
-              <>
-                {/* ✅ Table responsive seperti SchoolBooks */}
-                <div className="overflow-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="min-w-[160px]">
-                          Tahun Ajaran
-                        </TableHead>
-                        <TableHead className="min-w-[140px]">Nama</TableHead>
-                        <TableHead className="min-w-[200px]">Tanggal</TableHead>
-                        <TableHead className="min-w-[120px]">
-                          Angkatan
-                        </TableHead>
-                        <TableHead className="min-w-[120px]">Status</TableHead>
-                        <TableHead className="min-w-[80px] text-right">
-                          Aksi
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-
-                    <TableBody>
-                      {pageTerms.map((t) => (
-                        <TableRow key={t.id}>
-                          <TableCell className="font-medium">
-                            {t.academic_year}
-                          </TableCell>
-                          <TableCell>{t.name}</TableCell>
-                          <TableCell>
-                            {dateShort(t.start_date)} — {dateShort(t.end_date)}
-                          </TableCell>
-                          <TableCell>{t.angkatan}</TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={t.is_active ? "default" : "outline"}
-                            >
-                              {t.is_active ? "Aktif" : "Nonaktif"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end">
-                              <ActionsMenu
-                                onView={() =>
-                                  navigate(
-                                    `/${schoolId}/sekolah/akademik/detail/${t.id}`,
-                                    { state: { term: t } }
-                                  )
-                                }
-                                onEdit={() =>
-                                  setModal({ mode: "edit", editing: t })
-                                }
-                                onDelete={() => {
-                                  setToDelete(t);
-                                  setConfirmOpen(true);
-                                }}
-                              />
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-
-                <PaginationBar
-                  pageStart={pageStart}
-                  pageEnd={pageEnd}
-                  total={total}
-                  canPrev={canPrev}
-                  canNext={canNext}
-                  onPrev={handlePrev}
-                  onNext={handleNext}
-                />
-              </>
             )}
-          </CardContent>
+            
+            actions={{
+              mode: "inline",
+              onView: (row) => {
+                navigate(`/${schoolId}/sekolah/akademik/detail/${row.id}`, {
+                  state: { term: row },
+                });
+              },
+              onEdit: (row) => setModal({ mode: "edit", editing: row }),
+              onDelete: (row) => {
+                setToDelete(row);
+                setConfirmOpen(true);
+              },
+            }}
+            /* ===== Pagination (client-side) ===== */
+            pageSize={20}
+          />
         </div>
       </main>
 
@@ -853,9 +700,9 @@ const SchoolAcademic: React.FC = () => {
         key={modal?.editing?.id ?? modal?.mode ?? "closed"}
         open={!!modal}
         onClose={() => setModal(null)}
-        initial={modalInitial}
+        initial={modal ? undefined : undefined}
         loading={createTerm.isPending || updateTerm.isPending}
-        onSubmit={handleSubmit}
+        onSubmit={(v) => handleSubmit(v)}
       />
 
       {/* Modal Konfirmasi Hapus */}

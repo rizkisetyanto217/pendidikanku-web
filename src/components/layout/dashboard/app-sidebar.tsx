@@ -1,4 +1,3 @@
-// src/components/layout/dashboard/app-sidebar.tsx
 import * as React from "react";
 import { useLocation } from "react-router-dom";
 import {
@@ -7,6 +6,7 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
+  useSidebar, // ⬅️ dipakai untuk menutup sheet di mobile saat klik menu
 } from "@/components/ui/sidebar";
 import { NavMain } from "@/components/layout/dashboard/nav-main";
 import { NavProjects } from "@/components/layout/dashboard/nav-projects";
@@ -75,6 +75,7 @@ function useRoleAndBaseFromPath(): { role: keyof NavDict; base: string } {
 
 export function AppSidebar(props: AppSidebarProps) {
   const { role, base } = useRoleAndBaseFromPath();
+  const { setOpenMobile } = useSidebar(); // ⬅️ untuk nutup saat klik menu (mobile)
 
   // Bentuk data untuk NavMain (pakai prop `items`, bukan `children`)
   const items = NAVS[role].map((it) => {
@@ -119,7 +120,8 @@ export function AppSidebar(props: AppSidebarProps) {
       </SidebarHeader>
 
       <SidebarContent>
-        <NavMain items={items} />
+        {/* ⬅️ Tutup sheet mobile segera setelah user klik item */}
+        <NavMain items={items} onNavigate={() => setOpenMobile(false)} />
         <NavProjects projects={data.projects} />
       </SidebarContent>
 

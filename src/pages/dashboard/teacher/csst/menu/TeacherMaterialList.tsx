@@ -1,10 +1,9 @@
 // src/pages/sekolahislamku/teacher/MaterialsClass.shadcn.tsx
-import { useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
-  ChevronRight,
   Download,
   ExternalLink,
   Search,
@@ -15,12 +14,12 @@ import {
   Check,
   Pencil,
   Trash2,
-  MoreVertical,
   FileText,
   Link as LinkIcon,
   PlayCircle,
 } from "lucide-react";
 
+/* shadcn/ui */
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -55,21 +54,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
-import {
-  Table,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-  TableCell,
-} from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+
+/* DataTable reusable */
+import { DataTable, type ColumnDef } from "@/components/costum/table/CDataTable";
 
 /* =========================================================
    TYPES
@@ -85,12 +73,11 @@ export type Material = {
   updatedAt?: string;
   author?: string;
 
-  // optional fields by type
   description?: string;
-  content?: string; // article body (markdown/plain)
-  url?: string; // link / file / youtube url
-  fileName?: string; // for file
-  fileSize?: number; // for file (bytes)
+  content?: string;
+  url?: string;
+  fileName?: string;
+  fileSize?: number;
 };
 
 type AttendanceStatus = "hadir" | "sakit" | "izin" | "alpa" | "online";
@@ -116,7 +103,7 @@ type TeacherClassSummary = {
 };
 
 /* =========================================================
-   DUMMY FETCHERS (ganti ke API saat siap)
+   DUMMY FETCHERS
 ========================================================= */
 const mkISO = (d = new Date()) => d.toISOString();
 
@@ -151,7 +138,6 @@ async function fetchTeacherClasses(): Promise<TeacherClassSummary[]> {
 }
 
 async function fetchMaterialsByClass(classId: string): Promise<Material[]> {
-  // status ditiadakan (sesuai tipe Material sekarang)
   return Promise.resolve([
     {
       id: "m-1",
@@ -241,7 +227,7 @@ function extractYouTubeId(url?: string) {
   return null;
 }
 
-const typeIcon = (t: MaterialType) =>
+const TypeIcon = ({ t }: { t: MaterialType }) =>
   t === "article" ? (
     <FileText className="h-4 w-4" />
   ) : t === "file" ? (
@@ -455,7 +441,9 @@ function EditMaterialDialog({
     defaultValues?.fileSize
   );
 
-  if (open && defaultValues && title !== defaultValues.title) {
+  // Sinkronkan ketika dialog dibuka atau defaultValues berubah
+  useEffect(() => {
+    if (!open || !defaultValues) return;
     setTitle(defaultValues.title ?? "");
     setType(defaultValues.type ?? "article");
     setDescription(defaultValues.description ?? "");
@@ -463,7 +451,7 @@ function EditMaterialDialog({
     setUrl(defaultValues.url ?? "");
     setFileName(defaultValues.fileName ?? "");
     setFileSize(defaultValues.fileSize);
-  }
+  }, [open, defaultValues]);
 
   const submit = () => {
     onSubmit({
@@ -602,7 +590,7 @@ function EditMaterialDialog({
 }
 
 /* =========================================================
-   PAGE (TABLE for md+, CARDS for mobile)
+   PAGE (pakai DataTable)
 ========================================================= */
 export default function TeacherMaterialList() {
   const { id = "" } = useParams<{ id: string }>();
@@ -628,7 +616,6 @@ export default function TeacherMaterialList() {
   // filter & search
   const [q, setQ] = useState("");
   const [type, setType] = useState<"all" | MaterialType>("all");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     let list = materials;
@@ -656,15 +643,7 @@ export default function TeacherMaterialList() {
     if (!editing) return undefined;
     const { title, type, description, content, url, fileName, fileSize } =
       editing;
-    return {
-      title,
-      type,
-      description,
-      content,
-      url,
-      fileName,
-      fileSize,
-    } as EditMaterialPayload;
+    return { title, type, description, content, url, fileName, fileSize };
   }, [editing]);
 
   const handleAddSubmit = (p: AddMaterialPayload) => {
@@ -728,8 +707,6 @@ export default function TeacherMaterialList() {
       m.url || `${window.location.origin}/class/${id}/materials/${m.id}`;
     try {
       await navigator.clipboard.writeText(shareUrl);
-      setCopiedId(m.id);
-      setTimeout(() => setCopiedId(null), 1500);
     } catch {
       const el = document.createElement("textarea");
       el.value = shareUrl;
@@ -737,11 +714,216 @@ export default function TeacherMaterialList() {
       el.select();
       document.execCommand("copy");
       document.body.removeChild(el);
+    } finally {
       setCopiedId(m.id);
-      setTimeout(() => setCopiedId(null), 1500);
+      setTimeout(() => setCopiedId(null), 1200);
     }
   };
 
+  /* =========================
+     DataTable columns
+  ========================= */
+  const columns = useMemo<ColumnDef<Material>[]>(() => {
+    const TitleCell = (m: Material) => {
+      const ytId = m.type === "youtube" ? extractYouTubeId(m.url) : null;
+      return (
+        <div className="text-left space-y-1 max-w-[42ch]">
+          <div className="font-medium truncate">{m.title}</div>
+          {m.description && (
+            <div className="text-sm text-muted-foreground line-clamp-2">
+              {m.description}
+            </div>
+          )}
+          {m.type !== "article" && m.url && (
+            <a
+              className="text-xs underline break-all text-muted-foreground"
+              href={
+                m.type === "youtube" && ytId
+                  ? `https://www.youtube.com/watch?v=${ytId}`
+                  : m.url
+              }
+              target="_blank"
+              rel="noreferrer"
+              data-no-row-click
+            >
+              {m.url}
+            </a>
+          )}
+        </div>
+      );
+    };
+
+    const TypeCell = (m: Material) => (
+      <div className="inline-flex items-center gap-2">
+        <TypeIcon t={m.type} />
+        <span className="capitalize">{m.type}</span>
+      </div>
+    );
+
+    return [
+      {
+        id: "title",
+        header: "Judul",
+        cell: TitleCell,
+        align: "left",
+        minW: "320px",
+      },
+      { id: "type", header: "Jenis", cell: TypeCell, minW: "120px" },
+      {
+        id: "createdAt",
+        header: "Dibuat",
+        cell: (m: Material) => dateLong(m.createdAt),
+        minW: "180px",
+      },
+      {
+        id: "author",
+        header: "Author",
+        cell: (m: Material) => m.author ?? "—",
+        minW: "160px",
+      },
+    ];
+  }, []);
+
+  /* =========================
+     Card renderer (mobile / card view)
+  ========================= */
+  const renderCard = (m: Material) => {
+    const ytId = m.type === "youtube" ? extractYouTubeId(m.url) : null;
+    return (
+      <Card className="transition-shadow hover:shadow-md">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base truncate">{m.title}</CardTitle>
+          {m.description && (
+            <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
+              {m.description}
+            </p>
+          )}
+        </CardHeader>
+        <CardContent className="pt-0 space-y-3">
+          <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="h-3.5 w-3.5" />
+              <span>{dateLong(m.createdAt)}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <TypeIcon t={m.type} />
+              <span className="capitalize">{m.type}</span>
+            </div>
+            {m.author && <span>• Oleh {m.author}</span>}
+            {m.type === "file" && (
+              <span>
+                • {m.fileName ?? "file"}{" "}
+                {m.fileSize ? `(${bytesToHuman(m.fileSize)})` : ""}
+              </span>
+            )}
+          </div>
+
+          {m.type === "article" && m.content && (
+            <div className="text-sm border rounded-md p-3 bg-muted/30 max-h-40 overflow-auto">
+              {m.content}
+            </div>
+          )}
+
+          {(m.type === "link" || m.type === "file") && m.url && (
+            <div className="text-sm">
+              <a
+                href={m.url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 underline break-all"
+              >
+                Buka {m.type === "file" ? "file" : "tautan"}{" "}
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            </div>
+          )}
+
+          {m.type === "youtube" && ytId && (
+            <div className="aspect-video w-full overflow-hidden rounded-md border">
+              <iframe
+                className="w-full h-full"
+                src={`https://www.youtube.com/embed/${ytId}`}
+                title={m.title}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            </div>
+          )}
+        </CardContent>
+        <CardFooter className="flex flex-wrap gap-2">
+          {m.url && (
+            <a
+              href={m.url}
+              target="_blank"
+              rel="noreferrer"
+              className="break-all"
+            >
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                data-no-row-click
+              >
+                {m.type === "file" ? (
+                  <Download className="h-4 w-4" />
+                ) : (
+                  <ExternalLink className="h-4 w-4" />
+                )}
+                {m.type === "file" ? "Unduh / Buka" : "Buka"}
+              </Button>
+            </a>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={(e) => {
+              e.stopPropagation();
+              copyShare(m);
+            }}
+            data-no-row-click
+            title="Salin tautan materi"
+          >
+            {copiedId === m.id ? (
+              <Check className="h-4 w-4" />
+            ) : (
+              <Copy className="h-4 w-4" />
+            )}
+            {copiedId === m.id ? "Disalin" : "Salin Link"}
+          </Button>
+          <Button
+            size="sm"
+            className="gap-2"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(m);
+            }}
+            data-no-row-click
+          >
+            <Pencil className="h-4 w-4" />
+            Edit
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            className="gap-2"
+            onClick={(e) => {
+              e.stopPropagation();
+              setDeleteTarget(m);
+            }}
+            data-no-row-click
+          >
+            <Trash2 className="h-4 w-4" />
+            Hapus
+          </Button>
+        </CardFooter>
+      </Card>
+    );
+  };
+
+  /* =========================
+     Render
+  ========================= */
   return (
     <div className="w-full">
       {/* Header actions */}
@@ -852,349 +1034,58 @@ export default function TeacherMaterialList() {
         </Card>
       </div>
 
-      {/* DESKTOP/TABLET: TABLE (md+) */}
-      <div className="hidden md:block px-4 md:px-6">
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[38%]">Judul</TableHead>
-                  <TableHead className="w-[12%]">Jenis</TableHead>
-                  <TableHead className="w-[18%]">Dibuat</TableHead>
-                  <TableHead className="w-[18%]">Author</TableHead>
-                  <TableHead className="w-[14%] text-right">Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((m) => {
-                  const ytId =
-                    m.type === "youtube" ? extractYouTubeId(m.url) : null;
-                  return (
-                    <TableRow key={m.id} className="align-top">
-                      <TableCell>
-                        <div className="font-medium truncate">{m.title}</div>
-                        {m.description && (
-                          <div className="text-sm text-muted-foreground line-clamp-2">
-                            {m.description}
-                          </div>
-                        )}
-                        {m.type !== "article" && m.url && (
-                          <a
-                            className="text-xs underline break-all text-muted-foreground"
-                            href={
-                              m.type === "youtube" && ytId
-                                ? `https://www.youtube.com/watch?v=${ytId}`
-                                : m.url
-                            }
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            {m.url}
-                          </a>
-                        )}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        <div className="inline-flex items-center gap-2">
-                          {typeIcon(m.type)}
-                          <span className="capitalize">{m.type}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {dateLong(m.createdAt)}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {m.author ?? "—"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="inline-flex flex-wrap gap-2 justify-end">
-                          {m.url && (
-                            <a
-                              href={m.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="break-all"
-                            >
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="gap-2"
-                              >
-                                {m.type === "file" ? (
-                                  <Download className="h-4 w-4" />
-                                ) : (
-                                  <ExternalLink className="h-4 w-4" />
-                                )}
-                                {m.type === "file" ? "Unduh" : "Buka"}
-                              </Button>
-                            </a>
-                          )}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="gap-2"
-                            onClick={() => copyShare(m)}
-                            title="Salin tautan materi"
-                          >
-                            {copiedId === m.id ? (
-                              <Check className="h-4 w-4" />
-                            ) : (
-                              <Copy className="h-4 w-4" />
-                            )}
-                            {copiedId === m.id ? "Disalin" : "Salin"}
-                          </Button>
-                          <Link to={`../material/${m.id}`} relative="path">
-                            <Button size="sm" className="gap-2">
-                              Buka <ChevronRight className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            className="gap-2"
-                            onClick={() => onEdit(m)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                            Edit
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            className="gap-2"
-                            onClick={() => setDeleteTarget(m)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            Hapus
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-
-                {filtered.length === 0 && !isFetching && (
-                  <TableRow>
-                    <TableCell
-                      colSpan={5}
-                      className="h-24 text-center text-sm text-muted-foreground"
-                    >
-                      Belum ada materi untuk kelas ini.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* MOBILE: CARDS (< md) */}
-      <div className="md:hidden px-4 pb-8 space-y-4">
-        {isFetching && filtered.length === 0 && (
-          <Card>
-            <CardContent className="p-8">
-              <div className="text-sm text-muted-foreground text-center">
-                Memuat materi…
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {filtered.map((m) => {
-          const ytId = m.type === "youtube" ? extractYouTubeId(m.url) : null;
-
-          return (
-            <Card key={m.id} className="transition-shadow hover:shadow-md">
-              <CardHeader className="pb-3 break-words">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <CardTitle className="text-base truncate">
-                      {m.title}
-                    </CardTitle>
-                    {m.description && (
-                      <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
-                        {m.description}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Kebab menu (mobile actions) */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Aksi materi"
-                      >
-                        <MoreVertical className="h-5 w-5" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-40">
-                      <DropdownMenuItem asChild>
-                        <Link
-                          to={`../material/${m.id}`}
-                          className="flex items-center gap-2"
-                        >
-                          <ChevronRight className="h-4 w-4" /> Buka
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => onEdit(m)}
-                        className="flex items-center gap-2"
-                      >
-                        <Pencil className="h-4 w-4" /> Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => setDeleteTarget(m)}
-                        className="flex items-center gap-2 text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" /> Hapus
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </CardHeader>
-
-              <CardContent className="pt-0 space-y-3 break-words">
-                <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <CalendarDays className="h-3.5 w-3.5" />
-                    <span>Dibuat: {dateLong(m.createdAt)}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {typeIcon(m.type)}{" "}
-                    <span className="capitalize">{m.type}</span>
-                  </div>
-                  {m.author && <span>• Oleh {m.author}</span>}
-                  {m.type === "file" && (
-                    <span>
-                      • {m.fileName ?? "file"}{" "}
-                      {m.fileSize ? `(${bytesToHuman(m.fileSize)})` : ""}
-                    </span>
-                  )}
-                </div>
-
-                {/* Preview ringkas */}
-                {m.type === "article" && m.content && (
-                  <div className="text-sm border rounded-md p-3 bg-muted/30 max-h-40 overflow-auto">
-                    {m.content}
-                  </div>
-                )}
-
-                {m.type === "link" && m.url && (
-                  <div className="text-sm">
-                    <a
-                      href={m.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-2 underline break-all"
-                    >
-                      Buka tautan <ExternalLink className="h-4 w-4" />
-                    </a>
-                  </div>
-                )}
-
-                {m.type === "file" && m.url && (
-                  <div className="text-sm">
-                    <a
-                      href={m.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-2 underline break-all"
-                    >
-                      Buka file <ExternalLink className="h-4 w-4" />
-                    </a>
-                  </div>
-                )}
-
-                {m.type === "youtube" && ytId && (
-                  <>
-                    <div className="flex flex-wrap items-center gap-2 text-sm">
-                      <a
-                        href={`https://www.youtube.com/watch?v=${ytId}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-2 underline break-all"
-                      >
-                        Buka di YouTube <ExternalLink className="h-4 w-4" />
-                      </a>
-
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        aria-expanded={expandedId === m.id}
-                        onClick={() =>
-                          setExpandedId(expandedId === m.id ? null : m.id)
-                        }
-                      >
-                        {expandedId === m.id ? "Tutup Preview" : "Preview"}
-                      </Button>
-                    </div>
-
-                    {expandedId === m.id && (
-                      <div className="w-full mt-2">
-                        <div className="aspect-video w-full overflow-hidden rounded-md border">
-                          <iframe
-                            className="w-full h-full"
-                            src={`https://www.youtube.com/embed/${ytId}`}
-                            title={m.title}
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                            allowFullScreen
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-              </CardContent>
-
-              <CardFooter className="flex flex-wrap gap-2">
-                {m.url && (
-                  <a
-                    href={m.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="break-all"
+      {/* DATATABLE */}
+      <div className="px-4 md:px-6 pb-8">
+        <DataTable<Material>
+          title="Daftar Materi"
+          defaultQuery={q}
+          onQueryChange={setQ}
+          searchByKeys={["title", "description", "author"]}
+          columns={columns}
+          rows={filtered}
+          getRowId={(m: Material) => m.id}
+          stickyHeader
+          zebra
+          viewModes={["table", "card"]}
+          defaultView="table"
+          renderCard={renderCard}
+          onRowClick={(m: Material) =>
+            navigate(`../material/${m.id}`, { relative: "path" })
+          }
+          rightSlot={
+            isFetching ? (
+              <span className="text-xs text-muted-foreground">Memuat…</span>
+            ) : null
+          }
+          renderActions={(m: Material) => (
+            <div className="flex items-center justify-center gap-2">
+              {m.url && (
+                <a href={m.url} target="_blank" rel="noreferrer">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    data-no-row-click
+                    title={m.type === "file" ? "Unduh file" : "Buka tautan"}
                   >
-                    <Button variant="outline" size="sm" className="gap-2">
-                      {m.type === "file" ? (
-                        <Download className="h-4 w-4" />
-                      ) : (
-                        <ExternalLink className="h-4 w-4" />
-                      )}
-                      {m.type === "file" ? "Unduh / Buka" : "Buka"}
-                    </Button>
-                  </a>
-                )}
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  onClick={() => copyShare(m)}
-                  title="Salin tautan materi"
-                >
-                  {copiedId === m.id ? (
-                    <Check className="h-4 w-4" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                  {copiedId === m.id ? "Disalin" : "Salin Link"}
-                </Button>
-              </CardFooter>
-            </Card>
-          );
-        })}
-
-        {filtered.length === 0 && !isFetching && (
-          <Card>
-            <CardContent className="p-8">
-              <div className="text-sm text-muted-foreground text-center">
-                Belum ada materi untuk kelas ini.
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                    {m.type === "file" ? (
+                      <Download className="h-4 w-4" />
+                    ) : (
+                      <ExternalLink className="h-4 w-4" />
+                    )}
+                  </Button>
+                </a>
+              )}
+              {/* ...dst */}
+            </div>
+          )}
+          rowHover
+          emptySlot={
+            <div className="text-sm text-muted-foreground">
+              Belum ada materi untuk kelas ini.
+            </div>
+          }
+        />
       </div>
     </div>
   );

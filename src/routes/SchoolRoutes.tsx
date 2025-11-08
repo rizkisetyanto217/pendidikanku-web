@@ -7,7 +7,7 @@ import SchoolProfile from "@/pages/dashboard/school/profile/SchoolProfile";
 import SchoolFinance from "@/pages/dashboard/school/finance/SchoolFinance";
 import SchoolDetailBill from "@/pages/dashboard/school/finance/SchoolDetailBill";
 import SchoolSpp from "@/pages/dashboard/school/finance/SchoolSpp";
-import SchoolTeacher from "@/pages/dashboard/school/teacher/SchoolDashboard";
+import SchoolTeacher from "@/pages/dashboard/school/teacher/SchoolTeacher";
 import SchoolDetailTeacher from "@/pages/dashboard/school/teacher/details/SchoolDetailTeacher";
 import SchoolMenuGrids from "@/pages/dashboard/school/menu/SchoolMenuGrids";
 import SchoolClass from "@/pages/dashboard/school/class/SchoolClass";
@@ -98,6 +98,7 @@ export const SchoolRoutes = (
       <Route index element={<SchoolAcademic />} />
       <Route path="detail/:id" element={<SchoolDetailAcademic />} />
       <Route path="kelola" element={<SchoolManagementAcademicDetail />} />
+      <Route path="terms" element={<SchoolAllSchedule />} />
     </Route>
 
     <Route path="kelas">
@@ -121,7 +122,7 @@ export const SchoolRoutes = (
       <Route path="profil-sekolah" element={<SchoolProfile showBack />} />
       <Route path="keuangan" element={<SchoolFinance />} />
       <Route path="keuangan/detail/:id" element={<SchoolDetailBill />} />
-      <Route path="guru" element={<SchoolTeacher showBack />} />
+      <Route path="guru" element={<SchoolTeacher />} />
       {/* <Route path="all-announcement" element={<AllAnnouncement />} /> */}
       <Route path="sekolah" element={<SchoolDashboard showBack />} />
       <Route path="ruangan" element={<SchoolRoom />} />

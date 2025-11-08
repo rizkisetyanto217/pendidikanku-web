@@ -48,7 +48,7 @@ const dateLong = (iso?: string) =>
       })
     : "-";
 
-export default function TeacherDetailGrading() {
+export default function TeacherDetailAssignement() {
   const { id: classId, assignmentId } = useParams<{
     id: string;
     assignmentId: string;

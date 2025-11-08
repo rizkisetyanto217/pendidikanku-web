@@ -1,10 +1,12 @@
+// src/components/layout/dashboard/DashboardLayout.tsx
 import * as React from "react";
-import { Outlet } from "react-router-dom"; // ⬅️ tambahkan ini
+import { Outlet, useLocation } from "react-router-dom";
 import { AppSidebar } from "@/components/layout/dashboard/app-sidebar";
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import {
   Breadcrumb,
@@ -26,14 +28,24 @@ type DashboardLayoutProps = {
   breadcrumbs?: Crumb[];
   actions?: React.ReactNode;
   /** Konten utama halaman (opsional ketika dipakai sebagai Route layout) */
-  children?: React.ReactNode; // ⬅️ ubah jadi opsional
+  children?: React.ReactNode;
   headerLeft?: React.ReactNode;
   contentClassName?: string;
   headerClassName?: string;
   showUserMenu?: boolean;
 };
 
-export default function DashboardLayout({
+// ⬅️ Komponen pembungkus: TIDAK memanggil useSidebar
+export default function DashboardLayout(props: DashboardLayoutProps) {
+  return (
+    <SidebarProvider>
+      <DashboardShell {...props} />
+    </SidebarProvider>
+  );
+}
+
+// ⬅️ Komponen dalam: AMAN memanggil useSidebar karena sudah di dalam provider
+function DashboardShell({
   breadcrumbs = [{ label: "Dashboard" }],
   actions,
   children,
@@ -44,8 +56,15 @@ export default function DashboardLayout({
 }: DashboardLayoutProps) {
   const lastIndex = breadcrumbs.length - 1;
 
+  // Auto-close sheet sidebar setiap kali path berubah (UX mobile)
+  const location = useLocation();
+  const { setOpenMobile } = useSidebar();
+  React.useEffect(() => {
+    setOpenMobile(false);
+  }, [location.pathname, setOpenMobile]);
+
   return (
-    <SidebarProvider>
+    <>
       <AppSidebar />
 
       <SidebarInset>
@@ -116,6 +135,6 @@ export default function DashboardLayout({
           {/* ⬅️ fallback ke Outlet saat dipakai di Route */}
         </div>
       </SidebarInset>
-    </SidebarProvider>
+    </>
   );
 }

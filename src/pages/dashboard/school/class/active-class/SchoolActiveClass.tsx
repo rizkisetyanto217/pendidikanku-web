@@ -1,39 +1,29 @@
 // src/pages/sekolahislamku/pages/academic/SchoolActiveClass.tsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import {
-  GraduationCap,
-  Users,
-  ArrowLeft,
-  Info,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { GraduationCap, Users, ArrowLeft, Info, Loader2 } from "lucide-react";
 
-/* ======== shadcn/ui imports ======== */
+/* ======== shadcn/ui ======== */
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-  TableCell,
-} from "@/components/ui/table";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
-/* ===================== Types & Dummy ===================== */
+/* ======== DataTable (seragam dgn Akademik) ======== */
+import {
+  CDataTable as DataTable,
+  type ColumnDef,
+  type Align,
+} from "@/components/costum/table/CDataTable";
+
+/* ===================== Types ===================== */
 type ClassRow = {
   id: string;
   name: string;
@@ -47,112 +37,7 @@ type ApiActiveClassResp = {
   list: ClassRow[];
 };
 
-/* ===================== Small UI Helpers (shadcn) ===================== */
-function SearchBar({
-  value,
-  onChange,
-  placeholder,
-  rightExtra,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  rightExtra?: React.ReactNode;
-}) {
-  return (
-    <div className="flex gap-2 items-center">
-      <div className="relative flex-1">
-        <Input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder ?? "Search…"}
-          className="w-full"
-        />
-      </div>
-      {rightExtra}
-    </div>
-  );
-}
-
-function PerPageSelect({
-  value,
-  onChange,
-  options = [8, 12, 24, 48, 100],
-}: {
-  value: number;
-  onChange: (n: number) => void;
-  options?: number[];
-}) {
-  return (
-    <div className="flex items-center gap-2">
-      <Label htmlFor="per-page" className="whitespace-nowrap text-sm">
-        Per page
-      </Label>
-      <Select value={String(value)} onValueChange={(v) => onChange(Number(v))}>
-        <SelectTrigger id="per-page" className="w-[96px]">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent align="end">
-          {options.map((n) => (
-            <SelectItem key={n} value={String(n)}>
-              {n}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  );
-}
-
-function PaginationBar({
-  pageStart,
-  pageEnd,
-  total,
-  canPrev,
-  canNext,
-  onPrev,
-  onNext,
-}: {
-  pageStart: number;
-  pageEnd: number;
-  total: number;
-  canPrev: boolean;
-  canNext: boolean;
-  onPrev: () => void;
-  onNext: () => void;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-3 pt-4">
-      <div className="text-sm text-muted-foreground">
-        Menampilkan{" "}
-        <span className="font-medium text-foreground">{pageStart}</span>–
-        <span className="font-medium text-foreground">{pageEnd}</span> dari{" "}
-        <span className="font-medium text-foreground">{total}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onPrev}
-          disabled={!canPrev}
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Prev
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onNext}
-          disabled={!canNext}
-        >
-          Next
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
-    </div>
-  );
-}
-
+/* ===================== Badge Status ===================== */
 function StatusBadge({ status }: { status: ClassRow["status"] }) {
   const isActive = status === "active";
   return (
@@ -162,78 +47,97 @@ function StatusBadge({ status }: { status: ClassRow["status"] }) {
   );
 }
 
-/* ===================== Card UI (Mobile) ===================== */
-function ActiveClassCard({ r }: { r: ClassRow }) {
+/* ===================== Card renderer (untuk view "card") ===================== */
+function ClassCard({ r }: { r: ClassRow }) {
   return (
-    <Card className="rounded-2xl">
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <CardTitle className="truncate text-base">{r.name}</CardTitle>
-            <div className="text-sm text-muted-foreground">
-              {r.academic_year}
-            </div>
-          </div>
-          <StatusBadge status={r.status} />
+    <div className="rounded-xl border p-4 space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="truncate font-medium">{r.name}</div>
+          <div className="text-sm text-muted-foreground">{r.academic_year}</div>
         </div>
-      </CardHeader>
-      <CardContent className="pt-0 text-sm">
-        <div className="flex flex-col gap-1">
-          <span className="flex items-center gap-2">
-            <GraduationCap className="h-4 w-4" /> Wali Kelas:{" "}
-            {r.homeroom_teacher}
-          </span>
-          <span className="flex items-center gap-2">
-            <Users className="h-4 w-4" /> {r.student_count} siswa
-          </span>
-        </div>
-      </CardContent>
-    </Card>
+        <StatusBadge status={r.status} />
+      </div>
+      <div className="text-sm flex flex-col gap-1">
+        <span className="flex items-center gap-2">
+          <GraduationCap className="h-4 w-4" /> Wali Kelas: {r.homeroom_teacher}
+        </span>
+        <span className="flex items-center gap-2">
+          <Users className="h-4 w-4" /> {r.student_count} siswa
+        </span>
+      </div>
+    </div>
   );
 }
 
-/* ===================== Hook: offset/limit (simple) ===================== */
-function useOffsetLimit(total: number, defaultLimit = 8) {
-  const [limit, setLimit] = useState<number>(defaultLimit);
-  const [offset, setOffset] = useState<number>(0);
+/* ===================== (Opsional) Dialog tambah kelas ===================== */
+function ClassFormDialog({
+  open,
+  onClose,
+  onSubmit,
+  loading,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSubmit: (v: { name: string; academic_year: string }) => void;
+  loading?: boolean;
+}) {
+  const [name, setName] = useState("");
+  const [year, setYear] = useState("");
+  const canSubmit = name.trim() && year.trim();
 
-  useEffect(() => {
-    setOffset(0);
-  }, [total, limit]);
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Tambah Kelas</DialogTitle>
+          <DialogDescription>
+            Isi data minimal untuk membuat kelas.
+          </DialogDescription>
+        </DialogHeader>
 
-  const pageStart = total === 0 ? 0 : Math.min(offset + 1, total);
-  const pageEnd = Math.min(offset + limit, total);
+        <div className="grid gap-3">
+          <div className="grid gap-1.5">
+            <label className="text-sm">Nama Kelas</label>
+            <input
+              className="h-9 rounded-md border bg-background px-3 text-sm outline-none"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Kelas 7A"
+            />
+          </div>
+          <div className="grid gap-1.5">
+            <label className="text-sm">Tahun Ajaran</label>
+            <input
+              className="h-9 rounded-md border bg-background px-3 text-sm outline-none"
+              value={year}
+              onChange={(e) => setYear(e.target.value)}
+              placeholder="2025/2026"
+            />
+          </div>
+        </div>
 
-  const canPrev = offset > 0;
-  const canNext = offset + limit < total;
-
-  const handlePrev = () => {
-    if (!canPrev) return;
-    setOffset(Math.max(0, offset - limit));
-  };
-  const handleNext = () => {
-    if (!canNext) return;
-    setOffset(offset + limit);
-  };
-
-  return {
-    offset,
-    limit,
-    setLimit,
-    pageStart,
-    pageEnd,
-    canPrev,
-    canNext,
-    handlePrev,
-    handleNext,
-  };
+        <DialogFooter className="gap-2">
+          <Button variant="ghost" onClick={onClose} disabled={!!loading}>
+            Batal
+          </Button>
+          <Button
+            onClick={() => onSubmit({ name, academic_year: year })}
+            disabled={!canSubmit || !!loading}
+          >
+            {loading ? <Loader2 className="animate-spin h-4 w-4" /> : "Simpan"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 /* ===================== Page ===================== */
 const SchoolActiveClass: React.FC = () => {
   const navigate = useNavigate();
 
-  // === Dummy Query ===
+  // Dummy fetch (tetap sama, hanya tampilan yang diseragamkan)
   const classesQ = useQuery({
     queryKey: ["active-classes"],
     queryFn: async (): Promise<ApiActiveClassResp> => {
@@ -252,143 +156,125 @@ const SchoolActiveClass: React.FC = () => {
     staleTime: 60_000,
   });
 
-  const rows = useMemo(() => classesQ.data?.list ?? [], [classesQ.data]);
+  const rows: ClassRow[] = useMemo(
+    () => classesQ.data?.list ?? [],
+    [classesQ.data]
+  );
 
-  /* ==== 🔎 Search ==== */
-  const [q, setQ] = useState("");
-  const filtered = useMemo(() => {
-    const s = q.toLowerCase().trim();
-    if (!s) return rows;
-    return rows.filter(
-      (r) =>
-        r.name.toLowerCase().includes(s) ||
-        r.homeroom_teacher.toLowerCase().includes(s) ||
-        r.academic_year.includes(s)
-    );
-  }, [q, rows]);
+  // ===== Columns (seragam gaya Akademik) =====
+  const columns: ColumnDef<ClassRow>[] = [
+    {
+      id: "name",
+      header: "Nama Kelas",
+      minW: "180px",
+      align: "left" as Align,
+      cell: (r) => <span className="font-medium">{r.name}</span>,
+    },
+    {
+      id: "academic_year",
+      header: "Tahun Ajaran",
+      minW: "140px",
+      align: "left" as Align,
+      cell: (r) => r.academic_year,
+    },
+    {
+      id: "homeroom_teacher",
+      header: "Wali Kelas",
+      minW: "160px",
+      align: "left" as Align,
+      cell: (r) => r.homeroom_teacher,
+    },
+    {
+      id: "student_count",
+      header: "Jumlah Siswa",
+      minW: "120px",
+      align: "right" as Align,
+      cell: (r) => r.student_count,
+    },
+    {
+      id: "status",
+      header: "Status",
+      minW: "120px",
+      align: "center" as Align,
+      cell: (r) => <StatusBadge status={r.status} />,
+    },
+  ];
 
-  /* ==== ⏭ Pagination ==== */
-  const total = filtered.length;
-  const {
-    offset,
-    limit,
-    setLimit,
-    pageStart,
-    pageEnd,
-    canPrev,
-    canNext,
-    handlePrev,
-    handleNext,
-  } = useOffsetLimit(total, 8);
+  // ===== Stats Slot (opsional) =====
+  const statsSlot = classesQ.isLoading ? (
+    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <Loader2 className="animate-spin" size={16} /> Memuat data kelas aktif…
+    </div>
+  ) : rows.length === 0 ? (
+    <div className="text-sm text-muted-foreground flex items-center gap-2">
+      <Info size={16} /> Tidak ada data kelas.
+    </div>
+  ) : null;
 
-  const pageRows = filtered.slice(offset, offset + limit);
+  // ===== Modal tambah =====
+  const [createOpen, setCreateOpen] = useState(false);
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-background text-foreground">
-      {/* Header Bar */}
-      <div className="p-4 md:p-5 pb-3 border-b border-border flex flex-wrap items-center gap-2">
-        <div className="md:flex hidden items-center gap-2 font-semibold order-1">
+      {/* Header / Toolbar (konsisten dengan Akademik) */}
+      <div className="px-4 md:px-6 pt-4 md:pt-6">
+        <div className="hidden md:flex items-center gap-2 font-semibold">
           <Button
             variant="ghost"
-            size="sm"
+            size="icon"
             onClick={() => navigate(-1)}
-            className="cursor-pointer"
+            aria-label="Kembali"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-base md:text-lg">Daftar Kelas Aktif</h1>
-        </div>
-
-        <div className="order-3 sm:order-2 w-full sm:w-auto flex-1 min-w-0">
-          <SearchBar
-            value={q}
-            onChange={setQ}
-            placeholder="Cari kelas, wali, atau tahun ajaran…"
-            rightExtra={<PerPageSelect value={limit} onChange={setLimit} />}
-          />
         </div>
       </div>
 
-      <main className="w-full">
-        <div className="max-w-screen-2xl mx-auto flex flex-col gap-6 p-4 md:p-5">
-          {/* ===== Section: Daftar Kelas ===== */}
-          <Card>
-            <div className="p-4 md:p-5 pb-3 border-b border-border flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 font-semibold">
-                <GraduationCap className="h-4 w-4 text-primary" /> Daftar Kelas
-              </div>
-              <div className="text-sm text-muted-foreground">{total} total</div>
-            </div>
+      <main className="w-full px-4 md:px-6 pb-8">
+        <div className="mx-auto flex max-w-screen-2xl flex-col gap-4 lg:gap-6">
+          <DataTable<ClassRow>
+            /* ===== Toolbar ===== */
+            title="Kelas Aktif"
+            controlsPlacement="above"
+            onAdd={() => setCreateOpen(true)} // ⬅️ tombol “Tambah”
+            addLabel="Tambah"
+            /* Search (client-side) */
+            defaultQuery=""
+            searchPlaceholder="Cari kelas, wali, atau tahun ajaran…"
+            searchByKeys={["name", "homeroom_teacher", "academic_year"]}
+            /* Stats */
+            statsSlot={statsSlot}
+            /* ===== Data ===== */
+            loading={classesQ.isLoading}
+            error={classesQ.isError ? "Gagal memuat data kelas." : null}
+            columns={columns}
+            rows={rows}
+            getRowId={(r) => r.id}
+            /* UX */
+            stickyHeader
+            zebra
+            pageSize={12}
+            pageSizeOptions={[8, 12, 24, 48, 100]}
+            viewModes={["table", "card"]}
+            defaultView="table"
+            renderCard={(r) => <ClassCard r={r} />}
 
-            <CardContent className="p-4 md:p-5">
-              {classesQ.isLoading ? (
-                <div className="py-8 text-center text-sm flex items-center justify-center gap-2 text-muted-foreground">
-                  <Info className="h-4 w-4" /> Memuat data kelas…
-                </div>
-              ) : total === 0 ? (
-                <div className="py-8 text-center text-sm flex items-center justify-center gap-2 text-muted-foreground">
-                  <Info className="h-4 w-4" /> Tidak ada data kelas.
-                </div>
-              ) : (
-                <>
-                  {/* Mobile: Cards */}
-                  <div className="grid grid-cols-1 gap-3 md:hidden">
-                    {pageRows.map((r) => (
-                      <ActiveClassCard key={r.id} r={r} />
-                    ))}
-                  </div>
-
-                  {/* Desktop: Table */}
-                  <div className="hidden md:block">
-                    <div className="rounded-lg border border-border">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Nama Kelas</TableHead>
-                            <TableHead>Tahun Ajaran</TableHead>
-                            <TableHead>Wali Kelas</TableHead>
-                            <TableHead className="text-right">
-                              Jumlah Siswa
-                            </TableHead>
-                            <TableHead>Status</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {pageRows.map((r) => (
-                            <TableRow key={r.id}>
-                              <TableCell className="font-medium">
-                                {r.name}
-                              </TableCell>
-                              <TableCell>{r.academic_year}</TableCell>
-                              <TableCell>{r.homeroom_teacher}</TableCell>
-                              <TableCell className="text-right">
-                                {r.student_count}
-                              </TableCell>
-                              <TableCell>
-                                <StatusBadge status={r.status} />
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
-
-                  <PaginationBar
-                    pageStart={pageStart}
-                    pageEnd={pageEnd}
-                    total={total}
-                    canPrev={canPrev}
-                    canNext={canNext}
-                    onPrev={handlePrev}
-                    onNext={handleNext}
-                  />
-                </>
-              )}
-            </CardContent>
-          </Card>
+            /* (opsional) klik baris ke detail */
+            // onRowClick={(row) => navigate(`/kelas/${row.id}`)}
+          />
         </div>
       </main>
+
+      {/* Dialog Tambah (sementara mock; sambungkan ke API-mu) */}
+      <ClassFormDialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onSubmit={(v) => {
+          // TODO: panggil API create class di sini
+          console.log("create class payload:", v);
+          setCreateOpen(false);
+        }}
+      />
     </div>
   );
 };

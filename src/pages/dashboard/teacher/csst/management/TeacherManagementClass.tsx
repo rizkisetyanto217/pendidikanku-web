@@ -27,12 +27,12 @@ import {
 import { useToast } from "@/hooks/use-toast";
 
 // ✅ komponen = value import (tanpa 'type')
-import ModalEditManagementClass from "@/pages/dashboard/teacher/class/management/components/CTeacherModalEditManagementClass";
+import ModalEditManagementClass from "@/pages/dashboard/teacher/csst/management/components/CTeacherModalEditManagementClass";
 
 // ✅ ClassInfo = type-only import (pakai 'type')
-import type { ClassInfo } from "@/pages/dashboard/teacher/class/management/components/CTeacherModalEditManagementClass";
+import type { ClassInfo } from "@/pages/dashboard/teacher/csst/management/components/CTeacherModalEditManagementClass";
 
-import AddStudent from "@/pages/dashboard/teacher/class/management/components/CTeacherAddStudent";
+import AddStudent from "@/pages/dashboard/teacher/csst/management/components/CTeacherAddStudent";
 
 const TeacherManagementClass = () => {
   const { className } = useParams();
