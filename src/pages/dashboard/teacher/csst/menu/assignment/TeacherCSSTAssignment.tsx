@@ -269,7 +269,7 @@ function FilterChip({
 }
 
 /* ================= Page ================= */
-export default function TeacherAssignment() {
+export default function TeacherCSSTAssignment() {
   const { data, isLoading } = useQuery({
     queryKey: ["teacher-grading"],
     queryFn: fetchTeacherAssignment,

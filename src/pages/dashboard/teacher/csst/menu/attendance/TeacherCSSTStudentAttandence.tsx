@@ -306,7 +306,7 @@ function download(filename: string, text: string) {
 }
 
 /* ================= Page ================= */
-export default function TeacherClassAttendance() {
+export default function TeacherClassAttendanceCSST() {
   const [sp, setSp] = useSearchParams();
   const navigate = useNavigate();
   const { slug } = useParams();

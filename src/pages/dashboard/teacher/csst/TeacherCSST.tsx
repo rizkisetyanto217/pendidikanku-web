@@ -110,7 +110,7 @@ function useTeacherSubjects() {
 /* =====================
    Main Component
 ===================== */
-export default function TeacherSubjects() {
+export default function TeacherCSST() {
   const { data: subjects = [] } = useTeacherSubjects();
 
   const [viewMode, setViewMode] = useState<"detailed" | "simple">("detailed");
@@ -227,10 +227,11 @@ export default function TeacherSubjects() {
 
       {/* Cards */}
       <div
-        className={`grid gap-6 ${viewMode === "simple"
+        className={`grid gap-6 ${
+          viewMode === "simple"
             ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
             : "grid-cols-1 lg:grid-cols-2"
-          }`}
+        }`}
       >
         {filtered.map((s) => (
           <Card
@@ -272,10 +273,33 @@ export default function TeacherSubjects() {
               )}
 
               <div className="pt-3 flex justify-end">
-                <Link to={`${s.id}`}>
+                <Link
+                  to={`${s.id}`}
+                  state={{
+                    clsOverride: {
+                      id: s.id,
+                      name: s.name,
+                      room: s.room,
+                      academicTerm: s.academicTerm,
+                      cohortYear: Number(
+                        s.academicTerm.match(/^\d{4}/)?.[0] ??
+                          new Date().getFullYear()
+                      ),
+                      studentsCount: s.studentsCount,
+                      todayAttendance: {
+                        hadir: 0,
+                        online: 0,
+                        sakit: 0,
+                        izin: 0,
+                        alpa: 0,
+                      }, // dummy
+                      materialsCount: 0,
+                      assignmentsCount: 0,
+                    },
+                  }}
+                >
                   <Button size="sm" className="flex items-center gap-2">
-                    Buka Mapel
-                    <ChevronRight size={16} />
+                    Buka Mapel <ChevronRight size={16} />
                   </Button>
                 </Link>
               </div>

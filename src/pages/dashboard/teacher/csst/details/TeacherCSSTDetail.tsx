@@ -3,13 +3,14 @@ import { useMemo } from "react";
 import { useLocation, useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
-// shadcn/ui
+/* shadcn/ui */
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 
+/* icons */
 import {
   Users,
   CalendarDays,
@@ -23,7 +24,7 @@ import {
   UserSquare2,
 } from "lucide-react";
 
-/* ========= Shared helpers ========= */
+/* ===== Helpers & Types ===== */
 type AttendanceStatus = "hadir" | "sakit" | "izin" | "alpa" | "online";
 
 const dateShort = (iso?: string) =>
@@ -34,7 +35,6 @@ const dateShort = (iso?: string) =>
       })
     : "-";
 
-/* ========= Types ========= */
 type NextSession = {
   dateISO: string;
   time: string;
@@ -57,14 +57,13 @@ type TeacherClassSummary = {
   cohortYear: number;
 };
 
-/* ========= Ambil data siswa per kelas dari shared types ========= */
+/* ===== Dummy fetch ===== */
 import {
   fetchStudentsByClasses,
   type ClassStudentsMap,
   type StudentSummary,
 } from "../types/teacherClass";
 
-/* ========= Dummy fetch kelas ========= */
 async function fetchTeacherClasses(): Promise<TeacherClassSummary[]> {
   const now = new Date();
   const mk = (d: Date, addDay = 0) => {
@@ -72,7 +71,6 @@ async function fetchTeacherClasses(): Promise<TeacherClassSummary[]> {
     x.setDate(x.getDate() + addDay);
     return x.toISOString();
   };
-
   return [
     {
       id: "tpa-a",
@@ -134,39 +132,64 @@ async function fetchTeacherClasses(): Promise<TeacherClassSummary[]> {
   ];
 }
 
-/* ========= Query Keys ========= */
+/* ===== Query Keys ===== */
 const QK = {
   CLASSES: ["teacher-classes-list"] as const,
   CLASS_STUDENTS: (id: string) => ["teacher-class-students", id] as const,
 };
 
-/* =================== Page =================== */
-export default function TeacherDetailClass() {
+/* ===== Page ===== */
+type LocationState = {
+  academicTerm?: string;
+  cohortYear?: number;
+  clsOverride?: Partial<TeacherClassSummary>;
+};
+
+export default function TeacherCSSTDetail() {
   const { id = "" } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const location = useLocation() as {
-    state?: { academicTerm?: string; cohortYear?: number };
-  };
+  const location = useLocation() as { state?: LocationState };
 
   // 1) Kelas
-  const {
-    data: classes = [],
-    isLoading: isLoadingClasses,
-    // isFetching: isFetchingClasses,
-  } = useQuery({
+  const { data: classes = [], isLoading: isLoadingClasses } = useQuery({
     queryKey: QK.CLASSES,
     queryFn: fetchTeacherClasses,
     staleTime: 5 * 60_000,
   });
 
-  const cls = useMemo(() => classes.find((c) => c.id === id), [classes, id]);
+  // Ambil dari API dulu; kalau tidak ada, pakai state override dari list
+  const cls = useMemo<TeacherClassSummary | undefined>(() => {
+    const found = classes.find((c) => c.id === id);
+    if (found) return found;
+
+    const ov = location.state?.clsOverride;
+    if (!ov) return undefined;
+
+    return {
+      id: ov.id ?? id,
+      name: ov.name ?? "—",
+      room: ov.room ?? "-",
+      homeroom: "—",
+      assistants: ov.assistants ?? [],
+      studentsCount: ov.studentsCount ?? 0,
+      todayAttendance: ov.todayAttendance ?? {
+        hadir: 0,
+        online: 0,
+        sakit: 0,
+        izin: 0,
+        alpa: 0,
+      },
+      nextSession: ov.nextSession,
+      materialsCount: ov.materialsCount ?? 0,
+      assignmentsCount: ov.assignmentsCount ?? 0,
+      academicTerm: ov.academicTerm ?? location.state?.academicTerm ?? "—",
+      cohortYear:
+        ov.cohortYear ?? location.state?.cohortYear ?? new Date().getFullYear(),
+    };
+  }, [classes, id, location.state]);
 
   // 2) Siswa per kelas
-  const {
-    data: studentsMap = {},
-    // isFetching: isFetchingStudents,
-    isLoading: isLoadingStudents,
-  } = useQuery({
+  const { data: studentsMap = {}, isLoading: isLoadingStudents } = useQuery({
     queryKey: QK.CLASS_STUDENTS(id),
     queryFn: () => fetchStudentsByClasses(id ? [id] : []),
     enabled: !!id,
@@ -176,30 +199,29 @@ export default function TeacherDetailClass() {
   const students: StudentSummary[] =
     (studentsMap as ClassStudentsMap)[id] ?? [];
 
-  // 3) Hitung angka
+  // 3) Angka untuk kartu
   const fallbackTotal = cls?.studentsCount ?? 0;
   const total = students.length || fallbackTotal;
-  const hadir = cls?.todayAttendance.hadir ?? 0;
+  const hadir = cls?.todayAttendance?.hadir ?? 0;
 
   const loadingAny = isLoadingClasses || isLoadingStudents;
-  // const fetchingAny = isFetchingClasses || isFetchingStudents;
 
-  // 4) Quick links (sesuai parent; semua path RELATIF ke /guru/kelas/:id)
+  // 4) Quick links (relative to /guru/kelas/:id)
   const quick = [
     {
-      key: "siswa",
-      label: "Jumlah Siswa",
+      key: "murid",
+      label: "Jumlah Murid",
       metric: total.toString(),
       icon: <Users className="h-4 w-4" />,
-      to: "siswa", // → /guru/kelas/:id/siswa
-      aria: "Lihat daftar siswa",
+      to: "murid",
+      aria: "Lihat daftar murid",
     },
     {
       key: "kehadiran",
       label: "Kehadiran Hari Ini",
       metric: `${hadir}/${total || 0}`,
       icon: <ClipboardList className="h-4 w-4" />,
-      to: "absensi-hari-ini", // → /guru/kelas/:id/absensi-hari-ini
+      to: "absensi-hari-ini",
       aria: "Lihat kehadiran hari ini",
     },
     {
@@ -231,7 +253,7 @@ export default function TeacherDetailClass() {
       label: "Buku",
       metric: "-",
       icon: <BookOpen className="h-4 w-4" />,
-      to: "buku", // → /guru/kelas/:id/buku
+      to: "buku",
       aria: "Lihat buku kelas",
     },
     {
@@ -270,14 +292,9 @@ export default function TeacherDetailClass() {
 
                 <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                   <Badge variant="outline">{cls?.room ?? "-"}</Badge>
-                  <span>Wali Kelas: {cls?.homeroom ?? "-"}</span>
-                  <span>
-                    • {cls?.academicTerm ?? location.state?.academicTerm ?? "-"}
-                  </span>
-                  <span>
-                    • Angkatan{" "}
-                    {cls?.cohortYear ?? location.state?.cohortYear ?? "-"}
-                  </span>
+                  <span>Wali Kelas: {cls?.homeroom ?? "—"}</span>
+                  <span>• {cls?.academicTerm ?? "—"}</span>
+                  <span>• Angkatan {cls?.cohortYear ?? "—"}</span>
                 </div>
               </div>
 
@@ -296,8 +313,8 @@ export default function TeacherDetailClass() {
             </CardContent>
           </Card>
 
-          {/* Quick Links (gaya parent, klik → navigate(relative)) */}
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Quick Links */}
+          <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {quick.map((q) => (
               <Card
                 key={q.key}
@@ -351,12 +368,7 @@ export default function TeacherDetailClass() {
             </CardContent>
           </Card>
 
-          {/* Loading / Error */}
-          {loadingAny && (
-            <div className="text-sm text-muted-foreground">
-              Memuat detail kelas…
-            </div>
-          )}
+          {/* Empty state bila benar-benar tak ketemu */}
           {!loadingAny && !cls && (
             <Card>
               <CardContent className="p-6 text-sm text-muted-foreground">

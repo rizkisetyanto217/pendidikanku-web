@@ -33,26 +33,27 @@ import TeacherDashboard from "@/pages/dashboard/teacher/TeacherMainDashboard";
 
 // Menu utama guru
 import TeacherMenuGrids from "@/pages/dashboard/teacher/menu/TeacherMenuGrids";
-import TeacherClass from "@/pages/dashboard/teacher/csst/TeacherClass";
-import TeacherSubjects from "@/pages/dashboard/teacher/class/TeacherSubjects";
+import TeacherClass from "@/pages/dashboard/teacher/class/TeacherClass";
+import TeacherSubjects from "@/pages/dashboard/teacher/csst/TeacherCSST";
 import TeacherSchedule from "@/pages/dashboard/teacher/schedule/TeacherSchedule";
 
 import TeacherProfil from "@/pages/dashboard/teacher/profil/TeacherProfil";
 
-import TeacherDetailClass from "@/pages/dashboard/teacher/csst/details/TeacherDetailClass";
+import TeacherDetailClass from "@/pages/dashboard/teacher/csst/details/TeacherCSSTDetail";
 
-import TeacherManagementClass from "@/pages/dashboard/teacher/csst/management/TeacherManagementClass";
+import TeacherManagementClass from "@/pages/dashboard/teacher/csst/management/TeacherCSSTManagement";
 import TeacherDetailClassQuiz from "@/pages/dashboard/teacher/csst/TeacherDetailClassQuiz";
-import TeacherClassStudentsList from "@/pages/dashboard/teacher/csst/menu/student/TeacherClassStudentList";
-import TeacherClassStudentAttendanceList from "@/pages/dashboard/teacher/csst/menu/attendance/TeacherClassStudentAttendanceList";
-import TeacherMaterialList from "@/pages/dashboard/teacher/csst/menu/TeacherMaterialList";
-import TeacherExamList from "@/pages/dashboard/teacher/csst/menu/exam/TeacherExamList";
-import TeacherBookList from "@/pages/dashboard/teacher/csst/menu/book/TeacherBookList";
-import TeacherDetailClassStudent from "@/pages/dashboard/teacher/csst/menu/student/TeacherDetailClassStudent";
-import TeacherDetailBook from "@/pages/dashboard/teacher/csst/menu/book/TeacherDetailBook";
-import TeacherClassAttendance from "@/pages/dashboard/teacher/csst/menu/attendance/TeacherClassAttandence";
-import TeacherAssignment from "@/pages/dashboard/teacher/csst/menu/assignment/TeacherAssignment";
-import TeacherDetailAssignement from "@/pages/dashboard/teacher/csst/menu/assignment/TeacherDetailAssignment";
+import TeacherClassStudentsList from "@/pages/dashboard/teacher/csst/menu/student/TeacherCSSTStudentList";
+import TeacherClassStudentAttendanceList from "@/pages/dashboard/teacher/csst/menu/attendance/TeacherCSSTStudentAttendanceList";
+import TeacherMaterialList from "@/pages/dashboard/teacher/csst/menu/material/TeacherCSSTMaterialList";
+import TeacherExamList from "@/pages/dashboard/teacher/csst/menu/exam/TeacherCSSTExamList";
+import TeacherBookList from "@/pages/dashboard/teacher/csst/menu/book/TeacherCSSTBookList";
+import TeacherDetailClassStudent from "@/pages/dashboard/teacher/csst/menu/student/TeacherCSSTDetailStudent";
+import TeacherDetailBook from "@/pages/dashboard/teacher/csst/menu/book/TeacherCSSTDetailBook";
+import TeacherClassAttendance from "@/pages/dashboard/teacher/csst/menu/attendance/TeacherCSSTStudentAttandence";
+import TeacherAssignment from "@/pages/dashboard/teacher/csst/menu/assignment/TeacherCSSTAssignment";
+import TeacherDetailAssignement from "@/pages/dashboard/teacher/csst/menu/assignment/TeacherCSSTDetailAssignment";
+import TeacherClassDetail from "@/pages/dashboard/teacher/class/Details/TeacherClassDetail";
 
 // import TeacherClassDetail from "@/pages/pendidikanku-dashboard/dashboard-teacher/menu/TeacherDetailClasses";
 // import TeacherSettings from "@/pages/pendidikanku-dashboard/dashboard-teacher/menu/settings/TeacherSettings";
@@ -98,6 +99,7 @@ export const TeacherRoutes = (
     {/* Wali Kelas */}
     <Route path="wali-kelas">
       <Route index element={<TeacherClass />} />
+      <Route path=":id" element={<TeacherClassDetail />} />
     </Route>
 
     <Route path="kelola-kelas/:name" element={<TeacherManagementClass />} />
@@ -109,11 +111,8 @@ export const TeacherRoutes = (
       <Route path=":id" element={<TeacherDetailClass />} />
       <Route path=":id/absensi-hari-ini" element={<TeacherClassAttendance />} />
       <Route path=":id/quiz" element={<TeacherDetailClassQuiz />} />
-      <Route path=":id/semua-siswa" element={<TeacherClassStudentsList />} />
-      <Route
-        path=":id/semua-siswa/:id"
-        element={<TeacherDetailClassStudent />}
-      />
+      <Route path=":id/murid" element={<TeacherClassStudentsList />} />
+      <Route path=":id/murid/:id" element={<TeacherDetailClassStudent />} />
       <Route path=":id/tugas" element={<TeacherAssignment />} />
       <Route path=":id/tugas/detail" element={<TeacherDetailAssignement />} />
       <Route
