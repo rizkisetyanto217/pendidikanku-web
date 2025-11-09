@@ -8,10 +8,6 @@ import TodayScheduleCard, {
   type ScheduleItem,
 } from "@/pages/dashboard/components/card/CTodayScheduleCard";
 
-import TeacherAddEditAnnouncement, {
-  type TeacherAnnouncementForm,
-} from "./announcement/components/CTeacherAddEditAnnouncement";
-
 import {
   fetchTeacherHome,
   TEACHER_HOME_QK,
@@ -21,7 +17,6 @@ import {
   type TeacherHomeResponse,
 } from "./types/teacher";
 
-import TambahJadwal from "./schedule/modal/TeacherAddSchedule";
 import { useNavigate, useParams } from "react-router-dom";
 
 /* ================= Utils ================= */
@@ -88,50 +83,11 @@ export default function TeacherMainDashboard() {
 
   /* ============== Pengumuman ============== */
   const [, setAnnouncements] = useState<Announcement[]>([]);
-  const [announceOpen, setAnnounceOpen] = useState(false);
-  const [announceInitial, setAnnounceInitial] =
-    useState<TeacherAnnouncementForm | null>(null);
-  const [announceSaving, setAnnounceSaving] = useState(false);
-  const [announceError, setAnnounceError] = useState<string | null>(null);
 
   useEffect(() => {
     setAnnouncements(data?.announcements ?? []);
   }, [data?.announcements]);
 
-  const handleSubmitAnnouncement = async (form: TeacherAnnouncementForm) => {
-    setAnnounceSaving(true);
-    setAnnounceError(null);
-    try {
-      if (form.id) {
-        setAnnouncements((prev) =>
-          prev.map((a) =>
-            a.id === form.id
-              ? { ...a, title: form.title, date: form.date, body: form.body }
-              : a
-          )
-        );
-      } else {
-        const id = `temp-${Date.now()}`;
-        setAnnouncements((prev) => [
-          {
-            id,
-            title: form.title,
-            date: form.date,
-            body: form.body,
-            type: "info",
-          },
-          ...prev,
-        ]);
-      }
-      alert("Pengumuman berhasil disimpan!");
-      setAnnounceOpen(false);
-      setAnnounceInitial(null);
-    } catch {
-      setAnnounceError("Gagal menyimpan pengumuman.");
-    } finally {
-      setAnnounceSaving(false);
-    }
-  };
 
   /* ============== Kelas Saya ============== */
   const managedClasses = useMemo(() => {
@@ -213,16 +169,7 @@ export default function TeacherMainDashboard() {
         </div>
       </main>
 
-      {/* Modals */}
-      <TambahJadwal open={false} onClose={() => {}} onSubmit={() => {}} />
-      <TeacherAddEditAnnouncement
-        open={announceOpen}
-        onClose={() => setAnnounceOpen(false)}
-        initial={announceInitial}
-        onSubmit={handleSubmitAnnouncement}
-        saving={announceSaving}
-        error={announceError}
-      />
+
     </div>
   );
 }
