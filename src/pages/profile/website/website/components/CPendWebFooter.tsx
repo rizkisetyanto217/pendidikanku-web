@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 /* Asetmu */
-import school from "@/assets/Gambar-school.jpeg";
+import school from "@/assets/Gambar-Masjid.jpeg";
 
 /* ================ Footer ================ */
 export default function WebsiteFooter() {
