@@ -24,29 +24,35 @@ import NotFound from "@/pages/NotFound";
 // import { TeacherRoutes } from "./TeacherRoutes";
 // import { StudentRoutes } from "./StudentRoutes";
 import { SchoolRoutes } from "./SchoolRoutes";
-import Login from "@/pages/dashboard/auth/Login";
+import Login from "@/pages/dashboard/auth/AuthLogin";
 import Forbidden403 from "@/pages/Forbidden403";
 // import RequireschoolRoles from "./RequireSchoolRoles";
-import Register from "@/pages/dashboard/auth/Register";
-import SchoolMainDashboard from "@/pages/dashboard/school/SchoolMainDashboard";
+import Register from "@/pages/dashboard/auth/AuthRegister";
 import { TeacherRoutes } from "./TeacherRoutes";
 import { StudentRoutes } from "./StudentRoutes";
 import ProtectedRoute from "./ProtectedRoutes";
 import RequireschoolRoles from "./RequireSchoolRoles";
+import PendWebLayout from "@/components/layout/CPendWebLayout";
+import PendWebHome from "@/pages/profile/website/website/PendWebHome";
+import PendWebTutorial from "@/pages/profile/website/website/tutorial/PendWebTutorial";
+import PendWebFeature from "@/pages/profile/website/website/pages/navbar-page/PendWebFeature";
+import PendWebAbout from "@/pages/profile/website/website/pages/navbar-page/PendWebAbout";
+import PendWebContact from "@/pages/profile/website/website/pages/navbar-page/PendWebContact";
+import PendWebSupportUs from "@/pages/profile/website/website/support-us/PendWebSupportUs";
 
 export default function AppRoutes() {
   return (
     <Routes>
       {/* --- Public schoolku --- */}
-      {/* <Route element={<PendWebLayout />}>
+      <Route element={<PendWebLayout />}>
         <Route index element={<PendWebHome />} />
         <Route path="website" element={<PendWebHome />} />
-        <Route path="website/dukungan" element={<SupportPage />} />
-        <Route path="website/panduan" element={<Panduan />} />
-        <Route path="website/fitur" element={<Fitur />} />
-        <Route path="website/about" element={<About />} />
-        <Route path="website/hubungi-kami" element={<Contact />} />
-      </Route> */}
+        <Route path="website/dukungan" element={<PendWebSupportUs />} />
+        <Route path="website/panduan" element={<PendWebTutorial />} />
+        <Route path="website/fitur" element={<PendWebFeature />} />
+        <Route path="website/about" element={<PendWebAbout />} />
+        <Route path="website/hubungi-kami" element={<PendWebContact />} />
+      </Route>
 
       {/* --- Public Auth --- */}
       <Route path="/login" element={<Login />} />
@@ -93,7 +99,6 @@ export default function AppRoutes() {
         </Route>
       </Route>
 
-      <Route path="/main-dashboard" element={<SchoolMainDashboard />} />
       {/* --- Forbidden harus di atas wildcard --- */}
       <Route path=":schoolId/forbidden" element={<Forbidden403 />} />
 

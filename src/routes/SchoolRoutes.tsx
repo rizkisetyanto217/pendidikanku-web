@@ -2,30 +2,31 @@ import { Route } from "react-router-dom";
 import DashboardLayout from "@/components/layout/dashboard/DashboardLayout";
 
 // Pages
-import SchoolDashboard from "@/pages/dashboard/school/SchoolMainDashboard";
-import SchoolProfile from "@/pages/dashboard/school/profile/SchoolProfile";
-import SchoolFinance from "@/pages/dashboard/school/finance/SchoolFinance";
-import SchoolDetailBill from "@/pages/dashboard/school/finance/SchoolDetailBill";
-import SchoolSpp from "@/pages/dashboard/school/finance/SchoolSpp";
-import SchoolTeacher from "@/pages/dashboard/school/teacher/SchoolTeacher";
-import SchoolDetailTeacher from "@/pages/dashboard/school/teacher/details/SchoolDetailTeacher";
-import SchoolMenuGrids from "@/pages/dashboard/school/menu/SchoolMenuGrids";
-import SchoolClass from "@/pages/dashboard/school/class/SchoolClass";
-import SchoolSection from "@/pages/dashboard/school/class/section/SchoolSection";
-import SchoolSectionDetail from "@/pages/dashboard/school/class/section/SchoolSectionDetail";
-import SchoolParent from "@/pages/dashboard/school/class/parent/SchoolParent";
-import SchoolAllSchedule from "@/pages/dashboard/school/schedule/SchoolAllSchedule";
-import SchoolDetailSchedule from "@/pages/dashboard/school/schedule/SchoolDetailSchedule";
-import SchoolAcademic from "@/pages/dashboard/school/academic/SchoolAcademic";
-import SchoolDetailAcademic from "@/pages/dashboard/school/academic/SchoolDetailAcademic";
-import SchoolManagementAcademicDetail from "@/pages/dashboard/school/academic/SchoolManagementAcademic";
-import SchoolBooks from "@/pages/dashboard/school/academic/books/SchoolBooks";
-import SchoolRoom from "@/pages/dashboard/school/academic/rooms/SchoolRoom";
-import SchoolSubject from "@/pages/dashboard/school/subject/SchoolSubject";
-import SchoolDetailRoom from "@/pages/dashboard/school/academic/rooms/SchoolDetailRoom";
-import SchoolBookDetail from "@/pages/dashboard/school/academic/books/detail/SchoolDetailBook";
-import SchoolActiveClass from "@/pages/dashboard/school/class/active-class/SchoolActiveClass";
-import SchoolCalenderAcademic from "@/pages/dashboard/school/calender/SchoolCalenderAcademic";
+import SchoolDashboard from "@/pages/dashboard/schools/SchoolMainDashboard";
+import SchoolProfile from "@/pages/dashboard/schools/profiles/SchoolProfile";
+import SchoolFinance from "@/pages/dashboard/schools/finances/SchoolFinance";
+import SchoolDetailBill from "@/pages/dashboard/schools/finances/SchoolDetailBill";
+import SchoolSpp from "@/pages/dashboard/schools/finances/SchoolSpp";
+import SchoolTeacher from "@/pages/dashboard/schools/teachers/SchoolTeacher";
+import SchoolDetailTeacher from "@/pages/dashboard/schools/teachers/details/SchoolDetailTeacher";
+import SchoolMenuGrids from "@/pages/dashboard/schools/menus/SchoolMenuGrids";
+import SchoolClass from "@/pages/dashboard/schools/classes/SchoolClass";
+import SchoolSection from "@/pages/dashboard/schools/classes/section/SchoolSection";
+import SchoolSectionDetail from "@/pages/dashboard/schools/classes/section/SchoolSectionDetail";
+import SchoolParent from "@/pages/dashboard/schools/classes/parent/SchoolParent";
+import SchoolAllSchedule from "@/pages/dashboard/schools/schedules/SchoolAllSchedule";
+import SchoolDetailSchedule from "@/pages/dashboard/schools/schedules/SchoolDetailSchedule";
+import SchoolAcademic from "@/pages/dashboard/schools/academics/SchoolAcademic";
+import SchoolDetailAcademic from "@/pages/dashboard/schools/academics/SchoolDetailAcademic";
+import SchoolManagementAcademicDetail from "@/pages/dashboard/schools/academics/SchoolManagementAcademic";
+import SchoolBooks from "@/pages/dashboard/schools/academics/books/SchoolBooks";
+import SchoolRoom from "@/pages/dashboard/schools/academics/rooms/SchoolRoom";
+import SchoolSubject from "@/pages/dashboard/schools/subjects/SchoolSubject";
+import SchoolDetailRoom from "@/pages/dashboard/schools/academics/rooms/SchoolDetailRoom";
+import SchoolBookDetail from "@/pages/dashboard/schools/academics/books/detail/SchoolDetailBook";
+import SchoolActiveClass from "@/pages/dashboard/schools/classes/active-class/SchoolActiveClass";
+import SchoolCalender from "@/pages/dashboard/schools/calenders/SchoolCalender";
+// import SchoolCalenderAcademic from "@/pages/dashboard/school/calender/SchoolCalenderAcademic";
 // import SchoolStudent from "@/pages/pendidikanku-dashboard/dashboard-school/coming-soon/student-(pending)/SchoolStudent";
 // import SchoolAllSchedule from "@/pages/pendidikanku-dashboard/dashboard-school/academic/schedule/SchoolAllSchedule";
 // import SchoolProfile from "@/pages/pendidikanku-dashboard/dashboard-school/profile/SchoolProfile";
@@ -129,7 +130,7 @@ export const SchoolRoutes = (
       <Route path="ruangan/:id" element={<SchoolDetailRoom />} />
       <Route path="spp" element={<SchoolSpp />} />
       <Route path="pelajaran" element={<SchoolSubject />} />
-      <Route path="kalender" element={<SchoolCalenderAcademic />} />
+      <Route path="kalender" element={<SchoolCalender />} />
       {/* <Route path="statistik" element={<SchoolStatistik />} /> */}
       <Route path="kelas-aktif" element={<SchoolActiveClass />} />
       <Route path="jadwal" element={<SchoolAllSchedule />} />

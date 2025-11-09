@@ -1,43 +1,43 @@
 import { Route } from "react-router-dom";
 import DashboardLayout from "@/components/layout/dashboard/DashboardLayout";
-import StudentDashboard from "@/pages/dashboard/student/StudentMainDashboard";
-import StudentAllSchedule from "@/pages/dashboard/student/academic/schedule/StudentAllSchedule";
-import StudentDetailSchedule from "@/pages/dashboard/student/academic/schedule/StudentDetailSchedule";
-import StudentMenuGrids from "@/pages/dashboard/student/menu/StudentMenuGrids";
-import StudentAssignment from "@/pages/dashboard/student/assignment/StudentAssignmentClass";
-import StudentFinance from "@/pages/dashboard/student/finance/StudentFinance";
-import StudentListFinance from "@/pages/dashboard/student/finance/StudentListFinance";
-import StudentProgress from "@/pages/dashboard/student/progress/StudentProgress";
-import StudentRaport from "@/pages/dashboard/student/progress/raport/StudentRaport";
-import StudentAbsence from "@/pages/dashboard/student/progress/absence/StudentAbsence";
-import StudentNotesSummary from "@/pages/dashboard/student/progress/notes-summary/StudentNotesSummary";
-import StudentProfil from "@/pages/dashboard/student/profil/StudentProfil";
-import StudentMyClass from "@/pages/dashboard/student/class/StudentMyClass";
-import StudentMaterial from "@/pages/dashboard/student/class/StudentMaterial";
-import StudentQuizPage from "@/pages/dashboard/student/class/StudentQuizPage";
-import StudentAttandenceClass from "@/pages/dashboard/student/class/StudentAttandenceClass";
-// import StudentProgressDetail from "@/pages/pendidikanku-dashboard/dashboard-student/progress/StudentProgress";
-// import StudentAllSchedule from "@/pages/pendidikanku-dashboard/dashboard-student/academic/book/StudentAllSchedule";
-// import StudentProfil from "@/pages/pendidikanku-dashboard/dashboard-student/profil/StudentProfil";
-// import StudentAssignmentClass from "@/pages/pendidikanku-dashboard/dashboard-student/assignment/StudentAssignmentClass";
-// import StudentDetailSchedule from "@/pages/pendidikanku-dashboard/dashboard-student/academic/schedule/StudentDetailSchedule";
-// import StudentAnnouncements from "@/pages/pendidikanku-dashboard/dashboard-student/announcement/StudentAnnouncement";
+import StudentDashboard from "@/pages/dashboard/students/StudentMainDashboard";
+import StudentAllSchedule from "@/pages/dashboard/students/academics/schedules/StudentSchedule";
+import StudentDetailSchedule from "@/pages/dashboard/students/academics/schedules/StudentDetailSchedule";
+import StudentMenuGrids from "@/pages/dashboard/students/menus/StudentMenuGrids";
+import StudentAssignment from "@/pages/dashboard/students/assignments/StudentAssignment";
+import StudentFinance from "@/pages/dashboard/students/finances/StudentFinance";
+import StudentListFinance from "@/pages/dashboard/students/finances/StudentListFinance";
+import StudentProgress from "@/pages/dashboard/students/progress/StudentProgress";
+import StudentRaport from "@/pages/dashboard/students/progress/raports/StudentRaport";
+import StudentAbsence from "@/pages/dashboard/students/progress/absences/StudentAbsence";
+import StudentNotesSummary from "@/pages/dashboard/students/progress/notes-summaries/StudentNotesSummary";
+import StudentProfil from "@/pages/dashboard/students/profiles/StudentProfil";
+import StudentMyClass from "@/pages/dashboard/students/classes/StudentMyClass";
+import StudentMaterial from "@/pages/dashboard/students/classes/StudentMaterial";
+import StudentQuizPage from "@/pages/dashboard/students/classes/StudentQuizPage";
+import StudentAttandenceClass from "@/pages/dashboard/students/classes/StudentAttandenceClass";
+// import StudentProgressDetail from "@/pages/pendidikanku-dashboard/dashboard-students/progress/StudentProgress";
+// import StudentAllSchedule from "@/pages/pendidikanku-dashboard/dashboard-students/academic/book/StudentAllSchedule";
+// import StudentProfil from "@/pages/pendidikanku-dashboard/dashboard-students/profil/StudentProfil";
+// import StudentAssignmentClass from "@/pages/pendidikanku-dashboard/dashboard-students/assignment/StudentAssignmentClass";
+// import StudentDetailSchedule from "@/pages/pendidikanku-dashboard/dashboard-students/academic/schedule/StudentDetailSchedule";
+// import StudentAnnouncements from "@/pages/pendidikanku-dashboard/dashboard-students/announcement/StudentAnnouncement";
 
-// import StudentRaport from "@/pages/pendidikanku-dashboard/dashboard-student/progress/raport/StudentRaport";
+// import StudentRaport from "@/pages/pendidikanku-dashboard/dashboard-students/progress/raport/StudentRaport";
 
-// import StudentFInance from "@/pages/pendidikanku-dashboard/dashboard-student/finance/StudentFinance";
-// import StudentSchedule from "@/pages/pendidikanku-dashboard/dashboard-student/schedule/StudentSchedule";
-// import StudentListFinance from "@/pages/pendidikanku-dashboard/dashboard-student/finance/StudentListFinance";
+// import StudentFInance from "@/pages/pendidikanku-dashboard/dashboard-students/finance/StudentFinance";
+// import StudentSchedule from "@/pages/pendidikanku-dashboard/dashboard-students/schedule/StudentSchedule";
+// import StudentListFinance from "@/pages/pendidikanku-dashboard/dashboard-students/finance/StudentListFinance";
 
-// import StudentAbsence from "@/pages/pendidikanku-dashboard/dashboard-student/progress/absence/StudentAbsence";
-// import StudentNotesSummary from "@/pages/pendidikanku-dashboard/dashboard-student/progress/notes-summary/StudentNotesSummary";
-// import StudentMenuGrids from "@/pages/pendidikanku-dashboard/dashboard-student/menu/StudentMenuGrids";
-// import StudentMyClass from "@/pages/pendidikanku-dashboard/dashboard-student/class/StudentMyClass";
-// import StudentMaterial from "@/pages/pendidikanku-dashboard/dashboard-student/class/StudentMaterial";
-// import StudentQuizPage from "@/pages/pendidikanku-dashboard/dashboard-student/class/StudentQuizPage";
-// import StudentAttandenceClass from "@/pages/pendidikanku-dashboard/dashboard-student/class/StudentAttandenceClass";
-// import StudentCertificate from "@/pages/pendidikanku-dashboard/dashboard-student/certificate/StudentCertificate";
-// import StudentRoutesPlayground from "@/pages/pendidikanku-dashboard/dashboard-student/StudentRoutesPlayground";
+// import StudentAbsence from "@/pages/pendidikanku-dashboard/dashboard-students/progress/absence/StudentAbsence";
+// import StudentNotesSummary from "@/pages/pendidikanku-dashboard/dashboard-students/progress/notes-summary/StudentNotesSummary";
+// import StudentMenuGrids from "@/pages/pendidikanku-dashboard/dashboard-students/menu/StudentMenuGrids";
+// import StudentMyClass from "@/pages/pendidikanku-dashboard/dashboard-students/class/StudentMyClass";
+// import StudentMaterial from "@/pages/pendidikanku-dashboard/dashboard-students/class/StudentMaterial";
+// import StudentQuizPage from "@/pages/pendidikanku-dashboard/dashboard-students/class/StudentQuizPage";
+// import StudentAttandenceClass from "@/pages/pendidikanku-dashboard/dashboard-students/class/StudentAttandenceClass";
+// import StudentCertificate from "@/pages/pendidikanku-dashboard/dashboard-students/certificate/StudentCertificate";
+// import StudentRoutesPlayground from "@/pages/pendidikanku-dashboard/dashboard-students/StudentRoutesPlayground";
 
 // ======================
 // Routing untuk halaman MURID (Student Dashboard)
