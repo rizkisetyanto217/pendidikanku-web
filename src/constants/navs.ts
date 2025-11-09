@@ -42,6 +42,8 @@ export const NAVS: NavDict = {
     // DASHBOARD
     { path: "", label: "Dashboard", icon: LayoutDashboard, end: true },
 
+    // (Opsional) Menu Utama tetap ada bila mau ditampilkan
+    { path: "menu-utama", label: "Menu Utama", icon: ChartBar },
     // 1) PROFIL
     {
       path: "profil",
@@ -117,9 +119,6 @@ export const NAVS: NavDict = {
         { path: "pengaturan", label: "Pengaturan" }, // → /sekolah/pendaftaran/pengaturan
       ],
     },
-
-    // (Opsional) Menu Utama tetap ada bila mau ditampilkan
-    { path: "menu-utama", label: "Menu Utama", icon: ChartBar },
   ],
 
   // tetap

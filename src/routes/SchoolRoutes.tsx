@@ -10,9 +10,9 @@ import SchoolSpp from "@/pages/dashboard/schools/finances/SchoolSpp";
 import SchoolTeacher from "@/pages/dashboard/schools/profiles/teachers/SchoolTeacher";
 import SchoolDetailTeacher from "@/pages/dashboard/schools/profiles/teachers/details/SchoolDetailTeacher";
 import SchoolMenuGrids from "@/pages/dashboard/schools/menus/SchoolMenuGrids";
-import SchoolClass from "@/pages/dashboard/schools/classes/SchoolClass";
-import SchoolSection from "@/pages/dashboard/schools/classes/section/SchoolSection";
-import SchoolSectionDetail from "@/pages/dashboard/schools/classes/section/SchoolSectionDetail";
+import SchoolClass from "@/pages/dashboard/schools/classes/data-class/SchoolClass";
+import SchoolSection from "@/pages/dashboard/schools/classes/class-list/section/SchoolSection";
+import SchoolSectionDetail from "@/pages/dashboard/schools/classes/class-list/section/SchoolSectionDetail";
 import SchoolParent from "@/pages/dashboard/schools/classes/data-class/parent/SchoolParent";
 
 import SchoolAcademic from "@/pages/dashboard/schools/academics/SchoolAcademic";
