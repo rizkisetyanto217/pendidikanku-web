@@ -30,8 +30,6 @@ import { Separator } from "@/components/ui/separator";
 import WebsiteNavbar from "@/components/common/public/CWebsiteNavbar";
 import WebsiteFooter from "@/pages/profile/website/website/components/CPendWebFooter";
 
-/* Optional CSS untuk gradient & full-bleed */
-import "@/styles/support.css";
 
 /* =========================================
    Small layout helpers (Tailwind-only)
