@@ -15,7 +15,7 @@ import {
   type TodayClass,
   type UpcomingClass,
   type TeacherHomeResponse,
-} from "./types/teacher";
+} from "./profiles/types/teacher";
 
 import { useNavigate, useParams } from "react-router-dom";
 

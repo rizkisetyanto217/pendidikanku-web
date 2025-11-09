@@ -1,10 +1,10 @@
 import { Route } from "react-router-dom";
 import DashboardLayout from "@/components/layout/dashboard/DashboardLayout";
 import StudentDashboard from "@/pages/dashboard/students/StudentMainDashboard";
-import StudentAllSchedule from "@/pages/dashboard/students/academics/schedules/StudentSchedule";
-import StudentDetailSchedule from "@/pages/dashboard/students/academics/schedules/StudentDetailSchedule";
+import StudentAllSchedule from "@/pages/dashboard/students/schedules/StudentSchedule";
+import StudentDetailSchedule from "@/pages/dashboard/students/schedules/StudentDetailSchedule";
 import StudentMenuGrids from "@/pages/dashboard/students/menus/StudentMenuGrids";
-import StudentAssignment from "@/pages/dashboard/students/assignments/StudentAssignment";
+import StudentAssignment from "@/pages/dashboard/students/classes/assignments/StudentAssignment";
 import StudentFinance from "@/pages/dashboard/students/finances/StudentFinance";
 import StudentListFinance from "@/pages/dashboard/students/finances/StudentListFinance";
 import StudentProgress from "@/pages/dashboard/students/progress/StudentProgress";
@@ -12,10 +12,10 @@ import StudentRaport from "@/pages/dashboard/students/progress/raports/StudentRa
 import StudentAbsence from "@/pages/dashboard/students/progress/absences/StudentAbsence";
 import StudentNotesSummary from "@/pages/dashboard/students/progress/notes-summaries/StudentNotesSummary";
 import StudentProfil from "@/pages/dashboard/students/profiles/StudentProfil";
-import StudentMyClass from "@/pages/dashboard/students/classes/StudentMyClass";
-import StudentMaterial from "@/pages/dashboard/students/classes/StudentMaterial";
+import StudentMyClass from "@/pages/dashboard/students/classes/my-classes/StudentMyClass";
+import StudentMaterial from "@/pages/dashboard/students/classes/materials/StudentMaterial";
 import StudentQuizPage from "@/pages/dashboard/students/classes/StudentQuizPage";
-import StudentAttandenceClass from "@/pages/dashboard/students/classes/StudentAttandenceClass";
+import StudentAttandenceClass from "@/pages/dashboard/students/classes/attendances/StudentAttandenceClass";
 
 // ======================
 // Routing untuk halaman MURID (Student Dashboard)

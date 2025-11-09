@@ -44,11 +44,11 @@ export const NAVS: NavDict = {
 
     // 1) PROFIL
     {
-      path: "profil-sekolah",
+      path: "profil",
       label: "Profil",
       icon: School,
       children: [
-        { path: "", label: "Profil Sekolah", end: true }, // → /sekolah/profil-sekolah
+        { path: "profil-sekolah", label: "Sekolah", end: true }, // → /sekolah/profil-sekolah
         { path: "guru", label: "Guru", to: "guru" }, // → /sekolah/guru
       ],
     },
@@ -60,11 +60,15 @@ export const NAVS: NavDict = {
       icon: FileSpreadsheet,
       children: [
         // Tahun Akademik memang index-nya halaman akademik
-        { path: "", label: "Tahun Akademik", end: true }, // → /sekolah/akademik
+        { path: "tahun-akademik", label: "Tahun Akademik", end: true }, // → /sekolah/akademik
         // Tiga item berikut diarahkan ke rute yang sudah ada (di luar /akademik)
-        { path: "ruangan", label: "Ruangan", to: "menu-utama/ruangan" }, // → /sekolah/menu-utama/ruangan
+        { path: "ruangan", label: "Ruangan", to: "ruangan" }, // → /sekolah/menu-utama/ruangan
         { path: "buku", label: "Buku", to: "buku" }, // → /sekolah/buku
-        { path: "mapel", label: "Mata Pelajaran", to: "menu-utama/pelajaran" }, // → /sekolah/menu-utama/pelajaran
+        {
+          path: "mata-pelajaran",
+          label: "Mata Pelajaran",
+          to: "mata-pelajaran",
+        }, // → /sekolah/menu-utama/pelajaran
       ],
     },
 
@@ -86,8 +90,7 @@ export const NAVS: NavDict = {
       icon: Wallet,
       children: [
         { path: "spp", label: "SPP", to: "spp" }, // → /sekolah/spp
-        { path: "pendaftaran", label: "Pendaftaran", to: "pendaftaran" }, // → /sekolah/pendaftaran
-        { path: "", label: "Lainnya", end: true }, // → /sekolah/keuangan
+        { path: "lainnya", label: "Lainnya", end: true }, // → /sekolah/keuangan
         // kalau nanti ada route khusus pengaturan keuangan, ganti to: "keuangan/pengaturan"
         { path: "pengaturan", label: "Pengaturan", to: "keuangan" },
       ],
