@@ -707,9 +707,7 @@ const SchoolClass: React.FC<{
         Coba lagi
       </Button>
     </div>
-  ) : (
-    <div className="text-sm text-muted-foreground">{total} total</div>
-  );
+  ) : null;
 
   /* ===== Pagination: server atau client ===== */
   const totalPages =

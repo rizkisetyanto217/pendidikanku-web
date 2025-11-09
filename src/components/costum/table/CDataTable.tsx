@@ -1,4 +1,3 @@
-// src/components/dataview/DataTable.tsx
 "use client";
 
 import * as React from "react";
@@ -8,10 +7,6 @@ import {
   Info,
   Loader2,
   Plus,
-  Eye,
-  Pencil,
-  Trash2,
-  MoreHorizontal,
   Table as TableIcon,
   LayoutGrid,
 } from "lucide-react";
@@ -29,13 +24,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import {
   Select,
   SelectTrigger,
   SelectValue,
@@ -43,13 +31,14 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 
+import { RowActions, NO_ROW_CLICK_ATTR as RA_NO_CLICK } from "./CRowAction";
+
 /* =========================
    Types
 ========================= */
 export type Align = "left" | "center" | "right";
 export type ViewMode = "table" | "card";
 
-/** Meta info untuk cell renderer */
 export type CellMeta = {
   pageIndex: number;
   absoluteIndex: number;
@@ -68,12 +57,14 @@ export type ColumnDef<T> = {
 };
 
 export type ActionsConfig<T> = {
-  mode: "menu" | "inline";
+  /** default: "menu" (titik tiga). Ubah ke "inline" untuk tombol Edit/Delete tampil langsung */
+  mode?: "menu" | "inline";
   onView?: (row: T) => void;
   onEdit?: (row: T) => void;
   onDelete?: (row: T) => void;
   labels?: Partial<{ view: string; edit: string; delete: string }>;
   headerLabel?: string;
+  size?: "sm" | "md";
 };
 
 export type DataTableProps<T> = {
@@ -88,7 +79,7 @@ export type DataTableProps<T> = {
 
   onAdd?: () => void;
   addLabel?: string;
-  rightControls?: React.ReactNode; // deprecated, fallback
+  rightControls?: React.ReactNode; // deprecated
   rightSlot?: React.ReactNode;
   controlsPlacement?: "header" | "above";
   statsSlot?: React.ReactNode;
@@ -121,65 +112,72 @@ export type DataTableProps<T> = {
   cardColsClass?: string;
   cardGapClass?: string;
 
-  /** Klik pada baris/card untuk primary action (lihat/detail) */
   onRowClick?: (row: T) => void;
-
-  /** Tampilkan efek hover pada baris/kartu (default: true) */
   rowHover?: boolean;
+
+  /** NEW — paksa scroll horizontal di wrapper tabel (default: true) */
+  scrollX?: boolean;
+  /** NEW — minimal lebar tabel saat scroll-X (default: 960) */
+  minTableWidth?: number | string;
 
   className?: string;
 };
 
-/** Attribute untuk elemen yang tidak memicu onRowClick */
 export const NO_ROW_CLICK_ATTR = "data-no-row-click";
 
 /* =========================
    Component
 ========================= */
-export function CDataTable<T>({
-  title,
-  onBack,
-  defaultQuery = "",
-  onQueryChange,
-  searchByKeys,
-  filterer,
-  searchPlaceholder = "Cari…",
-  onAdd,
-  addLabel = "Tambah",
-  rightControls,
-  rightSlot,
-  controlsPlacement = "header",
-  statsSlot,
-  emptySlot,
+export function CDataTable<T>(props: DataTableProps<T>) {
+  const {
+    title,
+    onBack,
+    defaultQuery = "",
+    onQueryChange,
+    searchByKeys,
+    filterer,
+    searchPlaceholder = "Cari…",
+    onAdd,
+    rightControls,
+    rightSlot,
+    controlsPlacement = "header",
+    statsSlot,
+    emptySlot,
 
-  loading,
-  error,
-  columns,
-  rows,
-  getRowId,
-  enableActions = true,
-  actions,
-  renderActions,
+    loading,
+    error,
+    columns,
+    rows,
+    getRowId,
+    enableActions = true,
+    actions,
+    renderActions,
 
-  stickyHeader = false,
-  zebra = false,
+    stickyHeader = false,
+    zebra = false,
 
-  pageSize = 30,
-  pageSizeOptions = [20, 30, 50],
+    pageSize = 30,
+    pageSizeOptions = [20, 30, 50],
 
-  defaultAlign = "center",
-  viewModes = ["table", "card"],
-  defaultView = "table",
-  storageKey,
-  onViewModeChange,
-  renderCard,
-  cardColsClass = "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
-  cardGapClass = "gap-4",
+    defaultAlign = "center",
+    viewModes = ["table", "card"],
+    defaultView = "table",
+    storageKey,
+    onViewModeChange,
+    renderCard,
+    cardColsClass = "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
+    cardGapClass = "gap-4",
 
-  onRowClick,
-  rowHover = true,
-  className = "",
-}: DataTableProps<T>) {
+    onRowClick,
+    rowHover = true,
+
+    /* NEW */
+    scrollX = true,
+    minTableWidth = 960,
+
+    className = "",
+  } = props;
+
   /* ========== Search ========== */
   const [query, setQuery] = React.useState(defaultQuery);
   React.useEffect(() => setQuery(defaultQuery), [defaultQuery]);
@@ -358,14 +356,14 @@ export function CDataTable<T>({
 
         {onAdd && (
           <Button variant="outline" className="gap-1" onClick={onAdd}>
-            <Plus size={16} /> {addLabel}
+            <Plus size={16} /> Tambah
           </Button>
         )}
       </div>
     </div>
   );
 
-  /* ========== Abaikan klik pada elemen interaktif ========== */
+  /* ========== Interaksi baris ========== */
   const shouldIgnoreRowInteraction = (e: React.SyntheticEvent) => {
     const el = e.target as HTMLElement | null;
     if (!el) return false;
@@ -379,6 +377,7 @@ export function CDataTable<T>({
           "textarea",
           "label",
           `[${NO_ROW_CLICK_ATTR}]`,
+          `[${RA_NO_CLICK}]`,
           "[data-interactive]",
           ".badge",
           "[data-badge]",
@@ -387,139 +386,14 @@ export function CDataTable<T>({
     );
   };
 
-  /* ===================== Actions (colored icon pills) ===================== */
-  function ActionIconButton(
-    props: React.ButtonHTMLAttributes<HTMLButtonElement> & {
-      kind: "view" | "edit" | "delete";
-      label: string;
-      Icon: React.ComponentType<{ size?: number; className?: string }>;
-    }
-  ) {
-    const { kind, label, Icon, className, onClick, ...rest } = props;
-
-    const color =
-      kind === "view"
-        ? "text-sky-400 bg-sky-500/15 hover:bg-sky-500/25 focus:ring-sky-500/40"
-        : kind === "edit"
-        ? "text-amber-400 bg-amber-500/15 hover:bg-amber-500/25 focus:ring-amber-500/40"
-        : "text-rose-400 bg-rose-500/15 hover:bg-rose-500/25 focus:ring-rose-500/40";
-
-    return (
-      <button
-        type="button"
-        aria-label={label}
-        title={label}
-        onClick={(e) => {
-          e.stopPropagation();
-          onClick?.(e);
-        }}
-        className={cn(
-          "inline-flex h-8 w-8 items-center justify-center rounded-md",
-          "transition-colors outline-none ring-0 focus-visible:ring-2 focus-visible:ring-offset-0",
-          color,
-          className
-        )}
-        {...rest}
-      >
-        <Icon size={16} className="pointer-events-none" />
-      </button>
-    );
-  }
-
-  /* ========== Built-in Actions ========== */
-  const suppressView = Boolean(onRowClick);
-
-  const renderBuiltInActions = React.useCallback(
-    (row: T) => {
-      if (!actions) return null;
-
-      const {
-        mode,
-        onView,
-        onEdit,
-        onDelete,
-        labels = { view: "Lihat", edit: "Edit", delete: "Hapus" },
-      } = actions;
-
-      const hasAny = Boolean(onView || onEdit || onDelete);
-      if (!hasAny) return null;
-
-      if (mode === "inline") {
-        return (
-          <div className="flex items-center justify-center gap-2">
-            {onView && !suppressView && (
-              <ActionIconButton
-                kind="view"
-                label={labels.view || "Lihat"}
-                Icon={Eye}
-                onClick={() => onView(row)}
-              />
-            )}
-            {onEdit && (
-              <ActionIconButton
-                kind="edit"
-                label={labels.edit || "Edit"}
-                Icon={Pencil}
-                onClick={() => onEdit(row)}
-              />
-            )}
-            {onDelete && (
-              <ActionIconButton
-                kind="delete"
-                label={labels.delete || "Hapus"}
-                Icon={Trash2}
-                onClick={() => onDelete(row)}
-              />
-            )}
-          </div>
-        );
-      }
-
-      // mode === "menu"
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" aria-label="Aksi">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {onView && !suppressView && (
-              <DropdownMenuItem className="gap-2" onClick={() => onView(row)}>
-                <Eye className="h-4 w-4" /> {labels.view || "Lihat"}
-              </DropdownMenuItem>
-            )}
-            {onEdit && (
-              <DropdownMenuItem className="gap-2" onClick={() => onEdit(row)}>
-                <Pencil className="h-4 w-4" /> {labels.edit || "Edit"}
-              </DropdownMenuItem>
-            )}
-            {!suppressView && onView && (onEdit || onDelete) ? (
-              <DropdownMenuSeparator />
-            ) : null}
-            {onDelete && (
-              <DropdownMenuItem
-                className="gap-2 text-destructive focus:text-destructive"
-                onClick={() => onDelete(row)}
-              >
-                <Trash2 className="h-4 w-4" /> {labels.delete || "Hapus"}
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
-    },
-    [actions, suppressView]
-  );
-
-  /* ===== Kolom Aksi: opsional ===== */
+  /* ===== Aksi: kolom aksi ada atau tidak ===== */
   const anyActionHandlers =
     Boolean(
       actions && (actions.onView || actions.onEdit || actions.onDelete)
     ) || Boolean(renderActions);
-
   const hasActionsColumn = Boolean(enableActions && anyActionHandlers);
   const actionsHeaderLabel = actions?.headerLabel ?? "Aksi";
+  const suppressView = Boolean(onRowClick);
 
   /* ========== Default Card Renderer (meta-aware) ========== */
   const DefaultCard = (row: T, meta: CellMeta) => (
@@ -564,15 +438,33 @@ export function CDataTable<T>({
       ))}
       {hasActionsColumn && (
         <div className="pt-2 flex justify-end">
-          {actions ? renderBuiltInActions(row) : renderActions?.(row)}
+          {actions ? (
+            <RowActions
+              /* mode tidak diisi -> default "menu" */
+              row={row}
+              onView={actions.onView}
+              onEdit={actions.onEdit}
+              onDelete={actions.onDelete}
+              labels={actions.labels}
+              size={actions.size}
+              suppressView={suppressView}
+            />
+          ) : (
+            renderActions?.(row)
+          )}
         </div>
       )}
     </div>
   );
 
   /* ========== Render ========== */
+  const tableMinW =
+    typeof minTableWidth === "number" ? `${minTableWidth}px` : minTableWidth;
+
   return (
-    <div className={cn("w-full flex flex-col gap-4 lg:gap-6", className)}>
+    <div
+      className={cn("w-full flex flex-col gap-4 lg:gap-6 min-w-0", className)}
+    >
       {/* Header / Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="hidden md:flex items-center gap-2 font-semibold">
@@ -591,7 +483,7 @@ export function CDataTable<T>({
         {controlsPlacement === "header" && ControlsRow}
       </div>
 
-      {typeof statsSlot !== "undefined" && (
+      {statsSlot != null && (
         <CardContent className="p-5">{statsSlot}</CardContent>
       )}
 
@@ -600,7 +492,7 @@ export function CDataTable<T>({
       )}
 
       {/* Data area */}
-      <div className="px-0 md:px-5">
+      <div className="px-0 md:px-5 min-w-0">
         {loading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="animate-spin" size={16} /> Memuat…
@@ -623,115 +515,138 @@ export function CDataTable<T>({
         ) : view === "table" ? (
           /* ===== TABLE MODE ===== */
           <>
-            <div className="overflow-auto rounded-xl border">
-              <Table>
-                <TableHeader
-                  className={cn(
-                    stickyHeader &&
-                      "sticky top-0 z-10 backdrop-blur supports-[backdrop-filter]:bg-transparent"
-                  )}
-                >
-                  <TableRow className="bg-primary/10">
-                    {columns.map((col) => (
-                      <TableHead
-                        key={col.id}
-                        className={cn(
-                          "text-primary font-semibold",
-                          col.headerClassName,
-                          alignToHeader(col.align ?? defaultAlign)
-                        )}
-                        style={col.minW ? { minWidth: col.minW } : undefined}
-                      >
-                        {col.header}
-                      </TableHead>
-                    ))}
-                    {hasActionsColumn && (
-                      <TableHead
-                        className={cn(
-                          "min-w-[80px] text-primary font-semibold",
-                          alignToHeader(defaultAlign)
-                        )}
-                      >
-                        {actionsHeaderLabel}
-                      </TableHead>
+            <div
+              className={cn(
+                "relative w-full max-w-full rounded-xl border overflow-hidden",
+                scrollX && "overflow-x-auto [-webkit-overflow-scrolling:touch]"
+              )}
+              // hilangkan gutter kanan di desktop
+              style={{ scrollbarGutter: "stable both-edges" as any }}
+            >
+              {/* Spacer: FULL width, tapi masih punya minWidth untuk trigger scroll bila perlu */}
+              <div
+                className="block w-full align-top"
+                style={scrollX ? { minWidth: tableMinW } : undefined}
+              >
+                <Table className="w-full table-fixed">
+                  <TableHeader
+                    className={cn(
+                      stickyHeader &&
+                        "sticky top-0 z-10 backdrop-blur supports-[backdrop-filter]:bg-transparent"
                     )}
-                  </TableRow>
-                </TableHeader>
+                  >
+                    <TableRow className="bg-primary/10">
+                      {columns.map((col) => (
+                        <TableHead
+                          key={col.id}
+                          className={cn(
+                            "text-primary font-semibold",
+                            col.headerClassName,
+                            alignToHeader(col.align ?? defaultAlign)
+                          )}
+                          style={col.minW ? { minWidth: col.minW } : undefined}
+                        >
+                          {col.header}
+                        </TableHead>
+                      ))}
+                      {hasActionsColumn && (
+                        <TableHead
+                          className={cn(
+                            "min-w-[80px] text-primary font-semibold",
+                            alignToHeader(defaultAlign)
+                          )}
+                        >
+                          {actionsHeaderLabel}
+                        </TableHead>
+                      )}
+                    </TableRow>
+                  </TableHeader>
 
-                <TableBody>
-                  {pageRows.map((row, idx) => {
-                    const rid = getRowId(row);
-                    const meta: CellMeta = {
-                      pageIndex: idx,
-                      absoluteIndex: offset + idx,
-                      rowId: rid,
-                      isCard: false,
-                    };
-                    return (
-                      <TableRow
-                        key={rid}
-                        onClick={
-                          onRowClick
-                            ? (e) => {
-                                if (shouldIgnoreRowInteraction(e)) return;
-                                onRowClick(row);
-                              }
-                            : undefined
-                        }
-                        className={cn(
-                          "group/row", // <— penting untuk cell-hover
-                          zebra &&
-                            idx % 2 === 1 &&
-                            "bg-muted/30 dark:bg-muted/20",
-                          hoverCls,
-                          onRowClick && "cursor-pointer"
-                        )}
-                        role={onRowClick ? "button" : undefined}
-                        tabIndex={onRowClick ? 0 : undefined}
-                        onKeyDown={
-                          onRowClick
-                            ? (e) => {
-                                if (shouldIgnoreRowInteraction(e)) return;
-                                if (e.key === "Enter" || e.key === " ") {
-                                  e.preventDefault();
-                                  onRowClick?.(row);
+                  <TableBody>
+                    {pageRows.map((row, idx) => {
+                      const rid = getRowId(row);
+                      const meta: CellMeta = {
+                        pageIndex: idx,
+                        absoluteIndex: offset + idx,
+                        rowId: rid,
+                        isCard: false,
+                      };
+                      return (
+                        <TableRow
+                          key={rid}
+                          onClick={
+                            onRowClick
+                              ? (e) => {
+                                  if (shouldIgnoreRowInteraction(e)) return;
+                                  onRowClick(row);
                                 }
-                              }
-                            : undefined
-                        }
-                      >
-                        {columns.map((col) => (
-                          <TableCell
-                            key={col.id}
-                            className={cn(
-                              col.className,
-                              alignToCell(col.align ?? defaultAlign),
-                              cellHoverCls // <— warna ikut saat row di-hover
-                            )}
-                          >
-                            {col.cell
-                              ? col.cell(row, meta)
-                              : String((row as any)[col.id] ?? "")}
-                          </TableCell>
-                        ))}
+                              : undefined
+                          }
+                          className={cn(
+                            "group/row",
+                            zebra &&
+                              idx % 2 === 1 &&
+                              "bg-muted/30 dark:bg-muted/20",
+                            hoverCls,
+                            onRowClick && "cursor-pointer"
+                          )}
+                          role={onRowClick ? "button" : undefined}
+                          tabIndex={onRowClick ? 0 : undefined}
+                          onKeyDown={
+                            onRowClick
+                              ? (e) => {
+                                  if (shouldIgnoreRowInteraction(e)) return;
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    onRowClick?.(row);
+                                  }
+                                }
+                              : undefined
+                          }
+                        >
+                          {columns.map((col) => (
+                            <TableCell
+                              key={col.id}
+                              className={cn(
+                                col.className,
+                                alignToCell(col.align ?? defaultAlign),
+                                cellHoverCls
+                              )}
+                            >
+                              {col.cell
+                                ? col.cell(row, meta)
+                                : String((row as any)[col.id] ?? "")}
+                            </TableCell>
+                          ))}
 
-                        {hasActionsColumn && (
-                          <TableCell
-                            className={cn(
-                              alignToCell(defaultAlign),
-                              cellHoverCls
-                            )}
-                          >
-                            {actions
-                              ? renderBuiltInActions(row)
-                              : renderActions?.(row)}
-                          </TableCell>
-                        )}
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                          {hasActionsColumn && (
+                            <TableCell
+                              className={cn(
+                                alignToCell(defaultAlign),
+                                cellHoverCls
+                              )}
+                            >
+                              {actions ? (
+                                <RowActions
+                                  row={row}
+                                  onView={actions.onView}
+                                  onEdit={actions.onEdit}
+                                  onDelete={actions.onDelete}
+                                  labels={actions.labels}
+                                  size={actions.size}
+                                  suppressView={suppressView}
+                                />
+                              ) : (
+                                renderActions?.(row)
+                              )}
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
 
             <PaginationFooter
@@ -781,7 +696,7 @@ export function CDataTable<T>({
 }
 
 /* =========================
-   Small subcomponent: Pagination
+   Pagination
 ========================= */
 function PaginationFooter(props: {
   pageStart: number;
@@ -838,7 +753,6 @@ function alignToCell(a: Align = "center") {
   if (a === "right") return "text-right";
   return "text-left";
 }
-
 function safeLSGet(key: string): string | null {
   try {
     if (typeof window === "undefined") return null;
@@ -851,9 +765,7 @@ function safeLSSet(key: string, value: string) {
   try {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(key, value);
-  } catch {
-    /* ignore */
-  }
+  } catch {}
 }
 
 /* Re-export */

@@ -1,114 +1,128 @@
 // src/pages/sekolahislamku/teacher/TeacherSchedule.tsx
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
   CalendarDays,
-  Plus,
-  Pencil,
-  Trash2,
   ChevronLeft,
   ChevronRight,
   ArrowLeft,
-  MapPin,
-  User,
 } from "lucide-react";
 
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+
+// ✅ default import untuk default export
+import CalendarView from "@/pages/dashboard/components/calender/CalenderView";
+// (kalau kamu juga pakai komponen ini di file yang sama)
+import ScheduleList from "@/pages/dashboard/components/calender/ScheduleList";
+import EditScheduleDialog from "@/pages/dashboard/components/calender/components/EditSchedule";
+// ✅ value vs type dipisah
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
+  toMonthStr,
+  monthLabel,
+  dateKeyFrom,
+} from "@/pages/dashboard/components/calender/types/types";
+import type { ScheduleRow } from "@/pages/dashboard/components/calender/types/types";
 
-/* ================= Types ================= */
-type ScheduleRow = {
-  id: string;
-  title: string;
-  date: string; // ISO
-  time: string; // "HH:mm"
-  room?: string;
-  teacher?: string;
-  type?: "class" | "exam" | "event";
-  description?: string;
-};
-
-/* ================= Helpers ================= */
-const toMonthStr = (d = new Date()) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-const monthLabel = (month: string) => {
-  const [y, m] = month.split("-").map(Number);
-  return new Date(y, (m || 1) - 1, 1).toLocaleDateString("id-ID", {
-    month: "long",
-    year: "numeric",
-  });
-};
-const toLocalInputValue = (iso: string) => {
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
-    d.getHours()
-  )}:${pad(d.getMinutes())}`;
-};
-const fmtDayShort = (iso: string) =>
-  new Date(iso).toLocaleDateString("id-ID", {
-    day: "2-digit",
-    month: "short",
-  });
-const fmtFullDate = (isoOrKey: string) =>
-  new Date(isoOrKey).toLocaleDateString("id-ID", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-
-/* ================= Dummy API ================= */
+// ===== Dummy API (sementara tetap di file halaman) =====
 const scheduleStore = new Map<string, ScheduleRow[]>();
 const delay = (ms = 350) => new Promise((r) => setTimeout(r, ms));
 function uid() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
+function seedMonth(y: number, m: number): ScheduleRow[] {
+  const rooms = ["Aula 1", "Aula Utama", "Ruang 3B", "Ruang 4C", "Ruang 5A"];
+  const teachers = [
+    "Ust. Ahmad",
+    "Bu Sari",
+    "Pak Budi",
+    "Ust. Dina",
+    "Pak Rudi",
+  ];
+  const classes = ["1A", "2B", "3C", "4D", "5A", "6B"];
+  const topics = [
+    ["Tahsin Al-Qur'an", "Fokus makhraj huruf & tajwid"],
+    ["Matematika", "Pecahan, desimal, perbandingan"],
+    ["Bahasa Indonesia", "Teks nonfiksi & ringkasan"],
+    ["IPA", "Siklus air & ekosistem"],
+    ["IPS", "Keragaman sosial budaya"],
+    ["Bahasa Inggris", "Daily conversation & vocab"],
+  ] as const;
+
+  const rows: ScheduleRow[] = [];
+  const push = (
+    d: number,
+    time: string,
+    type: "class" | "exam" | "event",
+    idx: number
+  ) => {
+    const [title, desc] = topics[idx % topics.length];
+    const teacher = teachers[idx % teachers.length];
+    const room = rooms[idx % rooms.length];
+    const cls = classes[idx % classes.length];
+    rows.push({
+      id: uid(),
+      title: type === "class" ? `${title} Kelas ${cls}` : `${title} ${type}`,
+      date: new Date(
+        y,
+        m - 1,
+        d,
+        Number(time.slice(0, 2)),
+        Number(time.slice(3))
+      ).toISOString(),
+      time,
+      room,
+      teacher: type === "class" ? cls : teacher,
+      type,
+      description:
+        type === "exam"
+          ? `Ujian materi ${title.toLowerCase()} — persiapkan alat tulis.`
+          : type === "event"
+          ? `Acara sekolah: ${title} — ${desc}`
+          : desc,
+    });
+  };
+
+  const plan: Array<[number, string, "class" | "exam" | "event"]> = [
+    [1, "07:30", "class"],
+    [1, "10:15", "class"],
+    [2, "09:00", "event"],
+    [3, "08:00", "class"],
+    [3, "13:00", "class"],
+    [5, "10:00", "exam"],
+    [7, "07:30", "class"],
+    [8, "11:00", "class"],
+    [9, "09:30", "class"],
+    [10, "13:15", "class"],
+    [12, "10:00", "class"],
+    [12, "14:00", "event"],
+    [14, "08:00", "class"],
+    [15, "07:30", "class"],
+    [15, "10:30", "exam"],
+    [18, "09:45", "class"],
+    [20, "07:30", "class"],
+    [20, "12:30", "class"],
+    [22, "10:00", "class"],
+    [22, "15:00", "event"],
+    [24, "08:00", "class"],
+    [25, "07:30", "class"],
+    [25, "10:00", "class"],
+    [26, "09:00", "exam"],
+    [28, "07:30", "class"],
+    [28, "11:30", "class"],
+  ];
+
+  plan.forEach((p, i) => push(p[0], p[1], p[2], i));
+  return rows;
+}
+
 const scheduleApi = {
   async list(month: string): Promise<ScheduleRow[]> {
     await delay();
     if (!scheduleStore.has(month)) {
       const [y, m] = month.split("-").map(Number);
-      scheduleStore.set(month, [
-        {
-          id: uid(),
-          title: "Tahsin Al-Qur'an",
-          date: new Date(y, m - 1, 8, 7, 30).toISOString(),
-          time: "07:30",
-          room: "Aula 1",
-          teacher: "Ust. Ahmad",
-          type: "class",
-          description: "Pembelajaran tahsin fokus makhraj huruf",
-        },
-        {
-          id: uid(),
-          title: "Matematika Kelas 5",
-          date: new Date(y, m - 1, 12, 10, 0).toISOString(),
-          time: "10:00",
-          room: "Ruang 5A",
-          teacher: "Bu Sari",
-          type: "class",
-          description: "Materi pecahan dan desimal",
-        },
-      ]);
+      scheduleStore.set(month, seedMonth(y, m));
     }
     return structuredClone(scheduleStore.get(month)!);
   },
@@ -137,14 +151,27 @@ const scheduleApi = {
   },
 };
 
-/* ================= MAIN COMPONENT ================= */
 export default function TeacherSchedule() {
   const navigate = useNavigate();
   const qc = useQueryClient();
 
   const [month, setMonth] = useState(toMonthStr());
-  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [selectedDay, setSelectedDay] = useState<string | null>(() =>
+    dateKeyFrom(new Date())
+  );
+  const LOCAL_KEY = "teacherScheduleTab";
+  const [tab, setTab] = useState<"calendar" | "list">("calendar");
   const [editing, setEditing] = useState<ScheduleRow | null>(null);
+
+  useEffect(() => {
+    const saved = (localStorage.getItem(LOCAL_KEY) || "") as
+      | "calendar"
+      | "list";
+    if (saved === "calendar" || saved === "list") setTab(saved);
+  }, []);
+  useEffect(() => {
+    localStorage.setItem(LOCAL_KEY, tab);
+  }, [tab]);
 
   const schedulesQ = useQuery({
     queryKey: ["teacher-schedules", month],
@@ -168,53 +195,25 @@ export default function TeacherSchedule() {
       qc.invalidateQueries({ queryKey: ["teacher-schedules", month] }),
   });
 
-  // Map per tanggal
-  const byDate = useMemo(() => {
-    const map = new Map<string, ScheduleRow[]>();
-    (schedulesQ.data ?? []).forEach((s) => {
-      const d = new Date(s.date);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
-        2,
-        "0"
-      )}-${String(d.getDate()).padStart(2, "0")}`;
-      const arr = map.get(key) || [];
-      arr.push(s);
-      arr.sort((a, b) => a.time.localeCompare(b.time));
-      map.set(key, arr);
-    });
-    return map;
-  }, [schedulesQ.data]);
-
-  // List ringkas bulan ini (fallback)
-  const flatList = useMemo(() => {
-    return [...(schedulesQ.data ?? [])].sort(
-      (a, b) =>
-        +new Date(a.date) - +new Date(b.date) || a.time.localeCompare(b.time)
-    );
-  }, [schedulesQ.data]);
-
-  // Data untuk panel kanan: prioritas ke selectedDay; jika null -> gunakan flatList
-  const panelList = useMemo(() => {
-    if (selectedDay) {
-      return [...(byDate.get(selectedDay) ?? [])].sort((a, b) =>
-        a.time.localeCompare(b.time)
-      );
-    }
-    return flatList;
-  }, [selectedDay, byDate, flatList]);
-
-  // kalender
   const [y, m] = month.split("-").map(Number);
-  const first = new Date(y, (m || 1) - 1, 1);
-  const firstWeekday = (first.getDay() + 6) % 7;
-  const total = new Date(y, m, 0).getDate();
-  const days = [
-    ...Array(firstWeekday).fill(null),
-    ...Array.from({ length: total }, (_, i) => i + 1),
-  ];
-
   const gotoPrev = () => setMonth(toMonthStr(new Date(y, m - 2, 1)));
   const gotoNext = () => setMonth(toMonthStr(new Date(y, m, 1)));
+
+  useEffect(() => {
+    const today = new Date();
+    if (toMonthStr(today) === month) setSelectedDay(dateKeyFrom(today));
+    else setSelectedDay(null);
+  }, [month]);
+
+  const onAddNew = (baseDate?: string) =>
+    setEditing({
+      id: "",
+      title: "",
+      date: new Date(
+        (baseDate ?? toMonthStr()) + (baseDate ? "T07:00:00" : "-01T07:00:00")
+      ).toISOString(),
+      time: "07:00",
+    });
 
   return (
     <div className="w-full p-4 md:p-6 bg-background text-foreground">
@@ -230,7 +229,7 @@ export default function TeacherSchedule() {
           <div>
             <div className="font-semibold text-base">Jadwal Mengajar</div>
             <p className="text-sm text-muted-foreground">
-              Klik tanggal atau item di daftar untuk melihat / mengubah
+              Kelola aktivitas mengajar per bulan atau dalam bentuk daftar
             </p>
           </div>
           <div className="ml-auto flex items-center gap-2">
@@ -241,205 +240,72 @@ export default function TeacherSchedule() {
             <Button variant="outline" size="icon" onClick={gotoNext}>
               <ChevronRight size={16} />
             </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                const now = new Date();
+                setMonth(toMonthStr(now)); // <-- tadinya toMonthSltr
+                setSelectedDay(dateKeyFrom(now));
+                setTab("calendar");
+              }}
+              className="ml-1"
+            >
+              Hari ini
+            </Button>
           </div>
         </div>
 
-        {/* Grid: Kalender + Panel kanan */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Kalender (2 kolom di desktop) */}
-          <Card className="md:col-span-2">
-            <CardContent className="p-4">
-              {schedulesQ.isLoading ? (
-                <div className="grid grid-cols-7 gap-2">
-                  {Array.from({ length: 35 }).map((_, i) => (
-                    <Skeleton key={i} className="h-16 w-full rounded-lg" />
-                  ))}
-                </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-7 gap-2 text-xs text-muted-foreground mb-2">
-                    {["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].map(
-                      (d) => (
-                        <div key={d} className="text-center font-medium">
-                          {d}
-                        </div>
-                      )
-                    )}
-                  </div>
-                  <div className="grid grid-cols-7 gap-2">
-                    {days.map((day, i) => {
-                      const dateKey =
-                        day &&
-                        `${y}-${String(m).padStart(2, "0")}-${String(
-                          day
-                        ).padStart(2, "0")}`;
-                      const schedules = dateKey ? byDate.get(dateKey) : [];
-                      const selected = selectedDay === dateKey;
-                      return (
-                        <button
-                          key={i}
-                          disabled={!dateKey}
-                          onClick={() => setSelectedDay(dateKey!)}
-                          className={`aspect-square border rounded-lg text-left p-1 relative transition ${
-                            selected ? "bg-primary/10 border-primary" : ""
-                          } disabled:opacity-30`}
-                        >
-                          <div className="text-xs font-medium">{day ?? ""}</div>
-                          {!!schedules?.length && (
-                            <div className="absolute right-1 top-1 flex gap-0.5">
-                              {schedules.slice(0, 3).map((s, idx) => (
-                                <span
-                                  key={idx}
-                                  className={`h-1.5 w-1.5 rounded-full ${
-                                    s.type === "exam"
-                                      ? "bg-red-500"
-                                      : s.type === "event"
-                                      ? "bg-green-500"
-                                      : "bg-primary"
-                                  }`}
-                                />
-                              ))}
-                            </div>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+        {/* Tabs */}
+        <Tabs
+          value={tab}
+          onValueChange={(v) => setTab(v as "calendar" | "list")}
+          className="w-full"
+        >
+          <TabsList className="w-fit">
+            <TabsTrigger value="calendar">Kalender</TabsTrigger>
+            <TabsTrigger value="list">List</TabsTrigger>
+          </TabsList>
 
-          {/* Panel kanan: mengikuti tanggal terpilih, fallback ke bulan ini */}
-          <Card>
-            <CardHeader className="pb-3 flex-row items-center justify-between">
-              <CardTitle className="text-base">
-                {selectedDay
-                  ? `Aktivitas ${fmtFullDate(selectedDay)}`
-                  : "Aktivitas Bulan Ini"}
-              </CardTitle>
-              <Button
-                size="sm"
-                onClick={() =>
-                  setEditing({
-                    id: "",
-                    title: "",
-                    date: new Date(
-                      (selectedDay ?? toMonthStr()) +
-                        (selectedDay ? "T07:00:00" : "-01T07:00:00")
-                    ).toISOString(),
-                    time: "07:00",
-                  })
-                }
-              >
-                <Plus size={16} />
-                <span className="ml-2 hidden sm:inline">Tambah</span>
-              </Button>
-            </CardHeader>
-            <CardContent className="p-0">
-              {schedulesQ.isLoading ? (
-                <div className="p-4 space-y-2">
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
-                </div>
-              ) : panelList.length ? (
-                <ul className="divide-y">
-                  {panelList.map((s) => (
-                    <li
-                      key={s.id}
-                      className="p-3 hover:bg-muted/50 cursor-pointer"
-                      onClick={() => setEditing(s)}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="w-14 shrink-0 text-right">
-                          <div className="text-xs text-muted-foreground leading-4">
-                            {fmtDayShort(s.date)}
-                          </div>
-                          <div className="text-[11px]">{s.time}</div>
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="text-sm font-medium truncate">
-                            {s.title}
-                          </div>
-                          <div className="text-xs text-muted-foreground flex flex-wrap gap-3 mt-0.5">
-                            {s.room && (
-                              <span className="inline-flex items-center gap-1">
-                                <MapPin size={12} />
-                                {s.room}
-                              </span>
-                            )}
-                            {s.teacher && (
-                              <span className="inline-flex items-center gap-1">
-                                <User size={12} />
-                                {s.teacher}
-                              </span>
-                            )}
-                            <span className="inline-flex items-center gap-1">
-                              <span
-                                className={`h-2 w-2 rounded-full ${
-                                  s.type === "exam"
-                                    ? "bg-red-500"
-                                    : s.type === "event"
-                                    ? "bg-green-500"
-                                    : "bg-primary"
-                                }`}
-                              />
-                              {s.type ?? "class"}
-                            </span>
-                          </div>
-                        </div>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditing(s);
-                          }}
-                          title="Edit"
-                        >
-                          <Pencil size={14} />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7 text-destructive"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteMut.mutate(s.id);
-                          }}
-                          title="Hapus"
-                        >
-                          <Trash2 size={14} />
-                        </Button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="p-4 text-sm text-muted-foreground">
-                  {selectedDay
-                    ? "Tidak ada aktivitas pada tanggal ini."
-                    : "Belum ada aktivitas bulan ini."}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+          <TabsContent value="calendar" className="mt-4">
+            <CalendarView
+              month={month}
+              data={schedulesQ.data ?? []}
+              loading={schedulesQ.isLoading}
+              selectedDay={selectedDay}
+              setSelectedDay={setSelectedDay}
+              onAddNew={onAddNew}
+              onEdit={(row) => setEditing(row)}
+              onDelete={(id) => deleteMut.mutate(id)}
+              updating={updateMut.isPending || createMut.isPending}
+              deleting={deleteMut.isPending}
+            />
+          </TabsContent>
 
+          <TabsContent value="list" className="mt-4">
+            <ScheduleList
+              data={schedulesQ.data ?? []}
+              loading={schedulesQ.isLoading}
+              onAddNew={() => onAddNew()}
+              onEdit={(row) => setEditing(row)}
+              onDelete={(id) => deleteMut.mutate(id)}
+              updating={updateMut.isPending || createMut.isPending}
+              deleting={deleteMut.isPending}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Dialog */}
       {editing && (
-        <EditDialog
+        <EditScheduleDialog
           value={editing}
           onClose={() => setEditing(null)}
           onSubmit={(v) => {
             if (!v.title.trim()) return;
-            if (v.id)
+            if (v.id) {
               updateMut.mutate(v, { onSuccess: () => setEditing(null) });
-            else {
+            } else {
               const { id, ...payload } = v;
               createMut.mutate(payload, { onSuccess: () => setEditing(null) });
             }
@@ -447,132 +313,5 @@ export default function TeacherSchedule() {
         />
       )}
     </div>
-  );
-}
-
-/* ================= Dialog Form ================= */
-function EditDialog({
-  value,
-  onClose,
-  onSubmit,
-}: {
-  value: ScheduleRow;
-  onClose: () => void;
-  onSubmit: (v: ScheduleRow) => void;
-}) {
-  const [form, setForm] = useState(value);
-  const set = (k: keyof ScheduleRow, v: any) =>
-    setForm((s) => ({ ...s, [k]: v }));
-
-  const rooms = ["Aula 1", "Aula Utama", "Ruang 5A"];
-  const classes = ["1A", "2B", "3C", "4D", "5A", "6B"];
-
-  return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg md:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>{form.id ? "Ubah Jadwal" : "Tambah Jadwal"}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 text-sm">
-          <div>
-            <label className="text-xs text-muted-foreground">Judul</label>
-            <Input
-              value={form.title}
-              onChange={(e) => set("title", e.target.value)}
-              placeholder="Contoh: Matematika Kelas 5A"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-muted-foreground">
-                Tanggal & Waktu
-              </label>
-              <Input
-                type="datetime-local"
-                value={toLocalInputValue(form.date)}
-                onChange={(e) => {
-                  const newDate = new Date(e.target.value).toISOString();
-                  const time = e.target.value.split("T")[1] || "07:00";
-                  set("date", newDate);
-                  set("time", time);
-                }}
-              />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground">Jenis</label>
-              <Select
-                value={form.type || "class"}
-                onValueChange={(v) => set("type", v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih jenis" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="class">Kelas</SelectItem>
-                  <SelectItem value="exam">Ujian</SelectItem>
-                  <SelectItem value="event">Acara</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-muted-foreground">Ruangan</label>
-              <Select
-                value={form.room || ""}
-                onValueChange={(v) => set("room", v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="- Pilih Ruangan -" />
-                </SelectTrigger>
-                <SelectContent>
-                  {rooms.map((r) => (
-                    <SelectItem key={r} value={r}>
-                      {r}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground">Kelas</label>
-              <Select
-                value={form.teacher || ""}
-                onValueChange={(v) => set("teacher", v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="- Pilih Kelas -" />
-                </SelectTrigger>
-                <SelectContent>
-                  {classes.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground">
-              Deskripsi (opsional)
-            </label>
-            <Textarea
-              value={form.description || ""}
-              onChange={(e) => set("description", e.target.value)}
-              placeholder="Catatan tambahan..."
-            />
-          </div>
-        </div>
-        <DialogFooter className="pt-4">
-          <Button variant="ghost" onClick={onClose}>
-            Batal
-          </Button>
-          <Button onClick={() => onSubmit(form)}>
-            {form.id ? <Pencil size={16} /> : <Plus size={16} />} Simpan
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }

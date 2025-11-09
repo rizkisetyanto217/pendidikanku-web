@@ -93,6 +93,7 @@ export default function AppRoutes() {
           {StudentRoutes}
         </Route>
 
+  
         {/* ===== Sekolah/Manajemen: admin/dkm ===== */}
         <Route element={<RequireschoolRoles allow={["admin", "dkm"]} />}>
           {SchoolRoutes}

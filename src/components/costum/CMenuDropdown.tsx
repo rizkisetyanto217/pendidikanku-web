@@ -37,18 +37,18 @@ import {
 
 /* ================= CSS-only Theming Helpers ================= */
 type Mode = "light" | "dark" | "system";
-type ThemeName = "default" | "sunrise" | "midnight";
+type ThemeName = "default" | "green" | "yellow";
 
 const THEME_KEY = "theme-name";
 const MODE_KEY = "theme-mode";
-const THEME_NAMES: ThemeName[] = ["default", "sunrise", "midnight"];
+const THEME_NAMES: ThemeName[] = ["default", "green", "yellow"];
 
 function applyThemeName(name: ThemeName) {
   const el = document.documentElement;
   if (name === "default") {
-    el.removeAttribute("data-theme");
+    el.removeAttribute("data-theme"); // tema campuran hijau+kuning (root)
   } else {
-    el.setAttribute("data-theme", name);
+    el.setAttribute("data-theme", name); // "green" atau "yellow"
   }
   localStorage.setItem(THEME_KEY, name);
 }
@@ -62,7 +62,7 @@ function applyMode(mode: Mode) {
     else el.classList.remove("dark");
   };
 
-  // bersihkan listener lama (opsional bisa disimpan di window)
+  // bersihkan listener lama
   // @ts-expect-error - attach once per call
   if (window.__theme_mm_listener__) {
     // @ts-expect-error
@@ -86,13 +86,6 @@ function applyMode(mode: Mode) {
   localStorage.setItem(MODE_KEY, mode);
 }
 
-/* ================= Helpers existing ================= */
-
-type ModeOption = {
-  value: Mode;
-  label: string;
-  icon: ReactNode;
-};
 /* ================= Component ================= */
 interface PublicUserDropdownProps {
   variant?: "default" | "icon";
@@ -100,21 +93,24 @@ interface PublicUserDropdownProps {
 }
 
 export default function CMenuDropdown({
-//   variant = "default",
   withBg = true,
 }: PublicUserDropdownProps) {
-  // CSS-only mode & themeName (persist via localStorage)
-  const [mode, setMode] = useState<Mode>(() => {
-    const saved = (localStorage.getItem(MODE_KEY) as Mode) || "system";
-    return saved;
-  });
-  const [themeName, setThemeName] = useState<ThemeName>(() => {
-    const saved = (localStorage.getItem(THEME_KEY) as ThemeName) || "default";
-    return saved;
-  });
+  // INIT: baca localStorage & pulihkan nilai lama (sunrise/midnight ⇒ default)
+  const readThemeFromStorage = (): ThemeName => {
+    const raw = (localStorage.getItem(THEME_KEY) || "default").toLowerCase();
+    if (raw === "green") return "green";
+    if (raw === "yellow") return "yellow";
+    // nilai lama / tak dikenal → default
+    return "default";
+  };
 
+  const [mode, setMode] = useState<Mode>(
+    () => (localStorage.getItem(MODE_KEY) as Mode) || "system"
+  );
+  const [themeName, setThemeName] = useState<ThemeName>(readThemeFromStorage);
+
+  // apply on mount
   useEffect(() => {
-    // apply on mount (initial)
     try {
       applyMode(mode);
       applyThemeName(themeName);
@@ -128,6 +124,7 @@ export default function CMenuDropdown({
       applyMode(mode);
     } catch {}
   }, [mode]);
+
   useEffect(() => {
     try {
       applyThemeName(themeName);
@@ -161,6 +158,7 @@ export default function CMenuDropdown({
     }
   };
 
+  type ModeOption = { value: Mode; label: string; icon: ReactNode };
   const modeOptions: ModeOption[] = [
     { value: "light", label: "Terang", icon: <Sun className="w-4 h-4" /> },
     { value: "dark", label: "Gelap", icon: <Moon className="w-4 h-4" /> },
@@ -170,6 +168,13 @@ export default function CMenuDropdown({
       icon: <MonitorCog className="w-4 h-4" />,
     },
   ];
+
+  const themeLabel = (t: ThemeName) =>
+    t === "default"
+      ? "Default (Hijau+Kuning)"
+      : t === "green"
+      ? "Green"
+      : "Yellow";
 
   return (
     <div className="relative">
@@ -219,7 +224,7 @@ export default function CMenuDropdown({
 
           <DropdownMenuSeparator />
 
-          {/* === Tampilan (Mode) === */}
+          {/* === Mode Tampilan === */}
           <div className="px-2 py-1.5">
             <p className="text-[11px] text-muted-foreground mb-2">
               Mode Tampilan
@@ -249,7 +254,7 @@ export default function CMenuDropdown({
             </RadioGroup>
           </div>
 
-          {/* === Pilih Tema (Select) === */}
+          {/* === Pilih Tema (Default/Green/Yellow) === */}
           <div className="px-2 pb-2">
             <p className="text-[11px] text-muted-foreground mb-2">Pilih Tema</p>
             <div className="flex items-center gap-2">
@@ -263,14 +268,12 @@ export default function CMenuDropdown({
                 <SelectContent>
                   {THEME_NAMES.map((t) => (
                     <SelectItem key={t} value={t}>
-                      {t === "default"
-                        ? "Default"
-                        : t.charAt(0).toUpperCase() + t.slice(1)}
+                      {themeLabel(t)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {/* preview warna primary dari theme aktif */}
+              {/* preview warna primary dari tema aktif */}
               <span
                 className="inline-block w-6 h-6 rounded-md border"
                 style={{ background: "hsl(var(--primary))" }}
@@ -282,26 +285,23 @@ export default function CMenuDropdown({
           <DropdownMenuSeparator />
 
           {isLoggedIn && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={handleLogout}
-                disabled={isLoggingOut}
-              >
-                {isLoggingOut ? (
-                  <>
-                    <span className="mr-2 inline-flex h-4 w-4 rounded-full border-2 border-destructive/40 border-t-destructive animate-spin" />
-                    Keluar...
-                  </>
-                ) : (
-                  <>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Keluar
-                  </>
-                )}
-              </DropdownMenuItem>
-            </>
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+            >
+              {isLoggingOut ? (
+                <>
+                  <span className="mr-2 inline-flex h-4 w-4 rounded-full border-2 border-destructive/40 border-t-destructive animate-spin" />
+                  Keluar...
+                </>
+              ) : (
+                <>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Keluar
+                </>
+              )}
+            </DropdownMenuItem>
           )}
         </DropdownMenuContent>
       </DropdownMenu>
