@@ -14,17 +14,21 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 export type NavChild = {
-  path: string; // relatif ke parent, tanpa leading slash, contoh: "terms"
+  /** Relatif ke parent.path (tanpa leading slash) */
+  path: string;
   label: string;
-  end?: boolean; // opsional: untuk exact match
+  end?: boolean;
+  /** ABSOLUTE/relatif custom override — kalau diisi, pakai ini untuk navigasi */
+  to?: string;
 };
 
 export type NavItem = {
+  /** Relatif terhadap root "/sekolah" (tanpa leading slash) */
   path: "" | "." | string;
   label: string;
   icon: LucideIcon;
   end?: boolean;
-  children?: NavChild[]; // ← tambahkan ini
+  children?: NavChild[];
 };
 
 export type NavDict = {
@@ -35,26 +39,87 @@ export type NavDict = {
 
 export const NAVS: NavDict = {
   sekolah: [
+    // DASHBOARD
     { path: "", label: "Dashboard", icon: LayoutDashboard, end: true },
-    { path: "menu-utama", label: "Menu Utama", icon: ChartBar },
-    { path: "guru", label: "Guru", icon: UserCog },
-    { path: "kelas", label: "Kelas", icon: BookOpen },
-    { path: "buku", label: "Buku", icon: BookOpen },
+
+    // 1) PROFIL
+    {
+      path: "profil-sekolah",
+      label: "Profil",
+      icon: School,
+      children: [
+        { path: "", label: "Profil Sekolah", end: true }, // → /sekolah/profil-sekolah
+        { path: "guru", label: "Guru", to: "guru" }, // → /sekolah/guru
+      ],
+    },
+
+    // 2) AKADEMIK
     {
       path: "akademik",
       label: "Akademik",
       icon: FileSpreadsheet,
-      // ↓ contoh anak path (semua relatif ke "akademik")
       children: [
-        { path: "terms", label: "Tahun Ajaran" },
-        { path: "mapel", label: "Mata Pelajaran" },
-        { path: "kelas-section", label: "Kelas & Section" },
-        { path: "kalender", label: "Kalender Akademik" },
+        // Tahun Akademik memang index-nya halaman akademik
+        { path: "", label: "Tahun Akademik", end: true }, // → /sekolah/akademik
+        // Tiga item berikut diarahkan ke rute yang sudah ada (di luar /akademik)
+        { path: "ruangan", label: "Ruangan", to: "menu-utama/ruangan" }, // → /sekolah/menu-utama/ruangan
+        { path: "buku", label: "Buku", to: "buku" }, // → /sekolah/buku
+        { path: "mapel", label: "Mata Pelajaran", to: "menu-utama/pelajaran" }, // → /sekolah/menu-utama/pelajaran
       ],
     },
-    { path: "keuangan", label: "Keuangan", icon: Wallet },
-    { path: "profil-sekolah", label: "Profil", icon: School },
+
+    // 3) KELAS
+    {
+      path: "kelas",
+      label: "Kelas",
+      icon: BookOpen,
+      children: [
+        { path: "", label: "Data Kelas", end: true }, // → /sekolah/kelas
+        { path: "daftar", label: "Daftar Kelas", to: "menu-utama/kelas-aktif" }, // → /sekolah/menu-utama/kelas-aktif
+      ],
+    },
+
+    // 4) KEUANGAN
+    {
+      path: "keuangan",
+      label: "Keuangan",
+      icon: Wallet,
+      children: [
+        { path: "spp", label: "SPP", to: "spp" }, // → /sekolah/spp
+        { path: "pendaftaran", label: "Pendaftaran", to: "pendaftaran" }, // → /sekolah/pendaftaran
+        { path: "", label: "Lainnya", end: true }, // → /sekolah/keuangan
+        // kalau nanti ada route khusus pengaturan keuangan, ganti to: "keuangan/pengaturan"
+        { path: "pengaturan", label: "Pengaturan", to: "keuangan" },
+      ],
+    },
+
+    // 5) JADWAL
+    {
+      path: "jadwal",
+      label: "Jadwal",
+      icon: CalendarDays,
+      children: [
+        { path: "", label: "Jadwal", end: true }, // → /sekolah/jadwal
+      ],
+    },
+
+    // 6) PENDAFTARAN
+    {
+      path: "pendaftaran",
+      label: "Pendaftaran",
+      icon: ClipboardCheck,
+      children: [
+        { path: "", label: "Periode", end: true }, // → /sekolah/pendaftaran
+        { path: "murid", label: "Murid" }, // → /sekolah/pendaftaran/murid
+        { path: "pengaturan", label: "Pengaturan" }, // → /sekolah/pendaftaran/pengaturan
+      ],
+    },
+
+    // (Opsional) Menu Utama tetap ada bila mau ditampilkan
+    { path: "menu-utama", label: "Menu Utama", icon: ChartBar },
   ],
+
+  // tetap
   murid: [
     { path: "", label: "Dashboard", icon: LayoutDashboard, end: true },
     { path: "menu-utama", label: "Menu Utama", icon: ChartBar },

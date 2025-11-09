@@ -4,32 +4,6 @@ import DashboardLayout from "@/components/layout/dashboard/DashboardLayout";
 
 // Dashboard & Profil
 import TeacherDashboard from "@/pages/dashboard/teachers/TeacherMainDashboard";
-// import TeacherProfil from "@/pages/pendidikanku-dashboard/dashboard-teachers/profil/TeacherProfil";
-
-// // Attendance
-// import TeacherAttendance from "@/pages/pendidikanku-dashboard/dashboard-teachers/attendance/TeacherAttendance";
-// import TeacherAttendanceDetail from "@/pages/pendidikanku-dashboard/dashboard-teachers/attendance/components/CTeacherAttendanceDetail";
-
-// // Grading
-// import TeacherGrading from "@/pages/pendidikanku-dashboard/dashboard-teachers/grade/TeacherGrade";
-// import TeacherDetailGrading from "@/pages/pendidikanku-dashboard/dashboard-teachers/grade/CTeacherDetailGrading";
-
-// // Class & Assignments
-// import TeacherClass from "@/pages/pendidikanku-dashboard/dashboard-teachers/class/TeacherClass";
-// import TeacherDetailClass from "@/pages/pendidikanku-dashboard/dashboard-teachers/class/TeacherDetailClass";
-// import TeacherClassAttandence from "@/pages/pendidikanku-dashboard/dashboard-teachers/attendance/TeacherClassAttandence";
-// import TeacherAssignmentClass from "@/pages/pendidikanku-dashboard/dashboard-teachers/asssigment/TeacherAssignmentClass";
-
-// import TeacherManagementClass from "@/pages/pendidikanku-dashboard/dashboard-teachers/class/TeacherManagementClass";
-// import TeacherDetailClassQuiz from "@/pages/pendidikanku-dashboard/dashboard-teachers/class/TeacherDetailClassQuiz";
-// import TeacherAllAssignment from "@/pages/pendidikanku-dashboard/dashboard-teachers/asssigment/TeacherAllAssignment";
-
-// // Schedule
-// import TeacherSchedule from "@/pages/pendidikanku-dashboard/dashboard-teachers/schedule/TeacherSchedule";
-// import TeacherScheduleThreeDays from "@/pages/pendidikanku-dashboard/dashboard-teachers/schedule/components/CTeacherScheduleThreeDays";
-// import TeacherDetailScheduleThreeDays from "@/pages/pendidikanku-dashboard/dashboard-teachers/schedule/TeacherDetailScheduleThreeDays";
-// import TeacherScheduleSevenDays from "@/pages/pendidikanku-dashboard/dashboard-teachers/schedule/components/CTeacherScheduleSevenDays";
-// import TeacherDetailScheduleSevenDays from "@/pages/pendidikanku-dashboard/dashboard-teachers/schedule/TeacherDetailScheduleSevenDays";
 
 // Menu utama guru
 import TeacherMenuGrids from "@/pages/dashboard/teachers/menus/TeacherMenuGrids";
@@ -55,11 +29,6 @@ import TeacherAssignment from "@/pages/dashboard/teachers/csst/menus/assignments
 import TeacherDetailAssignement from "@/pages/dashboard/teachers/csst/menus/assignments/TeacherCSSTDetailAssignment";
 import TeacherClassDetail from "@/pages/dashboard/teachers/classes/Details/TeacherClassDetail";
 
-// import TeacherClassDetail from "@/pages/pendidikanku-dashboard/dashboard-teachers/menu/TeacherDetailClasses";
-// import TeacherSettings from "@/pages/pendidikanku-dashboard/dashboard-teachers/menu/settings/TeacherSettings";
-// import TeacherAssignment from "@/pages/pendidikanku-dashboard/dashboard-teachers/menu/assignments/TeacherAssignment";
-// import TeacherCertificate from "@/pages/pendidikanku-dashboard/dashboard-teachers/menu/certificate/TeacherCertificate";
-// import TeacherRoutesPlayground from "@/pages/pendidikanku-dashboard/dashboard-teachers/TeacherRoutesPlayground";
 
 export const TeacherRoutes = (
   <Route path="guru" element={<DashboardLayout />}>

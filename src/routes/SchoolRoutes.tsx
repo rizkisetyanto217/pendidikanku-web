@@ -3,66 +3,32 @@ import DashboardLayout from "@/components/layout/dashboard/DashboardLayout";
 
 // Pages
 import SchoolDashboard from "@/pages/dashboard/schools/SchoolMainDashboard";
-import SchoolProfile from "@/pages/dashboard/schools/profiles/SchoolProfile";
+import SchoolProfile from "@/pages/dashboard/schools/profiles/schools/SchoolProfile";
 import SchoolFinance from "@/pages/dashboard/schools/finances/SchoolFinance";
 import SchoolDetailBill from "@/pages/dashboard/schools/finances/SchoolDetailBill";
 import SchoolSpp from "@/pages/dashboard/schools/finances/SchoolSpp";
-import SchoolTeacher from "@/pages/dashboard/schools/teachers/SchoolTeacher";
-import SchoolDetailTeacher from "@/pages/dashboard/schools/teachers/details/SchoolDetailTeacher";
+import SchoolTeacher from "@/pages/dashboard/schools/profiles/teachers/SchoolTeacher";
+import SchoolDetailTeacher from "@/pages/dashboard/schools/profiles/teachers/details/SchoolDetailTeacher";
 import SchoolMenuGrids from "@/pages/dashboard/schools/menus/SchoolMenuGrids";
 import SchoolClass from "@/pages/dashboard/schools/classes/SchoolClass";
 import SchoolSection from "@/pages/dashboard/schools/classes/section/SchoolSection";
 import SchoolSectionDetail from "@/pages/dashboard/schools/classes/section/SchoolSectionDetail";
 import SchoolParent from "@/pages/dashboard/schools/classes/parent/SchoolParent";
-import SchoolAllSchedule from "@/pages/dashboard/schools/schedules/SchoolAllSchedule";
-import SchoolDetailSchedule from "@/pages/dashboard/schools/schedules/SchoolDetailSchedule";
+
 import SchoolAcademic from "@/pages/dashboard/schools/academics/SchoolAcademic";
 import SchoolDetailAcademic from "@/pages/dashboard/schools/academics/SchoolDetailAcademic";
 import SchoolManagementAcademicDetail from "@/pages/dashboard/schools/academics/SchoolManagementAcademic";
 import SchoolBooks from "@/pages/dashboard/schools/academics/books/SchoolBooks";
 import SchoolRoom from "@/pages/dashboard/schools/academics/rooms/SchoolRoom";
-import SchoolSubject from "@/pages/dashboard/schools/subjects/SchoolSubject";
+import SchoolSubject from "@/pages/dashboard/schools/academics/subjects/SchoolSubject";
 import SchoolDetailRoom from "@/pages/dashboard/schools/academics/rooms/SchoolDetailRoom";
 import SchoolBookDetail from "@/pages/dashboard/schools/academics/books/detail/SchoolDetailBook";
 import SchoolActiveClass from "@/pages/dashboard/schools/classes/active-class/SchoolActiveClass";
-import SchoolCalender from "@/pages/dashboard/schools/calenders/SchoolCalender";
-// import SchoolCalenderAcademic from "@/pages/dashboard/school/calender/SchoolCalenderAcademic";
-// import SchoolStudent from "@/pages/pendidikanku-dashboard/dashboard-school/coming-soon/student-(pending)/SchoolStudent";
-// import SchoolAllSchedule from "@/pages/pendidikanku-dashboard/dashboard-school/academic/schedule/SchoolAllSchedule";
-// import SchoolProfile from "@/pages/pendidikanku-dashboard/dashboard-school/profile/SchoolProfile";
-// import SchoolFinance from "@/pages/pendidikanku-dashboard/dashboard-school/finance/SchoolFinance";
-// import SchoolDetailBill from "@/pages/pendidikanku-dashboard/dashboard-school/finance/SchoolDetailBill";
-// import SchoolTeacher from "@/pages/pendidikanku-dashboard/dashboard-school/teacher/SchoolTeacher";
-// import SchoolDetailTeacher from "@/pages/pendidikanku-dashboard/dashboard-school/teacher/components/CSchoolDetailTeacher";
-// import SchoolAcademic from "@/pages/pendidikanku-dashboard/dashboard-school/academic/SchoolAcademic";
-// import SchoolDetailAcademic from "@/pages/pendidikanku-dashboard/dashboard-school/academic/SchoolDetailAcademic";
-// import SchoolManagementAcademic from "@/pages/pendidikanku-dashboard/dashboard-school/academic/SchoolManagementAcademic";
-// import SchoolDetailSchedule from "@/pages/pendidikanku-dashboard/dashboard-school/academic/schedule/SchoolDetailSchedule";
-// import SchoolAllAnnouncement from "@/pages/pendidikanku-dashboard/dashboard-school/coming-soon/announcement-(pending)/SchoolAllAnnouncement";
-// import SchoolClass from "@/pages/pendidikanku-dashboard/dashboard-school/class/SchoolClass";
-// import SchoolSection from "@/pages/pendidikanku-dashboard/dashboard-school/class/section/SchoolSection";
 
-// import SchoolAttendance from "@/pages/pendidikanku-dashboard/dashboard-school/coming-soon/attendance-(pending)/SchoolAttendance";
-// import SchoolAnnouncement from "@/pages/pendidikanku-dashboard/dashboard-school/coming-soon/announcement-(pending)/SchoolAnnouncement";
-// import SchoolBooks from "@/pages/pendidikanku-dashboard/dashboard-school/books/SchoolBooks";
-// import SchoolDetailBook from "@/pages/pendidikanku-dashboard/dashboard-school/books/detail/SchoolDetailBook";
-
-// // Menu Utama
-// import SchoolMenuGrids from "@/pages/pendidikanku-dashboard/dashboard-school/menu/SchoolMenuGrids";
-// import SchoolRoom from "@/pages/pendidikanku-dashboard/dashboard-school/academic/rooms/SchoolRoom";
-// import SchoolDetailRoom from "@/pages/pendidikanku-dashboard/dashboard-school/academic/rooms/SchoolDetailRoom";
-// import SchoolSpp from "@/pages/pendidikanku-dashboard/dashboard-school/finance/SchoolSpp";
-// import SchoolSubject from "@/pages/pendidikanku-dashboard/dashboard-school/subject/SchoolSubject";
-// import SchoolCertificate from "@/pages/pendidikanku-dashboard/dashboard-school/academic/certificate/SchoolCertificate";
-// import SchoolDetailCertificate from "@/pages/pendidikanku-dashboard/dashboard-school/academic/certificate/components/CSchoolDetailCertificate";
-// import CalenderAcademic from "@/pages/pendidikanku-dashboard/dashboard-school/calender/SchoolCalenderAcademic";
-// import SchoolStatistik from "@/pages/pendidikanku-dashboard/dashboard-school/coming-soon/statistic-(pending)/SchoolStatistic";
-// import SchoolSettings from "@/pages/pendidikanku-dashboard/dashboard-school/coming-soon/settings-(pending)/SchoolSettings";
-// import SchoolActiveClass from "@/pages/pendidikanku-dashboard/dashboard-school/class/active-class/SchoolActiveClass";
-// import SchoolRoutesPlayground from "@/pages/pendidikanku-dashboard/dashboard-school/SchoolRoutesPlayground";
-// import SchoolSectionDetail from "@/pages/pendidikanku-dashboard/dashboard-school/class/section/SchoolSectionDetail";
-// import SchoolParent from "@/pages/pendidikanku-dashboard/dashboard-school/class/parent/SchoolParent";
-// import SchoolClasses from "@/pages/pendidikanku-dashboard/dashboard-school/class/classes/SchoolClasses";
+import SchoolSchedule from "@/pages/dashboard/schools/schedules/SchoolSchedule";
+import SchoolRegistrationsPeriod from "@/pages/dashboard/schools/registrations/SchoolRegistrationsPeriod";
+import SchoolRegistrationsListStudent from "@/pages/dashboard/schools/registrations/SchoolRegistrationsListStudent";
+import SchoolRegistrationsSetting from "@/pages/dashboard/schools/registrations/SchoolRegistrationsSetting";
 
 export const SchoolRoutes = (
   <Route path="sekolah" element={<DashboardLayout />}>
@@ -80,11 +46,11 @@ export const SchoolRoutes = (
     <Route path="spp" element={<SchoolSpp />} />
 
     {/* === Jadwal === */}
-    <Route path="jadwal" element={<SchoolAllSchedule />} />
-    <Route
+    <Route path="jadwal" element={<SchoolSchedule />} />
+    {/* <Route
       path="jadwal/detail/:scheduleId"
       element={<SchoolDetailSchedule />}
-    />
+    /> */}
 
     {/* === Guru === */}
     <Route path="guru">
@@ -99,7 +65,6 @@ export const SchoolRoutes = (
       <Route index element={<SchoolAcademic />} />
       <Route path="detail/:id" element={<SchoolDetailAcademic />} />
       <Route path="kelola" element={<SchoolManagementAcademicDetail />} />
-      <Route path="terms" element={<SchoolAllSchedule />} />
     </Route>
 
     <Route path="kelas">
@@ -130,10 +95,9 @@ export const SchoolRoutes = (
       <Route path="ruangan/:id" element={<SchoolDetailRoom />} />
       <Route path="spp" element={<SchoolSpp />} />
       <Route path="pelajaran" element={<SchoolSubject />} />
-      <Route path="kalender" element={<SchoolCalender />} />
       {/* <Route path="statistik" element={<SchoolStatistik />} /> */}
       <Route path="kelas-aktif" element={<SchoolActiveClass />} />
-      <Route path="jadwal" element={<SchoolAllSchedule />} />
+      <Route path="jadwal" element={<SchoolSchedule />} />
 
       <Route path="buku">
         <Route index element={<SchoolBooks />} />
@@ -153,6 +117,17 @@ export const SchoolRoutes = (
         <Route path="tingkat/:levelId" element={<SchoolParent />} />
         <Route path="kelas/:classId" element={<SchoolClass />} />
       </Route>
+
+      <Route path="pendaftaran">
+        <Route index element={<SchoolRegistrationsPeriod />} />
+        <Route path="murid" element={<SchoolRegistrationsListStudent />} />
+        <Route path="pengaturan" element={<SchoolRegistrationsSetting />} />
+      </Route>
+    </Route>
+    <Route path="pendaftaran">
+      <Route index element={<SchoolRegistrationsPeriod />} />
+      <Route path="murid" element={<SchoolRegistrationsListStudent />} />
+      <Route path="pengaturan" element={<SchoolRegistrationsSetting />} />
     </Route>
   </Route>
 );

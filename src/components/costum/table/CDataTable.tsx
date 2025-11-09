@@ -138,6 +138,7 @@ export function CDataTable<T>(props: DataTableProps<T>) {
     filterer,
     searchPlaceholder = "Cari…",
     onAdd,
+    addLabel = "Tambah",
     rightControls,
     rightSlot,
     controlsPlacement = "header",
@@ -287,8 +288,9 @@ export function CDataTable<T>(props: DataTableProps<T>) {
 
   /* ========== Controls ========== */
   const ControlsRow = (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-      <div className="flex-1 min-w-0">
+    <div className="w-full flex flex-col gap-3 sm:flex-row sm:items-center">
+      {/* LEFT: Search full-width */}
+      <div className="min-w-0 flex-1">
         <Input
           placeholder={searchPlaceholder}
           value={query}
@@ -297,9 +299,10 @@ export function CDataTable<T>(props: DataTableProps<T>) {
         />
       </div>
 
-      <div className="flex items-center gap-2">
+      {/* RIGHT: default LEFT on mobile, shift RIGHT on >= sm */}
+      <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto sm:ml-auto sm:flex-nowrap">
         {viewModes.length > 1 && (
-          <div className="flex rounded-md border">
+          <div className="flex rounded-md border shrink-0">
             <Button
               type="button"
               variant="ghost"
@@ -331,10 +334,9 @@ export function CDataTable<T>(props: DataTableProps<T>) {
           </div>
         )}
 
-        {rightSlot ?? rightControls}
-
+        {/* Page size */}
         {pageSizeOptions?.length ? (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
             <span className="hidden sm:inline">Baris/hal</span>
             <Select
               value={String(limit)}
@@ -354,9 +356,13 @@ export function CDataTable<T>(props: DataTableProps<T>) {
           </div>
         ) : null}
 
+        {/* Slot tambahan */}
+        {rightSlot ?? rightControls}
+
+        {/* Add button */}
         {onAdd && (
-          <Button variant="outline" className="gap-1" onClick={onAdd}>
-            <Plus size={16} /> Tambah
+          <Button className="gap-1 shrink-0" onClick={onAdd}>
+            <Plus size={16} /> {addLabel}
           </Button>
         )}
       </div>

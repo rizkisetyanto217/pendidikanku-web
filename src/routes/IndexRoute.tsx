@@ -5,24 +5,6 @@ import { Routes, Route } from "react-router-dom";
 import Unauthorized from "@/pages/UnAuthorized";
 import NotFound from "@/pages/NotFound";
 
-// Layout & Pages
-// import PendWebLayout from "@/layout/CPendWebLayout";
-// import PendWebHome from "@/pages/pendidikanku-profile/website/PendWebHome";
-// import Registerschool from "@/pages/pendidikanku-dashboard/auth/register/RegisterSchool";
-// import RegisterUser from "@/pages/pendidikanku-dashboard/auth/register/RegisterUser";
-// import SupportPage from "@/pages/pendidikanku-profile/website/website/pages/navbar-page/PendWebSupport";
-// import Panduan from "@/pages/pendidikanku-profile/website/website/pages/navbar-page/PendWebGuide";
-// import Fitur from "@/pages/pendidikanku-profile/website/website/pages/navbar-page/PendWebFeature";
-// import About from "@/pages/pendidikanku-profile/website/website/pages/navbar-page/PendWebAbout";
-// import Contact from "@/pages/pendidikanku-profile/website/website/pages/navbar-page/PendWebContact";
-
-// import schoolLayout from "@/pages/pendidikanku-profile/linktree/PendLinkLayout";
-// import PendLinkTree from "@/pages/pendidikanku-profile/linktree/PendLinkTreeHome";
-// import schoolQuizLectureSessions from "@/pages/pendidikanku-dashboard/quizzes/TeacherschoolQuizLectureSessions";
-// import schoolResultQuizLectureSessions from "@/pages/pendidikanku-dashboard/quizzes/TeacherschoolResultQuizLectureSessions";
-
-// import { TeacherRoutes } from "./TeacherRoutes";
-// import { StudentRoutes } from "./StudentRoutes";
 import { SchoolRoutes } from "./SchoolRoutes";
 import Login from "@/pages/dashboard/auth/AuthLogin";
 import Forbidden403 from "@/pages/Forbidden403";
@@ -39,6 +21,7 @@ import PendWebFeature from "@/pages/profile/website/website/pages/navbar-page/Pe
 import PendWebAbout from "@/pages/profile/website/website/pages/navbar-page/PendWebAbout";
 import PendWebContact from "@/pages/profile/website/website/pages/navbar-page/PendWebContact";
 import PendWebSupportUs from "@/pages/profile/website/website/support-us/PendWebSupportUs";
+import DataKelasPage from "@/pages/Test";
 
 export default function AppRoutes() {
   return (
@@ -93,7 +76,6 @@ export default function AppRoutes() {
           {StudentRoutes}
         </Route>
 
-  
         {/* ===== Sekolah/Manajemen: admin/dkm ===== */}
         <Route element={<RequireschoolRoles allow={["admin", "dkm"]} />}>
           {SchoolRoutes}
@@ -107,6 +89,8 @@ export default function AppRoutes() {
       <Route path="/unauthorized" element={<Unauthorized />} />
       <Route path="/not-found" element={<NotFound />} />
       <Route path="*" element={<NotFound />} />
+
+      <Route path="kelas" element={<DataKelasPage />} />
     </Routes>
   );
 }
