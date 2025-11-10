@@ -38,7 +38,7 @@ import {
 import UserSettingsModal, {
   type SettingsState,
 } from "@/pages/dashboard/components/modal/SettingModal";
-import UserHelpModal from "@/pages/dashboard/components/modal/helpModal";
+import UserHelpModal from "@/pages/dashboard/components/modal/HelpModal";
 
 /* ================= CSS-only Theming Helpers ================= */
 type Mode = "light" | "dark" | "system";
@@ -168,6 +168,7 @@ function applyFontFamily(fontId: FontId) {
 /* ================= Component ================= */
 interface PublicUserDropdownProps {
   withBg?: boolean;
+  variant?: "icon" | "button"; // tambahin ini
 }
 const getUserDisplayName = (
   user?: { user_name?: string; email?: string } | null
