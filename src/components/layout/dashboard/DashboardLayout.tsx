@@ -27,7 +27,6 @@ export type Crumb = {
 type DashboardLayoutProps = {
   breadcrumbs?: Crumb[];
   actions?: React.ReactNode;
-  /** Konten utama halaman (opsional ketika dipakai sebagai Route layout) */
   children?: React.ReactNode;
   headerLeft?: React.ReactNode;
   contentClassName?: string;
@@ -35,7 +34,6 @@ type DashboardLayoutProps = {
   showUserMenu?: boolean;
 };
 
-// ⬅️ Komponen pembungkus: TIDAK memanggil useSidebar
 export default function DashboardLayout(props: DashboardLayoutProps) {
   return (
     <SidebarProvider>
@@ -44,7 +42,6 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
   );
 }
 
-// ⬅️ Komponen dalam: AMAN memanggil useSidebar karena sudah di dalam provider
 function DashboardShell({
   breadcrumbs = [{ label: "Dashboard" }],
   actions,
@@ -56,12 +53,67 @@ function DashboardShell({
 }: DashboardLayoutProps) {
   const lastIndex = breadcrumbs.length - 1;
 
-  // Auto-close sheet sidebar setiap kali path berubah (UX mobile)
+  // Auto-close sheet sidebar saat route berubah (UX mobile)
   const location = useLocation();
   const { setOpenMobile } = useSidebar();
   React.useEffect(() => {
     setOpenMobile(false);
   }, [location.pathname, setOpenMobile]);
+
+  /* ========= Auto-hide header on scroll ========= */
+  const [hidden, setHidden] = React.useState(false);
+  const [scrolled, setScrolled] = React.useState(false);
+  const lastYRef = React.useRef<number>(0);
+  const tickingRef = React.useRef(false);
+
+  React.useEffect(() => {
+    // initial
+    lastYRef.current = window.scrollY || 0;
+
+    const onScroll = () => {
+      const y = Math.max(0, window.scrollY || 0);
+      if (!tickingRef.current) {
+        window.requestAnimationFrame(() => {
+          const last = lastYRef.current;
+          const delta = y - last;
+
+          // status "sudah menggulir?" untuk shadow/blur
+          setScrolled(y > 8);
+
+          // ambang biar gak terlalu sensitif
+          const THRESH = 6;
+
+          if (Math.abs(delta) > THRESH) {
+            if (delta > 0 && y > 56) {
+              // scroll turun -> sembunyikan
+              setHidden(true);
+            } else {
+              // scroll naik / mendekati top -> tampilkan
+              setHidden(false);
+            }
+            lastYRef.current = y;
+          } else {
+            // Update posisi tanpa toggle ketika delta kecil
+            lastYRef.current = y;
+          }
+
+          tickingRef.current = false;
+        });
+        tickingRef.current = true;
+      }
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const baseHeaderCls =
+    "sticky top-0 z-40 flex h-16 shrink-0 items-center gap-2 transition-[transform,width,height,background] ease-linear";
+  const compactCls = "group-has-data-[collapsible=icon]/sidebar-wrapper:h-12";
+  const bgBlurShadowCls = scrolled
+    ? "bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm"
+    : "bg-background";
+  const hideTransformCls = hidden ? "-translate-y-full" : "translate-y-0";
 
   return (
     <>
@@ -70,8 +122,10 @@ function DashboardShell({
       <SidebarInset>
         <header
           className={[
-            "flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear",
-            "group-has-data-[collapsible=icon]/sidebar-wrapper:h-12",
+            baseHeaderCls,
+            compactCls,
+            bgBlurShadowCls,
+            hideTransformCls,
             headerClassName,
           ].join(" ")}
         >
@@ -132,7 +186,6 @@ function DashboardShell({
           className={`flex-1 p-4 pt-0 flex flex-col gap-4 ${contentClassName}`}
         >
           {children ?? <Outlet />}
-          {/* ⬅️ fallback ke Outlet saat dipakai di Route */}
         </div>
       </SidebarInset>
     </>

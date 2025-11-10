@@ -4,18 +4,18 @@ import StudentDashboard from "@/pages/dashboard/students/StudentMainDashboard";
 import StudentAllSchedule from "@/pages/dashboard/students/schedules/StudentSchedule";
 import StudentDetailSchedule from "@/pages/dashboard/students/schedules/StudentDetailSchedule";
 import StudentMenuGrids from "@/pages/dashboard/students/menus/StudentMenuGrids";
-import StudentAssignment from "@/pages/dashboard/students/classes/assignments/StudentAssignment";
+import StudentAssignment from "@/pages/dashboard/students/classes/my-classes/assignments/StudentAssignment";
 import StudentFinance from "@/pages/dashboard/students/finances/StudentFinance";
 import StudentListFinance from "@/pages/dashboard/students/finances/StudentListFinance";
-import StudentProgress from "@/pages/dashboard/students/progress/StudentProgress";
-import StudentRaport from "@/pages/dashboard/students/progress/raports/StudentRaport";
-import StudentAbsence from "@/pages/dashboard/students/progress/absences/StudentAbsence";
-import StudentNotesSummary from "@/pages/dashboard/students/progress/notes-summaries/StudentNotesSummary";
+import StudentProgress from "@/pages/dashboard/students/classes/progress/StudentProgress";
+import StudentRaport from "@/pages/dashboard/students/classes/progress/raports/StudentRaport";
+import StudentAbsence from "@/pages/dashboard/students/classes/progress/absences/StudentAbsence";
+import StudentNotesSummary from "@/pages/dashboard/students/classes/progress/notes-summaries/StudentNotesSummary";
 import StudentProfil from "@/pages/dashboard/students/profiles/StudentProfil";
 import StudentMyClass from "@/pages/dashboard/students/classes/my-classes/StudentMyClass";
-import StudentMaterial from "@/pages/dashboard/students/classes/materials/StudentMaterial";
+import StudentMaterial from "@/pages/dashboard/students/classes/my-classes/materials/StudentMaterial";
 import StudentQuizPage from "@/pages/dashboard/students/classes/StudentQuizPage";
-import StudentAttandenceClass from "@/pages/dashboard/students/classes/attendances/StudentAttandenceClass";
+import StudentAttandenceClass from "@/pages/dashboard/students/classes/my-classes/attendances/StudentAttandenceClass";
 
 // ======================
 // Routing untuk halaman MURID (Student Dashboard)
@@ -71,6 +71,22 @@ export const StudentRoutes = (
     <Route path="profil-murid" element={<StudentProfil />} />
     {/* Detail umum murid */}
 
+    {/* === Guru === */}
+    <Route path="kelas">
+      <Route path="progress">
+        <Route index element={<StudentProgress />} />
+        <Route path="raport" element={<StudentRaport />} />
+        <Route path="absensi" element={<StudentAbsence />} />
+        <Route path="catatan-hasil" element={<StudentNotesSummary />} />
+      </Route>
+      <Route path="tugas">
+        <Route index element={<StudentAssignment />} />
+      </Route>
+      <Route path="ujian">
+        <Route index element={<StudentAssignment />} />
+      </Route>
+    </Route>
+
     {/* =====================
         MENU UTAMA KELAS SAYA
     ===================== */}
@@ -105,7 +121,6 @@ export const StudentRoutes = (
       {/* Halaman catatan hasil belajar */}
       <Route path="progress/catatan-hasil" element={<StudentNotesSummary />} />
 
-      
       <Route path="tugas" element={<StudentAssignment />} />
 
       {/* Profil murid dari menu utama */}

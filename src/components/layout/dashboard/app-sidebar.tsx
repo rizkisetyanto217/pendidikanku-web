@@ -107,9 +107,9 @@ export function AppSidebar(props: AppSidebarProps) {
       { name: "Lainnya", logo: Command, plan: "Free" },
     ],
     projects: [
-      { name: "Design Engineering", url: "#", icon: Frame },
-      { name: "Sales & Marketing", url: "#", icon: PieChart },
-      { name: "Travel", url: "#", icon: Map },
+      { name: "Website", url: "#", icon: Frame },
+      { name: "Umroh & Badal", url: "#", icon: PieChart },
+      { name: "Toko", url: "#", icon: Map },
     ],
   };
 

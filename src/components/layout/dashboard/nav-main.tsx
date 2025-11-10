@@ -65,7 +65,7 @@ export function NavMain({
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Platform</SidebarGroupLabel>
+      <SidebarGroupLabel>Menu Utama</SidebarGroupLabel>
 
       <SidebarMenu>
         {items.map((item) => {

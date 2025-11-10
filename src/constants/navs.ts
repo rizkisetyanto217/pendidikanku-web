@@ -80,8 +80,12 @@ export const NAVS: NavDict = {
       label: "Kelas",
       icon: BookOpen,
       children: [
-        { path: "", label: "Data Kelas", end: true }, // → /sekolah/kelas
-        { path: "daftar", label: "Daftar Kelas", to: "menu-utama/kelas-aktif" }, // → /sekolah/menu-utama/kelas-aktif
+        { path: "data-kelas", label: "Data Kelas", end: true }, // → /sekolah/kelas
+        {
+          path: "daftar-kelas",
+          label: "Daftar Kelas",
+          to: "menu-utama/kelas-aktif",
+        }, // → /sekolah/menu-utama/kelas-aktif
       ],
     },
 
@@ -103,9 +107,6 @@ export const NAVS: NavDict = {
       path: "jadwal",
       label: "Jadwal",
       icon: CalendarDays,
-      children: [
-        { path: "", label: "Jadwal", end: true }, // → /sekolah/jadwal
-      ],
     },
 
     // 6) PENDAFTARAN
@@ -125,7 +126,30 @@ export const NAVS: NavDict = {
   murid: [
     { path: "", label: "Dashboard", icon: LayoutDashboard, end: true },
     { path: "menu-utama", label: "Menu Utama", icon: ChartBar },
-    { path: "progress", label: "Progress", icon: ClipboardCheck },
+    // 3) KELAS
+    {
+      path: "kelas",
+      label: "Kelas",
+      icon: BookOpen,
+      children: [
+        { path: "progress", label: "Progress", to: "progress" },
+        {
+          path: "tugas",
+          label: "Tugas",
+          to: "tugas",
+        },
+        {
+          path: "ujian",
+          label: "Ujian",
+          to: "ujian",
+        },
+        {
+          path: "kontak",
+          label: "Kontak",
+          to: "kontak",
+        },
+      ],
+    },
     { path: "keuangan", label: "Pembayaran", icon: Wallet },
     { path: "jadwal", label: "Jadwal", icon: CalendarDays },
     { path: "tugas", label: "Tugas", icon: ClipboardCheck },

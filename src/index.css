@@ -304,3 +304,8 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Skala font global untuk aksesibilitas */
+html {
+  font-size: calc(16px * var(--app-font-scale, 1));
+}

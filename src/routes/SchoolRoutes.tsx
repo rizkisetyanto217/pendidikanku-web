@@ -75,13 +75,18 @@ export const SchoolRoutes = (
       </Route>
     </Route>
 
+    {/* === Guru === */}
     <Route path="kelas">
-      <Route index element={<SchoolClass />} />
-      <Route path="kelola/:id" element={<SchoolSection />} />
-      <Route path="section/:id" element={<SchoolSectionDetail />} />
-      <Route path="tingkat/:levelId" element={<SchoolParent />} />
-      <Route path="kelas/:classId" element={<SchoolClass />} />
+      <Route path="data-kelas">
+        <Route index element={<SchoolClass />} />
+        <Route path="tingkat/:levelId" element={<SchoolParent />} />
+      </Route>
+      <Route path="daftar-kelas">
+        <Route index element={<SchoolSection />} />
+        <Route path="section/:id" element={<SchoolSectionDetail />} />
+      </Route>
     </Route>
+
 
     {/* === Keuangan === */}
     <Route path="keuangan">
