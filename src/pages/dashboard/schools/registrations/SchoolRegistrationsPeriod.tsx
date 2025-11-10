@@ -60,10 +60,10 @@ const fmtIDR = (n: number) =>
 const dateShort = (iso?: string | null) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
     : "-";
 
 /* =====================================================================
@@ -255,7 +255,7 @@ export default function SchoolRegistrationsPeriod() {
   // default: periode aktif
   const [termId, setTermId] = useState<string>(
     TERMS.find((t) => t.academic_term_is_active)?.academic_term_id ||
-      TERMS[0].academic_term_id
+    TERMS[0].academic_term_id
   );
   const [addOpen, setAddOpen] = useState(false);
   const term = useMemo(
@@ -453,7 +453,7 @@ export default function SchoolRegistrationsPeriod() {
   );
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-3 sm:px-6 lg:px-8">
+    <div className="w-full">
       <PageHeader
         title="PMB — Periode Pendaftaran"
         subtitle="Atur jadwal pendaftaran per-periode, jendela per kelas, dan header biaya pendaftaran."

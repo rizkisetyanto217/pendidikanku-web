@@ -29,11 +29,10 @@ import TeacherAssignment from "@/pages/dashboard/teachers/csst/menus/assignments
 import TeacherDetailAssignement from "@/pages/dashboard/teachers/csst/menus/assignments/TeacherCSSTDetailAssignment";
 import TeacherClassDetail from "@/pages/dashboard/teachers/classes/Details/TeacherClassDetail";
 
-
 export const TeacherRoutes = (
   <Route path="guru" element={<DashboardLayout />}>
     {/* Dashboard */}
-    <Route index element={<TeacherDashboard />} />
+    <Route path="dashboard" element={<TeacherDashboard />} />
 
     {/* Menu Utama Guru */}
     <Route path="menu-utama">

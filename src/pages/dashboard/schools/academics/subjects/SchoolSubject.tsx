@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 
 /* shadcn/ui */
-import { Card, CardContent} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -775,7 +775,7 @@ const SchoolSubject: React.FC = () => {
   return (
     <div className="w-full">
       <main className="w-full">
-        <div className="max-w-screen-2xl mx-auto flex flex-col gap-6 p-4 md:p-6">
+        <div className="mx-auto flex flex-col gap-6">
           {/* Toolbar */}
           <div className="flex items-center justify-between">
             <div className="md:flex hidden items-center gap-3">

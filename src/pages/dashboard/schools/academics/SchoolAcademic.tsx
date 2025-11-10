@@ -49,6 +49,7 @@ import {
   type ColumnDef,
   type Align,
 } from "@/components/costum/table/CDataTable";
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* ===================== Types ===================== */
 type AcademicTerm = {
@@ -94,10 +95,10 @@ const TERMS_QKEY = (schoolId?: string) =>
 const dateShort = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
     : "-";
 
 function normalizeAcademicYear(input: string) {
@@ -220,15 +221,15 @@ function useUpdateTerm(schoolId?: string) {
           previous.map((t) =>
             t.id === id
               ? {
-                  ...t,
-                  academic_year: normalizeAcademicYear(payload.academic_year),
-                  name: payload.name,
-                  start_date: toZDate(payload.start_date),
-                  end_date: toZDate(payload.end_date),
-                  angkatan: Number(payload.angkatan),
-                  is_active: Boolean(payload.is_active),
-                  slug: payload.slug ?? t.slug,
-                }
+                ...t,
+                academic_year: normalizeAcademicYear(payload.academic_year),
+                name: payload.name,
+                start_date: toZDate(payload.start_date),
+                end_date: toZDate(payload.end_date),
+                angkatan: Number(payload.angkatan),
+                is_active: Boolean(payload.is_active),
+                slug: payload.slug ?? t.slug,
+              }
               : t
           )
         );
@@ -496,6 +497,19 @@ const SchoolAcademic: React.FC = () => {
     },
   });
 
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Periode Akademik",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Akademik" },
+        { label: "Periode Akademik" },
+      ],
+      actions: null, // bisa isi tombol kalau perlu
+    });
+  }, [setHeader]);
+
   const terms: AcademicTerm[] = termsQ.data ?? [];
 
   const activeTerm: AcademicTerm | null = useMemo(() => {
@@ -635,8 +649,8 @@ const SchoolAcademic: React.FC = () => {
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-background text-foreground">
-      <main className="w-full px-4 md:px-6 py-4 md:py-8">
-        <div className="mx-auto flex max-w-screen-2xl flex-col gap-4 lg:gap-6">
+      <main className="w-full">
+        <div className="mx-auto flex flex-col gap-4 lg:gap-6">
           <CDataTable<AcademicTerm>
             /* ===== Toolbar ===== */
             title="Periode Akademik"
@@ -657,16 +671,33 @@ const SchoolAcademic: React.FC = () => {
             getRowId={(t) => t.id}
             /* ⬇️ Klik baris/card langsung ke detail */
             onRowClick={(row) =>
-              navigate(`/${schoolId}/sekolah/akademik/detail/${row.id}`, {
-                state: { term: row },
-              })
+              navigate(
+                `/${schoolId}/sekolah/akademik/tahun-akademik/detail/${row.id}`,
+                {
+                  state: {
+                    term: {
+                      academic_terms_school_id: row.school_id,
+                      academic_terms_academic_year: row.academic_year,
+                      academic_terms_name: row.name,
+                      academic_terms_start_date: row.start_date,
+                      academic_terms_end_date: row.end_date,
+                      academic_terms_is_active: row.is_active,
+                      academic_terms_angkatan: row.angkatan,
+                      academic_terms_id: row.id,
+                    },
+                  },
+                }
+              )
             }
             renderActions={(t) => (
               <ActionsMenu
                 onView={() =>
-                  navigate(`/${schoolId}/sekolah/akademik/detail/${t.id}`, {
-                    state: { term: t },
-                  })
+                  navigate(
+                    `/${schoolId}/sekolah/akademik/tahun-akademik/detail/${t.id}`,
+                    {
+                      state: { term: t },
+                    }
+                  )
                 }
                 onEdit={() => setModal({ mode: "edit", editing: t })}
                 onDelete={() => {
@@ -675,7 +706,6 @@ const SchoolAcademic: React.FC = () => {
                 }}
               />
             )}
-            
             actions={{
               mode: "inline",
               onView: (row) => {

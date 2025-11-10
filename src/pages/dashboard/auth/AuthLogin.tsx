@@ -1,4 +1,4 @@
-// src/pages/auth/Login.tsx
+// src/pages/auth/AuthLogin.tsx
 import React, { useState, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
@@ -166,7 +166,7 @@ function ModalSelectRoleschool({
                         size="sm"
                         variant={
                           selected?.school_id === m.school_id &&
-                          selected?.role === r
+                            selected?.role === r
                             ? "default"
                             : "outline"
                         }
@@ -314,7 +314,7 @@ export default function Login() {
       await setActiveschoolContext(schoolId, "dkm");
 
       setOpenJoinAtauBuat(false);
-      navigate(`/${schoolId}/sekolah`, { replace: true });
+      navigate(`/${schoolId}/sekolah/dashboard`, { replace: true });
     } catch (err: any) {
       alert(
         err?.response?.data?.message || err?.message || "Gagal membuat school."
@@ -337,8 +337,8 @@ export default function Login() {
     } catch (err: any) {
       alert(
         err?.response?.data?.message ||
-          err?.message ||
-          "Gagal bergabung ke sekolah."
+        err?.message ||
+        "Gagal bergabung ke sekolah."
       );
     }
   }
@@ -351,14 +351,14 @@ export default function Login() {
       );
       try {
         localStorage.setItem("active_role", role);
-      } catch {}
+      } catch { }
       await setActiveschoolContext(schoolId, role, {
         name: m?.school_name ?? undefined,
         icon: m?.school_icon_url ?? undefined,
       });
       const path =
         role === "teacher" ? "guru" : role === "student" ? "murid" : "sekolah";
-      navigate(`/${schoolId}/${path}`, { replace: true });
+      navigate(`/${schoolId}/${path}/dashboard`, { replace: true });
     } catch (err) {
       console.error(err);
     }

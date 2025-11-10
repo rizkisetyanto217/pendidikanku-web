@@ -131,7 +131,7 @@ const SchoolProfile: React.FC<Props> = ({ showBack = false, backTo }) => {
   return (
     <div className="w-full">
       <main className="w-full">
-        <div className="max-w-screen-2xl mx-auto flex flex-col lg:flex-row gap-4 lg:gap-6">
+        <div className="mx-auto flex flex-col lg:flex-row gap-4 lg:gap-6">
           <section className="flex-1 flex flex-col space-y-6 min-w-0">
             {/* Header */}
             <div className="md:flex hidden gap-3 items-center">

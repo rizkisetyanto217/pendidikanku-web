@@ -28,7 +28,7 @@ export const StudentRoutes = (
         DASHBOARD UTAMA
     ===================== */}
     {/* Halaman utama dashboard murid */}
-    <Route index element={<StudentDashboard />} />
+    <Route path="dashboard" element={<StudentDashboard />} />
 
     {/* =====================
         PROGRESS AKADEMIK

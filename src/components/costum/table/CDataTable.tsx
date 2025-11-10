@@ -407,9 +407,9 @@ export function CDataTable<T>(props: DataTableProps<T>) {
       onClick={
         onRowClick
           ? (e) => {
-              if (shouldIgnoreRowInteraction(e)) return;
-              onRowClick(row);
-            }
+            if (shouldIgnoreRowInteraction(e)) return;
+            onRowClick(row);
+          }
           : undefined
       }
       className={cn(
@@ -422,12 +422,12 @@ export function CDataTable<T>(props: DataTableProps<T>) {
       onKeyDown={
         onRowClick
           ? (e) => {
-              if (shouldIgnoreRowInteraction(e)) return;
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                onRowClick?.(row);
-              }
+            if (shouldIgnoreRowInteraction(e)) return;
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              onRowClick?.(row);
             }
+          }
           : undefined
       }
     >
@@ -494,11 +494,11 @@ export function CDataTable<T>(props: DataTableProps<T>) {
       )}
 
       {controlsPlacement === "above" && (
-        <div className="px-0 md:px-5">{ControlsRow}</div>
+        <div className="px-0">{ControlsRow}</div>
       )}
 
       {/* Data area */}
-      <div className="px-0 md:px-5 min-w-0">
+      <div className="px-0 min-w-0">
         {loading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="animate-spin" size={16} /> Memuat…
@@ -538,7 +538,7 @@ export function CDataTable<T>(props: DataTableProps<T>) {
                   <TableHeader
                     className={cn(
                       stickyHeader &&
-                        "sticky top-0 z-10 backdrop-blur supports-[backdrop-filter]:bg-transparent"
+                      "sticky top-0 z-10 backdrop-blur supports-[backdrop-filter]:bg-transparent"
                     )}
                   >
                     <TableRow className="bg-primary/10">
@@ -583,16 +583,16 @@ export function CDataTable<T>(props: DataTableProps<T>) {
                           onClick={
                             onRowClick
                               ? (e) => {
-                                  if (shouldIgnoreRowInteraction(e)) return;
-                                  onRowClick(row);
-                                }
+                                if (shouldIgnoreRowInteraction(e)) return;
+                                onRowClick(row);
+                              }
                               : undefined
                           }
                           className={cn(
                             "group/row",
                             zebra &&
-                              idx % 2 === 1 &&
-                              "bg-muted/30 dark:bg-muted/20",
+                            idx % 2 === 1 &&
+                            "bg-muted/30 dark:bg-muted/20",
                             hoverCls,
                             onRowClick && "cursor-pointer"
                           )}
@@ -601,12 +601,12 @@ export function CDataTable<T>(props: DataTableProps<T>) {
                           onKeyDown={
                             onRowClick
                               ? (e) => {
-                                  if (shouldIgnoreRowInteraction(e)) return;
-                                  if (e.key === "Enter" || e.key === " ") {
-                                    e.preventDefault();
-                                    onRowClick?.(row);
-                                  }
+                                if (shouldIgnoreRowInteraction(e)) return;
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  onRowClick?.(row);
                                 }
+                              }
                               : undefined
                           }
                         >
@@ -771,7 +771,7 @@ function safeLSSet(key: string, value: string) {
   try {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(key, value);
-  } catch {}
+  } catch { }
 }
 
 /* Re-export */

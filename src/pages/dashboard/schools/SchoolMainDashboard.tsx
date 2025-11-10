@@ -279,7 +279,7 @@ const SchoolMainDashboard: React.FC<SchoolDashboardProps> = ({
       <Flash flash={flash} />
 
       <main className="w-full">
-        <div className="mx-auto w-full flex flex-col gap-6 xl:px-6 2xl:max-w-[1600px]">
+        <div className="mx-auto w-full flex flex-col gap-6  2xl:max-w-[1600px]">
           {/* === Statistik Utama === */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[

@@ -186,7 +186,7 @@ const SchoolFinance: React.FC = () => {
   return (
     <div className="min-h-screen w-full overflow-x-hidden">
       {/* ===== Header ===== */}
-      <div className="md:p-5 pb-4 ">
+      <div className=" pb-4 ">
         <div className="flex flex-wrap items-center gap-2">
           <div className="hidden md:flex items-center gap-2 font-semibold">
             <Button
@@ -250,7 +250,7 @@ const SchoolFinance: React.FC = () => {
       </div>
 
       <main className="w-full">
-        <div className="max-w-screen-2xl mx-auto flex flex-col gap-6  md:p-5">
+        <div className="mx-auto flex flex-col gap-6">
           {/* ===== Ringkasan Keuangan ===== */}
           <Card>
             <CardContent className="p-5 grid sm:grid-cols-3 gap-4 text-center">

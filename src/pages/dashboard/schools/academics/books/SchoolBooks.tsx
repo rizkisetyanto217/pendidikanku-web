@@ -456,8 +456,8 @@ export default function SchoolBooks() {
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-background text-foreground">
-      <main className="w-full px-4 md:px-6 py-4 md:py-8">
-        <div className="mx-auto flex max-w-screen-2xl flex-col gap-4 lg:gap-6">
+      <main className="w-full">
+        <div className="mx-auto flex flex-col gap-4 lg:gap-6">
           <DataTable<BookAPI>
             /* ===== Toolbar (sama Academic) ===== */
             title="Daftar Buku"
@@ -501,7 +501,7 @@ export default function SchoolBooks() {
             }
             /* Renderer kartu */
             renderCard={(r) => (
-              <div className="rounded-xl border p-4 space-y-3">
+              <div className="rounded-xl borderspace-y-3">
                 <div className="flex gap-3">
                   <div className="w-16">
                     {r.books_image_url ? (

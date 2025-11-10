@@ -46,10 +46,10 @@ const fmtIDR = (n: number) =>
 const dateShort = (iso?: string | null) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
     : "-";
 
 /* ===== Dummy shared (pakai yang sama dengan Period) ===== */
@@ -234,7 +234,7 @@ function AddStudentDialog() {
 export default function SchoolRegistrationsListStudent() {
   const [termId, setTermId] = useState<string>(
     TERMS.find((t) => t.academic_term_is_active)?.academic_term_id ||
-      TERMS[0].academic_term_id
+    TERMS[0].academic_term_id
   );
   const [addOpen, setAddOpen] = useState(false);
 
@@ -332,7 +332,7 @@ export default function SchoolRegistrationsListStudent() {
   ];
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-3 sm:px-6 lg:px-8">
+    <div className="w-full">
       <PageHeader
         title="PMB — Daftar Pendaftar"
         subtitle="Pantau pendaftar per-periode, status seleksi, dan pembayaran."

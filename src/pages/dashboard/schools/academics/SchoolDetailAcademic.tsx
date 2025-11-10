@@ -1,9 +1,10 @@
 // src/pages/pendidikanku-dashboard/dashboard-school/academic/SchoolDetailAcademic.tsx
-import React, { useMemo, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import React, { useMemo, useState, useEffect } from "react";
+import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "@/lib/axios";
 
+/* icons */
 import {
   CalendarDays,
   CheckCircle2,
@@ -42,6 +43,20 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 
+/* === header layout hooks & crumbs === */
+import {
+  useDashboardHeader,
+  type Crumb,
+} from "@/components/layout/dashboard/DashboardLayout";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+
 /* ===== Type ===== */
 type AcademicTerm = {
   academic_terms_school_id: string;
@@ -69,11 +84,281 @@ const DUMMY_TERM: AcademicTerm = {
 const dateShort = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
     : "-";
+
+/* ======== Header area with Back (mobile) + Breadcrumb (md+) ======== */
+function HeaderBackArea({
+  title,
+  crumbs,
+  basePath,
+  onBack,
+}: {
+  title: string;
+  crumbs: Crumb[];
+  basePath: string; // e.g. "/<schoolId>/sekolah"
+  onBack: () => void;
+}) {
+  const normalize = (href?: string) => {
+    if (!href) return undefined;
+    if (href.startsWith("/") || href.startsWith("http")) return href;
+    return `${basePath}/${href.replace(/^\/+/, "")}`;
+  };
+
+  // potong judul mobile per kata supaya rapih
+  const mobileTitle = (() => {
+    const parts = (title || "").trim().split(/\s+/);
+    return parts.length > 6 ? parts.slice(0, 6).join(" ") + "…" : title;
+  })();
+
+  return (
+    <div className="min-w-0">
+      {/* Mobile: back + title */}
+      <div className="md:hidden flex items-center gap-1 min-w-0">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 rounded-xl"
+          aria-label="Kembali"
+          onClick={onBack}
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
+        <div
+          className="text-base font-semibold truncate max-w-[60vw]"
+          title={title}
+        >
+          {mobileTitle}
+        </div>
+      </div>
+
+      {/* Desktop/Tablet: breadcrumb */}
+      <Breadcrumb className="hidden md:block min-w-0">
+        <BreadcrumbList className="flex-nowrap overflow-hidden">
+          {crumbs.map((c, i) => {
+            const isLast = i === crumbs.length - 1;
+            return (
+              <React.Fragment key={`${c.label}-${i}`}>
+                <BreadcrumbItem className={i === 0 ? "hidden md:block" : ""}>
+                  {isLast ? (
+                    <BreadcrumbPage variant="chip" className="truncate">
+                      {c.label}
+                    </BreadcrumbPage>
+                  ) : c.href ? (
+                    <BreadcrumbLink asChild className="truncate">
+                      <Link to={normalize(c.href)!}>{c.label}</Link>
+                    </BreadcrumbLink>
+                  ) : (
+                    <span className="truncate text-foreground/80">
+                      {c.label}
+                    </span>
+                  )}
+                </BreadcrumbItem>
+                {!isLast && (
+                  <BreadcrumbSeparator
+                    className={i === 0 ? "hidden md:block" : ""}
+                  />
+                )}
+              </React.Fragment>
+            );
+          })}
+        </BreadcrumbList>
+      </Breadcrumb>
+    </div>
+  );
+}
+
+/* ===================== Page ===================== */
+export default function SchoolDetailAcademic() {
+  const { id: termId } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+
+  const { state } = useLocation() as { state?: { term?: AcademicTerm } };
+  const term = useMemo<AcademicTerm>(
+    () => state?.term ?? DUMMY_TERM,
+    [state?.term]
+  );
+
+  /* ===== Inject header (back + breadcrumb) ===== */
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    const base = `/${term.academic_terms_school_id}/sekolah`;
+    setHeader({
+      title: "Detail Periode", // penting, biar nggak fallback “Dashboard”
+      headerLeft: (
+        <HeaderBackArea
+          title="Detail Periode"
+          basePath={base}
+          onBack={() => navigate(-1)}
+          crumbs={[
+            { label: "Dashboard", href: "dashboard" },
+            { label: "Akademik", href: "akademik" },
+            { label: "Detail Periode" },
+          ]}
+        />
+      ),
+    });
+  }, [setHeader, navigate, term.academic_terms_school_id]);
+
+  /* === PATCH (edit) === */
+  const patchMut = useMutation({
+    mutationFn: async (payload: any) => {
+      const url = `/schools/${term.academic_terms_school_id}/academic-terms/${termId}`;
+      const res = await axios.patch(url, payload);
+      return res.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries();
+      setOpenEdit(false);
+    },
+  });
+
+  /* === DELETE === */
+  const deleteMut = useMutation({
+    mutationFn: async () => {
+      const url = `/schools/${term.academic_terms_school_id}/academic-terms/${termId}`;
+      const res = await axios.delete(url);
+      return res.data;
+    },
+    onSuccess: () => {
+      navigate(`/${term.academic_terms_school_id}/sekolah/akademik`, {
+        replace: true,
+      });
+    },
+  });
+
+  const [openEdit, setOpenEdit] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  return (
+    <div className="w-full bg-background text-foreground">
+      {/* Dialog Edit */}
+      <EditTermDialog
+        open={openEdit}
+        onOpenChange={setOpenEdit}
+        data={term}
+        loading={patchMut.isPending}
+        onSubmit={(payload) => patchMut.mutate(payload)}
+      />
+
+      {/* Konfirmasi Hapus */}
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus periode ini?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:opacity-90"
+              onClick={() => deleteMut.mutate()}
+            >
+              {deleteMut.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <main className="w-full">
+        <div className="max-w-screen-2xl mx-auto flex flex-col gap-6 p-4">
+          {/* (Header lokal dihapus—sudah ditangani header layout) */}
+
+          {/* Info utama */}
+          <Card>
+            <CardContent className="p-0">
+              <div className="px-5 py-4 border-b border-border flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg grid place-items-center bg-accent text-accent-foreground">
+                  <School size={20} />
+                </div>
+                <div className="font-semibold">Periode Akademik</div>
+                {term.academic_terms_is_active && (
+                  <Badge className="ml-auto" variant="default">
+                    Aktif
+                  </Badge>
+                )}
+              </div>
+
+              <div className="p-5 grid md:grid-cols-2 gap-4">
+                <InfoRow
+                  icon={<CalendarDays size={18} />}
+                  label="Tahun Ajaran / Semester"
+                  value={`${term.academic_terms_academic_year} — ${term.academic_terms_name}`}
+                />
+                <InfoRow
+                  icon={<CheckCircle2 size={18} />}
+                  label="Status"
+                  value={term.academic_terms_is_active ? "Aktif" : "Nonaktif"}
+                />
+                <InfoRow
+                  icon={<Flag size={18} />}
+                  label="Angkatan"
+                  value={term.academic_terms_angkatan}
+                />
+                <InfoRow
+                  icon={<Clock size={18} />}
+                  label="Durasi"
+                  value={`${dateShort(
+                    term.academic_terms_start_date
+                  )} s/d ${dateShort(term.academic_terms_end_date)}`}
+                />
+              </div>
+
+              {/* Aksi halaman pindah ke kanan atas lewat header.actions jika mau.
+                  Atau tetap di sini: */}
+              <div className="px-5 pb-5 flex gap-2">
+                <Button variant="outline" onClick={() => setOpenEdit(true)}>
+                  <Pencil size={16} className="mr-2" />
+                  Edit
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => setConfirmDelete(true)}
+                  disabled={deleteMut.isPending}
+                >
+                  <Trash2 size={16} className="mr-2" />
+                  {deleteMut.isPending ? "Menghapus..." : "Hapus"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+/* ===== Small UI ===== */
+function InfoRow({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="h-10 w-10 rounded-lg grid place-items-center shrink-0 bg-accent text-accent-foreground">
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <div className="text-sm text-muted-foreground">{label}</div>
+        <div className="text-sm font-medium break-words">{value}</div>
+      </div>
+    </div>
+  );
+}
 
 /* ===================== ✏️ Modal Edit (shadcn) ===================== */
 function EditTermDialog({
@@ -204,180 +489,5 @@ function EditTermDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
-}
-
-/* ===================== Page ===================== */
-export default function SchoolDetailAcademic() {
-  const { id: termId } = useParams<{ id: string }>();
-
-  const navigate = useNavigate();
-  const qc = useQueryClient();
-
-  const { state } = useLocation() as { state?: { term?: AcademicTerm } };
-  const term = useMemo<AcademicTerm>(
-    () => state?.term ?? DUMMY_TERM,
-    [state?.term]
-  );
-
-  /* === PATCH (edit) === */
-  const patchMut = useMutation({
-    mutationFn: async (payload: any) => {
-      const url = `/schools/${term.academic_terms_school_id}/academic-terms/${termId}`;
-      const res = await axios.patch(url, payload);
-      return res.data;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries();
-      setOpenEdit(false);
-    },
-  });
-
-  /* === DELETE === */
-  const deleteMut = useMutation({
-    mutationFn: async () => {
-      const url = `/schools/${term.academic_terms_school_id}/academic-terms/${termId}`;
-      const res = await axios.delete(url);
-      return res.data;
-    },
-    onSuccess: () => {
-      navigate(`/dashboard-school/${term.academic_terms_school_id}/academic`, {
-        replace: true,
-      });
-    },
-  });
-
-  const [openEdit, setOpenEdit] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-
-  return (
-    <div className="w-full bg-background text-foreground">
-      {/* Dialog Edit */}
-      <EditTermDialog
-        open={openEdit}
-        onOpenChange={setOpenEdit}
-        data={term}
-        loading={patchMut.isPending}
-        onSubmit={(payload) => patchMut.mutate(payload)}
-      />
-
-      {/* Konfirmasi Hapus */}
-      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Hapus periode ini?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tindakan ini tidak dapat dibatalkan.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:opacity-90"
-              onClick={() => deleteMut.mutate()}
-            >
-              {deleteMut.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
-              Hapus
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <main className="w-full">
-        <div className="max-w-screen-2xl mx-auto flex flex-col gap-6 p-4">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="hidden md:flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
-                <ArrowLeft size={20} className="mr-1" />
-              </Button>
-              <h1 className="text-lg font-semibold">Detail Akademik</h1>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={() => setOpenEdit(true)}>
-                <Pencil size={16} className="mr-2" />
-                Edit
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => setConfirmDelete(true)}
-                disabled={deleteMut.isPending}
-              >
-                <Trash2 size={16} className="mr-2" />
-                {deleteMut.isPending ? "Menghapus..." : "Hapus"}
-              </Button>
-            </div>
-          </div>
-
-          {/* Info utama */}
-          <Card>
-            <CardContent className="p-0">
-              <div className="px-5 py-4 border-b border-border flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg grid place-items-center bg-accent text-accent-foreground">
-                  <School size={20} />
-                </div>
-                <div className="font-semibold">Periode Akademik</div>
-                {term.academic_terms_is_active && (
-                  <Badge className="ml-auto" variant="default">
-                    Aktif
-                  </Badge>
-                )}
-              </div>
-
-              <div className="p-5 grid md:grid-cols-2 gap-4">
-                <InfoRow
-                  icon={<CalendarDays size={18} />}
-                  label="Tahun Ajaran / Semester"
-                  value={`${term.academic_terms_academic_year} — ${term.academic_terms_name}`}
-                />
-                <InfoRow
-                  icon={<CheckCircle2 size={18} />}
-                  label="Status"
-                  value={term.academic_terms_is_active ? "Aktif" : "Nonaktif"}
-                />
-                <InfoRow
-                  icon={<Flag size={18} />}
-                  label="Angkatan"
-                  value={term.academic_terms_angkatan}
-                />
-                <InfoRow
-                  icon={<Clock size={18} />}
-                  label="Durasi"
-                  value={`${dateShort(
-                    term.academic_terms_start_date
-                  )} s/d ${dateShort(term.academic_terms_end_date)}`}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-    </div>
-  );
-}
-
-/* ===== Small UI ===== */
-function InfoRow({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-center gap-3">
-      <div className="h-10 w-10 rounded-lg grid place-items-center shrink-0 bg-accent text-accent-foreground">
-        {icon}
-      </div>
-      <div className="min-w-0">
-        <div className="text-sm text-muted-foreground">{label}</div>
-        <div className="text-sm font-medium break-words">{value}</div>
-      </div>
-    </div>
   );
 }

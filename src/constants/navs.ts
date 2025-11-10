@@ -40,7 +40,7 @@ export type NavDict = {
 export const NAVS: NavDict = {
   sekolah: [
     // DASHBOARD
-    { path: "", label: "Dashboard", icon: LayoutDashboard, end: true },
+    { path: "dashboard", label: "Dashboard", icon: LayoutDashboard, end: true },
 
     // (Opsional) Menu Utama tetap ada bila mau ditampilkan
     { path: "menu-utama", label: "Menu Utama", icon: ChartBar },
@@ -124,7 +124,7 @@ export const NAVS: NavDict = {
 
   // tetap
   murid: [
-    { path: "", label: "Dashboard", icon: LayoutDashboard, end: true },
+    { path: "dashboard", label: "Dashboard", icon: LayoutDashboard, end: true },
     { path: "menu-utama", label: "Menu Utama", icon: ChartBar },
     // 3) KELAS
     {
@@ -156,7 +156,7 @@ export const NAVS: NavDict = {
     { path: "profil-murid", label: "Profil", icon: Users },
   ],
   guru: [
-    { path: "", label: "Dashboard", icon: LayoutDashboard, end: true },
+    { path: "dashboard", label: "Dashboard", icon: LayoutDashboard, end: true },
     { path: "menu-utama", label: "Menu Utama", icon: ChartBar },
     { path: "wali-kelas", label: "Wali Kelas", icon: Users },
     { path: "guru-mapel", label: "Guru Mapel", icon: UserCog },

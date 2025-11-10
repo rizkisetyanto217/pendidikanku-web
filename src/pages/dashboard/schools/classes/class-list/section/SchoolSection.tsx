@@ -196,7 +196,7 @@ export default function SchoolSection() {
 
   return (
     <div className="min-h-screen w-full bg-background text-foreground">
-      <main className="max-w-screen-2xl mx-auto py-6 px-4 space-y-6">
+      <main className=" mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -358,11 +358,10 @@ export default function SchoolSection() {
                               <span>
                                 Pengajar:{" "}
                                 {teacher
-                                  ? `${teacher.title_prefix ?? ""} ${
-                                      teacher.name ?? ""
+                                  ? `${teacher.title_prefix ?? ""} ${teacher.name ?? ""
                                     } ${teacher.title_suffix ?? ""}`.trim()
                                   : row.class_section_subject_teacher_teacher_name_snap ??
-                                    "-"}
+                                  "-"}
                               </span>
                             </div>
                             <div className="flex items-center gap-1">

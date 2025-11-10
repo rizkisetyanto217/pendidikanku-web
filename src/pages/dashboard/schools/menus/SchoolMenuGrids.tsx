@@ -173,7 +173,7 @@ export default function SchoolMenuGrids() {
   return (
     <div className="w-full">
       <main className="w-full">
-        <div className="max-w-screen-2xl mx-auto flex flex-col gap-6 p-4 md:p-6">
+        <div className="mx-auto flex flex-col gap-6">
           <div className="mb-2 font-semibold text-lg">Akses Cepat</div>
 
           <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">

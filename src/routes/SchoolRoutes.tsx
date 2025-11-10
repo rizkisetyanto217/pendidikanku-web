@@ -32,7 +32,7 @@ import SchoolRegistrationsSetting from "@/pages/dashboard/schools/registrations/
 export const SchoolRoutes = (
   <Route path="sekolah" element={<DashboardLayout />}>
     {/* === Dashboard Utama === */}
-    <Route index element={<SchoolDashboard />} />
+    <Route path="dashboard" element={<SchoolDashboard />} />
 
     {/* === Jadwal === */}
     <Route path="jadwal" element={<SchoolSchedule />} />

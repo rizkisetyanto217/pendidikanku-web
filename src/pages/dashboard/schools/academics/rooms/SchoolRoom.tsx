@@ -416,9 +416,9 @@ export default function SchoolRoom() {
 
   /* Layout */
   return (
-    <div className="min-h-screen w-full overflow-x-hidden bg-background text-foreground">
-      <main className="w-full px-4 md:px-6 py-4 md:py-8">
-        <div className="mx-auto flex max-w-screen-2xl flex-col gap-4 lg:gap-6">
+    <div className="w-full overflow-x-hidden bg-background text-foreground">
+      <main className="w-full">
+        <div className="mx-auto flex flex-col gap-4 lg:gap-6">
           <DataTable<Room>
             title="Daftar Ruangan"
             onBack={() => navigate(-1)}
@@ -467,9 +467,9 @@ export default function SchoolRoom() {
             <div>
               {rooms.length
                 ? `${(page - 1) * perPage + 1}-${Math.min(
-                    page * perPage,
-                    total
-                  )} dari ${total}`
+                  page * perPage,
+                  total
+                )} dari ${total}`
                 : `0 dari ${total}`}
             </div>
             <div className="flex items-center gap-2">
