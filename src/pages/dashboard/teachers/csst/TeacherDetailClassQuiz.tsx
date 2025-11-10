@@ -127,13 +127,13 @@ const TeacherDetailClassQuiz: React.FC = () => {
       questions: q.questions.map((it) =>
         it.id === editingQid
           ? {
-              ...it,
-              text: form.text || "Soal (tanpa judul)",
-              options: form.options.map(
-                (o, i) => o || `Pilihan ${String.fromCharCode(65 + i)}`
-              ),
-              answer: form.answer,
-            }
+            ...it,
+            text: form.text || "Soal (tanpa judul)",
+            options: form.options.map(
+              (o, i) => o || `Pilihan ${String.fromCharCode(65 + i)}`
+            ),
+            answer: form.answer,
+          }
           : it
       ),
     }));
@@ -149,8 +149,8 @@ const TeacherDetailClassQuiz: React.FC = () => {
 
   return (
     <div className="w-full">
-      <main className="px-4 md:px-6 md:py-8">
-        <div className="max-w-screen-2xl mx-auto grid grid-cols-1 gap-6">
+      <main className="md:py-8">
+        <div className="mx-auto grid grid-cols-1 gap-6">
           {/* Header */}
           <Card>
             <CardContent className="p-4 md:p-5 flex items-center gap-3">

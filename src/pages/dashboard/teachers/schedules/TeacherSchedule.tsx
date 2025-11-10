@@ -79,8 +79,8 @@ function seedMonth(y: number, m: number): ScheduleRow[] {
         type === "exam"
           ? `Ujian materi ${title.toLowerCase()} — persiapkan alat tulis.`
           : type === "event"
-          ? `Acara sekolah: ${title} — ${desc}`
-          : desc,
+            ? `Acara sekolah: ${title} — ${desc}`
+            : desc,
     });
   };
 
@@ -216,8 +216,8 @@ export default function TeacherSchedule() {
     });
 
   return (
-    <div className="w-full p-4 md:p-6 bg-background text-foreground">
-      <div className="max-w-screen-xl mx-auto flex flex-col gap-4">
+    <div className="w-full bg-background text-foreground">
+      <div className="mx-auto flex flex-col gap-4">
         {/* Header */}
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>

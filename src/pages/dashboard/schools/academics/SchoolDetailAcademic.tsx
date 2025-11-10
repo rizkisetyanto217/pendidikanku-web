@@ -270,7 +270,7 @@ export default function SchoolDetailAcademic() {
       </AlertDialog>
 
       <main className="w-full">
-        <div className="max-w-screen-2xl mx-auto flex flex-col gap-6 p-4">
+        <div className="mx-auto flex flex-col gap-6">
           {/* (Header lokal dihapus—sudah ditangani header layout) */}
 
           {/* Info utama */}

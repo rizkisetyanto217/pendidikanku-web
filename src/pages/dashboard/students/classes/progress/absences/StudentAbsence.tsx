@@ -174,11 +174,11 @@ export default function StudentAbsence() {
 
   const asStatusFilter = (v: string | null): AttendanceStatusFilter =>
     v === "all" ||
-    v === "hadir" ||
-    v === "online" ||
-    v === "izin" ||
-    v === "sakit" ||
-    v === "alpa"
+      v === "hadir" ||
+      v === "online" ||
+      v === "izin" ||
+      v === "sakit" ||
+      v === "alpa"
       ? v
       : "all";
   const asModeFilter = (v: string | null): AttendanceModeFilter =>
@@ -254,8 +254,8 @@ export default function StudentAbsence() {
 
   return (
     <div className="w-full bg-background text-foreground">
-      <main className="w-full px-4 md:px-6 py-4 md:py-8">
-        <div className="max-w-screen-2xl mx-auto flex flex-col lg:flex-row gap-4 lg:gap-6">
+      <main className="w-full">
+        <div className="mx-auto flex flex-col lg:flex-row gap-4 lg:gap-6">
           {/* Konten utama */}
           <div className="flex-1 flex flex-col space-y-6 min-w-0">
             <div className="md:flex hidden items-center gap-3">
@@ -495,11 +495,10 @@ export default function StudentAbsence() {
                                     {a.mode && (
                                       <span className="inline-flex items-center gap-1">
                                         <span
-                                          className={`h-2 w-2 rounded-full ${
-                                            a.mode === "online"
+                                          className={`h-2 w-2 rounded-full ${a.mode === "online"
                                               ? "bg-yellow-500"
                                               : "bg-primary"
-                                          }`}
+                                            }`}
                                         />
                                         {a.mode === "onsite"
                                           ? "Tatap muka"

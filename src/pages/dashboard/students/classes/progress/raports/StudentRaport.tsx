@@ -153,8 +153,8 @@ export default function StudentRaport() {
 
   return (
     <div className="w-full bg-background text-foreground">
-      <main className="w-full px-4 md:px-6 py-4 md:py-8">
-        <div className="max-w-screen-2xl mx-auto flex flex-col gap-4 lg:gap-6">
+      <main className="w-full">
+        <div className="mx-auto flex flex-col gap-4 lg:gap-6">
           {/* Header */}
           <div className="md:flex hidden items-center gap-3">
             <Button
@@ -266,8 +266,8 @@ export default function StudentRaport() {
                     const pct =
                       s.attendance.totalSessions > 0
                         ? Math.round(
-                            (it.value / s.attendance.totalSessions) * 100
-                          )
+                          (it.value / s.attendance.totalSessions) * 100
+                        )
                         : 0;
                     return (
                       <Card key={it.label} className="bg-card/60">

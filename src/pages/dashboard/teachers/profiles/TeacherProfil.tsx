@@ -1,5 +1,5 @@
 // src/pages/sekolahislamku/teacher/TeacherProfil.shadcn.tsx
-import  { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import api from "@/lib/axios";
 import {
   MessageCircle,
@@ -56,11 +56,11 @@ export default function TeacherProfil() {
   const getInitials = (name: string) =>
     name
       ? name
-          .split(" ")
-          .map((n) => n[0])
-          .join("")
-          .substring(0, 2)
-          .toUpperCase()
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .substring(0, 2)
+        .toUpperCase()
       : "U";
 
   /* ================= FETCH DATA ================= */
@@ -419,8 +419,8 @@ export default function TeacherProfil() {
 
   /* ================= RENDER FINAL ================= */
   return (
-    <main className="px-4 md:px-6 md:py-8">
-      <div className="max-w-screen-2xl mx-auto">
+    <main className="md:py-8">
+      <div className="mx-auto">
         {loading ? (
           <div className="flex-1 flex items-center justify-center py-20 text-muted-foreground">
             Memuat data guru...

@@ -83,11 +83,11 @@ const percent = (a: number, b: number) =>
 
 const toStatusFilter = (v: string | null): AttendanceStatusFilter =>
   v === "all" ||
-  v === "hadir" ||
-  v === "online" ||
-  v === "izin" ||
-  v === "sakit" ||
-  v === "alpa"
+    v === "hadir" ||
+    v === "online" ||
+    v === "izin" ||
+    v === "sakit" ||
+    v === "alpa"
     ? v
     : "all";
 const toModeFilter = (v: string | null): AttendanceModeFilter =>
@@ -210,12 +210,12 @@ function BadgeStatus({ s }: { s: AttendanceStatus }) {
     s === "hadir"
       ? "bg-green-600 text-white dark:bg-green-500"
       : s === "online"
-      ? "bg-blue-600 text-white dark:bg-blue-500"
-      : s === "sakit"
-      ? "bg-amber-500 text-white"
-      : s === "alpa"
-      ? "bg-destructive text-destructive-foreground"
-      : "bg-secondary text-secondary-foreground";
+        ? "bg-blue-600 text-white dark:bg-blue-500"
+        : s === "sakit"
+          ? "bg-amber-500 text-white"
+          : s === "alpa"
+            ? "bg-destructive text-destructive-foreground"
+            : "bg-secondary text-secondary-foreground";
   return <Badge className={cls}>{STATUS_LABEL[s]}</Badge>;
 }
 
@@ -392,8 +392,8 @@ export default function TeacherClassAttendanceCSST() {
   }, [filtered, s?.currentClass, qDate]);
 
   return (
-    <main className="px-4 md:px-6 md:py-8">
-      <div className="max-w-screen-2xl mx-auto space-y-6">
+    <main className="md:py-8">
+      <div className="mx-auto space-y-6">
         {/* Row 1: Kelas Hari Ini + Ringkasan */}
         <section className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
           {/* Kelas Hari Ini */}

@@ -54,12 +54,12 @@ const statusLabel: Record<UIStatus, string> = {
 const dateLong = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleString("id-ID", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
     : "-";
 
 /* ================= Component ================= */
@@ -83,8 +83,8 @@ export default function TeacherDetailBook() {
 
   return (
     <div className="min-h-screen w-full bg-background text-foreground">
-      <main className="w-full px-4 md:px-6 py-4 md:py-8">
-        <div className="mx-auto max-w-5xl flex flex-col gap-6">
+      <main className="w-full">
+        <div className="mx-auto flex flex-col gap-6">
           {/* Topbar */}
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
@@ -106,8 +106,8 @@ export default function TeacherDetailBook() {
                   uiStatus === "available"
                     ? "default"
                     : uiStatus === "borrowed"
-                    ? "secondary"
-                    : "outline"
+                      ? "secondary"
+                      : "outline"
                 }
               >
                 {statusLabel[uiStatus]}

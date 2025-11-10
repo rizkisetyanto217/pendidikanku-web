@@ -112,7 +112,7 @@ export default function TeacherMainDashboard() {
   /* ============== UI ============== */
   return (
     <div className="w-full bg-background text-foreground">
-      <main className="max-w-screen-2xl mx-auto flex flex-col lg:flex-row gap-6 p-4">
+      <main className="mx-auto flex flex-col lg:flex-row gap-6">
         <div className="flex-1 flex flex-col space-y-6">
           {/* KPI Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

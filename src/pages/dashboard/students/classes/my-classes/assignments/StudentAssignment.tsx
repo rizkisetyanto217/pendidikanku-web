@@ -32,11 +32,11 @@ import { cn } from "@/lib/utils";
 const dateLong = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        weekday: "long",
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      })
+      weekday: "long",
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    })
     : "-";
 
 const diffDays = (iso: string) => {
@@ -54,10 +54,10 @@ const dueBadge = (iso: string, isBelum: boolean) => {
         dd === 0
           ? "Jatuh tempo: Hari ini"
           : dd === 1
-          ? "Jatuh tempo: Besok"
-          : dd > 1
-          ? `Jatuh tempo: ${dd} hari lagi`
-          : `Lewat ${Math.abs(dd)} hari`,
+            ? "Jatuh tempo: Besok"
+            : dd > 1
+              ? `Jatuh tempo: ${dd} hari lagi`
+              : `Lewat ${Math.abs(dd)} hari`,
       className:
         dd < 0
           ? "border-amber-200 text-amber-800 bg-amber-50 dark:border-amber-800 dark:text-amber-300 dark:bg-amber-900/30"
@@ -288,11 +288,11 @@ const StudentAssignment: React.FC = () => {
       old.map((x) =>
         x.id === a.id
           ? {
-              ...x,
-              status: "terkumpul",
-              submittedAt: now,
-              attachmentName: x.attachmentName || "tugas-dikumpulkan.pdf",
-            }
+            ...x,
+            status: "terkumpul",
+            submittedAt: now,
+            attachmentName: x.attachmentName || "tugas-dikumpulkan.pdf",
+          }
           : x
       )
     );
@@ -462,8 +462,8 @@ const StudentAssignment: React.FC = () => {
 
   return (
     <div className="w-full bg-background text-foreground">
-      <main className="w-full px-4 md:px-6 py-4 md:py-8">
-        <div className="mx-auto max-w-screen-2xl flex flex-col gap-6">
+      <main className="w-full">
+        <div className="mx-auto flex flex-col gap-6">
           {/* Title */}
           <div className="hidden md:flex items-center gap-3">
             <h1 className="text-lg font-semibold">Daftar Tugas</h1>

@@ -24,11 +24,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 const dateLong = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        weekday: "long",
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      })
+      weekday: "long",
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    })
     : "";
 
 const getInitials = (name: string) =>
@@ -65,8 +65,8 @@ export default function StudentProfil() {
   return (
     <div className="w-full bg-background text-foreground">
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-        <div className="mx-auto max-w-6xl px-4 h-14 flex items-center gap-3">
+      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="mx-auto h-14 flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Kembali
@@ -76,8 +76,8 @@ export default function StudentProfil() {
         </div>
       </header>
 
-      <main className="w-full px-4 md:px-6 py-4 md:py-8">
-        <div className="mx-auto max-w-6xl grid gap-6">
+      <main className="w-full">
+        <div className="mx-auto grid gap-6">
           {/* ---- Kartu Head (Avatar + Nama + Status) ---- */}
           <Card>
             <CardContent className="p-6 flex flex-col md:flex-row gap-6 items-center md:items-start">

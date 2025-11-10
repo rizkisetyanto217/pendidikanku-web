@@ -30,9 +30,9 @@ type AttendanceStatus = "hadir" | "sakit" | "izin" | "alpa" | "online";
 const dateShort = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "short",
-      })
+      day: "2-digit",
+      month: "short",
+    })
     : "-";
 
 type NextSession = {
@@ -268,8 +268,8 @@ export default function TeacherCSSTDetail() {
 
   return (
     <div className="w-full bg-background text-foreground">
-      <main className="w-full px-4 md:px-6 md:py-8">
-        <div className="max-w-screen-2xl mx-auto flex flex-col gap-6">
+      <main className="w-full md:py-8">
+        <div className="mx-auto flex flex-col gap-6">
           {/* Top bar */}
           <div className="hidden md:flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>

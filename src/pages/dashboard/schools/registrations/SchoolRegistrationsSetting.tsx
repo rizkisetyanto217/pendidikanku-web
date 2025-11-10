@@ -127,7 +127,7 @@ export default function SchoolRegistrationsSetting() {
   const registerUrl = `${baseUrl}/public/pmb/register?term=${termId}`;
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-3 sm:px-6 lg:px-8">
+    <div className="mx-auto w-full">
       <header className="mb-4 flex items-center gap-3">
         <div className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <Settings className="h-5 w-5" />

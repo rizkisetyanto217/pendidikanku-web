@@ -1,13 +1,12 @@
 // src/pages/sekolahislamku/teacher/books/ClassBooksPage.tsx
-import { useMemo, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Trash2, Info, Loader2, Eye } from "lucide-react";
+import { Pencil, Trash2, Loader2, Eye } from "lucide-react";
 
 /* ============ shadcn/ui ============ */
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+
 import {
   Dialog,
   DialogContent,
@@ -169,11 +168,8 @@ const QK = {
 /* =========================================================
    UTIL
 ========================================================= */
-const statusLabel: Record<BookStatus, string> = {
-  available: "Tersedia",
-  borrowed: "Dipinjam",
-  archived: "Diarsipkan",
-};
+
+
 
 /* ===================== Actions Menu ===================== */
 function ActionsMenu({
@@ -339,18 +335,7 @@ function BookFormDialog({
             />
           </div>
 
-          <div>
-            <label className="text-sm">Status</label>
-            <select
-              className="h-9 rounded-md border bg-background px-3 text-sm outline-none w-full"
-              value={values.status}
-              onChange={(e) => set("status", e.target.value as BookStatus)}
-            >
-              <option value="available">Tersedia</option>
-              <option value="borrowed">Dipinjam</option>
-              <option value="archived">Diarsipkan</option>
-            </select>
-          </div>
+
 
           <div className="md:col-span-2">
             <label className="text-sm">URL Sampul (opsional)</label>
@@ -502,69 +487,17 @@ export default function TeacherBookList() {
       align: "center" as Align,
       cell: (b) => b.pages ?? "-",
     },
-    {
-      id: "status",
-      header: "Status",
-      minW: "120px",
-      cell: (b) => (
-        <Badge
-          variant={
-            b.status === "available"
-              ? "default"
-              : b.status === "borrowed"
-              ? "secondary"
-              : "outline"
-          }
-        >
-          {statusLabel[b.status]}
-        </Badge>
-      ),
-    },
   ];
 
   /* ====== Stats Slot (ringkas, ala Academic) ====== */
-  const counts = useMemo(() => {
-    const c = { all: books.length, available: 0, borrowed: 0, archived: 0 };
-    books.forEach((b) => (c[b.status] += 1));
-    return c;
-  }, [books]);
 
-  const statsSlot = booksQ.isLoading ? (
-    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-      <Loader2 className="animate-spin" size={16} /> Memuat buku kelas…
-    </div>
-  ) : booksQ.isError ? (
-    <div className="rounded-xl border p-4 text-sm space-y-2">
-      <div className="flex items-center gap-2">
-        <Info size={16} /> Gagal memuat buku.
-      </div>
-      <Button size="sm" onClick={() => booksQ.refetch()}>
-        Coba lagi
-      </Button>
-    </div>
-  ) : (
-    <div className="grid md:grid-cols-3 gap-4">
-      <Card className="p-4">
-        <div className="text-sm text-muted-foreground">Total</div>
-        <div className="text-xl font-semibold">{counts.all} buku</div>
-      </Card>
-      <Card className="p-4">
-        <div className="text-sm text-muted-foreground">Tersedia</div>
-        <div className="text-xl font-semibold">{counts.available}</div>
-      </Card>
-      <Card className="p-4">
-        <div className="text-sm text-muted-foreground">Dipinjam / Arsip</div>
-        <div className="text-xl font-semibold">
-          {counts.borrowed} / {counts.archived}
-        </div>
-      </Card>
-    </div>
-  );
+
+
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-background text-foreground">
-      <main className="w-full px-4 md:px-6 py-4 md:py-8">
-        <div className="mx-auto flex max-w-screen-2xl flex-col gap-4 lg:gap-6">
+      <main className="w-full">
+        <div className="mx-auto flex flex-col gap-4 lg:gap-6">
           <CDataTable<ClassBook>
             /* ===== Toolbar ===== */
             title="Buku Kelas"
@@ -575,8 +508,7 @@ export default function TeacherBookList() {
             /* Search (client-side) */
             defaultQuery=""
             searchByKeys={["title", "author", "subject", "isbn"]}
-            /* Stats */
-            statsSlot={statsSlot}
+
             /* ===== Data ===== */
             loading={booksQ.isLoading}
             error={booksQ.isError ? "Gagal memuat buku." : null}

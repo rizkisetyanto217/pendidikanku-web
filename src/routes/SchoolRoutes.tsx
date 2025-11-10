@@ -17,7 +17,6 @@ import SchoolParent from "@/pages/dashboard/schools/classes/data-class/parent/Sc
 
 import SchoolAcademic from "@/pages/dashboard/schools/academics/SchoolAcademic";
 import SchoolDetailAcademic from "@/pages/dashboard/schools/academics/SchoolDetailAcademic";
-import SchoolManagementAcademicDetail from "@/pages/dashboard/schools/academics/SchoolManagementAcademic";
 import SchoolBooks from "@/pages/dashboard/schools/academics/books/SchoolBooks";
 import SchoolRoom from "@/pages/dashboard/schools/academics/rooms/SchoolRoom";
 import SchoolSubject from "@/pages/dashboard/schools/academics/subjects/SchoolSubject";
@@ -36,14 +35,8 @@ export const SchoolRoutes = (
 
     {/* === Jadwal === */}
     <Route path="jadwal" element={<SchoolSchedule />} />
-    {/* <Route
-      path="jadwal/detail/:scheduleId"
-      element={<SchoolDetailSchedule />}
-    /> */}
 
     {/* === Profil Sekolah === */}
-
-    {/* === Guru === */}
     <Route path="profil">
       <Route path="profil-sekolah" element={<SchoolProfile />} />
       <Route path="guru">
@@ -52,91 +45,74 @@ export const SchoolRoutes = (
       </Route>
     </Route>
 
-    <Route path="menu" element={<SchoolMenuGrids />} />
+    {/* === Menu utama (akses cepat) === */}
+    <Route path="menu-utama">
+      <Route index element={<SchoolMenuGrids />} />
 
-    {/* === Akademik === */}
+      {/* Profil & Keuangan */}
+      <Route path="profil-sekolah" element={<SchoolProfile showBack />} />
+      <Route path="keuangan" element={<SchoolFinance />} />
+      <Route path="keuangan/detail/:id" element={<SchoolDetailBill />} />
+      <Route path="spp" element={<SchoolSpp />} />
+
+      {/* Guru */}
+      <Route path="guru" element={<SchoolTeacher />} />
+      <Route path="guru/:id" element={<SchoolDetailTeacher />} />
+
+      {/* Akademik */}
+      <Route path="tahun-akademik" element={<SchoolAcademic />} />
+      <Route path="tahun-akademik/detail/:id" element={<SchoolDetailAcademic />} />
+
+      {/* Buku */}
+      <Route path="buku" element={<SchoolBooks />} />
+      <Route path="buku/detail/:id" element={<SchoolBookDetail />} />
+
+      {/* Ruangan */}
+      <Route path="ruangan" element={<SchoolRoom />} />
+      <Route path="ruangan/detail/:id" element={<SchoolDetailRoom />} />
+
+      {/* Mata Pelajaran */}
+      <Route path="pelajaran" element={<SchoolSubject />} />
+
+      {/* Kelas */}
+      <Route path="kelas" element={<SchoolClass />} />
+      <Route path="kelas/kelola/:id" element={<SchoolSection />} />
+      <Route path="kelas/section/:id" element={<SchoolSectionDetail />} />
+      <Route path="kelas/tingkat/:levelId" element={<SchoolParent />} />
+
+      {/* Jadwal */}
+      <Route path="jadwal" element={<SchoolSchedule />} />
+
+      {/* Pendaftaran */}
+      <Route path="pendaftaran" element={<SchoolRegistrationsPeriod />} />
+      <Route path="pendaftaran/murid" element={<SchoolRegistrationsListStudent />} />
+      <Route path="pendaftaran/pengaturan" element={<SchoolRegistrationsSetting />} />
+    </Route>
+
+    {/* === Global Routes (opsional, jika di luar menu utama) === */}
     <Route path="akademik">
-      <Route path="tahun-akademik">
-        <Route index element={<SchoolAcademic />} />
-        <Route path="detail/:id" element={<SchoolDetailAcademic />} />
-        <Route path="kelola" element={<SchoolManagementAcademicDetail />} />
-      </Route>
-      {/* === Buku === */}
-      <Route path="buku">
-        <Route index element={<SchoolBooks />} />
-        <Route path="detail/:id" element={<SchoolBookDetail />} />
-      </Route>
-      <Route path="ruangan">
-        <Route index element={<SchoolRoom />} />
-        <Route path="detail/:id" element={<SchoolDetailRoom />} />
-      </Route>
-      <Route path="mata-pelajaran">
-        <Route index element={<SchoolSubject />} />
-      </Route>
+      <Route path="tahun-akademik" element={<SchoolAcademic />} />
+      <Route path="tahun-akademik/detail/:id" element={<SchoolDetailAcademic />} />
+
     </Route>
 
-    {/* === Guru === */}
     <Route path="kelas">
-      <Route path="data-kelas">
-        <Route index element={<SchoolClass />} />
-        <Route path="tingkat/:levelId" element={<SchoolParent />} />
-      </Route>
-      <Route path="daftar-kelas">
-        <Route index element={<SchoolSection />} />
-        <Route path="section/:id" element={<SchoolSectionDetail />} />
-      </Route>
+      <Route path="data-kelas" element={<SchoolClass />} />
+      <Route path="data-kelas/tingkat/:levelId" element={<SchoolParent />} />
+      <Route path="daftar-kelas" element={<SchoolSection />} />
+      <Route path="daftar-kelas/section/:id" element={<SchoolSectionDetail />} />
     </Route>
 
-
-    {/* === Keuangan === */}
     <Route path="keuangan">
       <Route path="spp" element={<SchoolSpp />} />
-      <Route path="lainnya" element={<SchoolFinance />}>
-        <Route path=":id" element={<SchoolDetailBill />} />
-      </Route>
-      {/* Masih kurang pengaturan  */}
+      <Route path="lainnya" element={<SchoolFinance />} />
+      <Route path="lainnya/:id" element={<SchoolDetailBill />} />
     </Route>
 
     <Route path="pendaftaran">
       <Route index element={<SchoolRegistrationsPeriod />} />
       <Route path="murid" element={<SchoolRegistrationsListStudent />} />
       <Route path="pengaturan" element={<SchoolRegistrationsSetting />} />
-    </Route>
-
-    {/* === MENU UTAMA === */}
-    <Route path="menu-utama">
-      <Route index element={<SchoolMenuGrids />} />
-      <Route path="profil-sekolah" element={<SchoolProfile showBack />} />
-      <Route path="keuangan" element={<SchoolFinance />} />
-      <Route path="keuangan/detail/:id" element={<SchoolDetailBill />} />
-      <Route path="guru" element={<SchoolTeacher />} />
-      {/* <Route path="all-announcement" element={<AllAnnouncement />} /> */}
-      <Route path="sekolah" element={<SchoolDashboard showBack />} />
-      <Route path="ruangan" element={<SchoolRoom />} />
-      <Route path="ruangan/:id" element={<SchoolDetailRoom />} />
-      <Route path="spp" element={<SchoolSpp />} />
-      <Route path="pelajaran" element={<SchoolSubject />} />
-      {/* <Route path="statistik" element={<SchoolStatistik />} /> */}
-      <Route path="jadwal" element={<SchoolSchedule />} />
-
-      <Route path="buku">
-        <Route index element={<SchoolBooks />} />
-        <Route path="detail/:id" element={<SchoolBookDetail />} />
-      </Route>
-
-      <Route path="kelas">
-        <Route index element={<SchoolClass />} />
-        <Route path="kelola/:id" element={<SchoolSection />} />
-        <Route path="section/:id" element={<SchoolSectionDetail />} />
-        <Route path="tingkat/:levelId" element={<SchoolParent />} />
-        <Route path="kelas/:classId" element={<SchoolClass />} />
-      </Route>
-
-      <Route path="pendaftaran">
-        <Route index element={<SchoolRegistrationsPeriod />} />
-        <Route path="murid" element={<SchoolRegistrationsListStudent />} />
-        <Route path="pengaturan" element={<SchoolRegistrationsSetting />} />
-      </Route>
     </Route>
   </Route>
 );

@@ -34,11 +34,11 @@ interface BillDetail {
 const dateLong = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
     : "—";
 
 const formatIDR = (n: number) =>
@@ -110,7 +110,7 @@ export default function StudentFinance() {
 
   return (
     <div className="w-full bg-background text-foreground">
-      <main className="max-w-screen-2xl mx-auto p-4 space-y-6">
+      <main className="mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">

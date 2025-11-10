@@ -30,11 +30,11 @@ import {
 const dateLong = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        weekday: "long",
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      })
+      weekday: "long",
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    })
     : "-";
 
 /* ===== Dummy data kelas ===== */
@@ -87,12 +87,12 @@ const ENROLLED: EnrolledClass[] = [
 const ZOOM_INFO: Record<
   string,
   | {
-      url: string;
-      topic: string;
-      meetingId: string;
-      passcode: string;
-      startAtLabel: string;
-    }
+    url: string;
+    topic: string;
+    meetingId: string;
+    passcode: string;
+    startAtLabel: string;
+  }
   | undefined
 > = {
   tahsin: {
@@ -133,7 +133,7 @@ const StudentMyClass: React.FC = () => {
   return (
     <div className="w-full bg-background text-foreground">
       <main className="w-full">
-        <div className="max-w-screen-2xl mx-auto flex flex-col lg:flex-row gap-4 lg:gap-6">
+        <div className="mx-auto flex flex-col lg:flex-row gap-4 lg:gap-6">
           {/* Content */}
           <div className="flex-1 flex flex-col space-y-6 min-w-0">
             {/* Back + title */}

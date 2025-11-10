@@ -145,7 +145,7 @@ export default function TeacherCSST() {
   }, [subjects, deferredSearch, day, level, term, sortBy]);
 
   return (
-    <div className="min-h-screen p-6 space-y-6">
+    <div className="min-h-screen space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
         <h1 className="text-2xl font-bold text-primary">Mata Pelajaran Saya</h1>
@@ -227,11 +227,10 @@ export default function TeacherCSST() {
 
       {/* Cards */}
       <div
-        className={`grid gap-6 ${
-          viewMode === "simple"
+        className={`grid gap-6 ${viewMode === "simple"
             ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
             : "grid-cols-1 lg:grid-cols-2"
-        }`}
+          }`}
       >
         {filtered.map((s) => (
           <Card
@@ -283,7 +282,7 @@ export default function TeacherCSST() {
                       academicTerm: s.academicTerm,
                       cohortYear: Number(
                         s.academicTerm.match(/^\d{4}/)?.[0] ??
-                          new Date().getFullYear()
+                        new Date().getFullYear()
                       ),
                       studentsCount: s.studentsCount,
                       todayAttendance: {

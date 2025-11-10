@@ -113,19 +113,19 @@ type ProgramDetail = {
 const dateLong = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
     : "-";
 
 const dateShort = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "short",
-      })
+      day: "2-digit",
+      month: "short",
+    })
     : "-";
 
 const pct = (n: number) => Math.max(0, Math.min(100, n));
@@ -368,7 +368,7 @@ export default function StudentProgress() {
   return (
     <div className="w-full bg-background text-foreground">
       <main className="w-full">
-        <div className="max-w-screen-2xl mx-auto flex flex-col gap-6 px-4 md:px-6 py-4 md:py-6">
+        <div className="mx-auto flex flex-col gap-6">
           {/* ==== Header: Identitas Mahasiswa & Ringkas Program ==== */}
           <Card>
             <CardContent className="p-4 md:p-5">
@@ -526,7 +526,7 @@ export default function StudentProgress() {
                         const presentPct = Math.round(
                           ((c.attendanceStats?.hadir ?? 0) /
                             Math.max(1, c.attendanceStats?.total ?? 1)) *
-                            100
+                          100
                         );
                         return (
                           <TableRow key={c.id} className="align-top">
@@ -731,8 +731,8 @@ export default function StudentProgress() {
                                     a.status === "graded"
                                       ? "default"
                                       : a.status === "submitted"
-                                      ? "secondary"
-                                      : "outline"
+                                        ? "secondary"
+                                        : "outline"
                                   }
                                   className={
                                     a.status === "graded" ? "bg-green-600" : ""
@@ -741,8 +741,8 @@ export default function StudentProgress() {
                                   {a.status === "graded"
                                     ? "Dinilai"
                                     : a.status === "submitted"
-                                    ? "Terkumpul"
-                                    : "Belum"}
+                                      ? "Terkumpul"
+                                      : "Belum"}
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-center">

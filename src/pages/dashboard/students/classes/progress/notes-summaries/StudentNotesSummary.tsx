@@ -60,8 +60,8 @@ function makeNotes(days = 30): NoteLog[] {
         i % 3 === 0
           ? "Latihan tajwid: mad thabi'i."
           : i % 3 === 1
-          ? "Praktik adab di kelas."
-          : "Praktik wudhu dan tartil surat pendek.",
+            ? "Praktik adab di kelas."
+            : "Praktik wudhu dan tartil surat pendek.",
     };
     if (i % 2 === 0) base.materiPersonal = "Muroja'ah Iqra 2 halaman 10–12";
     if (i % 4 === 0)
@@ -81,10 +81,10 @@ async function fetchNotes(childId?: string, days = 30): Promise<NotesFetch> {
   const avg =
     withScore.length > 0
       ? Math.round(
-          (withScore.reduce((a, b) => a + (b.nilai ?? 0), 0) /
-            withScore.length) *
-            10
-        ) / 10
+        (withScore.reduce((a, b) => a + (b.nilai ?? 0), 0) /
+          withScore.length) *
+        10
+      ) / 10
       : undefined;
 
   return {
@@ -144,16 +144,16 @@ export default function StudentNotesSummary() {
           category === "all"
             ? true
             : category === "hafalan"
-            ? !!n.hafalan
-            : category === "pr"
-            ? !!n.pr
-            : category === "nilai"
-            ? typeof n.nilai === "number"
-            : category === "materi"
-            ? !!n.materiPersonal
-            : category === "penilaian"
-            ? !!n.penilaianPersonal
-            : true;
+              ? !!n.hafalan
+              : category === "pr"
+                ? !!n.pr
+                : category === "nilai"
+                  ? typeof n.nilai === "number"
+                  : category === "materi"
+                    ? !!n.materiPersonal
+                    : category === "penilaian"
+                      ? !!n.penilaianPersonal
+                      : true;
 
         const text = [
           n.informasiUmum,
@@ -188,8 +188,8 @@ export default function StudentNotesSummary() {
 
   return (
     <div className="w-full bg-background text-foreground">
-      <main className="w-full px-4 md:px-6 py-4 md:py-8">
-        <div className="max-w-screen-2xl mx-auto flex flex-col gap-4 lg:gap-6">
+      <main className="w-full">
+        <div className="mx-auto flex flex-col gap-4 lg:gap-6">
           {/* Top */}
           <div className="md:flex hidden items-center gap-3">
             <Button
