@@ -1,5 +1,5 @@
 // src/pages/sekolahislamku/pages/student/StudentAssignment.tsx
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import {
   Search,
@@ -13,6 +13,9 @@ import {
   ArrowUpDown,
   BookOpen,
 } from "lucide-react";
+
+/* Tambahan untuk breadcrumb sistem dashboard */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -199,6 +202,22 @@ const StudentAssignment: React.FC = () => {
       ? defaultSubject
       : "all"
   );
+
+  /* Atur breadcrumb dan title seperti SchoolAcademic */
+  const { setHeader } = useDashboardHeader();
+
+  useEffect(() => {
+    setHeader({
+      title: "Dasftar Tugas",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Tugas" },
+        { label: "Daftar Tugas" },
+      ],
+      actions: null,
+    });
+  }, [setHeader]);
+
 
   const [list, setList] = useState<Assignment[]>(DUMMY_ALL);
 

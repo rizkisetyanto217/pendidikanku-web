@@ -1,4 +1,5 @@
 // src/pages/ParentChildDetail.tsx
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -10,6 +11,9 @@ import {
   Hash,
   School,
 } from "lucide-react";
+
+/* Tambahan untuk breadcrumb sistem dashboard */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* shadcn/ui */
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -352,6 +356,21 @@ export default function StudentProgress() {
     queryFn: fetchProgramDetail,
     staleTime: 60_000,
   });
+
+  /* Atur breadcrumb dan title seperti SchoolAcademic */
+  const { setHeader } = useDashboardHeader();
+
+  useEffect(() => {
+    setHeader({
+      title: "Daftar Mata Kuliah",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Progress" },
+        { label: "Daftar Mata Kuliah" },
+      ],
+      actions: null,
+    });
+  }, [setHeader]);
 
   const s = data?.student;
   const sum = data?.summary;
