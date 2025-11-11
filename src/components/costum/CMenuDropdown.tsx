@@ -165,11 +165,89 @@ function applyFontFamily(fontId: FontId) {
   localStorage.setItem(FONT_FAMILY_KEY, fontId);
 }
 
+/* ================= UI Scale (GLOBAL) ================= */
+/**
+ * Mengatur ukuran global untuk Sidebar:
+ * - Lebar background (panel)
+ * - Lebar mode ikon (collapsed)
+ * - Ukuran ikon
+ * - Tinggi item menu & sub-menu
+ * - Font size sidebar
+ * - Tinggi label group
+ */
+type UiScale = "normal" | "large" | "xl";
+const UI_SCALE_KEY = "app-ui-scale";
+
+const UI_TOKENS: Record<
+  UiScale,
+  {
+    sidebarWidth: string;
+    sidebarWidthMobile: string;
+    sidebarWidthIcon: string;
+    itemH: string;
+    subItemH: string;
+    icon: string; // icon size
+    text: string; // base text size
+    labelH: string;
+  }
+> = {
+  normal: {
+    sidebarWidth: "16rem",
+    sidebarWidthMobile: "18rem",
+    sidebarWidthIcon: "3.25rem",
+    itemH: "2.5rem",
+    subItemH: "2.125rem",
+    icon: "1rem",
+    text: "0.9rem",
+    labelH: "2rem",
+  },
+  large: {
+    sidebarWidth: "20rem",
+    sidebarWidthMobile: "22rem",
+    sidebarWidthIcon: "4rem",
+    itemH: "3.25rem",
+    subItemH: "2.375rem",
+    icon: "1.25rem",
+    text: "1rem",
+    labelH: "2.5rem",
+  },
+  xl: {
+    sidebarWidth: "22rem",
+    sidebarWidthMobile: "24rem",
+    sidebarWidthIcon: "4.5rem",
+    itemH: "3.75rem",
+    subItemH: "2.75rem",
+    icon: "1.375rem",
+    text: "1.06rem",
+    labelH: "2.75rem",
+  },
+};
+
+function readUiScale(): UiScale {
+  const raw = (localStorage.getItem(UI_SCALE_KEY) as UiScale) || "normal";
+  return raw === "large" || raw === "xl" ? raw : "normal";
+}
+
+function applyUiScale(scale: UiScale) {
+  const t = UI_TOKENS[scale];
+  const root = document.documentElement;
+  root.style.setProperty("--sidebar-width", t.sidebarWidth);
+  root.style.setProperty("--sidebar-width-mobile", t.sidebarWidthMobile);
+  root.style.setProperty("--sidebar-width-icon", t.sidebarWidthIcon);
+  root.style.setProperty("--sidebar-item-h", t.itemH);
+  root.style.setProperty("--sidebar-subitem-h", t.subItemH);
+  root.style.setProperty("--sidebar-icon", t.icon);
+  root.style.setProperty("--sidebar-text", t.text);
+  root.style.setProperty("--sidebar-label-h", t.labelH);
+  localStorage.setItem(UI_SCALE_KEY, scale);
+}
+
 /* ================= Component ================= */
 interface PublicUserDropdownProps {
   withBg?: boolean;
-  variant?: "icon" | "button"; // tambahin ini
+  variant?: "icon" | "button";
 }
+
 const getUserDisplayName = (
   user?: { user_name?: string; email?: string } | null
 ) =>
@@ -199,8 +277,17 @@ export default function CMenuDropdown({
     }
   });
 
+  // UI Scale (baru)
+  const [uiScale, setUiScale] = useState<UiScale>(() => {
+    try {
+      return readUiScale();
+    } catch {
+      return "normal";
+    }
+  });
+
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [helpOpen, setHelpOpen] = useState(false); // <-- baru
+  const [helpOpen, setHelpOpen] = useState(false);
   const { data: user } = useCurrentUser();
 
   const [settingsValue, setSettingsValue] = useState<SettingsState>(() => ({
@@ -273,6 +360,7 @@ export default function CMenuDropdown({
       applyThemeName(themeName);
       applyFontScale(fontScale);
       applyFontFamily(fontId);
+      applyUiScale(uiScale); // <-- penting: terapkan ukuran UI saat mount
     } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -328,7 +416,7 @@ export default function CMenuDropdown({
     // kalau mau persist ke server, kirim settingsValue di sini
   };
 
-  /* ====== HANDLERS QUICK CONTROLS (langsung apply + sync ke settings) ====== */
+  /* ====== HANDLERS QUICK CONTROLS ====== */
   const handleQuickMode = (v: Mode) => {
     setMode(v);
     applyMode(v);
@@ -345,6 +433,12 @@ export default function CMenuDropdown({
     setFontId(v);
     applyFontFamily(v);
     setSettingsValue((s) => ({ ...s, fontFamily: v }));
+  };
+
+  const handleQuickUiScale = (v: UiScale) => {
+    setUiScale(v);
+    applyUiScale(v);
+    // kalau mau disimpan juga di settings modal, tinggal extend SettingsState
   };
 
   return (
@@ -375,7 +469,7 @@ export default function CMenuDropdown({
         }}
       />
 
-      {/* ⬇️ Modal Bantuan */}
+      {/* Modal Bantuan */}
       <UserHelpModal open={helpOpen} onOpenChange={setHelpOpen} />
 
       <DropdownMenu>
@@ -412,7 +506,7 @@ export default function CMenuDropdown({
             <DropdownMenuItem
               onSelect={(e) => {
                 e.preventDefault();
-                setHelpOpen(true); // <-- buka modal
+                setHelpOpen(true);
               }}
             >
               <HelpCircle className="mr-2 h-4 w-4" />
@@ -422,7 +516,7 @@ export default function CMenuDropdown({
 
           <DropdownMenuSeparator />
 
-          {/* Quick controls */}
+          {/* Mode */}
           <div className="px-2 py-1.5">
             <p className="text-[11px] text-muted-foreground mb-2">
               Mode Tampilan
@@ -452,6 +546,7 @@ export default function CMenuDropdown({
             </RadioGroup>
           </div>
 
+          {/* Tema */}
           <div className="px-2 pb-2">
             <p className="text-[11px] text-muted-foreground mb-2">Pilih Tema</p>
             <div className="flex items-center gap-2">
@@ -475,6 +570,7 @@ export default function CMenuDropdown({
             </div>
           </div>
 
+          {/* Font */}
           <div className="px-2 pb-2">
             <p className="text-[11px] text-muted-foreground mb-2">Pilih Font</p>
             <Select
@@ -493,6 +589,21 @@ export default function CMenuDropdown({
                     </span>
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Ukuran UI (baru) */}
+          <div className="px-2 pb-2">
+            <p className="text-[11px] text-muted-foreground mb-2">Ukuran UI</p>
+            <Select value={uiScale} onValueChange={handleQuickUiScale}>
+              <SelectTrigger className="w-full h-9">
+                <SelectValue placeholder="Pilih ukuran" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="normal">Normal</SelectItem>
+                <SelectItem value="large">Besar</SelectItem>
+                <SelectItem value="xl">Sangat Besar</SelectItem>
               </SelectContent>
             </Select>
           </div>

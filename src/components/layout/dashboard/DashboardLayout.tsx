@@ -102,36 +102,82 @@ function DashboardShell({
 }: DashboardLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { setOpenMobile } = useSidebar();
+  const { setOpenMobile, setOpen, isMobile } = useSidebar();
 
   // Tutup sheet sidebar di mobile setiap route berubah
   React.useEffect(() => {
     setOpenMobile(false);
   }, [location.pathname, setOpenMobile]);
 
-  /* ---- Scroll-aware header (hide on down, show on up) ---- */
+  // === Wide trigger: buka sidebar dari mana saja yang ditandai ===
+  const openSidebarWide = React.useCallback(() => {
+    if (isMobile) setOpenMobile(true);
+    else setOpen(true); // paksa expand di desktop
+  }, [isMobile, setOpenMobile, setOpen]);
+
+  // Akses keyboard utk elemen "role=button"
+  const keyActivate = React.useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        openSidebarWide();
+      }
+    },
+    [openSidebarWide]
+  );
+
+  /* ---- Scroll-aware header (show instantly on small upward scroll) ---- */
   const [hidden, setHidden] = React.useState(false);
   const [scrolled, setScrolled] = React.useState(false);
+
+  // posisi scroll terakhir
   const lastYRef = React.useRef<number>(0);
+  // titik terakhir saat header “ditampilkan”
+  const revealAtYRef = React.useRef<number>(0);
+  // rAF guard
   const tickingRef = React.useRef(false);
 
   React.useEffect(() => {
-    lastYRef.current = window.scrollY || 0;
+    // init
+    const y0 = Math.max(0, window.scrollY || 0);
+    lastYRef.current = y0;
+    revealAtYRef.current = y0;
+
+    const PIN_AT_TOP = 4; // di dekat top, header selalu tampil
+    const HIDE_AFTER_DOWN = 12; // pixel turun sebelum hide
+
     const onScroll = () => {
       const y = Math.max(0, window.scrollY || 0);
-      if (!tickingRef.current) {
-        requestAnimationFrame(() => {
-          const last = lastYRef.current;
-          const delta = y - last;
-          setScrolled(y > 8);
-          const THRESH = 6;
-          if (Math.abs(delta) > THRESH) setHidden(delta > 0 && y > 56);
-          lastYRef.current = y;
-          tickingRef.current = false;
-        });
-        tickingRef.current = true;
-      }
+      if (tickingRef.current) return;
+      tickingRef.current = true;
+
+      requestAnimationFrame(() => {
+        const last = lastYRef.current;
+        const delta = y - last;
+
+        // status blur/shadow
+        setScrolled(y > 8);
+
+        if (y <= PIN_AT_TOP) {
+          // dekat top → selalu terlihat
+          setHidden(false);
+          revealAtYRef.current = y;
+        } else if (delta < 0) {
+          // bergerak ke atas sedikit saja → tampilkan segera
+          setHidden(false);
+          revealAtYRef.current = y;
+        } else if (delta > 0) {
+          // bergerak ke bawah → sembunyikan setelah melewati ambang kecil
+          if (y - revealAtYRef.current > HIDE_AFTER_DOWN) {
+            setHidden(true);
+          }
+        }
+
+        lastYRef.current = y;
+        tickingRef.current = false;
+      });
     };
+
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
@@ -245,10 +291,15 @@ function DashboardShell({
                     <ArrowLeft className="w-5 h-5" />
                   </Button>
 
-                  {/* Title */}
+                  {/* Title → WIDE TRIGGER (mobile) */}
                   <div
-                    className="text-base font-semibold truncate max-w-[46vw]"
-                    title={hdr.title}
+                    role="button"
+                    tabIndex={0}
+                    onClick={openSidebarWide}
+                    onKeyDown={keyActivate}
+                    className="text-base font-semibold truncate max-w-[46vw] cursor-pointer select-none px-2 py-1 -mx-1 rounded-md hover:bg-muted/30 active:bg-muted/40"
+                    title={`${hdr.title} — ketuk untuk buka menu`}
+                    aria-label="Buka sidebar"
                   >
                     {mobileTitle}
                   </div>
@@ -279,8 +330,13 @@ function DashboardShell({
                   {/* ======= MOBILE TITLE (hanya bila bukan mode back) ======= */}
                   {!isBack && (
                     <div
-                      className="md:hidden text-base font-semibold truncate max-w-[60vw]"
-                      title={hdr.title}
+                      role="button"
+                      tabIndex={0}
+                      onClick={openSidebarWide}
+                      onKeyDown={keyActivate}
+                      className="md:hidden text-base font-semibold truncate max-w-[60vw] cursor-pointer select-none px-2 py-1 -mx-1 rounded-md hover:bg-muted/30 active:bg-muted/40"
+                      title={`${hdr.title} — ketuk untuk buka menu`}
+                      aria-label="Buka sidebar"
                     >
                       {mobileTitle}
                     </div>

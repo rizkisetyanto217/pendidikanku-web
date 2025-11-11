@@ -28,14 +28,20 @@ function pathOf(u: string): string {
     if (u.startsWith("http://") || u.startsWith("https://")) {
       return new URL(u).pathname || "/";
     }
-  } catch { }
+  } catch {}
   return u;
 }
-function stripApiPrefix(p: string): string {
+function stripApiPrefixOnce(p: string): string {
   return p.startsWith("/api/") ? p.slice(4) : p;
 }
+function stripApiPrefixAll(p: string): string {
+  // buang semua /api/ paling depan agar tak jadi /api/api/...
+  let out = p;
+  while (out.startsWith("/api/")) out = out.slice(4);
+  return out;
+}
 function normalizePath(u: string): string {
-  return stripApiPrefix(pathOf(u));
+  return stripApiPrefixOnce(pathOf(u));
 }
 function isAuthPath(p: string): boolean {
   return p.startsWith("/auth/");
@@ -149,7 +155,7 @@ export function setTokens(access: string) {
   accessToken = access;
   try {
     sessionStorage.setItem("access_token", access);
-  } catch { }
+  } catch {}
   (api.defaults.headers.common as any).Authorization = `Bearer ${access}`;
   console.debug("[auth] set access token");
   window.dispatchEvent(new CustomEvent("auth:authorized"));
@@ -164,16 +170,28 @@ export function getAccessToken() {
       (api.defaults.headers.common as any).Authorization = `Bearer ${s}`;
       return s;
     }
-  } catch { }
+  } catch {}
   return null;
 }
 export function clearTokens() {
   accessToken = null;
   try {
     sessionStorage.removeItem("access_token");
-  } catch { }
+  } catch {}
   delete (api.defaults.headers.common as any).Authorization;
   console.debug("[auth] cleared access token");
+}
+
+/* ==========================================
+   🚦 REFRESH GUARD (matikan auto refresh saat logout/login)
+========================================== */
+let allowRefresh =
+  typeof window !== "undefined"
+    ? !/\/login(?:\?|$)/.test(window.location.pathname)
+    : true;
+
+export function setAllowRefresh(v: boolean) {
+  allowRefresh = v;
 }
 
 /* ==========================================
@@ -266,6 +284,7 @@ let isRefreshing = false;
 let refreshPromise: Promise<string | null> | null = null;
 
 async function doRefresh(): Promise<string | null> {
+  if (!allowRefresh) return null; // ⬅️ guard
   if (isRefreshing && refreshPromise) return refreshPromise;
   isRefreshing = true;
 
@@ -340,6 +359,11 @@ async function doRefresh(): Promise<string | null> {
    🧩 REQUEST INTERCEPTOR
 ========================================== */
 api.interceptors.request.use(async (config) => {
+  // --- FIX double /api --- (kalau dev masih ada pemanggilan "/api/..."):
+  if (typeof config.url === "string" && config.url.startsWith("/api/")) {
+    config.url = stripApiPrefixAll(config.url);
+  }
+
   const path = normalizePath(String(config.url || ""));
   const method = (config.method || "get").toUpperCase();
 
@@ -397,8 +421,9 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const res = error.response;
     const cfg: any = error.config || {};
-    const path = normalizePath(String(cfg.url || ""));
-    const inAuth = isAuthPath(path);
+    const normalized =
+      typeof cfg.url === "string" ? stripApiPrefixOnce(pathOf(cfg.url)) : "";
+    const inAuth = isAuthPath(normalized);
     const alreadyRetried = cfg._retried === true;
 
     // 403 → kemungkinan CSRF kedaluwarsa → seed ulang dan retry sekali (non-auth)
@@ -417,7 +442,7 @@ api.interceptors.response.use(
     }
 
     // 401 → coba refresh AT sekali lalu retry (non-auth)
-    if (res?.status === 401 && !alreadyRetried && !inAuth) {
+    if (res?.status === 401 && !alreadyRetried && !inAuth && allowRefresh) {
       cfg._retried = true;
       const t = await doRefresh();
       if (t) {
@@ -436,12 +461,23 @@ api.interceptors.response.use(
 ========================================== */
 export async function apiLogout() {
   try {
+    // stop auto-refresh seketika
+    allowRefresh = false;
+
     const xsrf = csrfTokenMem || (await ensureCsrf()) || "";
-    await api.post(
+    // pakai apiNoAuth supaya gak tergantung Authorization
+    await apiNoAuth.post(
       "/auth/logout",
       {},
-      { headers: { "Content-Type": "application/json", "X-CSRF-Token": xsrf } }
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": xsrf,
+        },
+        withCredentials: true,
+      }
     );
+    console.log("✅ Logout server ok (refresh cookie seharusnya terhapus)");
   } catch (e) {
     console.warn("[logout] failed:", e);
   } finally {
@@ -462,6 +498,7 @@ export default api;
 ========================================== */
 export async function restoreSession(): Promise<boolean> {
   // jika sudah ada (termasuk hasil bootstrap sessionStorage), langsung true
+  if (!allowRefresh) return false;
   if (getAccessToken()) return true;
   const t0 = performance.now();
   const t = await doRefresh();
@@ -488,5 +525,5 @@ export async function restoreSession(): Promise<boolean> {
       // tidak trigger event "auth:authorized" di sini agar tidak memicu efek tak diinginkan
       console.debug("[auth] bootstrap access token from sessionStorage");
     }
-  } catch { }
+  } catch {}
 })();
