@@ -1,4 +1,3 @@
-// src/pages/sekolahislamku/teacher/TeacherSchedule.tsx
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -79,8 +78,8 @@ function seedMonth(y: number, m: number): ScheduleRow[] {
         type === "exam"
           ? `Ujian materi ${title.toLowerCase()} — persiapkan alat tulis.`
           : type === "event"
-            ? `Acara sekolah: ${title} — ${desc}`
-            : desc,
+          ? `Acara sekolah: ${title} — ${desc}`
+          : desc,
     });
   };
 
@@ -95,7 +94,7 @@ function seedMonth(y: number, m: number): ScheduleRow[] {
     [8, "11:00", "class"],
     [9, "09:30", "class"],
     [10, "13:15", "class"],
-    [12, "10:00", "class"],
+    [11, "10:00", "class"],
     [12, "14:00", "event"],
     [14, "08:00", "class"],
     [15, "07:30", "class"],
@@ -162,6 +161,9 @@ export default function TeacherSchedule() {
   const LOCAL_KEY = "teacherScheduleTab";
   const [tab, setTab] = useState<"calendar" | "list">("calendar");
   const [editing, setEditing] = useState<ScheduleRow | null>(null);
+
+  // 🔔 signal untuk memicu re-scroll di List
+  const [scrollToTodaySig, setScrollToTodaySig] = useState(0);
 
   useEffect(() => {
     const saved = (localStorage.getItem(LOCAL_KEY) || "") as
@@ -245,9 +247,12 @@ export default function TeacherSchedule() {
               size="sm"
               onClick={() => {
                 const now = new Date();
-                setMonth(toMonthStr(now)); // <-- tadinya toMonthSltr
+                // set ke bulan & tanggal hari ini
+                setMonth(toMonthStr(now));
                 setSelectedDay(dateKeyFrom(now));
-                setTab("calendar");
+                // ⛔ jangan paksa pindah tab — hormati tab aktif
+                // trigger re-scroll untuk List (kalau tab=List)
+                setScrollToTodaySig(Date.now());
               }}
               className="ml-1"
             >
@@ -291,6 +296,8 @@ export default function TeacherSchedule() {
               onDelete={(id) => deleteMut.mutate(id)}
               updating={updateMut.isPending || createMut.isPending}
               deleting={deleteMut.isPending}
+              // ⤵️ signal untuk memaksa auto-scroll saat klik "Hari ini"
+              scrollSignal={scrollToTodaySig}
             />
           </TabsContent>
         </Tabs>

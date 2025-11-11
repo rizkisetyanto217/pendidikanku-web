@@ -28,6 +28,7 @@ import TeacherClassAttendance from "@/pages/dashboard/teachers/csst/menus/attend
 import TeacherAssignment from "@/pages/dashboard/teachers/csst/menus/assignments/TeacherCSSTAssignment";
 import TeacherDetailAssignement from "@/pages/dashboard/teachers/csst/menus/assignments/TeacherCSSTDetailAssignment";
 import TeacherClassDetail from "@/pages/dashboard/teachers/classes/Details/TeacherClassDetail";
+import TeacherScheduleRoutine from "@/pages/dashboard/teachers/schedules/TeacherScheduleRoutine";
 
 export const TeacherRoutes = (
   <Route path="guru" element={<DashboardLayout />}>
@@ -95,5 +96,6 @@ export const TeacherRoutes = (
 
     {/* Jadwal */}
     <Route path="jadwal" element={<TeacherSchedule />} />
+    <Route path="jadwal-rutin" element={<TeacherScheduleRoutine />} />
   </Route>
 );

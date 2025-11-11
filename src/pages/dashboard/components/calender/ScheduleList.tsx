@@ -1,5 +1,4 @@
-// src/components/schedule/ScheduleList.tsx
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { MapPin, User, Search, Filter } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,16 +14,32 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { pad2, fmtFullDate } from "./types/types";
 import type { ScheduleRow } from "./types/types";
 
+// Konsisten dengan DataTable (pakai path punyamu)
+import { RowActions } from "@/components/costum/table/CRowAction";
+
 type Props = {
   data: ScheduleRow[];
   loading?: boolean;
   onAddNew?: () => void;
   onEdit?: (row: ScheduleRow) => void;
   onDelete?: (id: string) => void;
+  readOnly?: boolean;
   updating?: boolean;
   deleting?: boolean;
-  readOnly?: boolean; // <-- baru
+  /** dipakai untuk memaksa auto-scroll (mis. saat tombol "Hari ini" diklik dari parent) */
+  scrollSignal?: number;
 };
+
+/* =========================
+   Helpers (local)
+========================= */
+function todayKey(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = pad2(d.getMonth() + 1);
+  const dd = pad2(d.getDate());
+  return `${y}-${m}-${dd}`;
+}
 
 export default function ScheduleList({
   data,
@@ -32,15 +47,23 @@ export default function ScheduleList({
   onAddNew,
   onEdit,
   onDelete,
+  readOnly = false,
   updating = false,
   deleting = false,
-  readOnly = false,
+  scrollSignal,
 }: Props) {
   const [q, setQ] = useState("");
   const [typeFilter, setTypeFilter] = useState<
     "all" | "class" | "exam" | "event"
   >("all");
 
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const today = todayKey();
+  const isBusy = updating || deleting;
+
+  /* =========================
+     Derive lists
+  ========================= */
   const flatList = useMemo(
     () =>
       [...data].sort(
@@ -81,12 +104,36 @@ export default function ScheduleList({
     return { keys, group };
   }, [listFiltered]);
 
+  /* =========================
+     Auto scroll to today (or nearest next day)
+  ========================= */
+  useEffect(() => {
+    if (loading) return;
+    if (!listByDay.keys.length) return;
+
+    let target = listByDay.keys.find((k) => k === today);
+    if (!target)
+      target = listByDay.keys.find((k) => +new Date(k) >= +new Date(today));
+    if (!target) target = listByDay.keys[listByDay.keys.length - 1];
+
+    const el = scrollContainerRef.current?.querySelector<HTMLDivElement>(
+      `#day-${target}`
+    );
+    if (el) {
+      requestAnimationFrame(() => {
+        el.scrollIntoView({ block: "start", behavior: "smooth" });
+      });
+    }
+  }, [loading, listByDay.keys, today, scrollSignal]);
+
   return (
     <Card>
       <CardHeader className="pb-2">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <CardTitle className="text-base">Daftar Jadwal</CardTitle>
+
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            {/* Search */}
             <div className="relative">
               <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -96,6 +143,8 @@ export default function ScheduleList({
                 className="pl-8 w-64"
               />
             </div>
+
+            {/* Type filter */}
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-muted-foreground" />
               <Select
@@ -116,7 +165,7 @@ export default function ScheduleList({
               </Select>
             </div>
 
-            {/* tombol tambah disembunyikan jika readOnly */}
+            {/* Add new (hidden on readOnly) */}
             {!readOnly && onAddNew && (
               <Button size="sm" onClick={onAddNew}>
                 + <span className="ml-2 hidden sm:inline">Tambah</span>
@@ -134,105 +183,121 @@ export default function ScheduleList({
             <Skeleton className="h-10 w-full" />
           </div>
         ) : listByDay.keys.length ? (
-          <div>
-            {listByDay.keys.map((key) => (
-              <div key={key} className="border-t first:border-t-0">
-                <div className="px-4 py-2 bg-muted/50 text-xs font-medium">
-                  {fmtFullDate(key)}
-                </div>
-                <ul className="divide-y">
-                  {listByDay.group.get(key)!.map((s) => (
-                    <li
-                      key={s.id}
-                      className={`p-3 ${
-                        readOnly ? "" : "hover:bg-muted/50 cursor-pointer"
-                      }`}
-                      onClick={() =>
-                        !readOnly && onEdit ? onEdit(s) : undefined
-                      }
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="w-16 shrink-0 text-left">
-                          <div className="text-[11px]">{s.time}</div>
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="text-sm font-medium truncate">
-                            {s.title}
+          <div ref={scrollContainerRef} className="max-h-[70vh] overflow-auto">
+            {listByDay.keys.map((key) => {
+              const isToday = key === today;
+              return (
+                <div key={key} className="border-t first:border-t-0">
+                  <div
+                    id={`day-${key}`}
+                    className={[
+                      "px-4 py-2 text-xs font-medium flex items-center gap-2",
+                      isToday
+                        ? "bg-primary/10 text-primary ring-1 ring-primary/30"
+                        : "bg-muted/50",
+                    ].join(" ")}
+                  >
+                    {fmtFullDate(key)}
+                    {isToday && (
+                      <span className="ml-1 rounded-full px-2 py-0.5 text-[10px] bg-primary/15">
+                        Hari ini
+                      </span>
+                    )}
+                  </div>
+
+                  <ul className="divide-y">
+                    {listByDay.group.get(key)!.map((s) => (
+                      <li
+                        key={s.id}
+                        className={[
+                          "p-3 relative",
+                          isToday
+                            ? "before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-primary/70"
+                            : "",
+                          readOnly ? "" : "hover:bg-muted/50 cursor-pointer",
+                        ].join(" ")}
+                        onClick={() =>
+                          !readOnly && !isBusy && onEdit ? onEdit(s) : undefined
+                        }
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-16 shrink-0 text-left">
+                            <div className="text-[11px]">{s.time}</div>
                           </div>
-                          <div className="text-xs text-muted-foreground flex flex-wrap gap-3 mt-0.5">
-                            {s.room && (
+
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-medium truncate">
+                              {s.title}
+                            </div>
+
+                            <div className="text-xs text-muted-foreground flex flex-wrap gap-3 mt-0.5">
+                              {s.room && (
+                                <span className="inline-flex items-center gap-1">
+                                  <MapPin size={12} />
+                                  {s.room}
+                                </span>
+                              )}
+                              {s.teacher && (
+                                <span className="inline-flex items-center gap-1">
+                                  <User size={12} />
+                                  {s.teacher}
+                                </span>
+                              )}
                               <span className="inline-flex items-center gap-1">
-                                <MapPin size={12} />
-                                {s.room}
+                                <span
+                                  className={[
+                                    "h-2 w-2 rounded-full",
+                                    s.type === "exam"
+                                      ? "bg-red-500"
+                                      : s.type === "event"
+                                      ? "bg-green-500"
+                                      : "bg-primary",
+                                  ].join(" ")}
+                                />
+                                {s.type ?? "class"}
                               </span>
+                            </div>
+
+                            {s.description && (
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                {s.description}
+                              </p>
                             )}
-                            {s.teacher && (
-                              <span className="inline-flex items-center gap-1">
-                                <User size={12} />
-                                {s.teacher}
-                              </span>
-                            )}
-                            <span className="inline-flex items-center gap-1">
-                              <span
-                                className={`h-2 w-2 rounded-full ${
-                                  s.type === "exam"
-                                    ? "bg-red-500"
-                                    : s.type === "event"
-                                    ? "bg-green-500"
-                                    : "bg-primary"
-                                }`}
-                              />
-                              {s.type ?? "class"}
-                            </span>
                           </div>
-                          {s.description && (
-                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                              {s.description}
-                            </p>
+
+                          {/* Row actions – inline only, guard saat busy */}
+                          {!readOnly && (onEdit || onDelete) && (
+                            <RowActions<ScheduleRow>
+                              mode="inline"
+                              size="sm"
+                              row={s}
+                              suppressView
+                              onEdit={
+                                onEdit
+                                  ? (row) => {
+                                      if (isBusy) return;
+                                      onEdit(row);
+                                    }
+                                  : undefined
+                              }
+                              onDelete={
+                                onDelete
+                                  ? (row) => {
+                                      if (isBusy) return;
+                                      onDelete(row.id);
+                                    }
+                                  : undefined
+                              }
+                              labels={{ edit: "Edit", delete: "Hapus" }}
+                            />
                           )}
                         </div>
-
-                        {/* actions disembunyikan saat readOnly */}
-                        {!readOnly && (
-                          <>
-                            {onEdit && (
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-7 w-7"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onEdit(s);
-                                }}
-                                title="Edit"
-                                disabled={updating}
-                              >
-                                ✎
-                              </Button>
-                            )}
-                            {onDelete && (
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-7 w-7 text-destructive"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onDelete(s.id);
-                                }}
-                                title="Hapus"
-                                disabled={deleting}
-                              >
-                                🗑
-                              </Button>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div className="p-4 text-sm text-muted-foreground">
@@ -243,3 +308,4 @@ export default function ScheduleList({
     </Card>
   );
 }
+3
