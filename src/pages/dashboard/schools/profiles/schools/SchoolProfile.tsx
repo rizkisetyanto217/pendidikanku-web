@@ -1,5 +1,5 @@
-// src/pages/sekolahislamku/school/SchoolProfile.shadcn.tsx
-import React, { useMemo, useState } from "react";
+// src/pages/dasboard/schools/SchoolProfile.shadcn.tsx
+import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "@/lib/axios";
@@ -45,6 +45,9 @@ import type {
   SchoolUi,
 } from "./types/schoolProfile";
 import { adaptToUi, adaptFromUi } from "./types/schoolProfile";
+
+/* Breadcrumb header */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* =================== Helpers =================== */
 type ApiList<T> = { message: string; data: T[]; pagination?: any };
@@ -103,6 +106,19 @@ const SchoolProfile: React.FC<Props> = ({ showBack = false, backTo }) => {
   const navigate = useNavigate();
   const { schoolId } = useParams<{ schoolId: string }>();
   const q = useQueryClient();
+
+  /* Set breadcrumb */
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Profil Sekolah",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Sekolah" },
+        { label: "Profil Sekolah" },
+      ],
+    });
+  }, [setHeader]);
 
   // Queries
   const qSchool = useQuery({

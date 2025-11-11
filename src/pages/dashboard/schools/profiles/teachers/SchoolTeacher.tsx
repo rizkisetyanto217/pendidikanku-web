@@ -16,6 +16,10 @@ import {
   Loader2,
 } from "lucide-react";
 
+/* Tambahan untuk breadcrumb sistem dashboard */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+
+
 /* shadcn/ui */
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -196,6 +200,21 @@ const SchoolTeacher: React.FC = () => {
 
   const [openAdd, setOpenAdd] = useState(false);
   const [openImport, setOpenImport] = useState(false);
+
+  /* Atur breadcrumb dan title seperti SchoolAcademic */
+  const { setHeader } = useDashboardHeader();
+
+  useEffect(() => {
+    setHeader({
+      title: "Profil Guru",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Profil" },
+        { label: "Profil Guru" },
+      ],
+      actions: null,
+    });
+  }, [setHeader]);
 
   // 🔎 Search sinkron ke ?q=
   const search = useSearchQueryParam("q");

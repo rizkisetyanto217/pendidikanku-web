@@ -1,9 +1,15 @@
-// src/pages/pendidikanku-dashboard/dashboard-school/finance/SchoolFinance.tsx
-import React, { useMemo, useState } from "react";
+// src/pages/dashboard/schools/finance/SchoolFinance.tsx
+import React, { useMemo, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
-import { Wallet, Download, CheckCircle2, Info, ArrowLeft } from "lucide-react";
+import {
+  Wallet,
+  Download,
+  CheckCircle2,
+  Info,
+  ArrowLeft,
+} from "lucide-react";
 
 /* ==== shadcn/ui ==== */
 import { Button } from "@/components/ui/button";
@@ -26,6 +32,9 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+
+/* ✅ Import untuk breadcrumb header */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* ===================== Types & Dummy Data ===================== */
 type InvoiceStatus = "unpaid" | "paid" | "overdue";
@@ -117,6 +126,19 @@ const dateFmt = (iso: string) =>
 const SchoolFinance: React.FC = () => {
   const navigate = useNavigate();
 
+  /* ✅ Tambah breadcrumb seperti SchoolAcademic */
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Keuangan Sekolah",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Keuangan" },
+        { label: "Keuangan" },
+      ],
+    });
+  }, [setHeader]);
+
   const [tab, setTab] = useState<"invoices" | "payments">("invoices");
 
   const invoicesQ = useQuery({
@@ -154,7 +176,7 @@ const SchoolFinance: React.FC = () => {
     );
   }, [q, payments]);
 
-  /* ==== Pagination (offset/limit sederhana) ==== */
+  /* ==== Pagination ==== */
   const [limit, setLimit] = useState(10);
   const [page, setPage] = useState(1);
 
@@ -169,7 +191,7 @@ const SchoolFinance: React.FC = () => {
   const pageInvoices = filteredInvoices.slice(start, end);
   const pagePayments = filteredPayments.slice(start, end);
 
-  /* ==== Summary (dummy) ==== */
+  /* ==== Summary ==== */
   const summary = {
     totalBilled: idr(1500000),
     collected: idr(1000000),
@@ -184,9 +206,9 @@ const SchoolFinance: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden">
+    <div className="min-h-screen w-full overflow-x-hidden bg-background text-foreground">
       {/* ===== Header ===== */}
-      <div className=" pb-4 ">
+      <div className="pb-4">
         <div className="flex flex-wrap items-center gap-2">
           <div className="hidden md:flex items-center gap-2 font-semibold">
             <Button
@@ -327,7 +349,7 @@ const SchoolFinance: React.FC = () => {
 
                     {/* Desktop table */}
                     <div className="hidden md:block">
-                      <Table>
+                      <Table className="w-full text-center [&_th]:text-center [&_td]:text-center">
                         <TableHeader>
                           <TableRow>
                             <TableHead>Tagihan</TableHead>
@@ -404,7 +426,7 @@ const SchoolFinance: React.FC = () => {
 
                     {/* Desktop table */}
                     <div className="hidden md:block">
-                      <Table>
+                      <Table className="w-full text-center [&_th]:text-center [&_td]:text-center">
                         <TableHeader>
                           <TableRow>
                             <TableHead>Tanggal</TableHead>

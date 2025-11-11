@@ -49,11 +49,14 @@ export const SchoolRoutes = (
     <Route path="menu-utama">
       <Route index element={<SchoolMenuGrids />} />
 
-      {/* Profil & Keuangan */}
-      <Route path="profil-sekolah" element={<SchoolProfile showBack />} />
-      <Route path="keuangan" element={<SchoolFinance />} />
-      <Route path="keuangan/detail/:id" element={<SchoolDetailBill />} />
-      <Route path="spp" element={<SchoolSpp />} />
+      {/* === Profil Sekolah === */}
+      <Route path="profil">
+        <Route path="profil-sekolah" element={<SchoolProfile showBack />} />
+        <Route path="guru">
+          <Route index element={<SchoolTeacher />} />
+          <Route path=":id" element={<SchoolDetailTeacher />} />
+        </Route>
+      </Route>
 
       {/* Guru */}
       <Route path="guru" element={<SchoolTeacher />} />
@@ -93,7 +96,9 @@ export const SchoolRoutes = (
     <Route path="akademik">
       <Route path="tahun-akademik" element={<SchoolAcademic />} />
       <Route path="tahun-akademik/detail/:id" element={<SchoolDetailAcademic />} />
-
+      <Route path="ruangan" element={<SchoolAcademic />} />
+      <Route path="buku" element={<SchoolAcademic />} />
+      <Route path="mata-pelajaran" element={<SchoolAcademic />} />
     </Route>
 
     <Route path="kelas">

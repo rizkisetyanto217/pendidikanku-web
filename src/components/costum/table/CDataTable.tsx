@@ -534,7 +534,7 @@ export function CDataTable<T>(props: DataTableProps<T>) {
                 className="block w-full align-top"
                 style={scrollX ? { minWidth: tableMinW } : undefined}
               >
-                <Table className="w-full table-fixed">
+                <Table className="w-full table-fixed text-center align-middle">
                   <TableHeader
                     className={cn(
                       stickyHeader &&
@@ -749,16 +749,33 @@ function PaginationFooter(props: {
 /* =========================
    Utils
 ========================= */
+/* =========================
+   Utils (PERBAIKAN ALIGN)
+========================= */
 function alignToHeader(a: Align = "center") {
-  if (a === "center") return "text-center";
-  if (a === "right") return "text-right";
-  return "text-left";
+  // Semua header default di tengah
+  switch (a) {
+    case "left":
+      return "text-left";
+    case "right":
+      return "text-right";
+    default:
+      return "text-center";
+  }
 }
+
 function alignToCell(a: Align = "center") {
-  if (a === "center") return "text-center";
-  if (a === "right") return "text-right";
-  return "text-left";
+  // Semua sel isi default di tengah
+  switch (a) {
+    case "left":
+      return "text-left";
+    case "right":
+      return "text-right";
+    default:
+      return "text-center";
+  }
 }
+
 function safeLSGet(key: string): string | null {
   try {
     if (typeof window === "undefined") return null;

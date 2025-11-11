@@ -12,6 +12,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
+/* ✅ Breadcrumb header */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+
 // ✅ default import untuk default export
 import CalendarView from "@/pages/dashboard/components/calender/CalenderView";
 import ScheduleList from "@/pages/dashboard/components/calender/ScheduleList";
@@ -154,6 +157,19 @@ const scheduleApi = {
 export default function AdminSchoolSchedule() {
   const navigate = useNavigate();
   const qc = useQueryClient();
+
+  /* ✅ Tambah breadcrumb seperti SchoolAcademic */
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Jadwal Sekolah",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Jadwal" },
+        { label: "Jadwal Sekolah" },
+      ],
+    });
+  }, [setHeader]);
 
   const [month, setMonth] = useState(toMonthStr());
   const [selectedDay, setSelectedDay] = useState<string | null>(() =>

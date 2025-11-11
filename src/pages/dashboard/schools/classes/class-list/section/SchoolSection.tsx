@@ -1,4 +1,5 @@
-// src/pages/pendidikanku-dashboard/dashboard-school/class/detail/SchoolManageClass.tsx
+// src/pages/dashboard/school/classes/class-list/section/SchoolSection.tsx
+import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "@/lib/axios";
@@ -16,15 +17,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
-/* ========= Types dipertahankan (dipotong di sini) ========= */
+/* ✅ Import untuk breadcrumb header */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+
+/* ========= Types dipertahankan ========= */
 type DeliveryMode = "offline" | "online" | "hybrid";
-type EnrollmentMode = "self_select" | "assigned" | "invitation" | "mixed";
+
 type ApiSchedule = {
   start?: string;
   end?: string;
   days?: string[];
   location?: string;
 };
+
 type ApiRoomSnapshot = {
   code?: string | null;
   name?: string | null;
@@ -33,6 +38,7 @@ type ApiRoomSnapshot = {
   location?: string | null;
   is_virtual?: boolean | null;
 };
+
 type ApiTeacherSnapshot = {
   id?: string | null;
   name?: string | null;
@@ -41,6 +47,7 @@ type ApiTeacherSnapshot = {
   title_suffix?: string | null;
   whatsapp_url?: string | null;
 };
+
 type ApiBookSnapshot = {
   id?: string | null;
   slug?: string | null;
@@ -48,6 +55,7 @@ type ApiBookSnapshot = {
   author?: string | null;
   image_url?: string | null;
 };
+
 type ApiSubjectSnapshot = {
   id?: string | null;
   url?: string | null;
@@ -69,35 +77,20 @@ type ApiCSSTItem = {
   class_section_subject_teacher_enrolled_count?: number;
   class_section_subject_teacher_delivery_mode?: DeliveryMode;
   class_section_subject_teacher_room_snapshot?: ApiRoomSnapshot | null;
-  class_section_subject_teacher_room_name_snap?: string | null;
-  class_section_subject_teacher_room_slug_snap?: string | null;
-  class_section_subject_teacher_room_location_snap?: string | null;
   class_section_subject_teacher_teacher_snapshot?: ApiTeacherSnapshot | null;
-  class_section_subject_teacher_teacher_name_snap?: string | null;
   class_section_subject_teacher_class_subject_book_snapshot?: {
     book?: ApiBookSnapshot | null;
     subject?: ApiSubjectSnapshot | null;
   } | null;
-  class_section_subject_teacher_book_title_snap?: string | null;
-  class_section_subject_teacher_book_author_snap?: string | null;
-  class_section_subject_teacher_book_slug_snap?: string | null;
-  class_section_subject_teacher_book_image_url_snap?: string | null;
-  class_section_subject_teacher_subject_name_snap?: string | null;
-  class_section_subject_teacher_subject_code_snap?: string | null;
-  class_section_subject_teacher_subject_slug_snap?: string | null;
   class_section_subject_teacher_is_active?: boolean;
   class_section_subject_teacher_created_at?: string;
   class_section_subject_teacher_updated_at?: string;
-  class_section_subject_teacher_deleted_at?: string | null;
 };
 
 type ApiClassSection = {
   class_section_id: string;
   class_section_school_id: string;
   class_section_class_id: string;
-  class_section_teacher_id?: string | null;
-  class_section_class_room_id?: string | null;
-  class_section_slug: string;
   class_section_name: string;
   class_section_code?: string | null;
   class_section_schedule?: ApiSchedule | null;
@@ -105,26 +98,14 @@ type ApiClassSection = {
   class_section_total_students?: number | null;
   class_section_group_url?: string | null;
   class_section_is_active: boolean;
-  class_section_created_at: string;
-  class_section_updated_at: string;
-  class_section_class_slug_snap?: string | null;
   class_section_parent_name_snap?: string | null;
-  class_section_parent_code_snap?: string | null;
   class_section_parent_slug_snap?: string | null;
-  class_section_parent_level_snap?: string | null;
   class_section_room_name_snap?: string | null;
-  class_section_room_slug_snap?: string | null;
   class_section_room_location_snap?: string | null;
   class_section_term_name_snap?: string | null;
-  class_section_term_slug_snap?: string | null;
   class_section_term_year_label_snap?: string | null;
-  class_section_snapshot_updated_at?: string | null;
   class_section_room_snapshot?: ApiRoomSnapshot | null;
   class_sections_csst?: ApiCSSTItem[] | [];
-  class_sections_csst_count?: number;
-  class_sections_csst_active_count?: number;
-  class_section_csst_enrollment_mode?: EnrollmentMode;
-  class_section_csst_self_select_requires_approval?: boolean;
 };
 
 type ApiIncludes = {
@@ -149,21 +130,20 @@ const scheduleToText = (sch?: ApiSchedule | null): string => {
   return left ? `${left}${loc}` : "-";
 };
 
-/* ========= Query: ambil SEMUA sections (opsional filter classId) ========= */
+/* ========= Query: ambil SEMUA sections ========= */
 function useSectionsWithCSST(schoolId: string, classId?: string) {
   return useQuery({
     queryKey: ["sections-manage-all", schoolId, classId ?? null],
     enabled: !!schoolId,
     queryFn: async () => {
       const params: Record<string, any> = { with_csst: true };
-      if (classId) params.class_id = classId; // ← filter per "kelas middle" (opsional)
+      if (classId) params.class_id = classId;
       const res = await axios.get<ApiSectionListWithIncludes>(
         `/public/${schoolId}/class-sections/list`,
         { params }
       );
       const list = res.data?.data ?? [];
       const bySec = res.data?.includes?.csst_by_section ?? {};
-      // satukan csst ke tiap section
       const rows = list.map((s) => ({
         ...s,
         class_sections_csst:
@@ -182,12 +162,25 @@ function useSectionsWithCSST(schoolId: string, classId?: string) {
    PAGE: Manage – tampilkan SEMUA section + CSST per section
 ========================================================= */
 export default function SchoolSection() {
-  // Sesuaikan: kalau rute kamu bawa :classId, kita pakai. Kalau tidak, biarkan undefined agar ambil semua section sekolah.
   const { schoolId = "", classId } = useParams<{
     schoolId: string;
     classId?: string;
   }>();
   const navigate = useNavigate();
+
+  /* ✅ Tambah breadcrumb seperti SchoolAcademic */
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Kelola Kelas",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Kelas" },
+        { label: "Kelola Kelas" },
+      ],
+      actions: null,
+    });
+  }, [setHeader]);
 
   const { data: sections = [], isLoading } = useSectionsWithCSST(
     schoolId,
@@ -196,7 +189,7 @@ export default function SchoolSection() {
 
   return (
     <div className="min-h-screen w-full bg-background text-foreground">
-      <main className=" mx-auto space-y-6">
+      <main className="mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -360,17 +353,13 @@ export default function SchoolSection() {
                                 {teacher
                                   ? `${teacher.title_prefix ?? ""} ${teacher.name ?? ""
                                     } ${teacher.title_suffix ?? ""}`.trim()
-                                  : row.class_section_subject_teacher_teacher_name_snap ??
-                                  "-"}
+                                  : "-"}
                               </span>
                             </div>
                             <div className="flex items-center gap-1">
                               <MapPin size={14} />
                               <span>
-                                Ruang:{" "}
-                                {room?.name ??
-                                  row.class_section_subject_teacher_room_name_snap ??
-                                  "-"}
+                                Ruang: {room?.name ?? "-"}
                               </span>
                             </div>
                             <div className="flex items-center gap-1">

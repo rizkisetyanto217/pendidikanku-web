@@ -1,8 +1,8 @@
 // src/pages/pmb/PmbPeriodPage.demo.tsx
-"use client";
-
 import * as React from "react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+/* ✅ Breadcrumb header */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* shadcn/ui */
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -252,6 +252,20 @@ function ActionsMenu({
  * SECTION: Periode Pendaftaran — Single Page (tanpa Tabs)
  * ===================================================================== */
 export default function SchoolRegistrationsPeriod() {
+
+  /* ✅ Tambah breadcrumb seperti SchoolAcademic */
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "PMB — Periode Pendaftaran",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Pendaftaran" },
+        { label: "Periode Pendaftaran" },
+      ],
+    });
+  }, [setHeader]);
+
   // default: periode aktif
   const [termId, setTermId] = useState<string>(
     TERMS.find((t) => t.academic_term_is_active)?.academic_term_id ||

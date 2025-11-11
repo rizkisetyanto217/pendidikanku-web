@@ -1,4 +1,4 @@
-import { useMemo, useState, useDeferredValue } from "react";
+import { useMemo, useState, useDeferredValue, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
@@ -22,25 +22,28 @@ import {
   Search,
 } from "lucide-react";
 
+/* Tambahan untuk breadcrumb sistem dashboard */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+
 /* ==========================================================
-   Types — dipetakan dari TABLE class_sections (yang penting saja)
+   Types
 ========================================================== */
 export type SectionRow = {
-  id: string; // class_section_id
-  schoolId: string; // class_section_school_id
-  name: string; // class_section_name
-  slug?: string; // class_section_slug
-  code?: string; // class_section_code
-  roomName?: string; // *_room_name_snap
-  roomLocation?: string; // *_room_location_snap
-  homeroomName?: string; // *_teacher_name_snap
-  assistantName?: string; // *_assistant_teacher_name_snap
-  termName?: string; // *_term_name_snap
-  termYearLabel?: string; // *_term_year_label_snap
-  scheduleText?: string; // class_section_schedule (TEXT)
-  totalStudents: number; // class_section_total_students
-  isActive: boolean; // class_section_is_active
-  createdAt?: string; // class_section_created_at
+  id: string;
+  schoolId: string;
+  name: string;
+  slug?: string;
+  code?: string;
+  roomName?: string;
+  roomLocation?: string;
+  homeroomName?: string;
+  assistantName?: string;
+  termName?: string;
+  termYearLabel?: string;
+  scheduleText?: string;
+  totalStudents: number;
+  isActive: boolean;
+  createdAt?: string;
 };
 
 /* ==========================================================
@@ -97,10 +100,9 @@ const DUMMY_SECTIONS: SectionRow[] = [
 ];
 
 /* ==========================================================
-   Fetch hooks (dummy)
+   Fetch (Dummy)
 ========================================================== */
 async function fetchSections(): Promise<SectionRow[]> {
-  // nanti ganti ke call API: GET /teacher/class-sections?role=...
   await new Promise((r) => setTimeout(r, 250));
   return DUMMY_SECTIONS.map((x) => ({ ...x }));
 }
@@ -124,7 +126,6 @@ function useFilters(rows: SectionRow[]) {
   const [active, setActive] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"name" | "students" | "created">("name");
 
-  // ✅ pastikan jadi string[]
   const terms = useMemo<string[]>(
     () => [
       "all",
@@ -155,7 +156,26 @@ function useFilters(rows: SectionRow[]) {
 
   const filtered = useMemo(() => {
     let list = rows;
-    // ... (kode filter lain tetap)
+
+    if (dq) {
+      const qLower = dq.toLowerCase();
+      list = list.filter(
+        (r) =>
+          r.name.toLowerCase().includes(qLower) ||
+          (r.homeroomName ?? "").toLowerCase().includes(qLower) ||
+          (r.roomName ?? "").toLowerCase().includes(qLower)
+      );
+    }
+
+    if (term !== "all") list = list.filter((r) => r.termName === term);
+    if (room !== "all") list = list.filter((r) => r.roomName === room);
+    if (active === "active") list = list.filter((r) => r.isActive);
+    if (active === "inactive") list = list.filter((r) => !r.isActive);
+
+    if (sortBy === "name") list = [...list].sort((a, b) => a.name.localeCompare(b.name));
+    if (sortBy === "students") list = [...list].sort((a, b) => b.totalStudents - a.totalStudents);
+    if (sortBy === "created") list = [...list].reverse();
+
     return list;
   }, [rows, dq, term, room, active, sortBy]);
 
@@ -177,7 +197,7 @@ function useFilters(rows: SectionRow[]) {
 }
 
 /* ==========================================================
-   Card
+   Section Card
 ========================================================== */
 function SectionCard({ s }: { s: SectionRow }) {
   return (
@@ -235,25 +255,37 @@ function SectionCard({ s }: { s: SectionRow }) {
 }
 
 /* ==========================================================
-   Main
+   Main Page
 ========================================================== */
 export default function TeacherClassFromSections() {
   const navigate = useNavigate();
   const { data: sections = [], isLoading } = useSections();
-
   const f = useFilters(sections);
+
+  /* Atur breadcrumb dan title seperti SchoolAcademic */
+  const { setHeader } = useDashboardHeader();
+
+  useEffect(() => {
+    setHeader({
+      title: "Kelas yang Saya Ajar",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Wali Kelas" },
+        { label: "Kelas yang Saya Ajar" },
+      ],
+      actions: null,
+    });
+  }, [setHeader]);
 
   return (
     <div className="w-full bg-background text-foreground py-6">
       <main className="mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <h1 className="text-xl font-semibold">Kelas yang Saya Ajar</h1>
-          </div>
+        {/* Header Section */}
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-xl font-semibold">Kelas yang Saya Ajar</h1>
         </div>
 
         {/* Filters */}
@@ -322,7 +354,7 @@ export default function TeacherClassFromSections() {
           </div>
         </Card>
 
-        {/* Grid — mobile 2, md 3, PC 4 */}
+        {/* Grid */}
         <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
           {isLoading ? (
             Array.from({ length: 4 }).map((_, i) => (

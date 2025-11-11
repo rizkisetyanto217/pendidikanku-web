@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -9,6 +9,9 @@ import {
   XCircle,
 } from "lucide-react";
 
+/* Tambahan untuk breadcrumb sistem dashboard */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -18,6 +21,7 @@ import {
   CardTitle,
   CardFooter,
 } from "@/components/ui/card";
+
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -28,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -69,6 +74,21 @@ const DUMMY: Record<string, Quiz> = {
 const TeacherDetailClassQuiz: React.FC = () => {
   const { id } = useParams<{ id: string }>(); // /:slug/guru/quizClass/:id
   const navigate = useNavigate();
+
+  /* Atur breadcrumb dan title seperti SchoolAcademic */
+  const { setHeader } = useDashboardHeader();
+
+  useEffect(() => {
+    setHeader({
+      title: "Quiz Aljabar Dasar",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "quizClass" },
+        { label: "Quiz Aljabar Dasar" },
+      ],
+      actions: null,
+    });
+  }, [setHeader]);
 
   const [quiz, setQuiz] = useState<Quiz>(
     () => DUMMY[id ?? "qz-1"] ?? DUMMY["qz-1"]

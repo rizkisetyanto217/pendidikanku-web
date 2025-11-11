@@ -10,6 +10,10 @@ import {
   Calendar,
 } from "lucide-react";
 
+/* Tambahan untuk breadcrumb sistem dashboard */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+
+
 // shadcn/ui
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -62,6 +66,21 @@ export default function TeacherProfil() {
         .substring(0, 2)
         .toUpperCase()
       : "U";
+
+  /* Atur breadcrumb dan title seperti SchoolAcademic */
+  const { setHeader } = useDashboardHeader();
+
+  useEffect(() => {
+    setHeader({
+      title: "Profil Guru",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Profil" },
+        { label: "Profil Guru" },
+      ],
+      actions: null,
+    });
+  }, [setHeader]);
 
   /* ================= FETCH DATA ================= */
   const fetchTeacherData = async () => {

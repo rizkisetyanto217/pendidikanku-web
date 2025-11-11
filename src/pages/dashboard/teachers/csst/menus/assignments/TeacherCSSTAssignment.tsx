@@ -1,5 +1,5 @@
 // src/pages/sekolahislamku/teacher/TeacherGrading.tsx
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import {
@@ -32,6 +32,9 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
+
+/* Tambahan untuk breadcrumb sistem dashboard */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 import CTeacherModalExportResult from "./components/CTeacherModalExportResult";
 import CTeacherModalGrading from "./components/CTeacherModalGrading";
@@ -284,6 +287,21 @@ export default function TeacherCSSTAssignment() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [submissionSearchQ, setSubmissionSearchQ] = useState("");
   const [mobileTab, setMobileTab] = useState<"list" | "detail">("list");
+
+  /* Atur breadcrumb dan title seperti SchoolAcademic */
+  const { setHeader } = useDashboardHeader();
+
+  useEffect(() => {
+    setHeader({
+      title: "Daftar Tugas",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Tugas" },
+        { label: "Daftar Tugas" },
+      ],
+      actions: null,
+    });
+  }, [setHeader]);
 
   // modal grading
   const [gradingOpen, setGradingOpen] = useState(false);
@@ -562,8 +580,8 @@ export default function TeacherCSSTAssignment() {
                               setMobileTab("detail");
                             }}
                             className={`w-full text-left rounded-xl border p-3 md:p-4 transition-all hover:shadow-sm ${active
-                                ? "border-primary bg-primary/10"
-                                : "border-border bg-card"
+                              ? "border-primary bg-primary/10"
+                              : "border-border bg-card"
                               }`}
                           >
                             <div className="flex items-start justify-between gap-3">
@@ -580,8 +598,8 @@ export default function TeacherCSSTAssignment() {
                                   </Badge>
                                   <span
                                     className={`text-[11px] md:text-xs flex items-center gap-1 ${isOverdue
-                                        ? "text-red-500"
-                                        : "text-muted-foreground"
+                                      ? "text-red-500"
+                                      : "text-muted-foreground"
                                       }`}
                                   >
                                     <CalendarDays className="h-3 w-3" />
@@ -592,8 +610,8 @@ export default function TeacherCSSTAssignment() {
                               <div className="text-right shrink-0">
                                 <div
                                   className={`text-sm md:text-lg font-bold ${donePct === 100
-                                      ? "text-green-600"
-                                      : "text-primary"
+                                    ? "text-green-600"
+                                    : "text-primary"
                                     }`}
                                 >
                                   {donePct}%

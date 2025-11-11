@@ -1,8 +1,8 @@
-// src/pages/pmb/PmbStudentListPage.demo.tsx  (atau sesuaikan path yang kamu pakai)
-"use client";
-
 import * as React from "react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+
+/* ✅ Breadcrumb header */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* shadcn/ui */
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -52,7 +52,7 @@ const dateShort = (iso?: string | null) =>
     })
     : "-";
 
-/* ===== Dummy shared (pakai yang sama dengan Period) ===== */
+/* ===== Dummy shared ===== */
 type AcademicTerm = {
   academic_term_id: string;
   academic_term_academic_year: string;
@@ -232,6 +232,19 @@ function AddStudentDialog() {
 
 /* ===== Komponen Halaman ===== */
 export default function SchoolRegistrationsListStudent() {
+  /* ✅ Tambah breadcrumb seperti SchoolAcademic */
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "PMB — Daftar Pendaftar",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Pendaftaran" },
+        { label: "Daftar Pendaftar" },
+      ],
+    });
+  }, [setHeader]);
+
   const [termId, setTermId] = useState<string>(
     TERMS.find((t) => t.academic_term_is_active)?.academic_term_id ||
     TERMS[0].academic_term_id
@@ -243,10 +256,8 @@ export default function SchoolRegistrationsListStudent() {
     [termId]
   );
 
-  // Filter pendaftar (di world nyata: pakai query param termId)
   const rows = useMemo(() => STUDENTS, []);
 
-  // Stats (dummy)
   const statsSlot = (
     <div className="grid gap-3 md:grid-cols-3">
       <InfoItem label="Total Pendaftar" value={<b>{rows.length}</b>} />
@@ -261,41 +272,19 @@ export default function SchoolRegistrationsListStudent() {
     </div>
   );
 
-  // Kolom tabel
   const cols: ColumnDef<StudentReg>[] = [
-    {
-      id: "reg_no",
-      header: "No. Reg",
-      minW: "120px",
-      align: "left",
-      cell: (r) => r.reg_no,
-    },
-    {
-      id: "name",
-      header: "Nama",
-      minW: "200px",
-      align: "left",
-      cell: (r) => r.name,
-    },
+    { id: "reg_no", header: "No. Reg", minW: "120px", align: "left", cell: (r) => r.reg_no },
+    { id: "name", header: "Nama", minW: "200px", align: "left", cell: (r) => r.name },
     {
       id: "class_id",
       header: "Kelas",
       minW: "160px",
       cell: (r) => {
         const c = CLASSES.find((x) => x.class_id === r.class_id || "");
-        return c ? (
-          c.class_name
-        ) : (
-          <span className="text-muted-foreground">(Belum memilih)</span>
-        );
+        return c ? c.class_name : <span className="text-muted-foreground">(Belum memilih)</span>;
       },
     },
-    {
-      id: "submitted_at",
-      header: "Didaftarkan",
-      minW: "160px",
-      cell: (r) => dateShort(r.submitted_at),
-    },
+    { id: "submitted_at", header: "Didaftarkan", minW: "160px", cell: (r) => dateShort(r.submitted_at) },
     {
       id: "status",
       header: "Status",
@@ -341,9 +330,7 @@ export default function SchoolRegistrationsListStudent() {
       {/* Picker Periode */}
       <Card className="mb-4">
         <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <CardTitle className="text-base md:text-lg">
-            Periode Akademik
-          </CardTitle>
+          <CardTitle className="text-base md:text-lg">Periode Akademik</CardTitle>
           <div className="w-full min-w-[220px] md:w-72">
             <Select value={termId} onValueChange={setTermId}>
               <SelectTrigger className="w-full">
@@ -351,10 +338,7 @@ export default function SchoolRegistrationsListStudent() {
               </SelectTrigger>
               <SelectContent>
                 {TERMS.map((t) => (
-                  <SelectItem
-                    key={t.academic_term_id}
-                    value={t.academic_term_id}
-                  >
+                  <SelectItem key={t.academic_term_id} value={t.academic_term_id}>
                     {t.academic_term_academic_year} — {t.academic_term_name}
                   </SelectItem>
                 ))}
@@ -363,41 +347,21 @@ export default function SchoolRegistrationsListStudent() {
           </div>
         </CardHeader>
         <CardContent className="grid gap-2 md:grid-cols-3">
-          <InfoItem
-            label="Tgl Mulai"
-            value={dateShort(term.academic_term_start_date)}
-          />
-          <InfoItem
-            label="Tgl Selesai"
-            value={dateShort(term.academic_term_end_date)}
-          />
+          <InfoItem label="Tgl Mulai" value={dateShort(term.academic_term_start_date)} />
+          <InfoItem label="Tgl Selesai" value={dateShort(term.academic_term_end_date)} />
           <InfoItem
             label="Status"
-            value={
-              <Badge>
-                {term.academic_term_is_active ? "Aktif" : "Nonaktif"}
-              </Badge>
-            }
+            value={<Badge>{term.academic_term_is_active ? "Aktif" : "Nonaktif"}</Badge>}
           />
         </CardContent>
       </Card>
 
-      {/* Tabel pendaftar (format sama kayak Period) */}
+      {/* Tabel pendaftar */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-base md:text-lg">
-            Murid Terdaftar
-          </CardTitle>
-
-          {/* Pindahan tombol Export ke sini */}
+          <CardTitle className="text-base md:text-lg">Murid Terdaftar</CardTitle>
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => alert("Export CSV (dummy)")}
-            >
-              {/* pakai ikon Download jika mau */}
-              {/* <Download className="mr-2 h-4 w-4" /> */}
+            <Button variant="outline" size="sm" onClick={() => alert("Export CSV (dummy)")}>
               Export
             </Button>
           </div>
@@ -432,7 +396,6 @@ export default function SchoolRegistrationsListStudent() {
         </CardContent>
       </Card>
 
-      {/* Controlled dialog tambah pendaftar */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <AddStudentDialog />
       </Dialog>

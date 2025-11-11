@@ -1,15 +1,14 @@
-// src/pages/pmb/PmbSettingsPage.demo.tsx
-"use client";
-
 import * as React from "react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+
+/* ✅ Breadcrumb header */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* shadcn/ui */
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -34,11 +33,7 @@ const fmtIDR = (n: number) =>
 
 /* =====================================================================
  * Dummy data (selaras skema)
- * - academic_terms (pilih konteks term)
- * - general_billings (kind: Pendaftaran) → jadi default header referensi
- * Di produksi, "pengaturan" biasanya disimpan di table settings/kv. Di sini dummy saja.
  * ===================================================================== */
-
 const TERMS = [
   { id: "t1", year: "2025/2026", name: "Ganjil", active: true },
   { id: "t2", year: "2025/2026", name: "Genap", active: false },
@@ -68,6 +63,9 @@ const GB_HEADERS = [
   },
 ];
 
+/* =====================================================================
+ * Small components
+ * ===================================================================== */
 function SectionTitle({ children }: React.PropsWithChildren) {
   return <h2 className="text-base font-semibold md:text-lg">{children}</h2>;
 }
@@ -92,7 +90,23 @@ function Row({
   );
 }
 
+/* =====================================================================
+ * Main Page Component
+ * ===================================================================== */
 export default function SchoolRegistrationsSetting() {
+  /* ✅ Tambah breadcrumb seperti SchoolAcademic */
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "PMB — Pengaturan",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Pendaftaran" },
+        { label: "Pengaturan" },
+      ],
+    });
+  }, [setHeader]);
+
   const activeTerm = useMemo(() => TERMS.find((t) => t.active) || TERMS[0], []);
   const [termId, setTermId] = useState<string>(activeTerm.id);
 
@@ -128,6 +142,7 @@ export default function SchoolRegistrationsSetting() {
 
   return (
     <div className="mx-auto w-full">
+      {/* Header Page */}
       <header className="mb-4 flex items-center gap-3">
         <div className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <Settings className="h-5 w-5" />
@@ -143,6 +158,7 @@ export default function SchoolRegistrationsSetting() {
         </div>
       </header>
 
+      {/* ===== Konteks Periode ===== */}
       <Card className="mb-4">
         <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <CardTitle className="text-base md:text-lg">
@@ -195,6 +211,7 @@ export default function SchoolRegistrationsSetting() {
         </CardContent>
       </Card>
 
+      {/* ===== Preferensi Biaya & Kode ===== */}
       <Card className="mb-4">
         <CardHeader>
           <SectionTitle>Preferensi Biaya & Kode</SectionTitle>
@@ -228,6 +245,7 @@ export default function SchoolRegistrationsSetting() {
         </CardContent>
       </Card>
 
+      {/* ===== Pembukaan Pendaftaran & Tagihan ===== */}
       <Card className="mb-4">
         <CardHeader>
           <SectionTitle>Pembukaan Pendaftaran & Tagihan</SectionTitle>
@@ -254,6 +272,7 @@ export default function SchoolRegistrationsSetting() {
         </CardContent>
       </Card>
 
+      {/* ===== Kanal Pembayaran ===== */}
       <Card className="mb-4">
         <CardHeader>
           <SectionTitle>Kanal Pembayaran yang Diizinkan</SectionTitle>
@@ -288,6 +307,7 @@ export default function SchoolRegistrationsSetting() {
         </CardContent>
       </Card>
 
+      {/* ===== Tautan Publik ===== */}
       <Card className="mb-4">
         <CardHeader>
           <SectionTitle>Tautan Pendaftaran Publik</SectionTitle>
@@ -327,6 +347,7 @@ export default function SchoolRegistrationsSetting() {
         </CardContent>
       </Card>
 
+      {/* ===== Preview Payload ===== */}
       <Card>
         <CardHeader>
           <SectionTitle>Preview Payload (dummy)</SectionTitle>
@@ -375,6 +396,9 @@ export default function SchoolRegistrationsSetting() {
   );
 }
 
+/* =====================================================================
+ * Channel component
+ * ===================================================================== */
 function Channel({
   item,
   label,

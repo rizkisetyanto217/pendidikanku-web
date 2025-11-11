@@ -20,6 +20,8 @@ import CMainMenuGridCard, {
   type CMenuItem,
 } from "@/pages/dashboard/components/card/CMainMenuGridCard";
 
+
+
 /** ================= Component ================= */
 export default function SchoolMenuGrids() {
   const items: CMenuItem[] = useMemo(
@@ -28,7 +30,7 @@ export default function SchoolMenuGrids() {
       {
         key: "profil",
         label: "Profil Sekolah",
-        to: "profil-sekolah",
+        to: "profil/profil-sekolah",
         icon: <IdCard />,
       },
       {
@@ -127,7 +129,7 @@ export default function SchoolMenuGrids() {
       {
         key: "guru",
         label: "Guru",
-        to: "guru",
+        to: "profil/guru",
         icon: <UserCog />,
       },
       {

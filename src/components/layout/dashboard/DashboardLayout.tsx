@@ -224,17 +224,28 @@ function DashboardShell({
     });
   }, []);
 
-  /* ---- Normalisasi href breadcrumb relatif → /<tenant>/sekolah/<href> ---- */
   const normalizeHref = React.useCallback(
     (href: string) => {
       if (!href) return href;
       if (href.startsWith("/") || href.startsWith("http")) return href;
+
+      // Ambil segmen path, misalnya: ["0c864ac5-74f4-4a2a-9f1d-c88b7fb7ad12", "guru", "dashboard"]
       const segs = location.pathname.split("/").filter(Boolean);
-      const base = segs.length >= 2 ? `/${segs[0]}/sekolah` : "/sekolah";
+
+      // Ambil school_id = segs[0]
+      const schoolId = segs[0] ?? "";
+
+      // Ambil role dashboard (guru / sekolah / siswa)
+      const role = segs[1] ?? "guru"; // default guru
+
+      // Base path dinamis
+      const base = `/${schoolId}/${role}`;
+
       return `${base}/${href.replace(/^\/+/, "")}`;
     },
     [location.pathname]
   );
+
 
   /* ---- Styling header ---- */
   const baseHeaderCls =

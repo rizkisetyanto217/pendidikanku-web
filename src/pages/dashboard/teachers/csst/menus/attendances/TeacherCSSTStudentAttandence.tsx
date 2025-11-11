@@ -1,5 +1,5 @@
 // src/pages/sekolahislamku/teacher/TeacherAttendance.shadcn.tsx
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 import {
@@ -11,6 +11,9 @@ import {
   Check,
   ArrowRight,
 } from "lucide-react";
+
+/* Tambahan untuk breadcrumb sistem dashboard */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 // shadcn/ui
 import { Button } from "@/components/ui/button";
@@ -310,6 +313,21 @@ export default function TeacherClassAttendanceCSST() {
   const [sp, setSp] = useSearchParams();
   const navigate = useNavigate();
   const { slug } = useParams();
+
+  /* Atur breadcrumb dan title seperti SchoolAcademic */
+  const { setHeader } = useDashboardHeader();
+
+  useEffect(() => {
+    setHeader({
+      title: "Daftar Kehadiran",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Kehadiran" },
+        { label: "Daftar Kehadiran" },
+      ],
+      actions: null,
+    });
+  }, [setHeader]);
 
   // Normalisasi qDate agar konsisten di siang lokal
   const rawSpDate = sp.get("date");

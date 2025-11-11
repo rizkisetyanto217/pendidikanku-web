@@ -1,5 +1,5 @@
 // src/pages/sekolahislamku/teacher/teacherSubject/TeacherSubjects.tsx
-import { useState, useMemo, useDeferredValue } from "react";
+import { useState, useMemo, useDeferredValue, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -17,6 +17,9 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+
+/* Tambahan untuk breadcrumb sistem dashboard */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* =====================
    Types & Dummy Data
@@ -112,13 +115,27 @@ function useTeacherSubjects() {
 ===================== */
 export default function TeacherCSST() {
   const { data: subjects = [] } = useTeacherSubjects();
-
   const [viewMode, setViewMode] = useState<"detailed" | "simple">("detailed");
   const [search, setSearch] = useState("");
   const [day, setDay] = useState("all");
   const [level, setLevel] = useState("all");
   const [term, setTerm] = useState("all");
   const [sortBy, setSortBy] = useState<"name" | "students">("name");
+
+  /* Atur breadcrumb dan title seperti SchoolAcademic */
+  const { setHeader } = useDashboardHeader();
+
+  useEffect(() => {
+    setHeader({
+      title: "Mata Pelajaran Saya",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Guru Mapel" },
+        { label: "Mata Pelajaran Saya" },
+      ],
+      actions: null,
+    });
+  }, [setHeader]);
 
   const deferredSearch = useDeferredValue(search);
 
@@ -228,8 +245,8 @@ export default function TeacherCSST() {
       {/* Cards */}
       <div
         className={`grid gap-6 ${viewMode === "simple"
-            ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
-            : "grid-cols-1 lg:grid-cols-2"
+          ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
+          : "grid-cols-1 lg:grid-cols-2"
           }`}
       >
         {filtered.map((s) => (

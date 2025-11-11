@@ -11,6 +11,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
+/* Tambahan untuk breadcrumb sistem dashboard */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+
+
 // ✅ default import untuk default export
 import CalendarView from "@/pages/dashboard/components/calender/CalenderView";
 // (kalau kamu juga pakai komponen ini di file yang sama)
@@ -78,8 +82,8 @@ function seedMonth(y: number, m: number): ScheduleRow[] {
         type === "exam"
           ? `Ujian materi ${title.toLowerCase()} — persiapkan alat tulis.`
           : type === "event"
-          ? `Acara sekolah: ${title} — ${desc}`
-          : desc,
+            ? `Acara sekolah: ${title} — ${desc}`
+            : desc,
     });
   };
 
@@ -161,6 +165,21 @@ export default function TeacherSchedule() {
   const LOCAL_KEY = "teacherScheduleTab";
   const [tab, setTab] = useState<"calendar" | "list">("calendar");
   const [editing, setEditing] = useState<ScheduleRow | null>(null);
+
+  /* Atur breadcrumb dan title seperti SchoolAcademic */
+  const { setHeader } = useDashboardHeader();
+
+  useEffect(() => {
+    setHeader({
+      title: "Jadwal Guru",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Jadwal" },
+        { label: "Jadwal Guru" },
+      ],
+      actions: null,
+    });
+  }, [setHeader]);
 
   // 🔔 signal untuk memicu re-scroll di List
   const [scrollToTodaySig, setScrollToTodaySig] = useState(0);

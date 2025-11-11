@@ -1,5 +1,5 @@
-// src/pages/sekolahislamku/pages/finance/SchoolSpp.tsx
-import React, { useMemo, useState } from "react";
+// src/pages/dashboard/schools/finance/SchoolSpp.tsx
+import React, { useMemo, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
@@ -30,6 +30,9 @@ import {
   CDataTable as DataTable,
   type ColumnDef,
 } from "@/components/costum/table/CDataTable";
+
+/* ✅ Tambah import untuk breadcrumb header */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* ================= Types & Helpers ================= */
 type SppStatus = "unpaid" | "paid" | "overdue";
@@ -115,26 +118,36 @@ function downloadCsv(filename: string, csv: string) {
 const SchoolSpp: React.FC = () => {
   const navigate = useNavigate();
 
+  /* ✅ Breadcrumb setup */
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "SPP",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Keuangan" },
+        { label: "SPP" },
+      ],
+    });
+  }, [setHeader]);
+
   const today = new Date();
   const ymToday = `${today.getFullYear()}-${String(
     today.getMonth() + 1
   ).padStart(2, "0")}`;
 
-  /* ===== Filter state =====
-     month = null  -> tampilkan SEMUA bulan (default)
-     month = "YYYY-MM" -> filter ke bulan tsb
-  */
+  /* ===== Filter state ===== */
   const [showFilter, setShowFilter] = useState(false);
-  const [month, setMonth] = useState<string | null>(null); // ⬅️ default: semua bulan
+  const [month, setMonth] = useState<string | null>(null);
   const [kelas, setKelas] = useState<string>("ALL");
   const [status, setStatus] = useState<SppStatus | "semua">("semua");
 
   /* ===== Data (dummy demo: sebar ke 6 bulan terakhir) ===== */
   const billsQ = useQuery({
-    queryKey: ["spp-bills"], // tidak tergantung filter, karena filter dilakukan di client
+    queryKey: ["spp-bills"],
     queryFn: async () => {
       const dummy: SppBillRow[] = Array.from({ length: 60 }).map((_, i) => {
-        const offset = i % 6; // 0..5 bulan ke belakang
+        const offset = i % 6;
         const d = new Date(today.getFullYear(), today.getMonth() - offset, 20);
         return {
           id: `spp-${i + 1}`,
@@ -156,13 +169,12 @@ const SchoolSpp: React.FC = () => {
   const allRows = billsQ.data?.list ?? [];
   const classes = billsQ.data?.classes ?? [];
 
-  /* ===== Apply filter (bulan opsional) + sort terbaru dulu ===== */
+  /* ===== Apply filter ===== */
   const filteredSorted = useMemo(() => {
     const rows = allRows.filter((b) => {
       if (kelas !== "ALL" && b.class_name !== kelas) return false;
       if (status !== "semua" && b.status !== status) return false;
       if (month) {
-        // cocokkan "YYYY-MM"
         const m = b.due_date.slice(0, 7);
         if (m !== month) return false;
       }
@@ -173,7 +185,7 @@ const SchoolSpp: React.FC = () => {
     );
   }, [allRows, kelas, status, month]);
 
-  /* ===== Stats bar (kiri) + tombol filter (kanan) ===== */
+  /* ===== Stats bar ===== */
   const StatsInline = billsQ.isLoading ? (
     <div className="flex items-center gap-2 text-sm text-muted-foreground">
       <Info className="h-4 w-4" /> Memuat tagihan SPP…
@@ -199,7 +211,7 @@ const SchoolSpp: React.FC = () => {
     </div>
   );
 
-  /* Chips ringkasan — tampilkan “Semua” saat month null */
+  /* Filter summary chips */
   const FilterChips = (
     <div className="flex flex-wrap items-center gap-2 text-xs">
       <span className="rounded-full border bg-muted/40 px-2.5 py-1 text-muted-foreground">
@@ -234,7 +246,7 @@ const SchoolSpp: React.FC = () => {
         id: "no",
         header: "No",
         minW: "60px",
-        align: "center",
+
         headerClassName: "w-[60px]",
         cell: (_r, m) => <span>{(m?.absoluteIndex ?? 0) + 1}</span>,
       },
@@ -242,9 +254,9 @@ const SchoolSpp: React.FC = () => {
         id: "student",
         header: "Nama Siswa",
         minW: "240px",
-        align: "left",
+
         cell: (r) => (
-          <div className="text-left">
+          <div>
             <div className="font-medium">{r.student_name}</div>
             <div className="text-xs text-muted-foreground">{r.class_name}</div>
           </div>
@@ -254,21 +266,21 @@ const SchoolSpp: React.FC = () => {
         id: "amount",
         header: "Nominal",
         minW: "140px",
-        align: "right",
+
         cell: (r) => <span className="tabular-nums">{idr(r.amount)}</span>,
       },
       {
         id: "due",
         header: "Jatuh Tempo",
         minW: "140px",
-        align: "left",
+
         cell: (r) => dateFmt(r.due_date),
       },
       {
         id: "status",
         header: "Status",
         minW: "80px",
-        align: "center",
+
         headerClassName: "w-[80px]",
         cell: (r) => <StatusDot s={r.status} />,
       },
@@ -282,7 +294,7 @@ const SchoolSpp: React.FC = () => {
   };
 
   return (
-    <div className=" w-full overflow-x-hidden bg-background text-foreground">
+    <div className="w-full overflow-x-hidden bg-background text-foreground">
       <main className="w-full">
         <div className="mx-auto flex flex-col gap-4 lg:gap-6">
           {/* ===== Navbar row: back + title ===== */}
@@ -315,7 +327,7 @@ const SchoolSpp: React.FC = () => {
             </Button>
           </div>
 
-          {/* ===== Panel Filter (toggle) ===== */}
+          {/* ===== Panel Filter ===== */}
           {showFilter && (
             <Card className="border-dashed">
               <CardHeader className="py-3 border-b">
@@ -325,13 +337,13 @@ const SchoolSpp: React.FC = () => {
               </CardHeader>
               <CardContent className="p-4 md:p-5 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  {/* Bulan (opsional) */}
+                  {/* Bulan */}
                   <div className="grid gap-1.5">
                     <Label className="text-sm">Bulan</Label>
                     <div className="flex gap-2">
                       <Input
                         type="month"
-                        value={month ?? ""} // kosong = semua bulan
+                        value={month ?? ""}
                         onChange={(e) => setMonth(e.target.value || null)}
                         placeholder="Semua bulan"
                         className="h-10 rounded-lg"
@@ -381,7 +393,9 @@ const SchoolSpp: React.FC = () => {
                     <Label className="text-sm">Status</Label>
                     <Select
                       value={status}
-                      onValueChange={(v) => setStatus(v as SppStatus | "semua")}
+                      onValueChange={(v) =>
+                        setStatus(v as SppStatus | "semua")
+                      }
                     >
                       <SelectTrigger className="h-10 rounded-lg">
                         <SelectValue />
@@ -396,7 +410,7 @@ const SchoolSpp: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Actions di filter */}
+                {/* Actions */}
                 <div className="flex items-center justify-end">
                   <Button className="gap-1.5" onClick={onExport}>
                     <Download size={14} /> Export
@@ -416,12 +430,14 @@ const SchoolSpp: React.FC = () => {
             searchByKeys={["student_name", "class_name"]}
             loading={billsQ.isLoading}
             error={
-              billsQ.isError ? (billsQ.error as any)?.message ?? "Error" : null
+              billsQ.isError
+                ? (billsQ.error as any)?.message ?? "Error"
+                : null
             }
             columns={columns}
-            rows={filteredSorted} // ⬅️ sudah disort terbaru
+            rows={filteredSorted}
             getRowId={(r) => r.id}
-            defaultAlign="left"
+            defaultAlign="center"
             stickyHeader
             zebra
             pageSize={20}
