@@ -36,7 +36,7 @@ const CLASS_INFO: Record<
 
 type Status = "hadir" | "izin" | "sakit";
 
-const StudentAttandenceClass: React.FC = () => {
+const StudentClassesAttandence: React.FC = () => {
   const { id } = useParams<{ slug: string; id: string }>();
   const navigate = useNavigate();
 
@@ -186,4 +186,4 @@ const StudentAttandenceClass: React.FC = () => {
   );
 };
 
-export default StudentAttandenceClass;
+export default StudentClassesAttandence;

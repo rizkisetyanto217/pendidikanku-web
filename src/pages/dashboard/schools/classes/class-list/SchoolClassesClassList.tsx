@@ -163,7 +163,7 @@ function useSectionsWithCSST(schoolId: string, classId?: string) {
 ========================================================= */
 type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
-export default function SchoolSection({
+export default function SchoolClassesSection({
   showBack = false,
   backTo,
 }: Props) {
@@ -359,16 +359,15 @@ export default function SchoolSection({
                               <span>
                                 Pengajar:{" "}
                                 {teacher
-                                  ? `${teacher.title_prefix ?? ""} ${teacher.name ?? ""
+                                  ? `${teacher.title_prefix ?? ""} ${
+                                      teacher.name ?? ""
                                     } ${teacher.title_suffix ?? ""}`.trim()
                                   : "-"}
                               </span>
                             </div>
                             <div className="flex items-center gap-1">
                               <MapPin size={14} />
-                              <span>
-                                Ruang: {room?.name ?? "-"}
-                              </span>
+                              <span>Ruang: {room?.name ?? "-"}</span>
                             </div>
                             <div className="flex items-center gap-1">
                               <Clock4 size={14} />

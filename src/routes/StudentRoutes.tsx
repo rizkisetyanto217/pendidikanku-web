@@ -1,21 +1,25 @@
 import { Route } from "react-router-dom";
 import DashboardLayout from "@/components/layout/dashboard/DashboardLayout";
 import StudentDashboard from "@/pages/dashboard/students/StudentMainDashboard";
-import StudentAllSchedule from "@/pages/dashboard/students/schedules/StudentSchedule";
-import StudentDetailSchedule from "@/pages/dashboard/students/schedules/StudentDetailSchedule";
+import StudentAllSchedule from "@/pages/dashboard/students/schedules/agendas/StudentScheduleAgenda";
+import StudentDetailSchedule from "@/pages/dashboard/students/schedules/agendas/StudentScheduleAgendaDetail";
 import StudentMenuGrids from "@/pages/dashboard/students/menus/StudentMenuGrids";
-import StudentAssignment from "@/pages/dashboard/students/classes/my-classes/assignments/StudentAssignment";
+import StudentClassesAssignment from "@/pages/dashboard/students/classes/my-classes/assignments/StudentClassesAssignment";
 import StudentFinance from "@/pages/dashboard/students/finances/StudentFinance";
-import StudentListFinance from "@/pages/dashboard/students/finances/StudentListFinance";
+import StudentListFinance from "@/pages/dashboard/students/finances/StudentFinanceList";
 import StudentProgress from "@/pages/dashboard/students/classes/progress/StudentProgress";
-import StudentRaport from "@/pages/dashboard/students/classes/progress/raports/StudentRaport";
-import StudentAbsence from "@/pages/dashboard/students/classes/progress/absences/StudentAbsence";
+import StudentRaport from "@/pages/dashboard/students/classes/progress/raports/StudentProgressRaport";
+import StudentAbsence from "@/pages/dashboard/students/classes/progress/absences/StudentProgessAbsence";
 import StudentNotesSummary from "@/pages/dashboard/students/classes/progress/notes-summaries/StudentNotesSummary";
 import StudentProfil from "@/pages/dashboard/students/profiles/StudentProfil";
 import StudentMyClass from "@/pages/dashboard/students/classes/my-classes/StudentMyClass";
-import StudentMaterial from "@/pages/dashboard/students/classes/my-classes/materials/StudentMaterial";
+import StudentMaterial from "@/pages/dashboard/students/classes/my-classes/materials/StudentClassesMaterial";
 import StudentQuizPage from "@/pages/dashboard/students/classes/StudentQuizPage";
-import StudentAttandenceClass from "@/pages/dashboard/students/classes/my-classes/attendances/StudentAttandenceClass";
+import StudentClassesAttandence from "@/pages/dashboard/students/classes/my-classes/attendances/StudentClassesAttandence";
+import StudentExam from "@/pages/dashboard/students/classes/my-classes/exams/StudentClassesExam";
+import StudentClassesContact from "@/pages/dashboard/students/classes/contacts/StudentClassesContact";
+import StudentScheduleAgenda from "@/pages/dashboard/students/schedules/agendas/StudentScheduleAgenda";
+import StudentScheduleRoutine from "@/pages/dashboard/students/schedules/routine/StudentScheduleRoutine";
 
 // ======================
 // Routing untuk halaman MURID (Student Dashboard)
@@ -53,7 +57,7 @@ export const StudentRoutes = (
         TUGAS / ASSIGNMENT
     ===================== */}
     {/* Daftar tugas */}
-    <Route path="tugas" element={<StudentAssignment />} />
+    <Route path="tugas" element={<StudentClassesAssignment />} />
 
     {/* =====================
         KEUANGAN / TAGIHAN
@@ -73,6 +77,8 @@ export const StudentRoutes = (
 
     {/* === Guru === */}
     <Route path="kelas">
+      {/* Halaman daftar kelas */}
+      <Route path="kelas-saya" element={<StudentMyClass />} />
       <Route path="progress">
         <Route index element={<StudentProgress />} />
         <Route path="raport" element={<StudentRaport />} />
@@ -80,11 +86,20 @@ export const StudentRoutes = (
         <Route path="catatan-hasil" element={<StudentNotesSummary />} />
       </Route>
       <Route path="tugas">
-        <Route index element={<StudentAssignment />} />
+        <Route index element={<StudentClassesAssignment />} />
       </Route>
       <Route path="ujian">
-        <Route index element={<StudentAssignment />} />
+        <Route index element={<StudentExam />} />
       </Route>
+      <Route path="kontak">
+        <Route index element={<StudentClassesContact />} />
+      </Route>
+    </Route>
+
+    {/* === Jadwal Sekolah === */}
+    <Route path="jadwal">
+      <Route path="agenda" element={<StudentScheduleAgenda />} />
+      <Route path="rutin" element={<StudentScheduleRoutine />} />
     </Route>
 
     {/* =====================
@@ -105,11 +120,14 @@ export const StudentRoutes = (
 
       {/* Detail per kelas (dengan dynamic :id) */}
       <Route path="kelas-saya/:id/materi" element={<StudentMaterial />} />
-      <Route path="kelas-saya/:id/tugas" element={<StudentAssignment />} />
+      <Route
+        path="kelas-saya/:id/tugas"
+        element={<StudentClassesAssignment />}
+      />
       <Route path="kelas-saya/:id/quiz" element={<StudentQuizPage />} />
       <Route
         path="kelas-saya/:id/kehadiran"
-        element={<StudentAttandenceClass />}
+        element={<StudentClassesAttandence />}
       />
 
       {/* Detail perkembangan belajar murid */}
@@ -120,7 +138,6 @@ export const StudentRoutes = (
       <Route path="progress/absensi" element={<StudentAbsence />} />
       {/* Halaman catatan hasil belajar */}
       <Route path="progress/catatan-hasil" element={<StudentNotesSummary />} />
-
 
       {/* Profil murid dari menu utama */}
       <Route path="profil-murid" element={<StudentProfil />} />

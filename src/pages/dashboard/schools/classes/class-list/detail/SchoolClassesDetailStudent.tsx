@@ -336,7 +336,7 @@ function downloadCsv(filename: string, csv: string) {
 }
 
 /* ========= Page ========= */
-export default function SchoolDetailStudent() {
+export default function SchoolClassesDetailStudent() {
   const { id: studentId = "" } = useParams<{ id: string }>();
   const nav = useNavigate();
 

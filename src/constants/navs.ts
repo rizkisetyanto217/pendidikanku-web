@@ -102,11 +102,19 @@ export const NAVS: NavDict = {
       ],
     },
 
-    // 5) JADWAL
+    // 3) KELAS
     {
       path: "jadwal",
       label: "Jadwal",
       icon: CalendarDays,
+      children: [
+        { path: "agenda", label: "Agenda", to: "agenda" },
+        {
+          path: "rutin",
+          label: "Rutin",
+          to: "rutin",
+        },
+      ],
     },
 
     // 6) PENDAFTARAN
@@ -132,6 +140,7 @@ export const NAVS: NavDict = {
       label: "Kelas",
       icon: BookOpen,
       children: [
+        { path: "kelas-saya", label: "Kelas Saya", to: "kelas-saya" },
         { path: "progress", label: "Progress", to: "progress" },
         {
           path: "tugas",
@@ -150,8 +159,21 @@ export const NAVS: NavDict = {
         },
       ],
     },
+    // 3) KELAS
+    {
+      path: "jadwal",
+      label: "Jadwal",
+      icon: CalendarDays,
+      children: [
+        { path: "agenda", label: "Agenda", to: "agenda" },
+        {
+          path: "rutin",
+          label: "Rutin",
+          to: "rutin",
+        },
+      ],
+    },
     { path: "keuangan", label: "Pembayaran", icon: Wallet },
-    { path: "jadwal", label: "Jadwal", icon: CalendarDays },
     { path: "profil-murid", label: "Profil", icon: Users },
   ],
   guru: [
@@ -159,7 +181,20 @@ export const NAVS: NavDict = {
     { path: "menu-utama", label: "Menu Utama", icon: ChartBar },
     { path: "wali-kelas", label: "Wali Kelas", icon: Users },
     { path: "guru-mapel", label: "Guru Mapel", icon: UserCog },
-    { path: "jadwal", label: "Jadwal", icon: CalendarDays },
+    // 3) KELAS
+    {
+      path: "jadwal",
+      label: "Jadwal",
+      icon: CalendarDays,
+      children: [
+        { path: "agenda", label: "Agenda", to: "agenda" },
+        {
+          path: "rutin",
+          label: "Rutin",
+          to: "rutin",
+        },
+      ],
+    },
     { path: "profil-guru", label: "Profil", icon: Users },
   ],
 };

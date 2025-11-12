@@ -4,29 +4,34 @@ import DashboardLayout from "@/components/layout/dashboard/DashboardLayout";
 // Pages
 import SchoolDashboard from "@/pages/dashboard/schools/SchoolMainDashboard";
 import SchoolProfile from "@/pages/dashboard/schools/profiles/schools/SchoolProfile";
-import SchoolFinance from "@/pages/dashboard/schools/finances/SchoolFinance";
-import SchoolDetailBill from "@/pages/dashboard/schools/finances/SchoolDetailBill";
-import SchoolSpp from "@/pages/dashboard/schools/finances/SchoolSpp";
+import SchoolFinance from "@/pages/dashboard/schools/finances/others/SchoolFinance";
+import SchoolDetailBill from "@/pages/dashboard/schools/finances/others/SchoolDetailBill";
+import SchoolSpp from "@/pages/dashboard/schools/finances/Spp/SchoolFinanceSpp";
 import SchoolTeacher from "@/pages/dashboard/schools/profiles/teachers/SchoolTeacher";
 import SchoolDetailTeacher from "@/pages/dashboard/schools/profiles/teachers/details/SchoolDetailTeacher";
 import SchoolMenuGrids from "@/pages/dashboard/schools/menus/SchoolMenuGrids";
-import SchoolClass from "@/pages/dashboard/schools/classes/data-class/SchoolClass";
-import SchoolSection from "@/pages/dashboard/schools/classes/class-list/section/SchoolSection";
-import SchoolSectionDetail from "@/pages/dashboard/schools/classes/class-list/section/SchoolSectionDetail";
-import SchoolParent from "@/pages/dashboard/schools/classes/data-class/parent/SchoolParent";
+import SchoolClass from "@/pages/dashboard/schools/classes/data-class/SchoolClassesDataClass";
+import SchoolSection from "@/pages/dashboard/schools/classes/class-list/SchoolClassesClassList";
+import SchoolSectionDetail from "@/pages/dashboard/schools/classes/class-list/section/SchoolClassesSectionDetail";
+import SchoolParent from "@/pages/dashboard/schools/classes/data-class/parent/SchoolClassesParent";
 
-import SchoolAcademic from "@/pages/dashboard/schools/academics/SchoolAcademic";
-import SchoolDetailAcademic from "@/pages/dashboard/schools/academics/SchoolDetailAcademic";
+import SchoolAcademic from "@/pages/dashboard/schools/academics/academics/SchoolAcademic";
+import SchoolDetailAcademic from "@/pages/dashboard/schools/academics/academics/SchoolAcademicDetail";
+
 import SchoolBooks from "@/pages/dashboard/schools/academics/books/SchoolBooks";
 import SchoolRoom from "@/pages/dashboard/schools/academics/rooms/SchoolRoom";
 import SchoolSubject from "@/pages/dashboard/schools/academics/subjects/SchoolSubject";
-import SchoolDetailRoom from "@/pages/dashboard/schools/academics/rooms/SchoolDetailRoom";
-import SchoolBookDetail from "@/pages/dashboard/schools/academics/books/detail/SchoolDetailBook";
+import SchoolDetailRoom from "@/pages/dashboard/schools/academics/rooms/SchoolRoomDetail";
+import SchoolBookDetail from "@/pages/dashboard/schools/academics/books/detail/SchoolBookDetail";
 
-import SchoolSchedule from "@/pages/dashboard/schools/schedules/SchoolSchedule";
+import SchoolSchedule from "@/pages/dashboard/schools/schedules/agendas/SchoolScheduleAgenda";
 import SchoolRegistrationsPeriod from "@/pages/dashboard/schools/registrations/SchoolRegistrationsPeriod";
-import SchoolRegistrationsListStudent from "@/pages/dashboard/schools/registrations/SchoolRegistrationsListStudent";
+import SchoolRegistrationsListStudent from "@/pages/dashboard/schools/registrations/SchoolRegistrationsStudent";
 import SchoolRegistrationsSetting from "@/pages/dashboard/schools/registrations/SchoolRegistrationsSetting";
+import SchoolScheduleAgenda from "@/pages/dashboard/schools/schedules/agendas/SchoolScheduleAgenda";
+import SchoolScheduleRoutine from "@/pages/dashboard/schools/schedules/routines/SchoolScheduleRoutine";
+import SchoolSubjectDetail from "@/pages/dashboard/schools/academics/subjects/SchoolSubjectDetail";
+import SchoolAcademicManage from "@/pages/dashboard/schools/academics/academics/SchoolAcademicManage";
 
 export const SchoolRoutes = (
   <Route path="sekolah" element={<DashboardLayout />}>
@@ -64,15 +69,18 @@ export const SchoolRoutes = (
 
       {/* Akademik */}
       <Route path="tahun-akademik" element={<SchoolAcademic showBack />} />
-      <Route path="tahun-akademik/detail/:id" element={<SchoolDetailAcademic />} />
+      <Route
+        path="tahun-akademik/detail/:id"
+        element={<SchoolDetailAcademic />}
+      />
 
       {/* Buku */}
       <Route path="buku" element={<SchoolBooks />} />
-      <Route path="buku/detail/:id" element={<SchoolBookDetail />} />
+      <Route path="buku/:id" element={<SchoolBookDetail />} />
 
       {/* Ruangan */}
       <Route path="ruangan" element={<SchoolRoom />} />
-      <Route path="ruangan/detail/:id" element={<SchoolDetailRoom />} />
+      <Route path="ruangan/:id" element={<SchoolDetailRoom />} />
 
       {/* Mata Pelajaran */}
       <Route path="pelajaran" element={<SchoolSubject />} />
@@ -88,24 +96,36 @@ export const SchoolRoutes = (
 
       {/* Pendaftaran */}
       <Route path="pendaftaran" element={<SchoolRegistrationsPeriod />} />
-      <Route path="pendaftaran/murid" element={<SchoolRegistrationsListStudent />} />
-      <Route path="pendaftaran/pengaturan" element={<SchoolRegistrationsSetting />} />
+      <Route
+        path="pendaftaran/murid"
+        element={<SchoolRegistrationsListStudent />}
+      />
+      <Route
+        path="pendaftaran/pengaturan"
+        element={<SchoolRegistrationsSetting />}
+      />
     </Route>
 
     {/* === Global Routes (opsional, jika di luar menu utama) === */}
     <Route path="akademik">
       <Route path="tahun-akademik" element={<SchoolAcademic />} />
-      <Route path="tahun-akademik/detail/:id" element={<SchoolDetailAcademic />} />
-      <Route path="ruangan" element={<SchoolAcademic />} />
-      <Route path="buku" element={<SchoolAcademic />} />
-      <Route path="mata-pelajaran" element={<SchoolAcademic />} />
+      <Route path="tahun-akademik/:id" element={<SchoolDetailAcademic />} />
+      <Route path="tahun-akademik/manage" element={<SchoolAcademicManage />} />
+      <Route path="ruangan" element={<SchoolRoom />} />
+      <Route path="ruangan/:id" element={<SchoolDetailRoom />} />
+      <Route path="buku" element={<SchoolBooks />} />
+      <Route path="mata-pelajaran" element={<SchoolSubject />} />
+      <Route path="mata-pelajaran/:id" element={<SchoolSubjectDetail />} />
     </Route>
 
     <Route path="kelas">
       <Route path="data-kelas" element={<SchoolClass />} />
       <Route path="data-kelas/tingkat/:levelId" element={<SchoolParent />} />
       <Route path="daftar-kelas" element={<SchoolSection />} />
-      <Route path="daftar-kelas/section/:id" element={<SchoolSectionDetail />} />
+      <Route
+        path="daftar-kelas/section/:id"
+        element={<SchoolSectionDetail />}
+      />
     </Route>
 
     <Route path="keuangan">
@@ -118,6 +138,12 @@ export const SchoolRoutes = (
       <Route index element={<SchoolRegistrationsPeriod />} />
       <Route path="murid" element={<SchoolRegistrationsListStudent />} />
       <Route path="pengaturan" element={<SchoolRegistrationsSetting />} />
+    </Route>
+
+    {/* === Jadwal Sekolah === */}
+    <Route path="jadwal">
+      <Route path="agenda" element={<SchoolScheduleAgenda />} />
+      <Route path="rutin" element={<SchoolScheduleRoutine />} />
     </Route>
   </Route>
 );

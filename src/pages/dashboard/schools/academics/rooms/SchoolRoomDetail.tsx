@@ -1,15 +1,12 @@
 // src/pages/sekolahislamku/dashboard-school/rooms/DetailRoomSchool.shadcn.tsx
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import axios from "@/lib/axios";
-import { ArrowLeft, Loader2, Building2, MapPin, Users } from "lucide-react";
+import { ArrowLeft, Building2, MapPin, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
 
 /* ===================== TYPES (UI) ================= */
 export type Room = {
@@ -27,7 +24,7 @@ export type Room = {
   image_url?: string | null;
 
   features?: string[];
-  platform?: string | null;
+  platform?: string | null; // zoom | google_meet | ms_teams | dll
   join_url?: string | null;
   meeting_id?: string | null;
   passcode?: string | null;
@@ -47,128 +44,105 @@ export type Room = {
   deleted_at?: string | null;
 };
 
-/* ========== TYPES (payload dari API publik) ========= */
-type ClassRoomApi = {
-  class_room_id: string;
-  class_room_school_id: string;
-  class_room_name: string;
-  class_room_code?: string | null;
-  class_room_slug?: string | null;
-  class_room_location?: string | null;
-  class_room_capacity: number;
-  class_room_description?: string | null;
-  class_room_is_virtual: boolean;
-  class_room_is_active: boolean;
+/* ===================== DUMMY DATA =====================
 
-  class_room_image_url?: string | null;
+   Skenario:
+   - virtual-1  => Ruangan Virtual (is_virtual: true) + platform & join_url
+   - offline-1  => Ruangan Offline (is_virtual: false)
 
-  class_room_platform?: string | null;
-  class_room_join_url?: string | null;
-  class_room_meeting_id?: string | null;
-  class_room_passcode?: string | null;
+   Field disesuaikan dengan skema tabel class_rooms:
+   class_room_*  → kita representasikan di objek Room agar 1:1 secara makna
+   (name, code, slug, location, capacity, description, is_virtual, is_active, 
+   image_url, features, schedule, notes, metadata timestamps)
+=======================================================*/
+const DUMMY_ROOMS: Record<string, Room> = {
+  "virtual-1": {
+    id: "virtual-1",
+    school_id: "0c864ac5-74f4-4a2a-9f1d-c88b7fb7ad12",
+    name: "Ruang Virtual — Balaghoh B",
+    code: "VR-BAL-B-01",
+    slug: "vr-balaghoh-b",
+    description:
+      "Ruang daring untuk kelas Balaghoh B. Mohon masuk 5 menit sebelum mulai. Kamera on saat diskusi.",
+    capacity: 120,
+    location: "Online",
+    is_virtual: true,
+    is_active: true,
 
-  class_room_features?: string[] | null;
-  class_room_schedule?: any[] | null; // variasi bentuk
-  class_room_notes?: Array<{ ts?: string; text?: string }> | null;
+    image_url:
+      "https://dummyimage.com/1200x400/0f592a/ffffff&text=Virtual+Room",
 
-  class_room_created_at?: string;
-  class_room_updated_at?: string;
-  class_room_deleted_at?: string | null;
+    features: ["Rekaman Otomatis", "Breakout Rooms", "Screen Sharing", "Chat"],
+    platform: "zoom",
+    join_url: "https://us02web.zoom.us/j/123456789?pwd=abcDEF123",
+    meeting_id: "123-456-789",
+    passcode: "BALB2025",
+
+    schedule: [
+      {
+        label: "Pertemuan Rutin",
+        day: "senin",
+        from: "19:30",
+        to: "21:00",
+        group: "A",
+      },
+      { label: "Sesi Tanya Jawab", day: "kamis", from: "20:00", to: "21:00" },
+    ],
+    notes: [
+      {
+        ts: "2025-11-10T19:00:00Z",
+        text: "Harap update Zoom ke versi terbaru.",
+      },
+      {
+        ts: "2025-11-11T12:15:00Z",
+        text: "Gunakan earphone untuk mengurangi noise.",
+      },
+    ],
+    created_at: "2025-09-01T08:00:00Z",
+    updated_at: "2025-11-01T10:30:00Z",
+    deleted_at: null,
+  },
+
+  "offline-1": {
+    id: "offline-1",
+    school_id: "0c864ac5-74f4-4a2a-9f1d-c88b7fb7ad12",
+    name: "Ruang Kelas — 2B",
+    code: "CR-2B-01",
+    slug: "kelas-2b-01",
+    description:
+      "Ruang kelas lantai 2, dekat perpustakaan. Cocok untuk kelas teori dan diskusi.",
+    capacity: 36,
+    location: "Gedung Utama Lt.2 — Sayap Timur",
+    is_virtual: false,
+    is_active: true,
+
+    image_url: "https://dummyimage.com/1200x400/ffde59/111&text=Classroom+2B",
+
+    features: ["AC", "Proyektor", "Whiteboard", "Colokan Meja", "Wi-Fi"],
+    platform: null,
+    join_url: null,
+    meeting_id: null,
+    passcode: null,
+
+    schedule: [
+      { label: "Pelajaran Pagi", day: "selasa", from: "08:00", to: "09:40" },
+      { label: "Pelajaran Siang", day: "jumat", from: "13:00", to: "14:40" },
+    ],
+    notes: [
+      {
+        ts: "2025-11-05T07:30:00Z",
+        text: "Spidol baru sudah diletakkan di laci.",
+      },
+      {
+        ts: "2025-11-08T15:10:00Z",
+        text: "Proyektor diganti — lebih terang.",
+      },
+    ],
+    created_at: "2025-08-20T07:00:00Z",
+    updated_at: "2025-10-28T09:20:00Z",
+    deleted_at: null,
+  },
 };
-
-type PublicRoomsResponse = {
-  pagination: {
-    page: number;
-    per_page: number;
-    total: number;
-    total_pages: number;
-    has_next: boolean;
-    has_prev: boolean;
-  };
-  data: ClassRoomApi[];
-};
-
-/* ===================== QK ========================= */
-const QK = {
-  ROOM_PUBLIC: (schoolId: string, id: string) =>
-    ["public-room", schoolId, id] as const,
-};
-
-/* ===================== HELPERS ==================== */
-
-
-function normalizeSchedule(s: any[] | null | undefined): Room["schedule"] {
-  if (!s || !Array.isArray(s)) return [];
-  return s.map((it: any) => {
-    if (it.from || it.to) {
-      return {
-        label: it.label ?? "",
-        day: it.day,
-        date: it.date,
-        from: it.from ?? it.start ?? "",
-        to: it.to ?? it.end ?? "",
-        group: it.group,
-      };
-    }
-    return {
-      label: it.label ?? "",
-      day:
-        it.weekday && typeof it.weekday === "string"
-          ? it.weekday.toLowerCase()
-          : undefined,
-      from: it.start ?? "",
-      to: it.end ?? "",
-    };
-  });
-}
-
-function mapApiRoomToRoom(x: ClassRoomApi): Room {
-  return {
-    id: x.class_room_id,
-    school_id: x.class_room_school_id,
-    name: x.class_room_name,
-    code: x.class_room_code ?? undefined,
-    slug: x.class_room_slug ?? undefined,
-    description: x.class_room_description ?? undefined,
-    capacity: x.class_room_capacity,
-    location: x.class_room_location ?? null,
-    is_virtual: x.class_room_is_virtual,
-    is_active: x.class_room_is_active,
-
-    image_url: x.class_room_image_url ?? null,
-
-    features: x.class_room_features ?? undefined,
-    platform: x.class_room_platform ?? null,
-    join_url: x.class_room_join_url ?? null,
-    meeting_id: x.class_room_meeting_id ?? null,
-    passcode: x.class_room_passcode ?? null,
-
-    schedule: normalizeSchedule(x.class_room_schedule),
-    notes: x.class_room_notes ?? [],
-
-    created_at: x.class_room_created_at,
-    updated_at: x.class_room_updated_at,
-    deleted_at: x.class_room_deleted_at ?? null,
-  };
-}
-
-/* =============== API QUERY (public) =============== */
-function usePublicRoomQuery(schoolId: string, id: string) {
-  return useQuery<Room | null>({
-    queryKey: QK.ROOM_PUBLIC(schoolId, id),
-    enabled: !!schoolId && !!id,
-    staleTime: 60_000,
-    retry: 1,
-    queryFn: async () => {
-      const res = await axios.get<PublicRoomsResponse>(
-        `/public/${schoolId}/class-rooms/list`,
-        { params: { ids: id, page: 1, per_page: 1 } }
-      );
-      const item = res.data.data?.[0];
-      return item ? mapApiRoomToRoom(item) : null;
-    },
-  });
-}
 
 /* ============== REUSABLE COMPONENTS ============== */
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
@@ -203,40 +177,17 @@ function StatusBadge({ active }: { active: boolean }) {
   return <Badge variant="outline">Nonaktif</Badge>;
 }
 
-/* ===================== PAGE ======================= */
-export default function SchoolDetailRoom() {
-  const { school_id, id } = useParams<{ school_id?: string; id?: string }>();
+/* ===================== PAGE =======================
+
+   Cara uji cepat:
+   - /rooms/virtual-1  → skenario ruangan virtual
+   - /rooms/offline-1  → skenario ruangan offline
+====================================================*/
+export default function SchoolRoomDetail() {
+  const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
 
-  // kept to mirror original usage; not strictly needed now
-  // useful if kamu butuh tanggal untuk header/topbar ke depan
-
-  const schoolId = school_id ?? "";
-  const roomId = id ?? "";
-
-  const roomQuery = usePublicRoomQuery(schoolId, roomId);
-
-  // Loading state (skeleton)
-  if (roomQuery.isLoading) {
-    return (
-      <div className="w-full grid place-items-center min-h-[40vh]">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="size-6 animate-spin" />
-          <p className="text-sm text-muted-foreground">Memuat data ruangan…</p>
-          <div className="mt-4 w-[680px] max-w-[92vw] space-y-3">
-            <Skeleton className="h-10 w-40" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Skeleton className="h-20" />
-              <Skeleton className="h-20" />
-            </div>
-            <Skeleton className="h-40" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const room = roomQuery.data;
+  const room = (id && DUMMY_ROOMS[id]) || null;
 
   // Not found
   if (!room) {
@@ -248,9 +199,14 @@ export default function SchoolDetailRoom() {
               <Building2 className="mx-auto mb-3 opacity-40" size={48} />
               <h2 className="text-lg font-semibold">Ruangan tidak ditemukan</h2>
               <p className="text-sm text-muted-foreground mt-1 mb-4">
-                Data ruangan dengan ID tersebut tidak tersedia.
+                Gunakan ID <code>virtual-1</code> atau <code>offline-1</code>{" "}
+                untuk mencoba skenario.
               </p>
-              <Button onClick={() => navigate(-1)}>Kembali</Button>
+              <div className="flex gap-2 justify-center">
+                <Button onClick={() => navigate(-1)} variant="outline">
+                  Kembali
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -281,6 +237,16 @@ export default function SchoolDetailRoom() {
             )}
           </div>
         </div>
+
+        {/* Hero Image (opsional) */}
+        {room.image_url && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={room.image_url}
+            alt={room.name}
+            className="w-full h-40 md:h-56 object-cover rounded-xl border"
+          />
+        )}
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -341,7 +307,7 @@ export default function SchoolDetailRoom() {
             </CardContent>
           </Card>
 
-          {/* Virtual Room Info */}
+          {/* Virtual Room Info (skenario virtual) */}
           {room.is_virtual && (
             <Card>
               <CardHeader className="pb-3">
@@ -383,9 +349,9 @@ export default function SchoolDetailRoom() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Fasilitas</CardTitle>
-              <Separator />
             </CardHeader>
             <CardContent className="pt-0">
+              <Separator className="mb-3" />
               <div className="flex flex-wrap gap-2">
                 {room.features.map((feature, idx) => (
                   <Badge key={idx} variant="outline">
@@ -402,9 +368,9 @@ export default function SchoolDetailRoom() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Jadwal</CardTitle>
-              <Separator />
             </CardHeader>
             <CardContent className="pt-0 space-y-2">
+              <Separator className="mb-3" />
               {room.schedule.map((s, idx) => (
                 <div
                   key={idx}
@@ -428,9 +394,9 @@ export default function SchoolDetailRoom() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Catatan</CardTitle>
-              <Separator />
             </CardHeader>
             <CardContent className="pt-0 space-y-2">
+              <Separator className="mb-3" />
               {room.notes.map((note, idx) => (
                 <div key={idx} className="p-3 rounded-lg border bg-card">
                   <div className="text-xs text-muted-foreground mb-1">
@@ -456,9 +422,9 @@ export default function SchoolDetailRoom() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Metadata</CardTitle>
-            <Separator />
           </CardHeader>
           <CardContent className="pt-0">
+            <Separator className="mb-3" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <InfoRow
                 label="Dibuat pada"

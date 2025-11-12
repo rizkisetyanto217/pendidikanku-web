@@ -77,8 +77,8 @@ function seedMonth(y: number, m: number): ScheduleRow[] {
         type === "exam"
           ? `Ujian materi ${title.toLowerCase()} — persiapkan alat tulis.`
           : type === "event"
-            ? `Acara sekolah: ${title} — ${desc}`
-            : desc,
+          ? `Acara sekolah: ${title} — ${desc}`
+          : desc,
     });
   };
 
@@ -124,7 +124,7 @@ const scheduleApi = {
   },
 };
 
-export default function StudentSchedule() {
+export default function StudentScheduleAgenda() {
   const navigate = useNavigate();
 
   const [month, setMonth] = useState(toMonthStr());

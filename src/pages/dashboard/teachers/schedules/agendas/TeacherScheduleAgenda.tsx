@@ -1,4 +1,3 @@
-// src/pages/sekolahislamku/admin/AdminSchoolSchedule.tsx
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -12,11 +11,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
-/* ✅ Breadcrumb header */
+/* Tambahan untuk breadcrumb sistem dashboard */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+
 
 // ✅ default import untuk default export
 import CalendarView from "@/pages/dashboard/components/calender/CalenderView";
+// (kalau kamu juga pakai komponen ini di file yang sama)
 import ScheduleList from "@/pages/dashboard/components/calender/ScheduleList";
 import EditScheduleDialog from "@/pages/dashboard/components/calender/components/EditSchedule";
 // ✅ value vs type dipisah
@@ -27,7 +28,7 @@ import {
 } from "@/pages/dashboard/components/calender/types/types";
 import type { ScheduleRow } from "@/pages/dashboard/components/calender/types/types";
 
-/* ===== Dummy API (disamakan persis dengan TeacherSchedule) ===== */
+// ===== Dummy API (sementara tetap di file halaman) =====
 const scheduleStore = new Map<string, ScheduleRow[]>();
 const delay = (ms = 350) => new Promise((r) => setTimeout(r, ms));
 function uid() {
@@ -97,7 +98,7 @@ function seedMonth(y: number, m: number): ScheduleRow[] {
     [8, "11:00", "class"],
     [9, "09:30", "class"],
     [10, "13:15", "class"],
-    [12, "10:00", "class"],
+    [11, "10:00", "class"],
     [12, "14:00", "event"],
     [14, "08:00", "class"],
     [15, "07:30", "class"],
@@ -153,30 +154,34 @@ const scheduleApi = {
   },
 };
 
-/* ===== Page (UX sama dengan TeacherSchedule) ===== */
-export default function AdminSchoolSchedule() {
+export default function TeacherScheduleAgenda() {
   const navigate = useNavigate();
   const qc = useQueryClient();
-
-  /* ✅ Tambah breadcrumb seperti SchoolAcademic */
-  const { setHeader } = useDashboardHeader();
-  useEffect(() => {
-    setHeader({
-      title: "Jadwal Sekolah",
-      breadcrumbs: [
-        { label: "Dashboard", href: "dashboard" },
-        { label: "Jadwal" },
-      ],
-    });
-  }, [setHeader]);
 
   const [month, setMonth] = useState(toMonthStr());
   const [selectedDay, setSelectedDay] = useState<string | null>(() =>
     dateKeyFrom(new Date())
   );
-  const LOCAL_KEY = "schoolScheduleTab"; // disamain semantik "school"
+  const LOCAL_KEY = "teacherScheduleTab";
   const [tab, setTab] = useState<"calendar" | "list">("calendar");
   const [editing, setEditing] = useState<ScheduleRow | null>(null);
+
+  /* Atur breadcrumb dan title seperti SchoolAcademic */
+  const { setHeader } = useDashboardHeader();
+
+  useEffect(() => {
+    setHeader({
+      title: "Jadwal",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Jadwal" },
+      ],
+      actions: null,
+    });
+  }, [setHeader]);
+
+  // 🔔 signal untuk memicu re-scroll di List
+  const [scrollToTodaySig, setScrollToTodaySig] = useState(0);
 
   useEffect(() => {
     const saved = (localStorage.getItem(LOCAL_KEY) || "") as
@@ -189,7 +194,7 @@ export default function AdminSchoolSchedule() {
   }, [tab]);
 
   const schedulesQ = useQuery({
-    queryKey: ["school-schedules", month], // disamain pola penamaan
+    queryKey: ["teacher-schedules", month],
     queryFn: () => scheduleApi.list(month),
   });
 
@@ -197,17 +202,17 @@ export default function AdminSchoolSchedule() {
     mutationFn: (payload: Omit<ScheduleRow, "id">) =>
       scheduleApi.create(month, payload),
     onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ["school-schedules", month] }),
+      qc.invalidateQueries({ queryKey: ["teacher-schedules", month] }),
   });
   const updateMut = useMutation({
     mutationFn: (payload: ScheduleRow) => scheduleApi.update(month, payload),
     onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ["school-schedules", month] }),
+      qc.invalidateQueries({ queryKey: ["teacher-schedules", month] }),
   });
   const deleteMut = useMutation({
     mutationFn: (id: string) => scheduleApi.remove(month, id),
     onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ["school-schedules", month] }),
+      qc.invalidateQueries({ queryKey: ["teacher-schedules", month] }),
   });
 
   const [y, m] = month.split("-").map(Number);
@@ -242,9 +247,9 @@ export default function AdminSchoolSchedule() {
             <CalendarDays size={18} />
           </div>
           <div>
-            <div className="font-semibold text-base">Jadwal Sekolah</div>
+            <div className="font-semibold text-base">Jadwal Mengajar</div>
             <p className="text-sm text-muted-foreground">
-              Kelola aktivitas sekolah per bulan atau dalam bentuk daftar
+              Kelola aktivitas mengajar per bulan atau dalam bentuk daftar
             </p>
           </div>
           <div className="ml-auto flex items-center gap-2">
@@ -260,9 +265,12 @@ export default function AdminSchoolSchedule() {
               size="sm"
               onClick={() => {
                 const now = new Date();
+                // set ke bulan & tanggal hari ini
                 setMonth(toMonthStr(now));
                 setSelectedDay(dateKeyFrom(now));
-                setTab("calendar");
+                // ⛔ jangan paksa pindah tab — hormati tab aktif
+                // trigger re-scroll untuk List (kalau tab=List)
+                setScrollToTodaySig(Date.now());
               }}
               className="ml-1"
             >
@@ -306,6 +314,8 @@ export default function AdminSchoolSchedule() {
               onDelete={(id) => deleteMut.mutate(id)}
               updating={updateMut.isPending || createMut.isPending}
               deleting={deleteMut.isPending}
+              // ⤵️ signal untuk memaksa auto-scroll saat klik "Hari ini"
+              scrollSignal={scrollToTodaySig}
             />
           </TabsContent>
         </Tabs>

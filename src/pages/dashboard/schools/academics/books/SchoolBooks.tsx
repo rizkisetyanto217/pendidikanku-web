@@ -438,7 +438,7 @@ export default function SchoolBooks() {
   const renderActions = (r: BookAPI) => (
     <ActionsMenu
       onView={() =>
-        navigate(`/${schoolId}/sekolah/buku/detail/${r.books_id}`, {
+        navigate(`/${schoolId}/sekolah/buku/${r.books_id}`, {
           state: { book: r },
         })
       }
@@ -495,7 +495,7 @@ export default function SchoolBooks() {
             renderActions={renderActions}
             /* Klik baris/card → detail */
             onRowClick={(r) =>
-              navigate(`/${schoolId}/sekolah/buku/detail/${r.books_id}`, {
+              navigate(`${r.books_id}`, {
                 state: { book: r },
               })
             }

@@ -172,7 +172,7 @@ function HeaderBackArea({
 }
 
 /* ===================== Page ===================== */
-export default function SchoolDetailAcademic() {
+export default function SchoolAcademicDetail() {
   const { id: termId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();

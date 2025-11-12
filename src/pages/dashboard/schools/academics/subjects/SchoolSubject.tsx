@@ -1,4 +1,4 @@
-// src/pages/sekolahislamku/pages/academic/SchoolSubject.tsx
+// src/pages/sekolahislamku/pages/academic/SchoolSubject.table.tsx
 import React, { useMemo, useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
@@ -7,13 +7,6 @@ import axios from "@/lib/axios";
 /* icons */
 import {
   ArrowLeft,
-  Eye,
-  Pencil,
-  Plus,
-  Trash2,
-
-  BookOpen,
-  Search,
   Filter,
   ArrowUpDown,
   Loader2,
@@ -24,7 +17,6 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectTrigger,
@@ -32,6 +24,8 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+
+/* dialogs & inputs reused */
 import {
   Dialog,
   DialogContent,
@@ -51,8 +45,15 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 
-/* ================= Types ================= */
+/* re-use your DataTable */
+import {
+  DataTable,
+  type ColumnDef,
+} from "@/components/costum/table/CDataTable"; // ⬅️ sesuaikan path file CDataTable kamu
+
+/* ================= Types (sama seperti file asli) ================= */
 export type SubjectStatus = "active" | "inactive";
 
 export type SubjectRow = {
@@ -138,8 +139,8 @@ type CSBListResp = {
 };
 
 /* ================= Const ================= */
-const API_PREFIX = "/public"; // GET list
-const ADMIN_PREFIX = "/a"; // POST/PUT/DELETE (admin)
+const API_PREFIX = "/public";
+const ADMIN_PREFIX = "/a";
 
 /* ================= Helpers ================= */
 const sumHours = (arr: ClassSubjectItem[]) => {
@@ -174,7 +175,6 @@ function useCreateSubjectMutation(school_id: string) {
     },
   });
 }
-
 function useUpdateSubjectMutation(school_id: string, subjectId: string) {
   const qc = useQueryClient();
   return useMutation({
@@ -191,7 +191,6 @@ function useUpdateSubjectMutation(school_id: string, subjectId: string) {
     },
   });
 }
-
 function useDeleteSubjectMutation(school_id: string, subjectId: string) {
   const qc = useQueryClient();
   return useMutation({
@@ -217,7 +216,7 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-/* ================= Detail Modal (Dialog) ================= */
+/* ================= Detail Modal ================= */
 function SubjectDetailDialog({
   open,
   subject,
@@ -321,91 +320,7 @@ function SubjectDetailDialog({
   );
 }
 
-/* ================= Card ================= */
-function SubjectCard({
-  row,
-  onDetail,
-  onEdit,
-  onDelete,
-}: {
-  row: SubjectRow;
-  onDetail: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
-}) {
-  return (
-    <Card className="overflow-hidden">
-      <CardContent className="p-4 flex items-start gap-3">
-        <div className="shrink-0 rounded-xl p-2 border">
-          <BookOpen size={20} />
-        </div>
-        <div className="flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <div className="font-semibold leading-snug">{row.name}</div>
-              <div className="text-xs text-muted-foreground">
-                Kode: {row.code || "-"}
-              </div>
-            </div>
-            {row.status === "active" ? (
-              <Badge>Aktif</Badge>
-            ) : (
-              <Badge variant="secondary">Nonaktif</Badge>
-            )}
-          </div>
-
-          <div className="mt-3 grid grid-cols-3 gap-3 text-sm">
-            <div className="rounded-lg border p-2">
-              <div className="text-xs text-muted-foreground">Kelas</div>
-              <div className="font-medium">{row.class_count}</div>
-            </div>
-            <div className="rounded-lg border p-2">
-              <div className="text-xs text-muted-foreground">Jam/Minggu</div>
-              <div className="font-medium">
-                {row.total_hours_per_week ?? "-"}
-              </div>
-            </div>
-            <div className="rounded-lg border p-2">
-              <div className="text-xs text-muted-foreground">Buku</div>
-              <div className="font-medium">{row.book_count}</div>
-            </div>
-          </div>
-
-          <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onDetail}
-              className="gap-1"
-            >
-              <Eye size={14} /> Detail
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onEdit}
-              className="gap-1"
-              title="Edit Subject"
-            >
-              <Pencil size={14} /> Edit
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={onDelete}
-              className="gap-1"
-              title="Hapus Subject"
-            >
-              <Trash2 size={14} /> Hapus
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-/* ================= Create Modal (Dialog) ================= */
+/* ================= Create/Edit/Delete Dialogs (reused) ================= */
 function CreateSubjectDialog({
   open,
   schoolId,
@@ -510,7 +425,6 @@ function CreateSubjectDialog({
   );
 }
 
-/* ================= Edit Modal (Dialog) ================= */
 function EditSubjectDialog({
   open,
   schoolId,
@@ -630,7 +544,6 @@ function EditSubjectDialog({
   );
 }
 
-/* ================= Delete Confirm (AlertDialog) ================= */
 function ConfirmDeleteDialog({
   open,
   title,
@@ -666,8 +579,8 @@ function ConfirmDeleteDialog({
   );
 }
 
-/* ================= Page ================= */
-const SchoolSubject: React.FC = () => {
+/* ================= Page (TABLE) ================= */
+const SchoolSubjectTable: React.FC = () => {
   const navigate = useNavigate();
   const schoolId = useResolvedSchoolId();
 
@@ -676,8 +589,8 @@ const SchoolSubject: React.FC = () => {
   const [editData, setEditData] = useState<SubjectRow | null>(null);
   const [deleteData, setDeleteData] = useState<SubjectRow | null>(null);
 
-  // controls
-  const [q, setQ] = useState("");
+  // controls (mengikat ke DataTable)
+  const [query, setQuery] = useState("");
   const [onlyActive, setOnlyActive] = useState<"1" | "0">("1");
   const [sortBy, setSortBy] = useState<
     "name-asc" | "name-desc" | "code-asc" | "code-desc"
@@ -742,14 +655,15 @@ const SchoolSubject: React.FC = () => {
     },
   });
 
-  const filtered = useMemo(() => {
+  /* ===== transform -> filter + sort di layer tabel ===== */
+  const rowsFilteredSorted = useMemo(() => {
     let arr = (mergedQ.data ?? []).slice();
 
     if (onlyActive === "1") {
       arr = arr.filter((s) => s.status === "active");
     }
-    if (q.trim()) {
-      const k = q.trim().toLowerCase();
+    if (query.trim()) {
+      const k = query.trim().toLowerCase();
       arr = arr.filter(
         (s) =>
           s.name.toLowerCase().includes(k) || s.code.toLowerCase().includes(k)
@@ -770,13 +684,105 @@ const SchoolSubject: React.FC = () => {
     });
 
     return arr;
-  }, [mergedQ.data, q, onlyActive, sortBy]);
+  }, [mergedQ.data, query, onlyActive, sortBy]);
+
+  /* ===== Columns ===== */
+  const columns: ColumnDef<SubjectRow>[] = [
+    {
+      id: "code",
+      header: "Kode",
+      align: "left",
+      minW: "120px",
+      cell: (r) => (r.code ? <span className="font-mono">{r.code}</span> : "-"),
+    },
+    {
+      id: "name",
+      header: "Nama",
+      align: "left",
+      minW: "220px",
+      cell: (r) => (
+        <div className="text-left">
+          <div className="font-medium">{r.name}</div>
+          <div className="text-[11px] text-muted-foreground">
+            {r.assignments.length} kelas ditugaskan
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: "status",
+      header: "Status",
+      minW: "120px",
+      cell: (r) =>
+        r.status === "active" ? (
+          <Badge className="justify-center">Aktif</Badge>
+        ) : (
+          <Badge variant="secondary" className="justify-center">
+            Nonaktif
+          </Badge>
+        ),
+    },
+    {
+      id: "class_count",
+      header: "Kelas",
+      minW: "80px",
+      cell: (r) => r.class_count,
+    },
+    {
+      id: "total_hours_per_week",
+      header: "Jam/Minggu",
+      minW: "110px",
+      cell: (r) => r.total_hours_per_week ?? "-",
+    },
+    {
+      id: "book_count",
+      header: "Buku",
+      minW: "80px",
+      cell: (r) => r.book_count,
+    },
+  ];
+
+  /* ===== Right controls slot (status + sort + tombol tambah) ===== */
+  const RightSlot = (
+    <div className="flex items-center gap-2">
+      <Select
+        value={onlyActive}
+        onValueChange={(v) => setOnlyActive(v as "1" | "0")}
+      >
+        <SelectTrigger className="h-9 w-[150px]" data-interactive>
+          <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
+          <SelectValue placeholder="Filter status" />
+        </SelectTrigger>
+        <SelectContent align="end">
+          <SelectItem value="1">Aktif saja</SelectItem>
+          <SelectItem value="0">Semua</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+        <SelectTrigger className="h-9 w-[170px]" data-interactive>
+          <ArrowUpDown className="mr-2 h-4 w-4 text-muted-foreground" />
+          <SelectValue placeholder="Urutkan" />
+        </SelectTrigger>
+        <SelectContent align="end">
+          <SelectItem value="name-asc">Nama A→Z</SelectItem>
+          <SelectItem value="name-desc">Nama Z→A</SelectItem>
+          <SelectItem value="code-asc">Kode A→Z</SelectItem>
+          <SelectItem value="code-desc">Kode Z→A</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <Button className="gap-1" onClick={() => setOpenCreate(true)}>
+        + Tambah
+      </Button>
+    </div>
+  );
 
   return (
     <div className="w-full">
       <main className="w-full">
         <div className="mx-auto flex flex-col gap-6">
-          {/* Toolbar */}
+          {/* Header minimal (back + title) */}
           <div className="flex items-center justify-between">
             <div className="md:flex hidden items-center gap-3">
               <Button
@@ -789,67 +795,9 @@ const SchoolSubject: React.FC = () => {
               </Button>
               <h1 className="font-semibold text-lg">Daftar Pelajaran</h1>
             </div>
-            <Button
-              size="sm"
-              className="gap-1"
-              onClick={() => setOpenCreate(true)}
-            >
-              <Plus size={16} /> Tambah
-            </Button>
           </div>
 
-          {/* Controls */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="flex items-center gap-2 rounded-xl border px-3 py-2">
-                  <Search size={16} className="text-muted-foreground" />
-                  <Input
-                    value={q}
-                    onChange={(e) => setQ(e.target.value)}
-                    placeholder="Cari nama/kode…"
-                    className="border-0 shadow-none focus-visible:ring-0"
-                  />
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Filter size={16} className="text-muted-foreground" />
-                  <Select
-                    value={onlyActive}
-                    onValueChange={(v) => setOnlyActive(v as "1" | "0")}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Filter status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">Aktif saja</SelectItem>
-                      <SelectItem value="0">Semua</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <ArrowUpDown size={16} className="text-muted-foreground" />
-                  <Select
-                    value={sortBy}
-                    onValueChange={(v) => setSortBy(v as any)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Urutkan" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="name-asc">Nama A→Z</SelectItem>
-                      <SelectItem value="name-desc">Nama Z→A</SelectItem>
-                      <SelectItem value="code-asc">Kode A→Z</SelectItem>
-                      <SelectItem value="code-desc">Kode Z→A</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* State: loading / error / empty */}
+          {/* Loading / Error state di atas tabel (optional) */}
           {mergedQ.isLoading && (
             <Card>
               <CardContent className="p-6 text-center flex items-center justify-center gap-2 text-muted-foreground">
@@ -864,27 +812,77 @@ const SchoolSubject: React.FC = () => {
               </CardContent>
             </Card>
           )}
-          {!mergedQ.isLoading && !mergedQ.isError && filtered.length === 0 && (
-            <Card>
-              <CardContent className="p-6 text-center text-muted-foreground">
-                Tidak ada data yang cocok.
-              </CardContent>
-            </Card>
-          )}
 
-          {/* Grid Cards */}
-          {!mergedQ.isLoading && !mergedQ.isError && filtered.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-              {filtered.map((r) => (
-                <SubjectCard
-                  key={r.id}
-                  row={r}
-                  onDetail={() => setDetailData(r)}
-                  onEdit={() => setEditData(r)}
-                  onDelete={() => setDeleteData(r)}
-                />
-              ))}
-            </div>
+          {/* DataTable */}
+          {!mergedQ.isLoading && !mergedQ.isError && (
+            <DataTable<SubjectRow>
+              title="Daftar Pelajaran"
+              onBack={() => navigate(-1)}
+              defaultQuery={query}
+              onQueryChange={setQuery}
+              searchByKeys={["name", "code"]}
+              searchPlaceholder="Cari nama/kode…"
+              rows={rowsFilteredSorted}
+              columns={columns}
+              getRowId={(r) => r.id}
+              loading={false}
+              error={null}
+              pageSize={30}
+              pageSizeOptions={[20, 30, 50]}
+              viewModes={["table", "card"]}
+              defaultView="table"
+              stickyHeader
+              zebra
+              rightSlot={RightSlot}
+              enableActions
+              actions={{
+                mode: "menu",
+                onView: (row) => navigate(`${row.id}`),
+                onEdit: (row) => setEditData(row),
+                onDelete: (row) => setDeleteData(row),
+                labels: { view: "Detail", edit: "Edit", delete: "Hapus" },
+                size: "sm",
+              }}
+              // klik baris juga langsung ke halaman detail
+              onRowClick={(row) => navigate(`${row.id}`)}
+              // Optional: klik baris buat quick detail
+              storageKey="subjects.table.view"
+              minTableWidth={880}
+              // Card renderer (bila user ganti ke tampilan kartu)
+              renderCard={(r) => (
+                <div className="rounded-xl border p-4 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <div className="font-semibold">{r.name}</div>
+                    {r.status === "active" ? (
+                      <Badge>Aktif</Badge>
+                    ) : (
+                      <Badge variant="secondary">Nonaktif</Badge>
+                    )}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Kode: {r.code || "-"}
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 mt-2 text-sm">
+                    <div className="rounded border p-2">
+                      <div className="text-xs text-muted-foreground">Kelas</div>
+                      <div className="font-medium">{r.class_count}</div>
+                    </div>
+                    <div className="rounded border p-2">
+                      <div className="text-xs text-muted-foreground">
+                        Jam/Mgg
+                      </div>
+                      <div className="font-medium">
+                        {r.total_hours_per_week ?? "-"}
+                      </div>
+                    </div>
+                    <div className="rounded border p-2">
+                      <div className="text-xs text-muted-foreground">Buku</div>
+                      <div className="font-medium">{r.book_count}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            />
           )}
         </div>
       </main>
@@ -933,4 +931,4 @@ const SchoolSubject: React.FC = () => {
   );
 };
 
-export default SchoolSubject;
+export default SchoolSubjectTable;

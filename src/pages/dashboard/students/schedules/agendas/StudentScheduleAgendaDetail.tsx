@@ -31,7 +31,7 @@ function formatDateID(iso: string) {
   }
 }
 
-export default function StudentDetailSchedule() {
+export default function StudentScheduleAgendaDetail() {
   const { scheduleId = "" } = useParams<{ scheduleId: string }>();
   const navigate = useNavigate();
   const location = useLocation();

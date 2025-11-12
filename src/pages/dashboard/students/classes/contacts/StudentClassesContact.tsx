@@ -157,7 +157,7 @@ function PersonRow({ p, right }: { p: Lecturer; right?: React.ReactNode }) {
   );
 }
 
-export default function ParentContactsPage() {
+export default function StudentClassesContact() {
   const { data } = useQuery({
     queryKey: ["parent-contacts"],
     queryFn: fetchContacts,

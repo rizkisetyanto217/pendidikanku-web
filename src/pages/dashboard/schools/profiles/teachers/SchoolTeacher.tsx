@@ -460,7 +460,7 @@ const SchoolTeacher: React.FC<Props> = ({
           className="gap-1"
           onClick={(e) => {
             e.stopPropagation();
-            navigate(`/${schoolId}/sekolah/guru/${t.id}`);
+            navigate(`/${schoolId}/sekolah/profil/guru/${t.id}`);
           }}
         >
           Lihat <Eye size={14} />
@@ -547,11 +547,11 @@ const SchoolTeacher: React.FC<Props> = ({
             storageKey={`teachers:${schoolId}`}
             renderCard={renderCard}
             /* Klik baris → detail */
-            onRowClick={(r) => navigate(`/${schoolId}/sekolah/guru/${r.id}`)}
+            onRowClick={(r) => navigate(`/${schoolId}/sekolah/profil/guru/${r.id}`)}
             /* Actions dropdown ala Room */
             renderActions={(r) => (
               <ActionsMenu
-                onView={() => navigate(`/${schoolId}/sekolah/guru/${r.id}`)}
+                onView={() => navigate(`/${schoolId}/sekolah/profil/guru/${r.id}`)}
               />
             )}
             /* Pagination client-side (pakai bawaan DataTable) */

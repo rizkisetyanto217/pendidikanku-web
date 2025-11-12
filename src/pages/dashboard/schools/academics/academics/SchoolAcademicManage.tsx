@@ -29,7 +29,6 @@ export interface ApiPagination {
   total_pages: number;
   has_next: boolean;
   has_prev: boolean;
-  // Tambahan (sesuai contoh payload)
   count?: number;
   per_page_options?: number[];
 }
@@ -225,7 +224,6 @@ export interface SectionDetailView {
   csst: ApiCSSTItem[];
 }
 
-// Cari berdasarkan id ATAU slug (supaya URL fleksibel)
 function findSectionFromList(
   list: ApiClassSection[] | undefined,
   sectionIdOrSlug: string
@@ -245,37 +243,286 @@ export function toSectionDetailView(
     findSectionFromList(resp?.data, sectionIdOrSlug) ?? resp?.data?.[0] ?? null;
   if (!section) return null;
 
-  // Payload sudah menaruh csst di dalam section
   const csst = section.class_sections_csst ?? [];
-
   return { section, csst };
 }
 
 /* =========================================================
-   API Fetcher
+   DEMO DATA (toggle __USE_DEMO__ untuk menyalakan/mematikan)
+========================================================= */
+const __USE_DEMO__ = true;
+
+function makeDemoView(idOrSlug: string): SectionDetailView {
+  const now = new Date();
+  const iso = (d: Date) => d.toISOString();
+
+  // pakai param supaya tidak "unused"
+  const slugFromParam = (idOrSlug || "").trim() || "x-ipa-1";
+
+  const section: ApiClassSection = {
+    class_section_id: "11111111-1111-4111-8111-111111111111",
+    class_section_school_id: "0c864ac5-74f4-4a2a-9f1d-c88b7fb7ad12",
+    class_section_class_id: "22222222-2222-4222-8222-222222222222",
+
+    class_section_teacher_id: null,
+    class_section_assistant_teacher_id: null,
+    class_section_class_room_id: "33333333-3333-4333-8333-333333333333",
+    class_section_leader_student_id: null,
+
+    // ← gunakan slug dari param agar tidak warning
+    class_section_slug: slugFromParam,
+    class_section_name: "X IPA 1",
+    class_section_code: "X-IPA-1",
+
+    class_section_schedule: {
+      days: ["Senin", "Rabu"],
+      start: "07:30",
+      end: "09:00",
+      location: "Gedung A, Lt. 2",
+    },
+
+    class_section_capacity: 32,
+    class_section_total_students: 28,
+
+    class_section_group_url: "https://chat.whatsapp.com/demo-123",
+    class_section_image_url: null,
+    class_section_image_object_key: null,
+    class_section_image_url_old: null,
+    class_section_image_object_key_old: null,
+    class_section_image_delete_pending_until: null,
+
+    class_section_is_active: true,
+    class_section_created_at: iso(new Date(now.getTime() - 7 * 86400000)),
+    class_section_updated_at: iso(now),
+
+    class_section_class_slug_snap: "kelas-x",
+
+    class_section_parent_name_snap: "Kelas X",
+    class_section_parent_code_snap: "X",
+    class_section_parent_slug_snap: "kelas-x",
+    class_section_parent_level_snap: "SMA",
+
+    class_section_room_name_snap: "Ruang 201",
+    class_section_room_slug_snap: "ruang-201",
+    class_section_room_location_snap: "Gedung A, Lt. 2",
+
+    class_section_term_id: "44444444-4444-4444-8444-444444444444",
+    class_section_term_name_snap: "2025/2026 Ganjil",
+    class_section_term_slug_snap: "2025-ganjil",
+    class_section_term_year_label_snap: "2025/26",
+
+    class_section_snapshot_updated_at: iso(now),
+
+    class_section_class_snapshot: { slug: "kelas-x" },
+    class_section_parent_snapshot: {
+      code: "X",
+      name: "Kelas X",
+      slug: "kelas-x",
+      level: "SMA",
+    },
+    class_section_term_snapshot: {
+      name: "2025/2026 Ganjil",
+      slug: "2025-ganjil",
+      year_label: "2025/26",
+    },
+    class_section_room_snapshot: {
+      code: "R201",
+      name: "Ruang 201",
+      slug: "ruang-201",
+      capacity: 36,
+      location: "Gedung A, Lt. 2",
+      is_virtual: false,
+    },
+
+    class_sections_csst: [], // diisi di bawah
+    class_sections_csst_count: 2,
+    class_sections_csst_active_count: 2,
+
+    class_section_csst_enrollment_mode: "self_select",
+    class_section_csst_self_select_requires_approval: false,
+
+    class_section_features: {},
+  };
+
+  const csst: ApiCSSTItem[] = [
+    {
+      class_section_subject_teacher_id: "55555555-5555-4555-8555-555555555555",
+      class_section_subject_teacher_school_id:
+        "0c864ac5-74f4-4a2a-9f1d-c88b7fb7ad12",
+      class_section_subject_teacher_section_id: section.class_section_id,
+      class_section_subject_teacher_class_subject_book_id:
+        "66666666-6666-4666-8666-666666666666",
+
+      class_section_subject_teacher_teacher_id:
+        "77777777-7777-4777-8777-777777777777",
+      class_section_subject_teacher_name: "Matematika (Wajib)",
+      class_section_subject_teacher_slug: "matematika-wajib",
+
+      class_section_subject_teacher_room_id:
+        section.class_section_class_room_id,
+
+      class_section_subject_teacher_total_attendance: 12,
+      class_section_subject_teacher_enrolled_count:
+        section.class_section_total_students ?? 28,
+
+      class_section_subject_teacher_delivery_mode: "offline",
+
+      class_section_subject_teacher_room_snapshot: {
+        code: "R201",
+        name: "Ruang 201",
+        slug: "ruang-201",
+        capacity: 36,
+        location: "Gedung A, Lt. 2",
+        is_virtual: false,
+      },
+      class_section_subject_teacher_room_name_snap: "Ruang 201",
+      class_section_subject_teacher_room_slug_snap: "ruang-201",
+      class_section_subject_teacher_room_location_snap: "Gedung A, Lt. 2",
+
+      class_section_subject_teacher_teacher_snapshot: {
+        id: "77777777-7777-4777-8777-777777777777",
+        name: "Ahmad Fauzi",
+        avatar_url: null,
+        title_prefix: "Drs.",
+        title_suffix: "M.Pd.",
+        whatsapp_url: "https://wa.me/6281234567890",
+      },
+      class_section_subject_teacher_teacher_name_snap:
+        "Drs. Ahmad Fauzi, M.Pd.",
+
+      class_section_subject_teacher_class_subject_book_snapshot: {
+        subject: {
+          id: "SUBJ-MAT",
+          url: "/mata-pelajaran/matematika",
+          code: "MAT",
+          name: "Matematika",
+          slug: "matematika",
+        },
+        book: {
+          id: "BOOK-MAT-10",
+          slug: "matematika-kurikulum-merdeka-10",
+          title: "Matematika – Kurikulum Merdeka (Kelas X)",
+          author: "Tim Penulis",
+          image_url: "https://picsum.photos/seed/matematika10/120/160",
+        },
+      },
+
+      class_section_subject_teacher_book_title_snap:
+        "Matematika – Kurikulum Merdeka (Kelas X)",
+      class_section_subject_teacher_book_author_snap: "Tim Penulis",
+      class_section_subject_teacher_book_slug_snap:
+        "matematika-kurikulum-merdeka-10",
+      class_section_subject_teacher_book_image_url_snap:
+        "https://picsum.photos/seed/matematika10/120/160",
+
+      class_section_subject_teacher_subject_name_snap: "Matematika",
+      class_section_subject_teacher_subject_code_snap: "MAT",
+      class_section_subject_teacher_subject_slug_snap: "matematika",
+
+      class_section_subject_teacher_books_snapshot: null,
+
+      class_section_subject_teacher_is_active: true,
+      class_section_subject_teacher_created_at: iso(
+        new Date(now.getTime() - 10 * 86400000)
+      ),
+      class_section_subject_teacher_updated_at: iso(now),
+      class_section_subject_teacher_deleted_at: null,
+    },
+    {
+      class_section_subject_teacher_id: "88888888-8888-4888-8888-888888888888",
+      class_section_subject_teacher_school_id:
+        "0c864ac5-74f4-4a2a-9f1d-c88b7fb7ad12",
+      class_section_subject_teacher_section_id: section.class_section_id,
+      class_section_subject_teacher_class_subject_book_id:
+        "99999999-9999-4999-8999-999999999999",
+
+      class_section_subject_teacher_teacher_id:
+        "aaaaaaa1-aaaa-4aaa-8aaa-aaaaaaaaaaa1",
+      class_section_subject_teacher_name: "Bahasa Indonesia",
+      class_section_subject_teacher_slug: "bahasa-indonesia",
+
+      class_section_subject_teacher_room_id:
+        section.class_section_class_room_id,
+
+      class_section_subject_teacher_total_attendance: 10,
+      class_section_subject_teacher_enrolled_count:
+        section.class_section_total_students ?? 28,
+
+      class_section_subject_teacher_delivery_mode: "hybrid",
+
+      class_section_subject_teacher_room_snapshot: {
+        code: "R201",
+        name: "Ruang 201",
+        slug: "ruang-201",
+        capacity: 36,
+        location: "Gedung A, Lt. 2",
+        is_virtual: false,
+      },
+
+      class_section_subject_teacher_teacher_snapshot: {
+        id: "aaaaaaa1-aaaa-4aaa-8aaa-aaaaaaaaaaa1",
+        name: "Siti Nurhaliza",
+        avatar_url: null,
+        title_prefix: "S.Pd.",
+        title_suffix: "",
+        whatsapp_url: "https://wa.me/628111112222",
+      },
+
+      class_section_subject_teacher_class_subject_book_snapshot: {
+        subject: {
+          id: "SUBJ-BIN",
+          url: "/mata-pelajaran/bahasa-indonesia",
+          code: "BIN",
+          name: "Bahasa Indonesia",
+          slug: "bahasa-indonesia",
+        },
+        book: {
+          id: "BOOK-BIN-10",
+          slug: "b-indonesia-kurikulum-merdeka-10",
+          title: "Bahasa Indonesia – Kurikulum Merdeka (Kelas X)",
+          author: "Kemendikbud",
+          image_url: "https://picsum.photos/seed/indonesia10/120/160",
+        },
+      },
+
+      class_section_subject_teacher_is_active: true,
+      class_section_subject_teacher_created_at: iso(
+        new Date(now.getTime() - 9 * 86400000)
+      ),
+      class_section_subject_teacher_updated_at: iso(now),
+      class_section_subject_teacher_deleted_at: null,
+    },
+  ];
+
+  section.class_sections_csst = csst;
+  return { section, csst };
+}
+
+/* =========================================================
+   API Fetcher (fallback ke DEMO saat toggle aktif / error)
 ========================================================= */
 export async function fetchSectionDetail(
   schoolId: string,
   idOrSlug: string
 ): Promise<SectionDetailView | null> {
-  const res = await axiosInstance.get<ApiSectionListWithIncludes>(
-    `/public/${schoolId}/class-sections/list`,
-    {
-      // Kirim idOrSlug sebagai id (future-proof kalau BE nanti filter by id),
-      // dan aktifkan with_csst agar BE menaruh CSST di section.
-      params: { id: idOrSlug, with_csst: true },
-    }
-  );
-
-  // Logging ringan kalau kosong (opsional)
-  if (!res.data?.data?.length) {
-    console.warn("[academic-detail] API mengembalikan data kosong", {
-      schoolId,
-      idOrSlug,
-    });
+  if (__USE_DEMO__) {
+    return makeDemoView(idOrSlug);
   }
+  try {
+    const res = await axiosInstance.get<ApiSectionListWithIncludes>(
+      `/public/${schoolId}/class-sections/list`,
+      { params: { id: idOrSlug, with_csst: true } }
+    );
 
-  return toSectionDetailView(res.data, idOrSlug);
+    if (!res.data?.data?.length) {
+      console.warn("[academic-detail] API empty, fallback demo");
+      return makeDemoView(idOrSlug);
+    }
+    return toSectionDetailView(res.data, idOrSlug) ?? makeDemoView(idOrSlug);
+  } catch (err) {
+    console.warn("[academic-detail] API error, fallback demo", err);
+    return makeDemoView(idOrSlug);
+  }
 }
 
 /* =========================================================
@@ -296,7 +543,7 @@ export function scheduleToText(sch?: ApiSchedule | null): string {
 /* =========================================================
    PAGE COMPONENT — Detail Akademik (shadcn/ui)
 ========================================================= */
-export default function SchoolManagementAcademicDetail() {
+export default function SchoolAcademicManage() {
   const { schoolId = "", id = "" } = useParams<{
     schoolId: string;
     id: string;

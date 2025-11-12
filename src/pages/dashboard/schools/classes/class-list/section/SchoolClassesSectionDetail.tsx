@@ -302,7 +302,7 @@ function EditSectionModal({
 }
 
 /* ================= Page ================= */
-export default function SchoolSectionDetail() {
+export default function SchoolClassesSectionDetail() {
   const { id = "", schoolId = "" } = useParams<{
     id: string;
     schoolId: string;
