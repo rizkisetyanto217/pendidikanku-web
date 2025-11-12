@@ -1,38 +1,54 @@
-// src/pages/school/SchoolMainDashboard.tsx
-import { useEffect, useMemo, useState } from "react";
+// src/pages/sekolahislamku/student/StudentMainDashboard.tsx
+import React, { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Outlet, useNavigate } from "react-router-dom";
 import axios from "@/lib/axios";
 
-import {
-  Users,
-  UserCog,
-  BookOpen,
-  ArrowLeft,
-  Wallet,
-  GraduationCap,
-  CalendarDays,
-} from "lucide-react";
-
+/* shadcn/ui */
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 
+/* icons */
+import {
+  User,
+  CalendarDays,
+  Wallet,
+  GraduationCap,
+  ClipboardList,
+  ListChecks,
+  MessageSquare,
+  ExternalLink,
+} from "lucide-react";
 
-/* ================= Types (API & UI) ================ */
+/* =========================================================
+   DEMO TOGGLE
+========================================================= */
+const __USE_DEMO__ = true;
+
+/* =========================================================
+   TYPES
+========================================================= */
 export type AnnouncementUI = {
   id: string;
   title: string;
   date: string;
   body: string;
-  themeId?: string | null;
   type?: "info" | "warning" | "success";
   slug?: string;
 };
 
-type BillItem = {
+type StudentScheduleItem = {
+  id: string;
+  time: string; // "07:00 - 08:30"
+  title: string; // "Matematika - X IPA 1"
+  location?: string;
+  teacher?: string;
+  note?: string;
+};
+
+type StudentBillItem = {
   id: string;
   title: string;
   amount: number;
@@ -40,76 +56,49 @@ type BillItem = {
   status: "unpaid" | "paid" | "overdue";
 };
 
-type AttendanceStatus = "hadir" | "sakit" | "izin" | "alpa" | "online";
-
-type SchoolHome = {
-  schoolName: string;
-  hijriDate: string;
-  gregorianDate: string;
-  finance: {
-    unpaidCount: number;
-    unpaidTotal: number;
-    paidThisMonth: number;
-    outstandingBills: BillItem[];
-  };
-  todaySchedule: TodayScheduleItem[];
-  announcements: AnnouncementUI[];
-  attendanceTodayByStatus: Record<AttendanceStatus, number>;
-};
-
-type LembagaStats = {
-  lembaga_stats_lembaga_id: string;
-  lembaga_stats_active_classes: number;
-  lembaga_stats_active_sections: number;
-  lembaga_stats_active_students: number;
-  lembaga_stats_active_teachers: number;
-  lembaga_stats_created_at: string;
-  lembaga_stats_updated_at: string;
-};
-type LembagaStatsResponse = { data: LembagaStats; found: boolean };
-
-type SessionsItem = {
-  class_attendance_sessions_id: string;
-  class_attendance_sessions_date: string;
-  class_attendance_sessions_title: string;
-  class_attendance_sessions_general_info?: string;
-  class_attendance_sessions_note?: string;
-};
-type SessionsResponse = {
-  message: string;
-  data: { limit: number; offset: number; count: number; items: SessionsItem[] };
-};
-
-type SchoolDashboardProps = {
-  showBack?: boolean;
-  backTo?: string;
-  backLabel?: string;
-};
-
-export type TodayScheduleItem = {
+type StudentAssignmentItem = {
   id: string;
-  time: string; // "07:00 - 08:30"
   title: string;
-  location?: string;
-  teacher?: string;
-  note?: string;
+  subject: string;
+  classLabel?: string;
+  dueDate: string;
+  status: "pending" | "submitted" | "late";
 };
 
-/* ============ Query Keys ============ */
-const QK = {
-  HOME: ["school-home"] as const,
-  STATS: ["lembaga-stats"] as const,
-  TODAY_SESSIONS: (d: string) =>
-    ["class-attendance-sessions", "today", d] as const,
-  ANNOUNCEMENTS: ["announcements", "u"] as const,
-  THEMES: ["announcement-themes"] as const,
+type StudentGradeItem = {
+  id: string;
+  subject: string;
+  assessmentName: string;
+  score: number;
+  maxScore: number;
+  date: string;
 };
 
-/* ================= Utils ================ */
-const yyyyMmDdLocal = (d = new Date()) => {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+export type StudentHome = {
+  student: {
+    id: string;
+    name: string;
+    nis?: string;
+    className: string;
+    schoolName: string;
+    avatarUrl?: string;
+  };
+  kpis: {
+    todaySessions: number;
+    unpaidBills: number;
+    assignmentsDue: number;
+    avgScore: number;
+  };
+  scheduleToday: StudentScheduleItem[];
+  bills: StudentBillItem[];
+  assignments: StudentAssignmentItem[];
+  grades: StudentGradeItem[];
+  announcements: AnnouncementUI[];
 };
+
+/* =========================================================
+   UTILS
+========================================================= */
 
 const dateFmt = (iso: string): string => {
   if (!iso) return "-";
@@ -131,125 +120,179 @@ const formatIDR = (n: number) =>
     maximumFractionDigits: 0,
   }).format(n);
 
-/* ============ Dummy Home ============ */
-const mockTodaySchedule: TodayScheduleItem[] = [
-  {
-    id: "t1",
-    time: "07:00 - 08:30",
-    title: "Matematika - Kelas 5A",
-    location: "R. 5A",
-    teacher: "Bu Rani",
-  },
-  {
-    id: "t2",
-    time: "09:00 - 10:30",
-    title: "Bahasa Indonesia - Kelas 6B",
-    location: "R. 6B",
-    teacher: "Pak Dedi",
-  },
-  {
-    id: "t3",
-    time: "11:00 - 12:00",
-    title: "Pembinaan Tahfidz",
-    location: "Aula",
-    teacher: "Ust. Ahmad",
-  },
-];
-
-async function fetchSchoolHome(): Promise<SchoolHome> {
+/* =========================================================
+   DEMO DATA
+========================================================= */
+function makeDemoStudentHome(): StudentHome {
   const now = new Date();
-  const iso = now.toISOString();
+
+  const addDaysISO = (days: number) =>
+    new Date(now.getTime() + days * 864e5).toISOString();
+
+  const scheduleToday: StudentScheduleItem[] = [
+    {
+      id: "sc1",
+      time: "07:00 - 08:30",
+      title: "Matematika - X IPA 1",
+      location: "Ruang 201",
+      teacher: "Drs. Ahmad Fauzi, M.Pd.",
+      note: "Bab 2: Persamaan Kuadrat",
+    },
+    {
+      id: "sc2",
+      time: "09:00 - 10:30",
+      title: "Bahasa Indonesia - X IPA 1",
+      location: "Ruang 201",
+      teacher: "Siti Nurhaliza, S.Pd.",
+      note: "Analisis teks editorial",
+    },
+    {
+      id: "sc3",
+      time: "11:00 - 12:00",
+      title: "Pembinaan Tahfidz",
+      location: "Aula",
+      teacher: "Ust. Ahmad",
+    },
+  ];
+
+  const bills: StudentBillItem[] = [
+    {
+      id: "sb101",
+      title: "SPP Agustus 2025",
+      amount: 250_000,
+      dueDate: addDaysISO(5),
+      status: "unpaid",
+    },
+    {
+      id: "sb102",
+      title: "Buku Paket Semester Ganjil",
+      amount: 400_000,
+      dueDate: addDaysISO(10),
+      status: "unpaid",
+    },
+  ];
+
+  const assignments: StudentAssignmentItem[] = [
+    {
+      id: "as1",
+      title: "PR Aljabar 1",
+      subject: "Matematika",
+      classLabel: "X IPA 1",
+      dueDate: addDaysISO(1),
+      status: "pending",
+    },
+    {
+      id: "as2",
+      title: "Tugas Teks Editorial",
+      subject: "Bahasa Indonesia",
+      classLabel: "X IPA 1",
+      dueDate: addDaysISO(2),
+      status: "pending",
+    },
+    {
+      id: "as3",
+      title: "Setoran Hafalan Juz 30",
+      subject: "Tahfidz",
+      classLabel: "Ekskul Tahfidz",
+      dueDate: addDaysISO(3),
+      status: "submitted",
+    },
+  ];
+
+  const grades: StudentGradeItem[] = [
+    {
+      id: "gr1",
+      subject: "Matematika",
+      assessmentName: "UH 1 - Aljabar",
+      score: 88,
+      maxScore: 100,
+      date: addDaysISO(-3),
+    },
+    {
+      id: "gr2",
+      subject: "Bahasa Indonesia",
+      assessmentName: "Tugas 1 - Cerpen",
+      score: 92,
+      maxScore: 100,
+      date: addDaysISO(-5),
+    },
+    {
+      id: "gr3",
+      subject: "Tahfidz",
+      assessmentName: "Setoran Juz 30",
+      score: 95,
+      maxScore: 100,
+      date: addDaysISO(-7),
+    },
+  ];
+
+  const announcements: AnnouncementUI[] = [
+    {
+      id: "ann-st-01",
+      title: "Pengambilan Raport Tengah Semester",
+      date: addDaysISO(7),
+      body: "Orang tua/wali diundang hadir pada hari Sabtu pukul 08:00 di kelas masing-masing.",
+      type: "info",
+    },
+    {
+      id: "ann-st-02",
+      title: "Lomba Tahfidz Tingkat Sekolah",
+      date: addDaysISO(12),
+      body: "Peserta wajib menghafal minimal 3 surat pilihan. Pendaftaran melalui wali kelas.",
+      type: "success",
+    },
+  ];
+
+  const avgScore =
+    grades.reduce((acc, g) => acc + g.score, 0) /
+    (grades.length > 0 ? grades.length : 1);
+
   return {
-    schoolName: "Sekolah Islamku",
-    hijriDate: "16 Muharram 1447 H",
-    gregorianDate: iso,
-    finance: {
-      unpaidCount: 18,
-      unpaidTotal: 7_500_000,
-      paidThisMonth: 42_250_000,
-      outstandingBills: [
-        {
-          id: "b101",
-          title: "SPP Agustus - Kelas 3A",
-          amount: 150_000,
-          dueDate: new Date(now.getTime() + 5 * 864e5).toISOString(),
-          status: "unpaid",
-        },
-        {
-          id: "b102",
-          title: "SPP Agustus - Kelas 4B",
-          amount: 300_000,
-          dueDate: new Date(now.getTime() + 3 * 864e5).toISOString(),
-          status: "unpaid",
-        },
-        {
-          id: "b103",
-          title: "Seragam Baru",
-          amount: 250_000,
-          dueDate: new Date(now.getTime() + 9 * 864e5).toISOString(),
-          status: "unpaid",
-        },
-      ],
+    student: {
+      id: "student-1",
+      name: "Muhammad Rizki",
+      nis: "2025-001",
+      className: "X IPA 1",
+      schoolName: "Sekolah Islamku",
     },
-    todaySchedule: mockTodaySchedule,
-    announcements: [],
-    attendanceTodayByStatus: {
-      hadir: 286,
-      online: 8,
-      sakit: 10,
-      izin: 9,
-      alpa: 7,
+    kpis: {
+      todaySessions: scheduleToday.length,
+      unpaidBills: bills.filter((b) => b.status === "unpaid").length,
+      assignmentsDue: assignments.filter((a) => a.status === "pending").length,
+      avgScore: Math.round(avgScore),
     },
+    scheduleToday,
+    bills,
+    assignments,
+    grades,
+    announcements,
   };
 }
 
-function mapSessionsToTodaySchedule(
-  items: SessionsItem[]
-): TodayScheduleItem[] {
-  return items.map((it) => ({
-    id: it.class_attendance_sessions_id,
-    time: new Date(it.class_attendance_sessions_date).toLocaleTimeString(
-      "id-ID",
-      { hour: "2-digit", minute: "2-digit" }
-    ),
-    title: it.class_attendance_sessions_title,
-    note: it.class_attendance_sessions_note || undefined,
-  }));
+/* =========================================================
+   API (with demo fallback)
+========================================================= */
+const QK = {
+  STUDENT_HOME: ["student-home"] as const,
+};
+
+async function fetchStudentHome(): Promise<StudentHome> {
+  if (__USE_DEMO__) return makeDemoStudentHome();
+  try {
+    const res = await axios.get<StudentHome>("/api/s/home", {
+      withCredentials: true,
+    });
+    if (!res.data) return makeDemoStudentHome();
+    return res.data;
+  } catch (e) {
+    console.warn("[student-home] API error, fallback demo", e);
+    return makeDemoStudentHome();
+  }
 }
 
-/* ============ Data hooks ============ */
-function useLembagaStats() {
-  return useQuery<LembagaStats | null>({
-    queryKey: QK.STATS,
-    queryFn: async () => {
-      const res = await axios.get<LembagaStatsResponse>(
-        "/api/a/lembaga-stats",
-        {
-          withCredentials: true,
-        }
-      );
-      return res.data?.found ? res.data.data : null;
-    },
-  });
-}
-function useTodaySessions() {
-  const today = useMemo(() => yyyyMmDdLocal(), []);
-  return useQuery<SessionsItem[]>({
-    queryKey: QK.TODAY_SESSIONS(today),
-    queryFn: async () => {
-      const res = await axios.get<SessionsResponse>(
-        "/api/u/class-attendance-sessions",
-        {
-          params: { date_from: today, date_to: today, limit: 50, offset: 0 },
-          withCredentials: true,
-        }
-      );
-      return res.data?.data?.items ?? [];
-    },
-  });
-}
-
-/* ============ Small shadcn UI blocks ============ */
+/* =========================================================
+   SMALL UI PRIMITIVES
+========================================================= */
 function KpiTile({
   label,
   value,
@@ -274,51 +317,16 @@ function KpiTile({
   );
 }
 
-function MiniStat({
-  label,
-  value,
-  sub,
-  tone,
-}: {
-  label: string;
-  value: string;
-  sub?: string;
-  tone?: "warning" | "normal";
-}) {
-  const isWarn = tone === "warning";
-  return (
-    <Card className="shadow-sm">
-      <CardContent className="p-4">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-2">
-          <div className="text-sm font-medium leading-tight md:flex-1 truncate">
-            {label}
-          </div>
-          <Badge variant={isWarn ? "destructive" : "outline"} className="w-fit">
-            {isWarn ? "Perlu perhatian" : "OK"}
-          </Badge>
-        </div>
-        <div className="text-lg md:text-xl font-semibold leading-tight mb-1">
-          {value}
-        </div>
-        {sub && <div className="text-sm text-muted-foreground">{sub}</div>}
-      </CardContent>
-    </Card>
-  );
-}
-
-/* ============ Shadcn cards for schedule & bills ============ */
-function TodayScheduleCard({
+function ScheduleCard({
   items,
   title = "Jadwal Hari Ini",
-  maxItems = 3,
   seeAllPath,
 }: {
-  items: TodayScheduleItem[];
+  items: StudentScheduleItem[];
   title?: string;
-  maxItems?: number;
   seeAllPath?: string;
 }) {
-  const shown = items.slice(0, maxItems);
+  const shown = items.slice(0, 5);
   return (
     <Card className="shadow-sm">
       <CardHeader className="pb-2">
@@ -364,7 +372,7 @@ function TodayScheduleCard({
               className="w-full"
               onClick={() => (window.location.href = seeAllPath)}
             >
-              Lihat semua
+              Lihat semua jadwal
             </Button>
           </>
         )}
@@ -373,18 +381,12 @@ function TodayScheduleCard({
   );
 }
 
-function BillsSectionCard({
+function BillsCard({
   bills,
-  dateFmt,
-  formatIDR,
   seeAllPath,
-  getPayHref,
 }: {
-  bills: BillItem[];
-  dateFmt: (iso: string) => string;
-  formatIDR: (n: number) => string;
+  bills: StudentBillItem[];
   seeAllPath?: string;
-  getPayHref?: (b: BillItem) => string;
 }) {
   return (
     <Card className="shadow-sm">
@@ -393,7 +395,7 @@ function BillsSectionCard({
           <span className="h-9 w-9 rounded-xl grid place-items-center bg-muted text-primary">
             <Wallet className="h-4 w-4" />
           </span>
-          Tagihan Belum Lunas
+          Tagihan Saya
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -417,15 +419,15 @@ function BillsSectionCard({
               </div>
               <div className="text-right shrink-0">
                 <div className="font-semibold">{formatIDR(b.amount)}</div>
-                {getPayHref && (
-                  <Button
-                    size="sm"
-                    className="mt-1"
-                    onClick={() => (window.location.href = getPayHref(b))}
-                  >
-                    Bayar
-                  </Button>
-                )}
+                <Button
+                  size="sm"
+                  className="mt-1"
+                  onClick={() =>
+                    (window.location.href = `/siswa/tagihan/${b.id}`)
+                  }
+                >
+                  Bayar
+                </Button>
               </div>
             </div>
           ))
@@ -447,151 +449,368 @@ function BillsSectionCard({
   );
 }
 
-/* ================= Page ================= */
-const SchoolMainDashboard: React.FC<SchoolDashboardProps> = ({
-  showBack = false,
-  backTo,
-  backLabel = "Kembali",
-}) => {
-  const navigate = useNavigate();
+function AssignmentsCard({
+  items,
+  seeAllPath,
+}: {
+  items: StudentAssignmentItem[];
+  seeAllPath?: string;
+}) {
+  return (
+    <Card className="shadow-sm">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <span className="h-9 w-9 rounded-xl grid place-items-center bg-muted text-primary">
+            <ClipboardList className="h-4 w-4" />
+          </span>
+          Tugas & Ulangan
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {items.length === 0 ? (
+          <div className="text-sm text-muted-foreground">Belum ada tugas.</div>
+        ) : (
+          items.slice(0, 5).map((a) => (
+            <div
+              key={a.id}
+              className="rounded-xl border p-3 flex items-center justify-between gap-3"
+            >
+              <div className="min-w-0">
+                <div className="font-medium leading-tight truncate">
+                  {a.title} — {a.subject}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {a.classLabel ? `${a.classLabel} • ` : ""}
+                  Batas: {dateFmt(a.dueDate)}
+                </div>
+              </div>
+              <Badge
+                variant={
+                  a.status === "late"
+                    ? "destructive"
+                    : a.status === "pending"
+                    ? "outline"
+                    : "default"
+                }
+                className="shrink-0"
+              >
+                {a.status === "pending"
+                  ? "Belum dikumpulkan"
+                  : a.status === "submitted"
+                  ? "Sudah dikumpulkan"
+                  : "Terlambat"}
+              </Badge>
+            </div>
+          ))
+        )}
+        {seeAllPath && items.length > 0 && (
+          <>
+            <Separator className="my-1" />
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => (window.location.href = seeAllPath)}
+            >
+              Lihat semua tugas
+            </Button>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function GradesCard({ items }: { items: StudentGradeItem[] }) {
+  return (
+    <Card className="shadow-sm">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <span className="h-9 w-9 rounded-xl grid place-items-center bg-muted text-primary">
+            <GraduationCap className="h-4 w-4" />
+          </span>
+          Nilai Terbaru
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {items.length === 0 ? (
+          <div className="text-sm text-muted-foreground">Belum ada nilai.</div>
+        ) : (
+          items.slice(0, 5).map((g) => (
+            <div
+              key={g.id}
+              className="rounded-xl border p-3 flex items-center justify-between gap-3"
+            >
+              <div className="min-w-0">
+                <div className="font-medium leading-tight truncate">
+                  {g.subject} — {g.assessmentName}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {dateFmt(g.date)}
+                </div>
+              </div>
+              <div className="text-right shrink-0">
+                <div className="font-semibold">
+                  {g.score}/{g.maxScore}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function AnnouncementsCard({ items }: { items: AnnouncementUI[] }) {
+  return (
+    <Card className="shadow-sm">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <span className="h-9 w-9 rounded-xl grid place-items-center bg-muted text-primary">
+            <MessageSquare className="h-4 w-4" />
+          </span>
+          Pengumuman
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {items.length === 0 ? (
+          <div className="text-sm text-muted-foreground">
+            Tidak ada pengumuman.
+          </div>
+        ) : (
+          items.slice(0, 4).map((a) => (
+            <div key={a.id} className="rounded-xl border p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="font-medium leading-tight">{a.title}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {dateFmt(a.date)}
+                    {a.type ? ` • ${a.type}` : ""}
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() =>
+                    (window.location.href = a.slug
+                      ? `/siswa/pengumuman/${a.slug}`
+                      : `/siswa/pengumuman/${a.id}`)
+                  }
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </Button>
+              </div>
+              {a.body && (
+                <div className="text-sm mt-2 text-foreground/90">{a.body}</div>
+              )}
+            </div>
+          ))
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function QuickActions() {
+  return (
+    <Card className="shadow-sm">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <span className="h-9 w-9 rounded-xl grid place-items-center bg-muted text-primary">
+            <ListChecks className="h-4 w-4" />
+          </span>
+          Aksi Cepat
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <Button
+          className="w-full"
+          onClick={() => (window.location.href = "/siswa/jadwal")}
+        >
+          <CalendarDays className="mr-2 h-4 w-4" />
+          Lihat Jadwal Lengkap
+        </Button>
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={() => (window.location.href = "/siswa/tagihan")}
+        >
+          <Wallet className="mr-2 h-4 w-4" />
+          Lihat Semua Tagihan
+        </Button>
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={() => (window.location.href = "/siswa/tugas")}
+        >
+          <ClipboardList className="mr-2 h-4 w-4" />
+          Lihat Semua Tugas
+        </Button>
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={() => (window.location.href = "/siswa/nilai")}
+        >
+          <GraduationCap className="mr-2 h-4 w-4" />
+          Lihat Semua Nilai
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+/* =========================================================
+   PAGE
+========================================================= */
+const StudentMainDashboard: React.FC = () => {
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: QK.STUDENT_HOME,
+    queryFn: fetchStudentHome,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+
   const [flash, setFlash] = useState<{
     type: "success" | "error";
     msg: string;
   } | null>(null);
   useEffect(() => {
-    if (flash) {
-      const t = setTimeout(() => setFlash(null), 3000);
-      return () => clearTimeout(t);
-    }
+    if (!flash) return;
+    const t = setTimeout(() => setFlash(null), 3000);
+    return () => clearTimeout(t);
   }, [flash]);
 
-  const homeQ = useQuery({ queryKey: QK.HOME, queryFn: fetchSchoolHome });
-  const statsQ = useLembagaStats();
-  const todaySessionsQ = useTodaySessions();
+  if (isLoading) {
+    return (
+      <div className="p-6 grid gap-4">
+        <Skeleton className="h-16 w-full" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-12 gap-5">
+          <Skeleton className="h-64 w-full md:col-span-6" />
+          <Skeleton className="h-64 w-full md:col-span-6" />
+        </div>
+      </div>
+    );
+  }
 
-  const scheduleItems: TodayScheduleItem[] = useMemo(() => {
-    const apiItems = todaySessionsQ.data ?? [];
-    return apiItems.length > 0
-      ? mapSessionsToTodaySchedule(apiItems)
-      : mockTodaySchedule;
-  }, [todaySessionsQ.data]);
+  if (!data) {
+    return (
+      <div className="p-6 text-center text-muted-foreground">
+        Tidak bisa memuat dashboard.
+      </div>
+    );
+  }
+
+  const s = data.student;
+  const nameLine = s.nis ? `${s.name} • ${s.nis}` : s.name;
 
   return (
     <div className="w-full bg-background text-foreground">
-      <main className="w-full">
-        <div className="mx-auto flex flex-col lg:flex-row gap-4 lg:gap-6">
-          <section className="flex-1 flex flex-col space-y-6 min-w-0">
-            {/* KPI */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {[
-                {
-                  label: "Guru",
-                  value: statsQ.data?.lembaga_stats_active_teachers ?? 26,
-                  icon: <UserCog size={18} />,
-                },
-                {
-                  label: "Siswa",
-                  value: statsQ.data?.lembaga_stats_active_students ?? 342,
-                  icon: <Users size={18} />,
-                },
-                {
-                  label: "Program",
-                  value: 12,
-                  icon: <GraduationCap size={18} />,
-                },
-                {
-                  label: "Kelas",
-                  value: statsQ.data?.lembaga_stats_active_classes ?? 18,
-                  icon: <BookOpen size={18} />,
-                },
-              ].map((k) =>
-                statsQ.isLoading ? (
-                  <Card key={k.label}>
-                    <CardContent className="p-4">
-                      <Skeleton className="h-16 w-full" />
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <KpiTile
-                    key={k.label}
-                    label={k.label}
-                    value={k.value}
-                    icon={k.icon}
-                  />
-                )
-              )}
+      <main className="max-w-screen-2xl mx-auto py-6 px-4 space-y-6">
+        {/* Header */}
+        <Card className="shadow-sm">
+          <CardContent className="p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="h-12 w-12 rounded-full grid place-items-center bg-primary/10 text-primary">
+                <User className="h-6 w-6" />
+              </span>
+              <div>
+                <div className="text-sm text-muted-foreground">Siswa</div>
+                <div className="text-lg font-semibold leading-tight">
+                  {nameLine}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {s.className} • {s.schoolName}
+                </div>
+              </div>
             </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="outline">
+                <CalendarDays className="h-3.5 w-3.5 mr-1" />
+                Sesi hari ini: {data.kpis.todaySessions}
+              </Badge>
+              <Badge
+                variant={data.kpis.unpaidBills > 0 ? "destructive" : "outline"}
+              >
+                <Wallet className="h-3.5 w-3.5 mr-1" />
+                Tagihan belum lunas: {data.kpis.unpaidBills}
+              </Badge>
+              <Badge variant="outline">
+                <ClipboardList className="h-3.5 w-3.5 mr-1" />
+                Tugas pending: {data.kpis.assignmentsDue}
+              </Badge>
+              <Badge variant="outline">
+                <GraduationCap className="h-3.5 w-3.5 mr-1" />
+                Rata-rata nilai: {data.kpis.avgScore}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
 
-            {showBack && (
-              <div className="flex">
-                <Button
-                  variant="ghost"
-                  onClick={() => (backTo ? navigate(backTo) : navigate(-1))}
-                  className="inline-flex items-center gap-2"
-                >
-                  <ArrowLeft size={18} /> {backLabel}
-                </Button>
-              </div>
-            )}
+        {/* KPI Tiles */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <KpiTile
+            label="Sesi Hari Ini"
+            value={data.kpis.todaySessions}
+            icon={<CalendarDays size={18} />}
+          />
+          <KpiTile
+            label="Tagihan Belum Lunas"
+            value={data.kpis.unpaidBills}
+            icon={<Wallet size={18} />}
+          />
+          <KpiTile
+            label="Tugas Pending"
+            value={data.kpis.assignmentsDue}
+            icon={<ClipboardList size={18} />}
+          />
+          <KpiTile
+            label="Rata-rata Nilai"
+            value={data.kpis.avgScore}
+            icon={<GraduationCap size={18} />}
+          />
+        </div>
 
-            {/* Outlet (detail/child routes) */}
-            <Outlet />
+        {/* Grid utama */}
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-5 items-stretch">
+          {/* Kiri */}
+          <div className="col-span-1 md:col-span-6 space-y-6">
+            <ScheduleCard
+              items={data.scheduleToday}
+              title="Jadwal Hari Ini"
+              seeAllPath="/siswa/jadwal"
+            />
+            <AssignmentsCard
+              items={data.assignments}
+              seeAllPath="/siswa/tugas"
+            />
+          </div>
 
-            {/* Jadwal • Keuangan */}
-            <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-5 items-stretch">
-              {/* Jadwal */}
-              <div className="col-span-1 md:col-span-6">
-                <TodayScheduleCard
-                  items={scheduleItems}
-                  title="Jadwal Hari Ini"
-                  maxItems={3}
-                  seeAllPath="all-schedule"
-                />
-                {(todaySessionsQ.isLoading || todaySessionsQ.isFetching) && (
-                  <div className="px-1 pt-2 text-xs text-muted-foreground">
-                    Memuat jadwal hari ini…
-                  </div>
-                )}
-              </div>
+          {/* Kanan */}
+          <div className="col-span-1 md:col-span-6 space-y-6">
+            <BillsCard bills={data.bills} seeAllPath="/siswa/tagihan" />
+            <GradesCard items={data.grades} />
+          </div>
+        </section>
 
-              {/* Keuangan */}
-              <div className="md:col-span-6 lg:col-span-6 space-y-6 min-w-0">
-                <Card className="shadow-sm">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <span className="h-9 w-9 rounded-xl grid place-items-center bg-muted text-primary">
-                        <Wallet size={18} />
-                      </span>
-                      Snapshot Keuangan
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <MiniStat
-                      label="Tertagih Bulan Ini"
-                      value={formatIDR(homeQ.data?.finance.paidThisMonth ?? 0)}
-                    />
-                    <MiniStat
-                      label="Tunggakan"
-                      value={`${homeQ.data?.finance.unpaidCount ?? 0} tagihan`}
-                      sub={formatIDR(homeQ.data?.finance.unpaidTotal ?? 0)}
-                      tone="warning"
-                    />
-                  </CardContent>
-                </Card>
+        {/* Pengumuman + Aksi cepat */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <AnnouncementsCard items={data.announcements} />
+          <QuickActions />
+        </section>
 
-                <BillsSectionCard
-                  bills={homeQ.data?.finance.outstandingBills ?? []}
-                  dateFmt={dateFmt}
-                  formatIDR={formatIDR}
-                  seeAllPath="all-invoices"
-                  getPayHref={(b) => `/tagihan/${b.id}`}
-                />
-              </div>
-            </section>
-          </section>
+        {/* Footer mini */}
+        <div className="text-xs text-muted-foreground text-right">
+          {isFetching ? "Menyegarkan data…" : ""}
         </div>
       </main>
     </div>
   );
 };
-export default SchoolMainDashboard;
+
+export default StudentMainDashboard;

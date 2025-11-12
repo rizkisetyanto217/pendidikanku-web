@@ -1,0 +1,1336 @@
+// src/pages/sekolahislamku/teacher/TeacherQuizBuilder.tsx
+import { useEffect, useMemo, useState, useRef } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+
+/* shadcn/ui */
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+
+/* icons */
+import {
+  ArrowLeft,
+  Eye,
+  Plus,
+  Save,
+  Settings2,
+  Trash2,
+  Copy,
+  ArrowUp,
+  ArrowDown,
+  Upload,
+  Download,
+  Timer,
+  Shuffle,
+  Lock,
+  ListChecks,
+  GraduationCap,
+} from "lucide-react";
+
+import { cn } from "@/lib/utils";
+
+/* =========================
+   Types & Helpers
+========================= */
+type QuestionType =
+  | "short_text"
+  | "paragraph"
+  | "multiple_choice"
+  | "checkboxes"
+  | "dropdown"
+  | "scale"
+  | "date"
+  | "time";
+
+type Option = { id: string; text: string; correct?: boolean };
+
+type Question = {
+  id: string;
+  title: string;
+  description?: string;
+  type: QuestionType;
+  required: boolean;
+  points: number;
+  // for choices
+  options?: Option[];
+  // for answer key (short/paragraph free text)
+  answerKeyText?: string;
+  // scale config
+  scaleMin?: number; // inclusive
+  scaleMax?: number; // inclusive
+  scaleMinLabel?: string;
+  scaleMaxLabel?: string;
+  // collapsed UI state
+  collapsed?: boolean;
+};
+
+type QuizSettings = {
+  shuffleQuestions: boolean;
+  shuffleOptions: boolean;
+  showCorrectAfterSubmit: boolean;
+  oneQuestionPerPage: boolean;
+  timeLimitMin?: number | null; // null = no limit
+  attemptsAllowed: number; // 1..n
+  startAt?: string | null; // ISO
+  endAt?: string | null; // ISO
+  requireLogin: boolean;
+  preventBackNavigation: boolean;
+};
+
+type QuizDoc = {
+  id: string;
+  classId?: string;
+  title: string;
+  description?: string;
+  settings: QuizSettings;
+  questions: Question[];
+  status: "draft" | "published";
+  updatedAt: string; // ISO
+};
+
+const uid = () =>
+  `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+
+const LOCAL_KEY = (id: string) => `quiz-builder:${id}`;
+
+const TYPE_LABEL: Record<QuestionType, string> = {
+  short_text: "Jawaban Singkat",
+  paragraph: "Paragraf",
+  multiple_choice: "Pilihan Ganda",
+  checkboxes: "Checkbox (Multi Jawaban)",
+  dropdown: "Dropdown",
+  scale: "Skala Linear",
+  date: "Tanggal",
+  time: "Waktu",
+};
+
+const TYPE_ACCENT: Record<QuestionType, string> = {
+  short_text: "border-l-emerald-500/70",
+  paragraph: "border-l-emerald-500/70",
+  multiple_choice: "border-l-violet-500/70",
+  checkboxes: "border-l-indigo-500/70",
+  dropdown: "border-l-blue-500/70",
+  scale: "border-l-amber-500/70",
+  date: "border-l-rose-500/70",
+  time: "border-l-rose-500/70",
+};
+
+const defaultQuestion = (t: QuestionType = "short_text"): Question => {
+  const base: Question = {
+    id: uid(),
+    title: "",
+    description: "",
+    type: t,
+    required: false,
+    points: 10,
+  };
+  if (t === "multiple_choice" || t === "checkboxes" || t === "dropdown") {
+    base.options = [
+      { id: uid(), text: "Opsi 1", correct: true },
+      { id: uid(), text: "Opsi 2", correct: false },
+    ];
+  }
+  if (t === "scale") {
+    base.scaleMin = 1;
+    base.scaleMax = 5;
+    base.scaleMinLabel = "Rendah";
+    base.scaleMaxLabel = "Tinggi";
+  }
+  return base;
+};
+
+/* =========================
+   Page Component
+========================= */
+export default function TeacherQuizBuilder() {
+  const { id: classId = "" } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const endRef = useRef<HTMLDivElement | null>(null);
+
+  // Build new or load from storage (per class)
+  const initialDoc: QuizDoc = useMemo(() => {
+    const stored = localStorage.getItem(LOCAL_KEY(classId || "global"));
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored) as QuizDoc;
+        return parsed;
+      } catch {}
+    }
+    return {
+      id: uid(),
+      classId,
+      title: "Kuis Baru",
+      description: "",
+      settings: {
+        shuffleQuestions: false,
+        shuffleOptions: false,
+        showCorrectAfterSubmit: true,
+        oneQuestionPerPage: false,
+        timeLimitMin: null,
+        attemptsAllowed: 1,
+        startAt: null,
+        endAt: null,
+        requireLogin: true,
+        preventBackNavigation: false,
+      },
+      questions: [
+        defaultQuestion("multiple_choice"),
+        defaultQuestion("short_text"),
+      ],
+      status: "draft",
+      updatedAt: new Date().toISOString(),
+    };
+  }, [classId]);
+
+  const [doc, setDoc] = useState<QuizDoc>(initialDoc);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [tab, setTab] = useState<"design" | "preview">("design");
+
+  // autosave
+  useEffect(() => {
+    localStorage.setItem(LOCAL_KEY(classId || "global"), JSON.stringify(doc));
+  }, [doc, classId]);
+
+  // scroll ke bawah tiap kali jumlah pertanyaan berubah
+  useEffect(() => {
+    if (endRef.current) {
+      endRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
+  }, [doc.questions.length]);
+
+  const totalPoints = useMemo(
+    () => doc.questions.reduce((s, q) => s + (q.points || 0), 0),
+    [doc.questions]
+  );
+
+  /* ========== Question operations ========== */
+  const addQuestion = (t: QuestionType) =>
+    setDoc((d) => ({
+      ...d,
+      questions: [...d.questions, defaultQuestion(t)],
+      updatedAt: new Date().toISOString(),
+    }));
+
+  const updateQuestion = (qid: string, patch: Partial<Question>) =>
+    setDoc((d) => ({
+      ...d,
+      questions: d.questions.map((q) =>
+        q.id === qid ? { ...q, ...patch } : q
+      ),
+      updatedAt: new Date().toISOString(),
+    }));
+
+  const removeQuestion = (qid: string) =>
+    setDoc((d) => ({
+      ...d,
+      questions: d.questions.filter((q) => q.id !== qid),
+      updatedAt: new Date().toISOString(),
+    }));
+
+  const duplicateQuestion = (qid: string) =>
+    setDoc((d) => {
+      const i = d.questions.findIndex((q) => q.id === qid);
+      if (i < 0) return d;
+      const clone = JSON.parse(JSON.stringify(d.questions[i])) as Question;
+      clone.id = uid();
+      // also re-id options
+      if (clone.options)
+        clone.options = clone.options.map((o) => ({ ...o, id: uid() }));
+      const arr = [...d.questions];
+      arr.splice(i + 1, 0, clone);
+      return { ...d, questions: arr, updatedAt: new Date().toISOString() };
+    });
+
+  const moveQuestion = (qid: string, dir: "up" | "down") =>
+    setDoc((d) => {
+      const arr = [...d.questions];
+      const i = arr.findIndex((q) => q.id === qid);
+      if (i < 0) return d;
+      if (dir === "up" && i > 0) {
+        [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]];
+      } else if (dir === "down" && i < arr.length - 1) {
+        [arr[i + 1], arr[i]] = [arr[i], arr[i + 1]];
+      }
+      return { ...d, questions: arr, updatedAt: new Date().toISOString() };
+    });
+
+  /* ========== Options operations ========== */
+  const addOption = (qid: string) =>
+    setDoc((d) => ({
+      ...d,
+      questions: d.questions.map((q) =>
+        q.id === qid
+          ? {
+              ...q,
+              options: [
+                ...(q.options || []),
+                {
+                  id: uid(),
+                  text: `Opsi ${((q.options || []).length ?? 0) + 1}`,
+                },
+              ],
+            }
+          : q
+      ),
+      updatedAt: new Date().toISOString(),
+    }));
+
+  const updateOption = (qid: string, oid: string, patch: Partial<Option>) =>
+    setDoc((d) => ({
+      ...d,
+      questions: d.questions.map((q) =>
+        q.id === qid
+          ? {
+              ...q,
+              options: (q.options || []).map((o) =>
+                o.id === oid ? { ...o, ...patch } : o
+              ),
+            }
+          : q
+      ),
+      updatedAt: new Date().toISOString(),
+    }));
+
+  const removeOption = (qid: string, oid: string) =>
+    setDoc((d) => ({
+      ...d,
+      questions: d.questions.map((q) =>
+        q.id === qid
+          ? { ...q, options: (q.options || []).filter((o) => o.id !== oid) }
+          : q
+      ),
+      updatedAt: new Date().toISOString(),
+    }));
+
+  const setSingleCorrect = (qid: string, oid: string) =>
+    setDoc((d) => ({
+      ...d,
+      questions: d.questions.map((q) =>
+        q.id === qid
+          ? {
+              ...q,
+              options: (q.options || []).map((o) => ({
+                ...o,
+                correct: o.id === oid,
+              })),
+            }
+          : q
+      ),
+      updatedAt: new Date().toISOString(),
+    }));
+
+  /* ========== Settings ========== */
+  const updateSettings = (patch: Partial<QuizSettings>) =>
+    setDoc((d) => ({
+      ...d,
+      settings: { ...d.settings, ...patch },
+      updatedAt: new Date().toISOString(),
+    }));
+
+  /* ========== Import / Export / Publish ========== */
+  const exportJSON = () => {
+    const blob = new Blob([JSON.stringify(doc, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const safe = (doc.title || "quiz")
+      .toLowerCase()
+      .replace(/[^a-z0-9-_]+/g, "-");
+    a.download = `${safe}.quiz.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importJSON = async (file: File) => {
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text) as QuizDoc;
+      if (!parsed.questions || !Array.isArray(parsed.questions))
+        throw new Error("Format tidak valid");
+      setDoc({ ...parsed, updatedAt: new Date().toISOString() });
+    } catch (e: any) {
+      alert(`Gagal import: ${e?.message || e}`);
+    }
+  };
+
+  const publish = () => {
+    // contoh payload API
+    const payload = {
+      quiz_id: doc.id,
+      class_id: doc.classId,
+      title: doc.title,
+      description: doc.description,
+      settings: doc.settings,
+      questions: doc.questions.map((q, idx) => ({
+        order: idx + 1,
+        question_id: q.id,
+        type: q.type,
+        title: q.title,
+        description: q.description,
+        required: q.required,
+        points: q.points,
+        options:
+          q.type === "multiple_choice" ||
+          q.type === "checkboxes" ||
+          q.type === "dropdown"
+            ? (q.options || []).map((o) => ({
+                id: o.id,
+                text: o.text,
+                correct: !!o.correct,
+              }))
+            : undefined,
+        answer_key_text:
+          q.type === "short_text" || q.type === "paragraph"
+            ? q.answerKeyText || ""
+            : undefined,
+        scale:
+          q.type === "scale"
+            ? {
+                min: q.scaleMin ?? 1,
+                max: q.scaleMax ?? 5,
+                min_label: q.scaleMinLabel ?? "",
+                max_label: q.scaleMaxLabel ?? "",
+              }
+            : undefined,
+      })),
+    };
+
+    console.log("[PUBLISH] payload:", payload);
+    setDoc((d) => ({
+      ...d,
+      status: "published",
+      updatedAt: new Date().toISOString(),
+    }));
+    alert("Quiz dipublish (dummy). Cek console untuk payload.");
+  };
+
+  /* =========================
+     UI
+  ========================= */
+  return (
+    <div className="w-full bg-background text-foreground">
+      <main className="w-full px-4 md:px-6 md:py-6 bg-gradient-to-b from-secondary/10 via-background to-background">
+        <div className="mx-auto max-w-screen-2xl flex flex-col gap-4">
+          {/* Header Bar */}
+          <div className="rounded-xl border bg-gradient-to-r from-secondary/20 via-background to-background p-2 md:p-3">
+            <div className="flex flex-wrap items-center gap-2 md:gap-3">
+              <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+
+              <Input
+                value={doc.title}
+                onChange={(e) =>
+                  setDoc((d) => ({
+                    ...d,
+                    title: e.target.value,
+                    updatedAt: new Date().toISOString(),
+                  }))
+                }
+                className="font-semibold text-base md:text-lg h-10 md:h-11 w-full md:w-[32rem]"
+                placeholder="Judul kuis…"
+              />
+
+              <div className="ml-auto flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSettingsOpen(true)}
+                >
+                  <Settings2 className="h-4 w-4 mr-1" />
+                  Pengaturan
+                </Button>
+
+                <Button
+                  variant={tab === "preview" ? "default" : "secondary"}
+                  size="sm"
+                  onClick={() =>
+                    setTab(tab === "design" ? "preview" : "design")
+                  }
+                >
+                  <Eye className="h-4 w-4 mr-1" />
+                  {tab === "design" ? "Preview" : "Kembali Edit"}
+                </Button>
+
+                <Button variant="outline" size="sm" onClick={exportJSON}>
+                  <Download className="h-4 w-4 mr-1" />
+                  Export
+                </Button>
+
+                <label className="cursor-pointer">
+                  <input
+                    type="file"
+                    accept="application/json"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) importJSON(f);
+                    }}
+                  />
+                  <span>
+                    <Button variant="outline" size="sm">
+                      <Upload className="h-4 w-4 mr-1" />
+                      Import
+                    </Button>
+                  </span>
+                </label>
+
+                <Button size="sm" onClick={publish}>
+                  <GraduationCap className="h-4 w-4 mr-1" />
+                  Publish
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Description */}
+          <Card>
+            <CardContent className="p-4 md:p-5">
+              <Textarea
+                value={doc.description}
+                onChange={(e) =>
+                  setDoc((d) => ({
+                    ...d,
+                    description: e.target.value,
+                    updatedAt: new Date().toISOString(),
+                  }))
+                }
+                placeholder="Deskripsi / instruksi untuk peserta…"
+              />
+              <div className="mt-2 text-xs text-muted-foreground">
+                Status:{" "}
+                <Badge
+                  variant={doc.status === "draft" ? "secondary" : "default"}
+                  className="h-5"
+                >
+                  {doc.status.toUpperCase()}
+                </Badge>{" "}
+                • Terakhir diubah:{" "}
+                {new Date(doc.updatedAt).toLocaleString("id-ID")}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Tabs
+            value={tab}
+            onValueChange={(v) => setTab(v as any)}
+            className="w-full"
+          >
+            <TabsList className="w-fit">
+              <TabsTrigger value="design">Desain</TabsTrigger>
+              <TabsTrigger value="preview">Preview</TabsTrigger>
+            </TabsList>
+
+            {/* =============== DESIGN =============== */}
+            <TabsContent value="design" className="mt-3">
+              {/* Question list */}
+              <div className="grid gap-3">
+                {doc.questions.map((q, idx) => (
+                  <QuestionEditor
+                    key={q.id}
+                    q={q}
+                    idx={idx}
+                    onChange={(patch) => updateQuestion(q.id, patch)}
+                    onRemove={() => removeQuestion(q.id)}
+                    onDuplicate={() => duplicateQuestion(q.id)}
+                    onMoveUp={() => moveQuestion(q.id, "up")}
+                    onMoveDown={() => moveQuestion(q.id, "down")}
+                    onAddOption={() => addOption(q.id)}
+                    onOptionChange={(oid, patch) =>
+                      updateOption(q.id, oid, patch)
+                    }
+                    onOptionRemove={(oid) => removeOption(q.id, oid)}
+                    onSetSingleCorrect={(oid) => setSingleCorrect(q.id, oid)}
+                  />
+                ))}
+
+                {/* anchor untuk scroll ke bawah */}
+                <div ref={endRef} />
+
+                {/* Sticky Add Bar di bawah */}
+                <StickyAddBar
+                  total={doc.questions.length}
+                  points={totalPoints}
+                  onAdd={addQuestion}
+                />
+              </div>
+            </TabsContent>
+
+            {/* =============== PREVIEW =============== */}
+            <TabsContent value="preview" className="mt-3">
+              <PreviewPanel doc={doc} />
+            </TabsContent>
+          </Tabs>
+        </div>
+      </main>
+
+      {/* ===== Settings Dialog ===== */}
+      {settingsOpen && (
+        <Dialog open onOpenChange={(o) => setSettingsOpen(o)}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Pengaturan Kuis</DialogTitle>
+              <DialogDescription>
+                Atur perilaku dan batasan pengerjaan.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm">
+                    <div className="font-medium flex items-center gap-2">
+                      <Shuffle className="h-4 w-4" /> Acak urutan pertanyaan
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Tampilkan pertanyaan dalam urutan acak untuk setiap murid.
+                    </div>
+                  </div>
+                  <Switch
+                    checked={doc.settings.shuffleQuestions}
+                    onCheckedChange={(v) =>
+                      updateSettings({ shuffleQuestions: v })
+                    }
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="text-sm">
+                    <div className="font-medium">Acak urutan opsi</div>
+                    <div className="text-xs text-muted-foreground">
+                      Berlaku untuk pilihan ganda, checkbox, dan dropdown.
+                    </div>
+                  </div>
+                  <Switch
+                    checked={doc.settings.shuffleOptions}
+                    onCheckedChange={(v) =>
+                      updateSettings({ shuffleOptions: v })
+                    }
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="text-sm">
+                    <div className="font-medium flex items-center gap-2">
+                      <Timer className="h-4 w-4" /> Batas waktu (menit)
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Kosongkan untuk tanpa batas waktu.
+                    </div>
+                  </div>
+                  <Input
+                    type="number"
+                    className="w-28"
+                    min={0}
+                    placeholder="mis. 45"
+                    value={doc.settings.timeLimitMin ?? ""}
+                    onChange={(e) =>
+                      updateSettings({
+                        timeLimitMin:
+                          e.target.value === ""
+                            ? null
+                            : Math.max(0, Number(e.target.value) || 0),
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="text-sm">
+                    <div className="font-medium">Maks. percobaan</div>
+                    <div className="text-xs text-muted-foreground">
+                      Jumlah maksimum pengambilan kuis.
+                    </div>
+                  </div>
+                  <Input
+                    type="number"
+                    className="w-28"
+                    min={1}
+                    value={doc.settings.attemptsAllowed}
+                    onChange={(e) =>
+                      updateSettings({
+                        attemptsAllowed: Math.max(
+                          1,
+                          Number(e.target.value) || 1
+                        ),
+                      })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm">
+                    <div className="font-medium">
+                      Tampilkan jawaban benar setelah submit
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Murid bisa review dan melihat kunci jika diaktifkan.
+                    </div>
+                  </div>
+                  <Switch
+                    checked={doc.settings.showCorrectAfterSubmit}
+                    onCheckedChange={(v) =>
+                      updateSettings({ showCorrectAfterSubmit: v })
+                    }
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="text-sm">
+                    <div className="font-medium">
+                      Satu pertanyaan per halaman
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Navigasi berikutnya/sebelumnya saat mengerjakan.
+                    </div>
+                  </div>
+                  <Switch
+                    checked={doc.settings.oneQuestionPerPage}
+                    onCheckedChange={(v) =>
+                      updateSettings({ oneQuestionPerPage: v })
+                    }
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="text-sm">
+                    <div className="font-medium flex items-center gap-2">
+                      <Lock className="h-4 w-4" />
+                      Wajib login
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Hanya akun terotentikasi.
+                    </div>
+                  </div>
+                  <Switch
+                    checked={doc.settings.requireLogin}
+                    onCheckedChange={(v) => updateSettings({ requireLogin: v })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="text-sm">
+                    <div className="font-medium">Blok tombol kembali</div>
+                    <div className="text-xs text-muted-foreground">
+                      Kurangi kecurangan saat kuis.
+                    </div>
+                  </div>
+                  <Switch
+                    checked={doc.settings.preventBackNavigation}
+                    onCheckedChange={(v) =>
+                      updateSettings({ preventBackNavigation: v })
+                    }
+                  />
+                </div>
+              </div>
+
+              <Separator className="md:col-span-2" />
+
+              {/* schedule */}
+              <div className="grid md:grid-cols-2 gap-3 md:col-span-2">
+                <div className="space-y-1">
+                  <Label>Mulai aktif</Label>
+                  <Input
+                    type="datetime-local"
+                    value={toLocalInput(doc.settings.startAt)}
+                    onChange={(e) =>
+                      updateSettings({
+                        startAt: fromLocalInput(e.target.value),
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Selesai</Label>
+                  <Input
+                    type="datetime-local"
+                    value={toLocalInput(doc.settings.endAt)}
+                    onChange={(e) =>
+                      updateSettings({ endAt: fromLocalInput(e.target.value) })
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter className="mt-3">
+              <Button variant="outline" onClick={() => setSettingsOpen(false)}>
+                Tutup
+              </Button>
+              <Button onClick={() => setSettingsOpen(false)}>
+                <Save className="h-4 w-4 mr-1" />
+                Simpan
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+    </div>
+  );
+}
+
+/* =========================
+   Subcomponents
+========================= */
+function AddQuestionButtons({ onAdd }: { onAdd: (t: QuestionType) => void }) {
+  const BTN = ({ label, type }: { label: string; type: QuestionType }) => (
+    <Button size="sm" variant="outline" onClick={() => onAdd(type)}>
+      + {label}
+    </Button>
+  );
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      <BTN label="Pilihan Ganda" type="multiple_choice" />
+      <BTN label="Checkbox" type="checkboxes" />
+      <BTN label="Dropdown" type="dropdown" />
+      <BTN label="Jawaban Singkat" type="short_text" />
+      <BTN label="Paragraf" type="paragraph" />
+      <BTN label="Skala" type="scale" />
+      <BTN label="Tanggal" type="date" />
+      <BTN label="Waktu" type="time" />
+    </div>
+  );
+}
+
+function StickyAddBar({
+  total,
+  points,
+  onAdd,
+}: {
+  total: number;
+  points: number;
+  onAdd: (t: QuestionType) => void;
+}) {
+  return (
+    <div className="sticky bottom-3 z-20">
+      <Card className="mx-auto max-w-4xl bg-secondary/40 backdrop-blur border-secondary/40 shadow-lg">
+        <CardContent className="p-3 flex flex-wrap items-center gap-2">
+          <div className="text-sm text-foreground/80 mr-2">
+            <span className="font-medium">{total}</span> pertanyaan •{" "}
+            <span className="font-medium">{points}</span> poin total
+          </div>
+          <div className="flex flex-wrap gap-2 ml-auto">
+            <AddQuestionButtons onAdd={onAdd} />
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function QuestionEditor(props: {
+  q: Question;
+  idx: number;
+  onChange: (patch: Partial<Question>) => void;
+  onRemove: () => void;
+  onDuplicate: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  onAddOption: () => void;
+  onOptionChange: (oid: string, patch: Partial<Option>) => void;
+  onOptionRemove: (oid: string) => void;
+  onSetSingleCorrect: (oid: string) => void;
+}) {
+  const {
+    q,
+    idx,
+    onChange,
+    onRemove,
+    onDuplicate,
+    onMoveUp,
+    onMoveDown,
+    onAddOption,
+    onOptionChange,
+    onOptionRemove,
+    onSetSingleCorrect,
+  } = props;
+
+  return (
+    <Card
+      className={cn(
+        "overflow-hidden transition-shadow hover:shadow-md border-l-4",
+        TYPE_ACCENT[q.type] ?? "border-l-primary/60"
+      )}
+    >
+      <CardHeader className="pb-2">
+        <div className="flex items-center gap-2 justify-between">
+          <CardTitle className="text-base flex items-center gap-2">
+            <span className="text-muted-foreground mr-1">#{idx + 1}</span>
+            <span>
+              {q.title?.trim() ? (
+                q.title
+              ) : (
+                <span className="opacity-60 italic">
+                  Pertanyaan tanpa judul
+                </span>
+              )}
+            </span>
+            <Badge variant="secondary" className="h-5">
+              {TYPE_LABEL[q.type]}
+            </Badge>
+            <Badge variant="outline" className="h-5">
+              {q.points} poin
+            </Badge>
+            {q.required && <Badge className="h-5">WAJIB</Badge>}
+          </CardTitle>
+
+          <div className="flex items-center gap-1">
+            <Button size="icon" variant="ghost" onClick={onMoveUp} title="Naik">
+              <ArrowUp className="h-4 w-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={onMoveDown}
+              title="Turun"
+            >
+              <ArrowDown className="h-4 w-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => onChange({ collapsed: !q.collapsed })}
+              title="Expand/Collapse"
+            >
+              <ListChecks className="h-4 w-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={onDuplicate}
+              title="Duplikat"
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={onRemove}
+              title="Hapus"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+
+      {!q.collapsed && (
+        <CardContent className="p-4 md:p-5 grid gap-4">
+          {/* Row 1: Title, type, points */}
+          <div className="grid md:grid-cols-7 gap-3">
+            <div className="md:col-span-4 space-y-1">
+              <Label>Judul pertanyaan</Label>
+              <Input
+                value={q.title}
+                onChange={(e) => onChange({ title: e.target.value })}
+                placeholder="Tulis pertanyaan…"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Tipe</Label>
+              <Select
+                value={q.type}
+                onValueChange={(v: QuestionType) => {
+                  const next: Partial<Question> = { type: v };
+                  // ensure fields exist for certain types
+                  if (
+                    v === "multiple_choice" ||
+                    v === "checkboxes" ||
+                    v === "dropdown"
+                  ) {
+                    next.options = q.options?.length
+                      ? q.options
+                      : [
+                          { id: uid(), text: "Opsi 1", correct: true },
+                          { id: uid(), text: "Opsi 2", correct: false },
+                        ];
+                  } else {
+                    next.options = undefined;
+                  }
+                  if (v === "scale") {
+                    next.scaleMin = q.scaleMin ?? 1;
+                    next.scaleMax = q.scaleMax ?? 5;
+                    next.scaleMinLabel = q.scaleMinLabel ?? "Rendah";
+                    next.scaleMaxLabel = q.scaleMaxLabel ?? "Tinggi";
+                  } else {
+                    next.scaleMin = undefined;
+                    next.scaleMax = undefined;
+                    next.scaleMinLabel = undefined;
+                    next.scaleMaxLabel = undefined;
+                  }
+                  if (v === "short_text" || v === "paragraph") {
+                    next.answerKeyText = q.answerKeyText ?? "";
+                  } else {
+                    next.answerKeyText = undefined;
+                  }
+                  onChange(next);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih tipe" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(TYPE_LABEL) as QuestionType[]).map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {TYPE_LABEL[t]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <Label>Poin</Label>
+              <Input
+                type="number"
+                min={0}
+                value={q.points}
+                onChange={(e) =>
+                  onChange({ points: Math.max(0, Number(e.target.value) || 0) })
+                }
+              />
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="space-y-1">
+            <Label>Deskripsi (opsional)</Label>
+            <Textarea
+              value={q.description ?? ""}
+              onChange={(e) => onChange({ description: e.target.value })}
+              placeholder="Petunjuk tambahan…"
+            />
+          </div>
+
+          {/* Type-specific configs */}
+          {(q.type === "multiple_choice" ||
+            q.type === "checkboxes" ||
+            q.type === "dropdown") && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Opsi jawaban</Label>
+                <Button size="sm" variant="outline" onClick={onAddOption}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Tambah opsi
+                </Button>
+              </div>
+              <div className="grid gap-2">
+                {(q.options || []).map((o) => (
+                  <div key={o.id} className="flex items-center gap-2">
+                    {/* correct marker */}
+                    {q.type === "multiple_choice" ? (
+                      <input
+                        type="radio"
+                        name={`correct-${q.id}`}
+                        checked={!!o.correct}
+                        onChange={() => onSetSingleCorrect(o.id)}
+                        className="accent-[hsl(var(--primary))]"
+                        title="Tandai benar"
+                      />
+                    ) : (
+                      <input
+                        type="checkbox"
+                        checked={!!o.correct}
+                        onChange={(e) =>
+                          onOptionChange(o.id, { correct: e.target.checked })
+                        }
+                        className="accent-[hsl(var(--primary))]"
+                        title="Boleh multi jawaban benar"
+                      />
+                    )}
+
+                    <Input
+                      value={o.text}
+                      onChange={(e) =>
+                        onOptionChange(o.id, { text: e.target.value })
+                      }
+                      placeholder="Teks opsi…"
+                    />
+
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => onOptionRemove(o.id)}
+                      title="Hapus opsi"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Tandai jawaban benar (radio untuk satu jawaban, checkbox untuk
+                multi-jawaban).
+              </div>
+            </div>
+          )}
+
+          {(q.type === "short_text" || q.type === "paragraph") && (
+            <div className="space-y-1">
+              <Label>Kunci jawaban (opsional)</Label>
+              {q.type === "short_text" ? (
+                <Input
+                  value={q.answerKeyText ?? ""}
+                  onChange={(e) => onChange({ answerKeyText: e.target.value })}
+                  placeholder="Teks kunci (untuk auto-grading sederhana)"
+                />
+              ) : (
+                <Textarea
+                  value={q.answerKeyText ?? ""}
+                  onChange={(e) => onChange({ answerKeyText: e.target.value })}
+                  placeholder="Kata kunci atau poin-poin penting…"
+                />
+              )}
+              <div className="text-xs text-muted-foreground">
+                Catatan: penilaian manual/semimanual biasanya dibutuhkan untuk
+                jawaban panjang.
+              </div>
+            </div>
+          )}
+
+          {q.type === "scale" && (
+            <div className="grid md:grid-cols-4 gap-3">
+              <div className="space-y-1">
+                <Label>Skala min</Label>
+                <Input
+                  type="number"
+                  value={q.scaleMin ?? 1}
+                  onChange={(e) =>
+                    onChange({ scaleMin: Number(e.target.value) || 1 })
+                  }
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Skala max</Label>
+                <Input
+                  type="number"
+                  value={q.scaleMax ?? 5}
+                  onChange={(e) =>
+                    onChange({ scaleMax: Number(e.target.value) || 5 })
+                  }
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Label min</Label>
+                <Input
+                  value={q.scaleMinLabel ?? ""}
+                  onChange={(e) => onChange({ scaleMinLabel: e.target.value })}
+                  placeholder="Rendah"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Label max</Label>
+                <Input
+                  value={q.scaleMaxLabel ?? ""}
+                  onChange={(e) => onChange({ scaleMaxLabel: e.target.value })}
+                  placeholder="Tinggi"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Required */}
+          <div className="flex items-center justify-between">
+            <div className="text-sm">
+              <div className="font-medium">Wajib diisi</div>
+              <div className="text-xs text-muted-foreground">
+                Peserta harus menjawab pertanyaan ini.
+              </div>
+            </div>
+            <Switch
+              checked={q.required}
+              onCheckedChange={(v) => onChange({ required: v })}
+            />
+          </div>
+        </CardContent>
+      )}
+    </Card>
+  );
+}
+
+function PreviewPanel({ doc }: { doc: QuizDoc }) {
+  // NOTE: ini hanya tampilan (non-submittable) untuk gambaran siswa
+  return (
+    <div className="grid gap-3">
+      <Card className="border-primary/40 bg-primary/5">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base md:text-lg">
+            {doc.title || "Kuis Tanpa Judul"}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          {doc.description && (
+            <p className="text-sm text-muted-foreground">{doc.description}</p>
+          )}
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            {doc.settings.timeLimitMin ? (
+              <Badge variant="outline" className="h-5">
+                ⏱ {doc.settings.timeLimitMin} menit
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="h-5">
+                Tanpa batas waktu
+              </Badge>
+            )}
+            <Badge variant="outline" className="h-5">
+              Percobaan: {doc.settings.attemptsAllowed}x
+            </Badge>
+            {doc.settings.startAt && (
+              <Badge variant="outline" className="h-5">
+                Mulai: {new Date(doc.settings.startAt).toLocaleString("id-ID")}
+              </Badge>
+            )}
+            {doc.settings.endAt && (
+              <Badge variant="outline" className="h-5">
+                Selesai: {new Date(doc.settings.endAt).toLocaleString("id-ID")}
+              </Badge>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {doc.questions.map((q, i) => (
+        <Card key={q.id} className="overflow-hidden">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <span className="text-muted-foreground">#{i + 1}</span>
+              <span>
+                {q.title || (
+                  <em className="opacity-70">Pertanyaan tanpa judul</em>
+                )}
+              </span>
+              <Badge variant="secondary" className="h-5">
+                {q.points} poin
+              </Badge>
+              {q.required && <Badge className="h-5">WAJIB</Badge>}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {q.description && (
+              <p className="text-sm text-muted-foreground mb-2">
+                {q.description}
+              </p>
+            )}
+
+            {/* render pseudo-inputs */}
+            {q.type === "short_text" && (
+              <Input placeholder="Jawaban singkat…" disabled />
+            )}
+            {q.type === "paragraph" && (
+              <Textarea placeholder="Jawaban panjang…" disabled />
+            )}
+            {(q.type === "multiple_choice" || q.type === "checkboxes") && (
+              <div className="grid gap-2">
+                {(q.options || []).map((o) => (
+                  <label key={o.id} className="flex items-center gap-2 text-sm">
+                    <input
+                      type={q.type === "multiple_choice" ? "radio" : "checkbox"}
+                      disabled
+                      className="accent-[hsl(var(--primary))]"
+                      name={`prev-${q.id}`}
+                    />
+                    {o.text}
+                  </label>
+                ))}
+              </div>
+            )}
+            {q.type === "dropdown" && (
+              <Select disabled>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih jawaban" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(q.options || []).map((o) => (
+                    <SelectItem key={o.id} value={o.id}>
+                      {o.text}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {q.type === "scale" && (
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-muted-foreground">
+                  {q.scaleMinLabel || q.scaleMin}
+                </span>
+                <div className="flex gap-3">
+                  {Array.from({
+                    length: (q.scaleMax ?? 5) - (q.scaleMin ?? 1) + 1,
+                  }).map((_, idx) => {
+                    const v = (q.scaleMin ?? 1) + idx;
+                    return (
+                      <label
+                        key={v}
+                        className="text-sm inline-flex items-center gap-1"
+                      >
+                        <input
+                          type="radio"
+                          name={`scale-${q.id}`}
+                          disabled
+                          className="accent-[hsl(var(--primary))]"
+                        />
+                        {v}
+                      </label>
+                    );
+                  })}
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {q.scaleMaxLabel || q.scaleMax}
+                </span>
+              </div>
+            )}
+            {q.type === "date" && <Input type="date" disabled />}
+            {q.type === "time" && <Input type="time" disabled />}
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+/* =========================
+   Utils (datetime-local)
+========================= */
+function toLocalInput(iso?: string | null) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const pad = (n: number) => `${n}`.padStart(2, "0");
+  const yyyy = d.getFullYear();
+  const mm = pad(d.getMonth() + 1);
+  const dd = pad(d.getDate());
+  const hh = pad(d.getHours());
+  const mi = pad(d.getMinutes());
+  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+}
+function fromLocalInput(v: string) {
+  if (!v) return null;
+  // treat value as local time
+  const d = new Date(v);
+  return d.toISOString();
+}
