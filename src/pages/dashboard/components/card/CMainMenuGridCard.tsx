@@ -1,7 +1,7 @@
+// src/dashboard/components/card/CMainMenuGridCard.tsx
 import { type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent } from "@/components/ui/card";
 
 /* ==================== Types ==================== */
 export type CMenuItem = {
@@ -28,7 +28,7 @@ export type CMainMenuGridCardProps = {
 export default function CMainMenuGridCard({
     title = "Menu Utama",
     items,
-    columns = { base: 3, sm: 3, md: 4, xl: 5 },
+    columns = { base: 4, sm: 4, md: 4, xl: 5 },
 }: CMainMenuGridCardProps) {
     const gridClass = [
         `grid grid-cols-${columns.base ?? 3}`,
@@ -40,19 +40,15 @@ export default function CMainMenuGridCard({
 
     return (
         <div className="w-full bg-background text-foreground">
-            <Card>
-                <CardHeader className="pb-3">
-                    <CardTitle className="text-lg">{title}</CardTitle>
-                </CardHeader>
-                <Separator />
-                <CardContent className="pt-4">
-                    <div className={gridClass}>
-                        {items.map((it) => (
-                            <CMenuTile key={it.key} item={it} />
-                        ))}
-                    </div>
-                </CardContent>
-            </Card>
+            <div className="pb-3">
+                <h2 className="text-lg font-semibold">{title}</h2>
+            </div>
+
+            <div className={gridClass}>
+                {items.map((it) => (
+                    <CMenuTile key={it.key} item={it} />
+                ))}
+            </div>
         </div>
     );
 }
@@ -61,10 +57,10 @@ export default function CMainMenuGridCard({
 function CMenuTile({ item }: { item: CMenuItem }) {
     const content = (
         <>
-            {/* === Tampilan Desktop === */}
+            {/* === Tampilan Desktop (pakai Card) === */}
             <Card
                 className={[
-                    "hidden md:block h-full w-full rounded-2xl border bg-card text-card-foreground transition-colors",
+                    "hidden md:block h-full w-full rounded-2xl bg-card text-card-foreground transition-colors",
                     item.requiresParam
                         ? "opacity-60 cursor-not-allowed"
                         : "hover:bg-accent/50",
@@ -91,7 +87,7 @@ function CMenuTile({ item }: { item: CMenuItem }) {
                 </CardContent>
             </Card>
 
-            {/* === Tampilan Mobile (ikon bundar di atas teks) === */}
+            {/* === Tampilan Mobile (tanpa Card) === */}
             <div
                 className={[
                     "md:hidden flex flex-col items-center justify-center gap-2 p-2 rounded-xl transition-colors",
@@ -105,7 +101,7 @@ function CMenuTile({ item }: { item: CMenuItem }) {
                         : undefined
                 }
             >
-                <div className="h-14 w-14 rounded-full bg-primary/10 text-primary grid place-items-center">
+                <div className="h-14 w-14 rounded-xl bg-primary/10 text-primary grid place-items-center">
                     <span className="size-6">{item.icon}</span>
                 </div>
                 <div className="text-xs font-medium text-center leading-tight">

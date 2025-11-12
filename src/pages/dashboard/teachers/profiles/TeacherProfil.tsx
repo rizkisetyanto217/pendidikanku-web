@@ -72,11 +72,10 @@ export default function TeacherProfil() {
 
   useEffect(() => {
     setHeader({
-      title: "Profil Guru",
+      title: "Profil",
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Profil" },
-        { label: "Profil Guru" },
       ],
       actions: null,
     });

@@ -1,5 +1,5 @@
 // src/pages/sekolahislamku/teacher/DetailClass.tsx
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { useLocation, useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
@@ -23,6 +23,9 @@ import {
   ArrowLeft,
   UserSquare2,
 } from "lucide-react";
+
+/* Tambahan untuk breadcrumb sistem dashboard */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* ===== Helpers & Types ===== */
 type AttendanceStatus = "hadir" | "sakit" | "izin" | "alpa" | "online";
@@ -150,6 +153,21 @@ export default function TeacherCSSTDetail() {
   const navigate = useNavigate();
   const location = useLocation() as { state?: LocationState };
 
+  /* Atur breadcrumb dan title seperti SchoolAcademic */
+  const { setHeader } = useDashboardHeader();
+
+  useEffect(() => {
+    setHeader({
+      title: "Detail Mapel",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Guru Mapel" },
+        { label: "Detail Mapel" },
+      ],
+      actions: null,
+    });
+  }, [setHeader]);
+
   // 1) Kelas
   const { data: classes = [], isLoading: isLoadingClasses } = useQuery({
     queryKey: QK.CLASSES,
@@ -268,14 +286,14 @@ export default function TeacherCSSTDetail() {
 
   return (
     <div className="w-full bg-background text-foreground">
-      <main className="w-full md:py-8">
+      <main className="w-full">
         <div className="mx-auto flex flex-col gap-6">
           {/* Top bar */}
           <div className="hidden md:flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-lg font-semibold">Detail Kelas</h1>
+            <h1 className="text-lg font-semibold">Detail Mapel</h1>
           </div>
 
           {/* Header */}

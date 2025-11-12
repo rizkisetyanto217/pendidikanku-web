@@ -111,11 +111,11 @@ const SchoolProfile: React.FC<Props> = ({ showBack = false, backTo }) => {
   const { setHeader } = useDashboardHeader();
   useEffect(() => {
     setHeader({
-      title: "Profil Sekolah",
+      title: "Sekolah",
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
+        { label: "Profil" },
         { label: "Sekolah" },
-        { label: "Profil Sekolah" },
       ],
     });
   }, [setHeader]);
@@ -162,7 +162,7 @@ const SchoolProfile: React.FC<Props> = ({ showBack = false, backTo }) => {
                 </Button>
               )}
               <h1 className="font-semibold text-lg md:text-xl">
-                Profil Sekolah
+                Sekolah
               </h1>
             </div>
 

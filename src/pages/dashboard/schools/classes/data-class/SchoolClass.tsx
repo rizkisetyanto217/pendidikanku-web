@@ -215,12 +215,19 @@ function ChipWithCount({
 }
 
 /* ================= Page ================= */
-const SchoolClass: React.FC = () => {
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
+
+const SchoolClass: React.FC<Props> = ({
+  showBack = false,
+  backTo,
+}) => {
   const navigate = useNavigate();
   const [sp, setSp] = useSearchParams();
   const qc = useQueryClient();
   const { schoolId } = useParams<{ schoolId: string }>();
   const hasSchool = Boolean(schoolId);
+
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
   /* ✅ Set breadcrumb seperti SchoolAcademic */
   const { setHeader } = useDashboardHeader();
@@ -509,6 +516,34 @@ const SchoolClass: React.FC = () => {
     <div className="h-full w-full overflow-x-hidden bg-background text-foreground">
       <main className="w-full">
         <div className="mx-auto flex flex-col gap-6">
+          {/* ✅ Header bagian atas seperti SchoolAcademic */}
+          <div className="md:flex hidden gap-3 items-center mb-4">
+            {showBack && (
+              <Button
+                onClick={handleBack}
+                variant="ghost"
+                size="icon"
+                className="cursor-pointer self-start"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+              </Button>
+            )}
+            <h1 className="font-semibold text-lg md:text-xl">Data Kelas</h1>
+          </div>
+
           {/* Panel Tingkat (LEVEL) */}
           <Card>
             <CardHeader className="py-3 px-4 md:px-5">

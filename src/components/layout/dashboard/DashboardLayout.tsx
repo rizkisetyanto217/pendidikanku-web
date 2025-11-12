@@ -416,7 +416,7 @@ function DashboardShell({
 
         {/* Content */}
         <div
-          className={`flex-1 p-4 pt-0 flex flex-col gap-4 ${contentClassName}`}
+          className={`flex-1 lg:p-8 p-4 pt-0 flex flex-col gap-4 ${contentClassName}`}
         >
           {children ?? <Outlet />}
         </div>

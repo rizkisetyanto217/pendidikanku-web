@@ -166,7 +166,6 @@ export default function AdminSchoolSchedule() {
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Jadwal" },
-        { label: "Jadwal Sekolah" },
       ],
     });
   }, [setHeader]);

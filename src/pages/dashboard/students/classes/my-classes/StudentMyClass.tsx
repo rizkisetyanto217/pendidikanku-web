@@ -1,5 +1,5 @@
 // src/pages/sekolahislamku/pages/student/MyClass.tsx
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -14,6 +14,9 @@ import {
   Video,
   Info,
 } from "lucide-react";
+
+/* Tambahan untuk breadcrumb sistem dashboard */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 // shadcn/ui
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -129,6 +132,20 @@ const StudentMyClass: React.FC = () => {
   }, [q]);
 
   const go = (path: string) => navigate(`${base}${path}`);
+
+  /* Atur breadcrumb dan title seperti SchoolAcademic */
+  const { setHeader } = useDashboardHeader();
+
+  useEffect(() => {
+    setHeader({
+      title: "Kelas Saya",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Kelas Saya" },
+      ],
+      actions: null,
+    });
+  }, [setHeader]);
 
   return (
     <div className="w-full bg-background text-foreground">

@@ -4,6 +4,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Trash2, Loader2, Eye } from "lucide-react";
 
+/* Tambahan untuk breadcrumb sistem dashboard */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+
 /* ============ shadcn/ui ============ */
 import { Button } from "@/components/ui/button";
 
@@ -382,6 +385,22 @@ export default function TeacherBookList() {
   const { id: classId = "" } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
+
+  /* Atur breadcrumb dan title seperti SchoolAcademic */
+  const { setHeader } = useDashboardHeader();
+
+  useEffect(() => {
+    setHeader({
+      title: "Buku",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Guru Mapel" },
+        { label: "Detail Mapel" },
+        { label: "Buku" },
+      ],
+      actions: null,
+    });
+  }, [setHeader]);
 
   useEffect(() => {
     if (!classId)

@@ -261,7 +261,7 @@ export default function SchoolRegistrationsPeriod() {
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Pendaftaran" },
-        { label: "Periode Pendaftaran" },
+        { label: "Periode" },
       ],
     });
   }, [setHeader]);

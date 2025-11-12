@@ -1,14 +1,16 @@
 // src/pages/sekolahislamku/student/StudentFinance.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Wallet, CheckCircle2, Clock, ArrowLeft } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+
+/* Tambahan untuk breadcrumb sistem dashboard */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* =========================
    Types & Helpers
@@ -85,6 +87,20 @@ export default function StudentFinance() {
     queryFn: () => fetchBillDetail(billId),
     staleTime: 60_000,
   });
+
+  /* Atur breadcrumb dan title seperti SchoolAcademic */
+  const { setHeader } = useDashboardHeader();
+
+  useEffect(() => {
+    setHeader({
+      title: "Pembayaran",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Pembayaran" },
+      ],
+      actions: null,
+    });
+  }, [setHeader]);
 
   const paidList: BillDetail[] = [
     {

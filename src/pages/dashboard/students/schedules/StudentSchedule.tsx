@@ -11,6 +11,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
+/* Tambahan untuk breadcrumb sistem dashboard */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+
 import CalendarView from "@/pages/dashboard/components/calender/CalenderView";
 import ScheduleList from "@/pages/dashboard/components/calender/ScheduleList";
 import {
@@ -138,6 +141,20 @@ export default function StudentSchedule() {
   const [y, m] = month.split("-").map(Number);
   const gotoPrev = () => setMonth(toMonthStr(new Date(y, m - 2, 1)));
   const gotoNext = () => setMonth(toMonthStr(new Date(y, m, 1)));
+
+  /* Atur breadcrumb dan title seperti SchoolAcademic */
+  const { setHeader } = useDashboardHeader();
+
+  useEffect(() => {
+    setHeader({
+      title: "Jadwal",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Jadwal" },
+      ],
+      actions: null,
+    });
+  }, [setHeader]);
 
   useEffect(() => {
     const today = new Date();

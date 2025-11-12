@@ -208,11 +208,10 @@ const StudentAssignment: React.FC = () => {
 
   useEffect(() => {
     setHeader({
-      title: "Dasftar Tugas",
+      title: "Daftar Tugas",
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Tugas" },
-        { label: "Daftar Tugas" },
       ],
       actions: null,
     });

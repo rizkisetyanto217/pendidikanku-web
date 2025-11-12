@@ -293,11 +293,10 @@ export default function TeacherCSSTAssignment() {
 
   useEffect(() => {
     setHeader({
-      title: "Daftar Tugas",
+      title: "Tugas",
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Tugas" },
-        { label: "Daftar Tugas" },
       ],
       actions: null,
     });

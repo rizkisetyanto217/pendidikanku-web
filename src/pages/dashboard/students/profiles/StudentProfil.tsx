@@ -1,5 +1,5 @@
 // src/pages/sekolahislamku/pages/student/StudentProfil.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -13,6 +13,9 @@ import {
   Award,
   BookOpen,
 } from "lucide-react";
+
+/* Tambahan untuk breadcrumb sistem dashboard */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -61,6 +64,20 @@ const dummyStudent = {
 export default function StudentProfil() {
   const navigate = useNavigate();
   const [avatarPreview] = useState(dummyStudent.avatar);
+
+  /* Atur breadcrumb dan title seperti SchoolAcademic */
+  const { setHeader } = useDashboardHeader();
+
+  useEffect(() => {
+    setHeader({
+      title: "Profil",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Profil" },
+      ],
+      actions: null,
+    });
+  }, [setHeader]);
 
   return (
     <div className="w-full bg-background text-foreground">

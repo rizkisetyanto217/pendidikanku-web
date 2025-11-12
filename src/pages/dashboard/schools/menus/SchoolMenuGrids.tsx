@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import {
   CalendarDays,
   Building2,
@@ -20,10 +20,26 @@ import CMainMenuGridCard, {
   type CMenuItem,
 } from "@/pages/dashboard/components/card/CMainMenuGridCard";
 
-
+/* Tambahan untuk breadcrumb sistem dashboard */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /** ================= Component ================= */
 export default function SchoolMenuGrids() {
+
+  /* Atur breadcrumb dan title seperti SchoolAcademic */
+  const { setHeader } = useDashboardHeader();
+
+  useEffect(() => {
+    setHeader({
+      title: "Menu Utama",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Menu Utama" },
+      ],
+      actions: null,
+    });
+  }, [setHeader]);
+
   const items: CMenuItem[] = useMemo(
     () => [
       // ======== PROFIL & KEUANGAN ========

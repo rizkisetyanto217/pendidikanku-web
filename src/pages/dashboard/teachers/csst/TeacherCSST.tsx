@@ -127,11 +127,10 @@ export default function TeacherCSST() {
 
   useEffect(() => {
     setHeader({
-      title: "Mata Pelajaran Saya",
+      title: "Guru Mapel",
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Guru Mapel" },
-        { label: "Mata Pelajaran Saya" },
       ],
       actions: null,
     });

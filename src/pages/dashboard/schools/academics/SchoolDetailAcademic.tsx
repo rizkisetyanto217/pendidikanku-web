@@ -188,16 +188,16 @@ export default function SchoolDetailAcademic() {
   useEffect(() => {
     const base = `/${term.academic_terms_school_id}/sekolah`;
     setHeader({
-      title: "Detail Periode", // penting, biar nggak fallback “Dashboard”
+      title: "Detail Akademik", // penting, biar nggak fallback “Dashboard”
       headerLeft: (
         <HeaderBackArea
-          title="Detail Periode"
+          title="Detail Akademik"
           basePath={base}
           onBack={() => navigate(-1)}
           crumbs={[
             { label: "Dashboard", href: "dashboard" },
             { label: "Akademik", href: "akademik" },
-            { label: "Detail Periode" },
+            { label: "Detail Akademik" },
           ]}
         />
       ),

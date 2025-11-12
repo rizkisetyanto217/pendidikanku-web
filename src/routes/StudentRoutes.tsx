@@ -121,7 +121,6 @@ export const StudentRoutes = (
       {/* Halaman catatan hasil belajar */}
       <Route path="progress/catatan-hasil" element={<StudentNotesSummary />} />
 
-      <Route path="tugas" element={<StudentAssignment />} />
 
       {/* Profil murid dari menu utama */}
       <Route path="profil-murid" element={<StudentProfil />} />

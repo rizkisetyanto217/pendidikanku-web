@@ -171,11 +171,10 @@ export default function TeacherSchedule() {
 
   useEffect(() => {
     setHeader({
-      title: "Jadwal Guru",
+      title: "Jadwal",
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Jadwal" },
-        { label: "Jadwal Guru" },
       ],
       actions: null,
     });

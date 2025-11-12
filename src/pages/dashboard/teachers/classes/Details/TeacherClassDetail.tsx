@@ -1,5 +1,5 @@
 // src/pages/sekolahislamku/teacher/DetailClass.tsx
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 /* shadcn/ui */
@@ -23,6 +23,9 @@ import {
   UserSquare2,
   CheckCircle2,
 } from "lucide-react";
+
+/* Tambahan untuk breadcrumb sistem dashboard */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* ========== Types ========== */
 type AttendanceStatus = "hadir" | "sakit" | "izin" | "alpa" | "online";
@@ -176,6 +179,21 @@ const CSST_SWITCH_DEADLINE = new Date(
 export default function TeacherCSSTDetail() {
   const navigate = useNavigate();
 
+  /* Atur breadcrumb dan title seperti SchoolAcademic */
+  const { setHeader } = useDashboardHeader();
+
+  useEffect(() => {
+    setHeader({
+      title: "Detail Kelas",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Wali Kelas" },
+        { label: "Detail Kelas" },
+      ],
+      actions: null,
+    });
+  }, [setHeader]);
+
   // hitung ringkasan dari dummy
   const activeCount = useMemo(
     () => DUMMY_CSST.filter((x) => x.isActive).length,
@@ -245,7 +263,7 @@ export default function TeacherCSSTDetail() {
 
   return (
     <div className="w-full bg-background text-foreground">
-      <main className="w-full md:py-8">
+      <main className="w-full">
         <div className="mx-auto flex flex-col gap-6">
           {/* Top bar */}
           <div className="hidden md:flex items-center gap-3">

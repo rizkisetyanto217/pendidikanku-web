@@ -152,7 +152,6 @@ export const NAVS: NavDict = {
     },
     { path: "keuangan", label: "Pembayaran", icon: Wallet },
     { path: "jadwal", label: "Jadwal", icon: CalendarDays },
-    { path: "tugas", label: "Tugas", icon: ClipboardCheck },
     { path: "profil-murid", label: "Profil", icon: Users },
   ],
   guru: [

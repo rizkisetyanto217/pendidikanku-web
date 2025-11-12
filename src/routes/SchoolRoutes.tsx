@@ -53,7 +53,7 @@ export const SchoolRoutes = (
       <Route path="profil">
         <Route path="profil-sekolah" element={<SchoolProfile showBack />} />
         <Route path="guru">
-          <Route index element={<SchoolTeacher />} />
+          <Route index element={<SchoolTeacher showBack />} />
           <Route path=":id" element={<SchoolDetailTeacher />} />
         </Route>
       </Route>
@@ -63,7 +63,7 @@ export const SchoolRoutes = (
       <Route path="guru/:id" element={<SchoolDetailTeacher />} />
 
       {/* Akademik */}
-      <Route path="tahun-akademik" element={<SchoolAcademic />} />
+      <Route path="tahun-akademik" element={<SchoolAcademic showBack />} />
       <Route path="tahun-akademik/detail/:id" element={<SchoolDetailAcademic />} />
 
       {/* Buku */}
@@ -78,7 +78,7 @@ export const SchoolRoutes = (
       <Route path="pelajaran" element={<SchoolSubject />} />
 
       {/* Kelas */}
-      <Route path="kelas" element={<SchoolClass />} />
+      <Route path="kelas" element={<SchoolClass showBack />} />
       <Route path="kelas/kelola/:id" element={<SchoolSection />} />
       <Route path="kelas/section/:id" element={<SchoolSectionDetail />} />
       <Route path="kelas/tingkat/:levelId" element={<SchoolParent />} />

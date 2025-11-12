@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import {
   Users,
   Layers,
@@ -9,12 +9,30 @@ import {
   CheckCheck,
 } from "lucide-react";
 
+/* Tambahan untuk breadcrumb sistem dashboard */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+
 import CMainMenuGridCard, {
   type CMenuItem,
 } from "@/pages/dashboard/components/card/CMainMenuGridCard";
 
 /* ================= Component ================= */
 export default function TeacherMenuGrids() {
+
+  /* Atur breadcrumb dan title seperti SchoolAcademic */
+  const { setHeader } = useDashboardHeader();
+
+  useEffect(() => {
+    setHeader({
+      title: "Menu Utama",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Menu Utama" },
+      ],
+      actions: null,
+    });
+  }, [setHeader]);
+
   const items: CMenuItem[] = useMemo(
     () => [
       // ===== Kelas (di bawah menu-utama) =====

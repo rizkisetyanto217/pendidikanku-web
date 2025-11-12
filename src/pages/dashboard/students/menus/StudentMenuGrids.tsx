@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import {
   BookOpen,
   Wallet,
@@ -14,12 +14,30 @@ import {
   BookText,
 } from "lucide-react";
 
+/* Tambahan untuk breadcrumb sistem dashboard */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+
 import CMainMenuGridCard, {
   type CMenuItem,
 } from "@/pages/dashboard/components/card/CMainMenuGridCard";
 
 /* ================= Components ================= */
 export default function StudentMenuGrids() {
+
+  /* Atur breadcrumb dan title seperti SchoolAcademic */
+  const { setHeader } = useDashboardHeader();
+
+  useEffect(() => {
+    setHeader({
+      title: "Menu Utama",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Menu Utama" },
+      ],
+      actions: null,
+    });
+  }, [setHeader]);
+
   const items: CMenuItem[] = useMemo(
     () => [
       // ===== Menu utama (lokal) =====

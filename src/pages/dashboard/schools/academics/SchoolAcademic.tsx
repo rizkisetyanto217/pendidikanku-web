@@ -12,6 +12,7 @@ import {
   Pencil,
   Trash2,
   Eye,
+  ArrowLeft,
 } from "lucide-react";
 
 /* ---------- shadcn/ui ---------- */
@@ -473,9 +474,29 @@ function TermFormDialog({
 }
 
 /* ===================== Page (pakai DataTable) ===================== */
-const SchoolAcademic: React.FC = () => {
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
+
+const SchoolAcademic: React.FC<Props> = ({
+  showBack = false,
+  backTo,
+}) => {
   const { schoolId } = useParams<{ schoolId: string }>();
   const navigate = useNavigate();
+
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
+
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Tahun Akademik",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Akademik" },
+        { label: "Tahun Akademik" },
+      ],
+      actions: null, // bisa isi tombol kalau perlu
+    });
+  }, [setHeader]);
 
   useEffect(() => {
     if (!schoolId) console.warn("[SchoolAcademic] Missing :schoolId in params");
@@ -496,19 +517,6 @@ const SchoolAcademic: React.FC = () => {
       return raw.map(mapApiToTerm);
     },
   });
-
-  const { setHeader } = useDashboardHeader();
-  useEffect(() => {
-    setHeader({
-      title: "Periode Akademik",
-      breadcrumbs: [
-        { label: "Dashboard", href: "dashboard" },
-        { label: "Akademik" },
-        { label: "Periode Akademik" },
-      ],
-      actions: null, // bisa isi tombol kalau perlu
-    });
-  }, [setHeader]);
 
   const terms: AcademicTerm[] = termsQ.data ?? [];
 
@@ -651,10 +659,23 @@ const SchoolAcademic: React.FC = () => {
     <div className="min-h-screen w-full overflow-x-hidden bg-background text-foreground">
       <main className="w-full">
         <div className="mx-auto flex flex-col gap-4 lg:gap-6">
+          {/* ✅ Header seperti di SchoolProfile */}
+          <div className="md:flex hidden gap-3 items-center">
+            {showBack && (
+              <Button
+                onClick={handleBack}
+                variant="ghost"
+                size="icon"
+                className="cursor-pointer self-start"
+              >
+                <ArrowLeft size={20} />
+              </Button>
+            )}
+            <h1 className="font-semibold text-lg md:text-xl">Tahun Akademik</h1>
+          </div>
+
           <CDataTable<AcademicTerm>
             /* ===== Toolbar ===== */
-            title="Periode Akademik"
-            onBack={() => navigate(-1)}
             onAdd={() => setModal({ mode: "create" })}
             addLabel="Tambah"
             controlsPlacement="above" // ⬅️ kontrol persis di atas tabel

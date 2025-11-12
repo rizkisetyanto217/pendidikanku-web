@@ -161,22 +161,29 @@ function useSectionsWithCSST(schoolId: string, classId?: string) {
 /* =========================================================
    PAGE: Manage – tampilkan SEMUA section + CSST per section
 ========================================================= */
-export default function SchoolSection() {
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
+
+export default function SchoolSection({
+  showBack = false,
+  backTo,
+}: Props) {
   const { schoolId = "", classId } = useParams<{
     schoolId: string;
     classId?: string;
   }>();
   const navigate = useNavigate();
 
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
+
   /* ✅ Tambah breadcrumb seperti SchoolAcademic */
   const { setHeader } = useDashboardHeader();
   useEffect(() => {
     setHeader({
-      title: "Kelola Kelas",
+      title: "Daftar Kelas",
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Kelas" },
-        { label: "Kelola Kelas" },
+        { label: "Daftar Kelas" },
       ],
       actions: null,
     });
@@ -191,17 +198,18 @@ export default function SchoolSection() {
     <div className="min-h-screen w-full bg-background text-foreground">
       <main className="mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
-              <ArrowLeft size={20} className="mr-1" /> Kembali
+        <div className="md:flex hidden gap-3 items-center">
+          {showBack && (
+            <Button
+              onClick={handleBack}
+              variant="ghost"
+              size="icon"
+              className="cursor-pointer self-start"
+            >
+              <ArrowLeft size={20} />
             </Button>
-            <h1 className="text-lg font-semibold">
-              {classId
-                ? "Kelola Kelas — Semua Section di Kelas Ini"
-                : "Kelola Kelas — Semua Section"}
-            </h1>
-          </div>
+          )}
+          <h1 className="font-semibold text-lg md:text-xl">Daftar Kelas</h1>
         </div>
 
         {isLoading && (

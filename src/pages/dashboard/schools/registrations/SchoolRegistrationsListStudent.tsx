@@ -240,7 +240,7 @@ export default function SchoolRegistrationsListStudent() {
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Pendaftaran" },
-        { label: "Daftar Pendaftar" },
+        { label: "Murid" },
       ],
     });
   }, [setHeader]);

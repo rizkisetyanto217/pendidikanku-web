@@ -362,11 +362,10 @@ export default function StudentProgress() {
 
   useEffect(() => {
     setHeader({
-      title: "Daftar Mata Kuliah",
+      title: "Progress",
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Progress" },
-        { label: "Daftar Mata Kuliah" },
       ],
       actions: null,
     });

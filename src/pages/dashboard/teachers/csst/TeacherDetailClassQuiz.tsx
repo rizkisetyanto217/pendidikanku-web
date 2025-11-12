@@ -80,11 +80,10 @@ const TeacherDetailClassQuiz: React.FC = () => {
 
   useEffect(() => {
     setHeader({
-      title: "Quiz Aljabar Dasar",
+      title: "qiuzClass",
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
-        { label: "quizClass" },
-        { label: "Quiz Aljabar Dasar" },
+        { label: "qiuzClass" },
       ],
       actions: null,
     });

@@ -267,18 +267,17 @@ export default function TeacherClassFromSections() {
 
   useEffect(() => {
     setHeader({
-      title: "Kelas yang Saya Ajar",
+      title: "Wali Kelas",
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Wali Kelas" },
-        { label: "Kelas yang Saya Ajar" },
       ],
       actions: null,
     });
   }, [setHeader]);
 
   return (
-    <div className="w-full bg-background text-foreground py-6">
+    <div className="w-full bg-background text-foreground">
       <main className="mx-auto space-y-6">
         {/* Header Section */}
         <div className="flex items-center gap-2">

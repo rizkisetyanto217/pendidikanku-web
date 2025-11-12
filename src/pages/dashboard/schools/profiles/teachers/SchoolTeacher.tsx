@@ -1,5 +1,5 @@
 // src/pages/sekolahislamku/dashboard-school/SchoolTeacher.tsx
-import { useMemo, useState, useCallback, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "@/lib/axios";
@@ -194,23 +194,29 @@ function ActionsMenu({ onView }: { onView: () => void }) {
 }
 
 /* ================= Main Component ================= */
-const SchoolTeacher: React.FC = () => {
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
+
+const SchoolTeacher: React.FC<Props> = ({
+  showBack = false,
+  backTo,
+}) => {
   const navigate = useNavigate();
   const { schoolId } = useParams<{ schoolId: string }>();
-
   const [openAdd, setOpenAdd] = useState(false);
   const [openImport, setOpenImport] = useState(false);
+
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
   /* Atur breadcrumb dan title seperti SchoolAcademic */
   const { setHeader } = useDashboardHeader();
 
   useEffect(() => {
     setHeader({
-      title: "Profil Guru",
+      title: "Guru",
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Profil" },
-        { label: "Profil Guru" },
+        { label: "Guru" },
       ],
       actions: null,
     });
@@ -463,9 +469,7 @@ const SchoolTeacher: React.FC = () => {
     </div>
   );
 
-  /* ===== Handlers ===== */
-  const handleAdd = useCallback(() => setOpenAdd(true), []);
-  const handleImport = useCallback(() => setOpenImport(true), []);
+
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-background text-foreground">
@@ -488,11 +492,37 @@ const SchoolTeacher: React.FC = () => {
 
       <main className="w-full">
         <div className="mx-auto flex flex-col gap-4 lg:gap-6">
+          {/* ✅ Header bagian atas */}
+          <div className="md:flex hidden gap-3 items-center">
+            {showBack && (
+              <Button
+                onClick={handleBack}
+                variant="ghost"
+                size="icon"
+                className="cursor-pointer self-start"
+              >
+                {/* kamu bisa ganti icon sesuai kebutuhan */}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+              </Button>
+            )}
+            <h1 className="font-semibold text-lg md:text-xl">Guru</h1>
+          </div>
+
           <DataTable<TeacherItem>
             /* ===== Toolbar konsisten ===== */
-            title="Guru"
-            onBack={() => navigate(-1)}
-            onAdd={handleAdd}
             addLabel="Tambah"
             controlsPlacement="above"
             /* Search (sinkron URL) */
@@ -535,7 +565,7 @@ const SchoolTeacher: React.FC = () => {
               <Button
                 variant="outline"
                 className="gap-1"
-                onClick={handleImport}
+                onClick={handleBack}
               >
                 <Upload size={14} /> Import CSV
               </Button>

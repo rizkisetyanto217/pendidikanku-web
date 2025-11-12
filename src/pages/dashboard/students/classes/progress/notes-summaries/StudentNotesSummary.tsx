@@ -1,5 +1,5 @@
 // src/pages/StudentNotesDetail.tsx
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -9,7 +9,10 @@ import {
   NotebookPen,
   Star,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
+
+/* Tambahan untuk breadcrumb sistem dashboard */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 // shadcn/ui
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -119,6 +122,20 @@ const dateShort = (isoStr: string) =>
 export default function StudentNotesSummary() {
   const navigate = useNavigate();
   const [sp, setSp] = useSearchParams();
+
+  /* Atur breadcrumb dan title seperti SchoolAcademic */
+  const { setHeader } = useDashboardHeader();
+
+  useEffect(() => {
+    setHeader({
+      title: "Catatan Hasil",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Catatan Hasil" },
+      ],
+      actions: null,
+    });
+  }, [setHeader]);
 
   const childId = sp.get("child") ?? undefined;
   const period = (sp.get("period") ?? "30") as "7" | "30" | "all";

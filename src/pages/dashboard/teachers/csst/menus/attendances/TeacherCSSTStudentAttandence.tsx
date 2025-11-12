@@ -319,11 +319,12 @@ export default function TeacherClassAttendanceCSST() {
 
   useEffect(() => {
     setHeader({
-      title: "Daftar Kehadiran",
+      title: "Kehadiran",
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
+        { label: "Guru Mapel" },
+        { label: "Detail Mapel" },
         { label: "Kehadiran" },
-        { label: "Daftar Kehadiran" },
       ],
       actions: null,
     });
