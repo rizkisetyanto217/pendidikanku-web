@@ -30,7 +30,7 @@ import TeacherDetailAssignement from "@/pages/dashboard/teachers/csst/menus/assi
 import TeacherClassDetail from "@/pages/dashboard/teachers/classes/Details/TeacherClassesDetail";
 import TeacherScheduleRoutine from "@/pages/dashboard/teachers/schedules/routine/TeacherScheduleRoutine";
 import TeacherScheduleAgenda from "@/pages/dashboard/teachers/schedules/agendas/TeacherScheduleAgenda";
-import TeacherQuizBuilder from "@/pages/dashboard/schools/quiz/SchoolQuiz";
+import TeacherQuizBuilder from "@/pages/dashboard/teachers/quiz/SchoolQuiz";
 
 export const TeacherRoutes = (
   <Route path="guru" element={<DashboardLayout />}>

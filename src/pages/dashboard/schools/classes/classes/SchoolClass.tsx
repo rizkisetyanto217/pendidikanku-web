@@ -1,9 +1,8 @@
 // src/pages/dashboard/school/class/SchoolClass.tsx
 import { useMemo, useState, useEffect } from "react";
-import type { MouseEvent as ReactMouseEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useParams, useNavigate } from "react-router-dom";
-import { Plus, Layers, Pencil, Info, Loader2 } from "lucide-react";
+import { Plus, Info, Loader2 } from "lucide-react";
 import axios from "@/lib/axios";
 
 /* shadcn/ui */
@@ -21,13 +20,12 @@ import {
 /* Layout header hook */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
-/* Modal-mu tetap dipakai */
+/* Modal kelas */
 import TambahKelas, {
   type ClassRow as NewClassRow,
 } from "./components/CSchoolAddClass";
-import TambahLevel from "./components/CSchoolAddLevel";
 
-/* DataTable (gaya Room/Academic) */
+/* DataTable */
 import {
   CDataTable as DataTable,
   type ColumnDef,
@@ -36,42 +34,6 @@ import {
 
 /* ================= Types ================= */
 export type ClassStatus = "active" | "inactive";
-
-export interface Level {
-  id: string;
-  name: string;
-  slug: string;
-  level?: string | null;
-  fee?: number | null;
-  is_active: boolean;
-}
-
-/* PUBLIC class-parents (levels) */
-type ApiClassParent = {
-  class_parent_id: string;
-  class_parent_school_id: string;
-  class_parent_name: string;
-  class_parent_code?: string | null;
-  class_parent_slug: string;
-  class_parent_description?: string | null;
-  class_parent_level?: number | null;
-  class_parent_is_active: boolean;
-  class_parent_total_classes?: number | null;
-  class_parent_image_url?: string | null;
-  class_parent_created_at: string;
-  class_parent_updated_at: string;
-};
-
-function mapClassParent(x: ApiClassParent): Level {
-  return {
-    id: x.class_parent_id,
-    name: x.class_parent_name,
-    slug: x.class_parent_slug,
-    level: x.class_parent_level != null ? String(x.class_parent_level) : null,
-    fee: null,
-    is_active: x.class_parent_is_active,
-  };
-}
 
 /* PUBLIC classes (middle layer) */
 type ApiClass = {
@@ -129,20 +91,13 @@ const toSlug = (s: string) =>
 const fmtDate = (iso?: string | null) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    })
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
     : "-";
 
 /* ================= Fetchers ================= */
-async function fetchLevelsPublic(schoolId: string): Promise<Level[]> {
-  const res = await axios.get<{ data: ApiClassParent[] }>(
-    `/public/${schoolId}/class-parents/list`
-  );
-  return (res.data?.data ?? []).map(mapClassParent);
-}
-
 async function fetchClassesPublic(
   schoolId: string,
   params?: { q?: string; status?: ClassStatus | "all"; levelId?: string }
@@ -159,68 +114,10 @@ async function fetchClassesPublic(
   return res.data?.data ?? [];
 }
 
-/* =========== UI: Chips dengan counter =========== */
-function ChipWithCount({
-  active,
-  label,
-  count,
-  onClick,
-  onEdit,
-  title,
-}: {
-  active?: boolean;
-  label: string;
-  count?: number;
-  onClick?: () => void;
-  onEdit?: (e: ReactMouseEvent<HTMLButtonElement>) => void;
-  title?: string;
-}) {
-  return (
-    <div
-      className={cn(
-        "inline-flex items-stretch overflow-hidden rounded-lg ring-1",
-        active
-          ? "bg-secondary text-secondary-foreground ring-border"
-          : "bg-background ring-border"
-      )}
-      title={title}
-    >
-      <Button
-        variant={active ? "secondary" : "outline"}
-        size="sm"
-        onClick={onClick}
-        className={cn("rounded-none h-8 px-3", active && "font-semibold")}
-      >
-        <span className="truncate max-w-[14rem]">{label}</span>
-        {typeof count === "number" && (
-          <span className="ml-2 rounded-md bg-muted px-1.5 text-xs text-muted-foreground tabular-nums">
-            {count}
-          </span>
-        )}
-      </Button>
-      {onEdit && (
-        <Button
-          variant={active ? "secondary" : "outline"}
-          size="icon"
-          className="rounded-none h-8 w-8 -ml-px"
-          onClick={onEdit}
-          aria-label="Edit"
-          title="Edit"
-        >
-          <Pencil size={14} />
-        </Button>
-      )}
-    </div>
-  );
-}
-
 /* ================= Page ================= */
 type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
-const SchoolClass: React.FC<Props> = ({
-  showBack = false,
-  backTo,
-}) => {
+const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
   const navigate = useNavigate();
   const [sp, setSp] = useSearchParams();
   const qc = useQueryClient();
@@ -229,7 +126,7 @@ const SchoolClass: React.FC<Props> = ({
 
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
-  /* ✅ Set breadcrumb seperti SchoolAcademic */
+  /* Header */
   const { setHeader } = useDashboardHeader();
   useEffect(() => {
     setHeader({
@@ -244,11 +141,10 @@ const SchoolClass: React.FC<Props> = ({
   }, [setHeader]);
 
   const [openTambah, setOpenTambah] = useState(false);
-  const [openTambahLevel, setOpenTambahLevel] = useState(false);
 
   const q = (sp.get("q") ?? "").trim();
   const status = (sp.get("status") ?? "all") as ClassStatus | "all";
-  const levelId = sp.get("level_id") ?? "";
+  const levelId = sp.get("level_id") ?? ""; // tetap didukung via query, tapi tanpa UI panel
 
   const [page, setPage] = useState(() => Number(sp.get("page") ?? 1) || 1);
   const [perPage, setPerPage] = useState(
@@ -263,13 +159,6 @@ const SchoolClass: React.FC<Props> = ({
   }, [page, perPage]);
 
   /* ===== Data ===== */
-  const levelsQ = useQuery({
-    queryKey: ["levels-public", schoolId],
-    enabled: hasSchool,
-    queryFn: () => fetchLevelsPublic(schoolId!),
-    staleTime: 60_000,
-  });
-
   const classesQ = useQuery({
     queryKey: ["classes-public", schoolId, q, status, levelId],
     enabled: hasSchool,
@@ -307,7 +196,7 @@ const SchoolClass: React.FC<Props> = ({
     }));
   }, [classesQ.data]);
 
-  /* ===== Filter FE by levelId ===== */
+  /* ===== FE filter by levelId (kalau datang dari URL) ===== */
   const filteredRows = useMemo(
     () => classRows.filter((r) => !levelId || r.parentId === levelId),
     [classRows, levelId]
@@ -443,39 +332,12 @@ const SchoolClass: React.FC<Props> = ({
     setPage(1);
   };
 
-  const setParam = (k: string, v: string) => {
-    const next = new URLSearchParams(sp);
-    v ? next.set(k, v) : next.delete(k);
-    next.set("page", "1");
-    setSp(next, { replace: true });
-    if (k === "level_id") setPage(1);
-  };
-
-  const levels = levelsQ.data ?? [];
-
-  /* ===== Handlers: tambah ===== */
-  const handleLevelCreated = (payload?: any) => {
-    const lvl: Level = {
-      id: payload?.id ?? uid("lv"),
-      name: payload?.name ?? "Level Baru",
-      slug: payload?.slug ?? toSlug(payload?.name ?? ""),
-      level: payload?.level ?? null,
-      fee: payload?.fee ?? null,
-      is_active: payload?.is_active ?? true,
-    };
-    qc.setQueryData<Level[]>(["levels-public", schoolId], (old = []) => [
-      lvl,
-      ...(old ?? []),
-    ]);
-    setOpenTambahLevel(false);
-  };
-
+  /* ===== Handlers: tambah kelas ===== */
   const handleClassCreated = (row: NewClassRow) => {
-    const parentFromId = levels.find((l) => l.id === levelId) || levels[0];
     const dummy: ApiClass = {
       class_id: (row as any).id ?? uid("cls"),
       class_school_id: (row as any).schoolId ?? schoolId!,
-      class_parent_id: (row as any).parentId ?? parentFromId?.id ?? "",
+      class_parent_id: (row as any).parentId ?? "",
       class_slug: (row as any).slug ?? toSlug(row.name ?? "kelas-baru"),
       class_name: row.name ?? "Kelas Baru",
       class_status: (row as any).is_active ? "active" : "inactive",
@@ -488,13 +350,9 @@ const SchoolClass: React.FC<Props> = ({
       class_term_id: null,
       class_image_url: null,
       class_parent_code_snapshot: null,
-      class_parent_name_snapshot:
-        (row as any).parentName ?? parentFromId?.name ?? null,
-      class_parent_slug_snapshot:
-        (row as any).parentSlug ?? parentFromId?.slug ?? null,
-      class_parent_level_snapshot:
-        (row as any).parentLevel ??
-        (parentFromId?.level ? Number(parentFromId.level) : null),
+      class_parent_name_snapshot: (row as any).parentName ?? null,
+      class_parent_slug_snapshot: (row as any).parentSlug ?? null,
+      class_parent_level_snapshot: (row as any).parentLevel ?? null,
       class_term_academic_year_snapshot: null,
       class_term_name_snapshot: null,
       class_term_slug_snapshot: null,
@@ -516,7 +374,7 @@ const SchoolClass: React.FC<Props> = ({
     <div className="h-full w-full overflow-x-hidden bg-background text-foreground">
       <main className="w-full">
         <div className="mx-auto flex flex-col gap-6">
-          {/* ✅ Header bagian atas seperti SchoolAcademic */}
+          {/* Header */}
           <div className="md:flex hidden gap-3 items-center mb-4">
             {showBack && (
               <Button
@@ -543,55 +401,6 @@ const SchoolClass: React.FC<Props> = ({
             )}
             <h1 className="font-semibold text-lg md:text-xl">Data Kelas</h1>
           </div>
-
-          {/* Panel Tingkat (LEVEL) */}
-          <Card>
-            <CardHeader className="py-3 px-4 md:px-5">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Layers size={18} /> Tingkat
-                </CardTitle>
-                <Button
-                  className="sm:hidden"
-                  size="sm"
-                  onClick={() => setOpenTambahLevel(true)}
-                >
-                  <Plus size={16} className="mr-2" /> Tambah Level
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="pb-4 px-4 md:px-5">
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant={levelId ? "outline" : "secondary"}
-                  size="sm"
-                  className="h-8"
-                  onClick={() => setParam("level_id", "")}
-                >
-                  Semua Tingkat
-                </Button>
-                {(levels ?? []).map((lv) => (
-                  <ChipWithCount
-                    key={lv.id}
-                    active={levelId === lv.id}
-                    label={lv.name}
-                    count={
-                      (classesQ.data ?? []).filter(
-                        (c) => c.class_parent_id === lv.id
-                      ).length
-                    }
-                    title={lv.slug}
-                    onClick={() => setParam("level_id", lv.id)}
-                    onEdit={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      navigate(`/${schoolId}/sekolah/kelas/tingkat/${lv.id}`);
-                    }}
-                  />
-                ))}
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Daftar Kelas */}
           <Card>
@@ -644,9 +453,9 @@ const SchoolClass: React.FC<Props> = ({
                 <div className="order-2 sm:order-1">
                   {pagedRows.length
                     ? `${(page - 1) * perPage + 1}-${Math.min(
-                      page * perPage,
-                      totalLocal
-                    )} dari ${totalLocal}`
+                        page * perPage,
+                        totalLocal
+                      )} dari ${totalLocal}`
                     : `0 dari ${totalLocal}`}
                 </div>
                 <div className="order-1 sm:order-2 flex items-center gap-2">
@@ -680,9 +489,7 @@ const SchoolClass: React.FC<Props> = ({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() =>
-                      setPage((p) => Math.min(totalPages, p + 1))
-                    }
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     disabled={page >= totalPages}
                   >
                     Berikutnya
@@ -694,12 +501,7 @@ const SchoolClass: React.FC<Props> = ({
         </div>
       </main>
 
-      {/* Modals */}
-      <TambahLevel
-        open={openTambahLevel}
-        onClose={() => setOpenTambahLevel(false)}
-        onCreated={handleLevelCreated}
-      />
+      {/* Modal tambah kelas */}
       <TambahKelas
         open={openTambah}
         onClose={() => setOpenTambah(false)}
