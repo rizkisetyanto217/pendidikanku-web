@@ -553,19 +553,6 @@ const SchoolTeacher: React.FC<Props> = ({
             pageSize={20}
             pageSizeOptions={[10, 20, 50, 100, 200]}
           />
-
-          {/* Toolbar bawah kecil (opsional) — tombol Import tetap tersedia di bawah juga */}
-          {!isLoading && !isError && (
-            <div className="flex justify-end">
-              <Button
-                variant="outline"
-                className="gap-1"
-                onClick={handleBack}
-              >
-                <Upload size={14} /> Import CSV
-              </Button>
-            </div>
-          )}
         </div>
       </main>
     </div>
