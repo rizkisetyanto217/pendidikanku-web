@@ -490,7 +490,7 @@ export function CDataTable<T>(props: DataTableProps<T>) {
       </div>
 
       {statsSlot != null && (
-        <CardContent >{statsSlot}</CardContent>
+        <CardContent className="p-5">{statsSlot}</CardContent>
       )}
 
       {controlsPlacement === "above" && (
