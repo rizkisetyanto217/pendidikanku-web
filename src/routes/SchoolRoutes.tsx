@@ -30,11 +30,12 @@ import SchoolScheduleAgenda from "@/pages/dashboard/schools/schedules/agendas/Sc
 import SchoolScheduleRoutine from "@/pages/dashboard/schools/schedules/routines/SchoolScheduleRoutine";
 import SchoolSubjectDetail from "@/pages/dashboard/schools/academics/subjects/SchoolSubjectDetail";
 import SchoolAcademicManage from "@/pages/dashboard/schools/academics/academics/SchoolAcademicManage";
-import SchoolCampaignPage from "@/pages/dashboard/schools/campaign/SchoolCampaign";
+import SchoolCampaign from "@/pages/dashboard/schools/campaign/SchoolCampaign";
 import SchoolClassParent from "@/pages/dashboard/schools/classes/class-parents/SchoolClassParent";
 import SchoolClass from "@/pages/dashboard/schools/classes/classes/SchoolClass";
 import SchoolClassesSection from "@/pages/dashboard/schools/classes/class-sections/SchoolClassSections";
 import SchoolCSST from "@/pages/dashboard/schools/classes/class-section-subject-teachers/SchoolCSST";
+import SchoolCampaignDetail from "@/pages/dashboard/schools/campaign/SchoolCampaignDetail";
 
 export const SchoolRoutes = (
   <Route path="sekolah" element={<DashboardLayout />}>
@@ -96,8 +97,8 @@ export const SchoolRoutes = (
 
     {/* === Campaign Sekolah === */}
     <Route path="dukungan">
-      <Route path="donasi" element={<SchoolCampaignPage />} />
-      <Route path="rutin" element={<SchoolScheduleRoutine />} />
+      <Route path="donasi" element={<SchoolCampaign />} />
+      <Route path="donasi/detail" element={<SchoolCampaignDetail />} />
     </Route>
 
     {/* === Menu utama (akses cepat) === */}

@@ -208,7 +208,7 @@ function DashboardShell({
   );
 
   // RESET header setiap ganti route → hilangkan “riwayat” breadcrumb lama
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     setHdr(baselineRef.current);
   }, [location.pathname]);
 

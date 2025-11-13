@@ -80,7 +80,11 @@ export const NAVS: NavDict = {
       label: "Kelas",
       icon: BookOpen,
       children: [
-        { path: "data-kelas", label: "Data Kelas", end: true }, // → /sekolah/kelas
+        {
+          path: "level",
+          label: "Level",
+          end: true
+        }, // → /sekolah/kelas
         {
           path: "daftar-kelas",
           label: "Daftar Kelas",
