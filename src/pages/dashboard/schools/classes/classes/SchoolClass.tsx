@@ -6,16 +6,9 @@ import { Plus, Info, Loader2 } from "lucide-react";
 import axios from "@/lib/axios";
 
 /* shadcn/ui */
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
 
 /* Layout header hook */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
@@ -91,10 +84,10 @@ const toSlug = (s: string) =>
 const fmtDate = (iso?: string | null) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
     : "-";
 
 /* ================= Fetchers ================= */
@@ -147,7 +140,7 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
   const levelId = sp.get("level_id") ?? ""; // tetap didukung via query, tapi tanpa UI panel
 
   const [page, setPage] = useState(() => Number(sp.get("page") ?? 1) || 1);
-  const [perPage, setPerPage] = useState(
+  const [perPage] = useState(
     () => Number(sp.get("per") ?? 20) || 20
   );
   useEffect(() => {
@@ -205,7 +198,6 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
   /* ===== Pagination client-side ===== */
   const totalLocal = filteredRows.length;
   const pagedRows = filteredRows.slice((page - 1) * perPage, page * perPage);
-  const totalPages = Math.max(1, Math.ceil(Math.max(1, totalLocal) / perPage));
 
   /* ===== Stats Slot ===== */
   const statsSlot = classesQ.isLoading ? (
@@ -373,9 +365,9 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
   return (
     <div className="h-full w-full overflow-x-hidden bg-background text-foreground">
       <main className="w-full">
-        <div className="mx-auto flex flex-col gap-6">
+        <div className="mx-auto flex-col gap-6">
           {/* Header */}
-          <div className="md:flex hidden gap-3 items-center mb-4">
+          <div className="md:flex hidden gap-3 items-center">
             {showBack && (
               <Button
                 onClick={handleBack}
@@ -403,101 +395,51 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
           </div>
 
           {/* Daftar Kelas */}
-          <Card>
-            <CardHeader className="py-3 px-4 md:px-5">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">Daftar Kelas</CardTitle>
-                <Button
-                  className="sm:hidden"
-                  size="sm"
-                  onClick={() => setOpenTambah(true)}
-                >
-                  <Plus size={16} className="mr-2" /> Tambah
-                </Button>
-              </div>
-            </CardHeader>
 
-            <CardContent className="px-4 md:px-5 pb-4">
-              <DataTable<MiddleClassRow>
-                onAdd={() => setOpenTambah(true)}
-                addLabel="Tambah"
-                controlsPlacement="above"
-                defaultQuery={q}
-                onQueryChange={handleQueryChange}
-                filterer={() => true}
-                searchByKeys={["name", "slug", "parentName", "term"]}
-                searchPlaceholder="Cari nama/slug/tingkat/periode…"
-                statsSlot={statsSlot}
-                loading={classesQ.isLoading}
-                error={
-                  classesQ.isError
-                    ? (classesQ.error as any)?.message ?? "Error"
-                    : null
-                }
-                columns={columns}
-                rows={pagedRows}
-                getRowId={(r) => r.id}
-                defaultAlign="left"
-                stickyHeader
-                zebra
-                viewModes={["table", "card"] as ViewMode[]}
-                defaultView="table"
-                storageKey={`classes:${schoolId}`}
-                onRowClick={(r) => navigate(`kelas/${r.id}`)}
-                pageSize={perPage}
-                pageSizeOptions={[10, 20, 50, 100, 200]}
-              />
+          <CardHeader className="py-3 px-4 md:px-5">
+            <div className="flex items-center justify-between">
+              <Button
+                className="sm:hidden"
+                size="sm"
+                onClick={() => setOpenTambah(true)}
+              >
+                <Plus size={16} className="mr-2" /> Tambah
+              </Button>
+            </div>
+          </CardHeader>
 
-              {/* Footer pagination */}
-              <div className="mt-2 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
-                <div className="order-2 sm:order-1">
-                  {pagedRows.length
-                    ? `${(page - 1) * perPage + 1}-${Math.min(
-                        page * perPage,
-                        totalLocal
-                      )} dari ${totalLocal}`
-                    : `0 dari ${totalLocal}`}
-                </div>
-                <div className="order-1 sm:order-2 flex items-center gap-2">
-                  <span className="hidden sm:inline">Baris/hal</span>
-                  <Select
-                    value={String(perPage)}
-                    onValueChange={(v) => {
-                      setPerPage(Number(v));
-                      setPage(1);
-                    }}
-                  >
-                    <SelectTrigger className="h-9 w-[96px] text-sm">
-                      <SelectValue placeholder={String(perPage)} />
-                    </SelectTrigger>
-                    <SelectContent align="end">
-                      {[10, 20, 50, 100, 200].map((n) => (
-                        <SelectItem key={n} value={String(n)}>
-                          {n}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page <= 1}
-                  >
-                    Sebelumnya
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={page >= totalPages}
-                  >
-                    Berikutnya
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <CardContent className="px-4 md:px-5 pb-4">
+            <DataTable<MiddleClassRow>
+              onAdd={() => setOpenTambah(true)}
+              addLabel="Tambah"
+              controlsPlacement="above"
+              defaultQuery={q}
+              onQueryChange={handleQueryChange}
+              filterer={() => true}
+              searchByKeys={["name", "slug", "parentName", "term"]}
+              searchPlaceholder="Cari nama/slug/tingkat/periode…"
+              statsSlot={statsSlot}
+              loading={classesQ.isLoading}
+              error={
+                classesQ.isError
+                  ? (classesQ.error as any)?.message ?? "Error"
+                  : null
+              }
+              columns={columns}
+              rows={pagedRows}
+              getRowId={(r) => r.id}
+              defaultAlign="left"
+              stickyHeader
+              zebra
+              viewModes={["table", "card"] as ViewMode[]}
+              defaultView="table"
+              storageKey={`classes:${schoolId}`}
+              onRowClick={(r) => navigate(`kelas/${r.id}`)}
+              pageSize={perPage}
+              pageSizeOptions={[10, 20, 50, 100, 200]}
+            />
+          </CardContent>
+
         </div>
       </main>
 

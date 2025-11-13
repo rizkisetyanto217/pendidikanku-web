@@ -11,7 +11,11 @@ import {
   MoreHorizontal,
   Info,
   Loader2,
+  ArrowLeft,
 } from "lucide-react";
+
+/* ✅ Import untuk breadcrumb header */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* shadcn/ui */
 import { Button } from "@/components/ui/button";
@@ -40,13 +44,6 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
 
 /* ✅ DataTable (gaya Academic) */
 import {
@@ -241,10 +238,31 @@ function ActionsMenu({
 }
 
 /* ===================== PAGE ===================== */
-export default function SchoolRoom() {
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
+
+export default function SchoolRoom({
+  showBack = false,
+  backTo,
+}: Props) {
   const { schoolId } = useParams<{ schoolId?: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
+
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
+
+  /* ✅ Breadcrumb */
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Ruangan",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Akademik" },
+        { label: "Ruangan" },
+      ],
+      actions: null,
+    });
+  }, [setHeader]);
 
   /* 🔍 Query (sinkron URL) */
   const [sp, setSp] = useSearchParams();
@@ -261,8 +279,8 @@ export default function SchoolRoom() {
   };
 
   /* Pagination server-side */
-  const [page, setPage] = useState(() => Number(sp.get("page") ?? 1) || 1);
-  const [perPage, setPerPage] = useState(
+  const [page] = useState(() => Number(sp.get("page") ?? 1) || 1);
+  const [perPage] = useState(
     () => Number(sp.get("per") ?? 20) || 20
   );
   useEffect(() => {
@@ -274,8 +292,7 @@ export default function SchoolRoom() {
 
   const roomsQ = usePublicRoomsQuery(schoolId ?? "", q, page, perPage);
   const data = roomsQ.data?.data ?? [];
-  const total = roomsQ.data?.pagination?.total ?? 0;
-  const totalPages = roomsQ.data?.pagination?.total_pages ?? 1;
+
 
   const rooms: Room[] = useMemo(
     () =>
@@ -342,10 +359,9 @@ export default function SchoolRoom() {
       {
         id: "name",
         header: "Nama Ruangan",
-        align: "left",
         minW: "220px",
         cell: (r) => (
-          <div className="text-left">
+          <div>
             <div className="font-medium">{r.name}</div>
             <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
               <MapPin size={12} /> {r.location ?? "-"}
@@ -356,28 +372,24 @@ export default function SchoolRoom() {
       {
         id: "capacity",
         header: "Kapasitas",
-        align: "left",
         minW: "100px",
         cell: (r) => r.capacity,
       },
       {
         id: "jenis",
         header: "Jenis",
-        align: "left",
         minW: "100px",
         cell: (r) => (r.is_virtual ? "Virtual" : "Fisik"),
       },
       {
         id: "platform",
         header: "Platform",
-        align: "left",
         minW: "140px",
         cell: (r) => r.platform ?? "-",
       },
       {
         id: "status",
         header: "Status",
-        align: "left",
         minW: "110px",
         cell: (r) => (
           <span
@@ -411,7 +423,7 @@ export default function SchoolRoom() {
       </Button>
     </div>
   ) : (
-    <div className="text-sm text-muted-foreground">{total} total</div>
+    <div></div>
   );
 
   /* Layout */
@@ -419,9 +431,23 @@ export default function SchoolRoom() {
     <div className="w-full overflow-x-hidden bg-background text-foreground">
       <main className="w-full">
         <div className="mx-auto flex flex-col gap-4 lg:gap-6">
+          {/* ✅ Header Back seperti SchoolClassSection */}
+          <div className="md:flex hidden gap-3 items-center">
+            {showBack && (
+              <Button
+                onClick={handleBack}
+                variant="ghost"
+                size="icon"
+                className="cursor-pointer self-start"
+              >
+                <ArrowLeft size={20} />
+              </Button>
+            )}
+
+            <h1 className="font-semibold text-lg md:text-xl">Daftar Ruangan</h1>
+          </div>
           <DataTable<Room>
-            title="Daftar Ruangan"
-            onBack={() => navigate(-1)}
+
             onAdd={() => {
               setModalInitial(null);
               setModalOpen(true);
@@ -440,7 +466,6 @@ export default function SchoolRoom() {
             columns={columns}
             rows={rooms}
             getRowId={(r) => r.id}
-            defaultAlign="left"
             stickyHeader
             zebra={false}
             viewModes={["table", "card"] as ViewMode[]}
@@ -461,55 +486,6 @@ export default function SchoolRoom() {
               />
             )}
           />
-
-          {/* Pagination */}
-          <div className="mt-2 flex items-center justify-between gap-3 text-sm text-muted-foreground">
-            <div>
-              {rooms.length
-                ? `${(page - 1) * perPage + 1}-${Math.min(
-                  page * perPage,
-                  total
-                )} dari ${total}`
-                : `0 dari ${total}`}
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="hidden sm:inline">Baris/hal</span>
-              <Select
-                value={String(perPage)}
-                onValueChange={(v) => {
-                  setPerPage(Number(v));
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="h-9 w-[96px] text-sm">
-                  <SelectValue placeholder={String(perPage)} />
-                </SelectTrigger>
-                <SelectContent align="end">
-                  {[10, 20, 50, 100, 200].map((n) => (
-                    <SelectItem key={n} value={String(n)}>
-                      {n}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1}
-              >
-                Sebelumnya
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages}
-              >
-                Berikutnya
-              </Button>
-            </div>
-          </div>
         </div>
       </main>
 

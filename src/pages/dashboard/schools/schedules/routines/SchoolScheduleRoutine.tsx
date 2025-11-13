@@ -1,9 +1,8 @@
 // src/pages/sekolahislamku/admin/AdminSchedule.tsx
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
-  CalendarDays,
   ArrowLeft,
   Plus,
   Edit,
@@ -18,6 +17,9 @@ import {
   LayoutGrid,
   List as ListIcon,
 } from "lucide-react";
+
+/* ✅ Import untuk breadcrumb header */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -963,9 +965,29 @@ function SimpleWeekCalendar({
 /* =====================================================
    HALAMAN UTAMA: AdminSchedule
 ===================================================== */
-export default function SchoolScheduleRoutine() {
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
+
+export default function SchoolScheduleRoutine({
+  showBack = false,
+  backTo,
+}: Props) {
   const navigate = useNavigate();
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
   const qc = useQueryClient();
+
+  /* ✅ Breadcrumb */
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Rutin",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Jadwal" },
+        { label: "Rutin" },
+      ],
+      actions: null,
+    });
+  }, [setHeader]);
 
   const [tab, setTab] = useState<"calendar" | "routine" | "once">("calendar");
   const [view, setView] = useState<"calendar" | "list">("calendar");
@@ -1125,15 +1147,19 @@ export default function SchoolScheduleRoutine() {
     <div className="w-full bg-background text-foreground">
       <div className="mx-auto flex flex-col gap-4">
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft size={20} />
-          </Button>
-          <div className="h-10 w-10 grid place-items-center rounded-xl bg-primary/10 text-primary">
-            <CalendarDays size={18} />
-          </div>
+        <div className="md:flex hidden gap-3 items-center">
+          {showBack && (
+            <Button
+              onClick={handleBack}
+              variant="ghost"
+              size="icon"
+              className="cursor-pointer self-start"
+            >
+              <ArrowLeft size={20} />
+            </Button>
+          )}
           <div>
-            <div className="font-semibold text-base">
+            <div className="font-semibold text-lg md:text-xl">
               Jadwal Sekolah (Admin)
             </div>
             <p className="text-sm text-muted-foreground">

@@ -50,6 +50,8 @@ import {
   type ColumnDef,
   type Align,
 } from "@/components/costum/table/CDataTable";
+
+/* ---------- BreadCrum ---------- */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* ===================== Types ===================== */
@@ -482,7 +484,6 @@ const SchoolAcademic: React.FC<Props> = ({
 }) => {
   const { schoolId } = useParams<{ schoolId: string }>();
   const navigate = useNavigate();
-
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
   const { setHeader } = useDashboardHeader();

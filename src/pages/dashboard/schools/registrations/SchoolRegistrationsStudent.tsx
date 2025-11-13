@@ -27,9 +27,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 
-/* icons */
-import { CalendarDays } from "lucide-react";
-
 /* DataTable custom */
 import {
   DataTable as CDataTable,
@@ -142,9 +139,6 @@ const STUDENTS: StudentReg[] = [
 function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
     <div className="mb-4 flex items-center gap-3">
-      <div className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-        <CalendarDays className="h-5 w-5" />
-      </div>
       <div>
         <h1 className="text-xl font-semibold leading-tight md:text-2xl">
           {title}

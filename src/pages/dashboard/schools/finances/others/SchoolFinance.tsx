@@ -123,8 +123,14 @@ const dateFmt = (iso: string) =>
   });
 
 /* ===================== Main Page ===================== */
-const SchoolFinance: React.FC = () => {
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
+
+const SchoolFinance: React.FC<Props> = ({
+  showBack = false,
+  backTo,
+}) => {
   const navigate = useNavigate();
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
   /* ✅ Tambah breadcrumb seperti SchoolAcademic */
   const { setHeader } = useDashboardHeader();
@@ -206,25 +212,28 @@ const SchoolFinance: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden bg-background text-foreground">
+    <div className="w-full overflow-x-hidden bg-background text-foreground">
       {/* ===== Header ===== */}
-      <div className="pb-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="hidden md:flex items-center gap-2 font-semibold">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate(-1)}
-              aria-label="Kembali"
-              className="cursor-pointer"
-            >
-              <ArrowLeft size={18} />
-            </Button>
-            <h1>Keuangan Sekolah</h1>
+      <div className="w-full">
+        <div className="mx-auto flex flex-col gap-4 lg:gap-6">
+          {/* ===== Navbar row: back + title ===== */}
+          <div className="md:flex hidden gap-3 items-center">
+            {showBack && (
+              <Button
+                onClick={handleBack}
+                variant="ghost"
+                size="icon"
+                className="cursor-pointer self-start"
+              >
+                <ArrowLeft size={20} />
+              </Button>
+            )}
+            <h1 className="text-lg font-semibold">Keuangan Sekolah</h1>
           </div>
         </div>
+
         <div className="w-full sm:w-auto flex-1 min-w-0 order-3 sm:order-2">
-          <div className="flex items-center gap-2">
+          <div className="flex py-4 items-center gap-2">
             <Input
               value={q}
               onChange={(e) => {
@@ -264,7 +273,7 @@ const SchoolFinance: React.FC = () => {
           </div>
         </div>
 
-        <div className="ml-auto order-2 mt-4 sm:order-3">
+        <div className="ml-auto order-2 mt-4 mb-4 sm:order-3">
           <Button size="sm" className="gap-1">
             <Download size={14} /> Export
           </Button>

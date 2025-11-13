@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 
 /* icons */
-import { Settings, Copy, Save, Globe2, Link as LinkIcon } from "lucide-react";
+import { Copy, Save, Globe2, Link as LinkIcon } from "lucide-react";
 
 /* utils */
 const fmtIDR = (n: number) =>
@@ -144,9 +144,6 @@ export default function SchoolRegistrationsSetting() {
     <div className="mx-auto w-full">
       {/* Header Page */}
       <header className="mb-4 flex items-center gap-3">
-        <div className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-          <Settings className="h-5 w-5" />
-        </div>
         <div>
           <h1 className="text-xl font-semibold leading-tight md:text-2xl">
             PMB — Pengaturan

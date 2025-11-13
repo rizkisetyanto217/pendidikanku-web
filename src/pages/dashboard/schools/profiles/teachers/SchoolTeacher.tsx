@@ -237,7 +237,7 @@ const SchoolTeacher: React.FC<Props> = ({
   }
 
   /* ===== Query list (public) ===== */
-  const { data, isLoading, isError, refetch, isFetching, error } = useQuery<
+  const { data, isLoading, isError, refetch, error } = useQuery<
     PublicTeachersResponse,
     AxiosError
   >({
@@ -301,9 +301,9 @@ const SchoolTeacher: React.FC<Props> = ({
         id: "name",
         header: "Nama",
         minW: "240px",
-        align: "left",
+
         cell: (r) => (
-          <div className="text-left">
+          <div>
             <div className="font-medium">{r.name}</div>
             <div className="mt-0.5 text-xs text-muted-foreground">
               {(r.employment ?? "-") +
@@ -318,21 +318,18 @@ const SchoolTeacher: React.FC<Props> = ({
         id: "subject",
         header: "Mapel",
         minW: "160px",
-        align: "left",
         cell: (r) => r.subject ?? "-",
       },
       {
         id: "gender",
         header: "Gender",
         minW: "120px",
-        align: "left",
         cell: (r) => genderLabel(r.gender),
       },
       {
         id: "contact",
         header: "Kontak",
         minW: "220px",
-        align: "left",
         cell: (r) => (
           <div className="flex items-center gap-3 text-sm">
             {r.phone && (
@@ -362,7 +359,6 @@ const SchoolTeacher: React.FC<Props> = ({
         id: "status",
         header: "Status",
         minW: "120px",
-        align: "left",
         cell: (r) => (
           <span
             className={[
@@ -380,7 +376,7 @@ const SchoolTeacher: React.FC<Props> = ({
   }, []);
 
   /* ===== StatsSlot (konsisten) ===== */
-  const total = rows.length;
+
 
   const statsSlot = isLoading ? (
     <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -401,7 +397,6 @@ const SchoolTeacher: React.FC<Props> = ({
   ) : (
     <div className="flex items-center justify-between gap-2">
       <div className="text-sm text-muted-foreground">
-        {isFetching ? "memuat…" : `${total} total`}
       </div>
       {/* Tombol Import CSV tetap ada, dijaga konsisten di area ringkasan */}
       <div className="flex items-center gap-2">
@@ -539,7 +534,7 @@ const SchoolTeacher: React.FC<Props> = ({
             rows={rows}
             getRowId={(r) => r.id}
             /* Visual */
-            defaultAlign="left"
+            defaultAlign="center"
             stickyHeader
             zebra={false}
             viewModes={["table", "card"] as ViewMode[]}

@@ -1,6 +1,6 @@
 // src/pages/sekolahislamku/campaign/SchoolCampaignPage.tsx
-import React, { useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import React, { useMemo, useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "@/lib/axios";
 
@@ -19,7 +19,11 @@ import {
   ArrowRight,
   Filter,
   Tag,
+  ArrowLeft,
 } from "lucide-react";
+
+/* ---------- BreadCrum ---------- */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* =========================================================
    DEMO TOGGLE
@@ -245,9 +249,8 @@ function CampaignCard({ c }: { c: CampaignItem }) {
 
   return (
     <Card
-      className={`overflow-hidden ${
-        c.isHighlighted ? "border-primary/60 shadow-md" : "shadow-sm"
-      }`}
+      className={`overflow-hidden ${c.isHighlighted ? "border-primary/60 shadow-md" : "shadow-sm"
+        }`}
     >
       <div className="grid md:grid-cols-[220px,1fr]">
         {/* Image */}
@@ -343,9 +346,9 @@ function CampaignCard({ c }: { c: CampaignItem }) {
               variant={isOpen ? "default" : "outline"}
               disabled={!isOpen}
               onClick={() =>
-                (window.location.href = c.slug
-                  ? `/campaigns/${c.slug}`
-                  : `/campaigns/${c.id}`)
+              (window.location.href = c.slug
+                ? `/campaigns/${c.slug}`
+                : `/campaigns/${c.id}`)
               }
               className="inline-flex items-center gap-1"
             >
@@ -357,9 +360,9 @@ function CampaignCard({ c }: { c: CampaignItem }) {
               variant="ghost"
               className="text-xs"
               onClick={() =>
-                (window.location.href = c.slug
-                  ? `/campaigns/${c.slug}`
-                  : `/campaigns/${c.id}`)
+              (window.location.href = c.slug
+                ? `/campaigns/${c.slug}`
+                : `/campaigns/${c.id}`)
               }
             >
               Detail campaign
@@ -375,9 +378,30 @@ function CampaignCard({ c }: { c: CampaignItem }) {
 /* =========================================================
    PAGE
 ========================================================= */
-const SchoolCampaign: React.FC = () => {
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
+
+const SchoolCampaign: React.FC<Props> = ({
+  showBack = false,
+  backTo,
+}) => {
   const { schoolId = "" } = useParams<{ schoolId: string }>();
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("open");
+  const navigate = useNavigate();
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
+
+  const [statusFilter] = useState<StatusFilter>("open");
+
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Donasi",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Dukungan" },
+        { label: "Donasi" },
+      ],
+      actions: null, // bisa isi tombol kalau perlu
+    });
+  }, [setHeader]);
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: QK.CAMPAIGNS(schoolId || "default"),
@@ -429,6 +453,9 @@ const SchoolCampaign: React.FC = () => {
     <div className="w-full bg-background text-foreground">
       <main className="max-w-screen-2xl mx-auto py-6 px-4 space-y-6">
         {/* Header */}
+        <div>
+          <h1 className="font-semibold text-lg md:text-xl">Donasi</h1>
+        </div>
         <Card className="shadow-sm">
           <CardContent className="p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -480,24 +507,17 @@ const SchoolCampaign: React.FC = () => {
                 Status campaign:
               </div>
               <div className="flex flex-wrap gap-2">
-                {(
-                  [
-                    ["all", "Semua"],
-                    ["open", "Dibuka"],
-                    ["scheduled", "Terjadwal"],
-                    ["closed", "Selesai"],
-                  ] as const
-                ).map(([val, label]) => (
+                {showBack && (
                   <Button
-                    key={val}
-                    variant={statusFilter === val ? "default" : "outline"}
-                    size="sm"
-                    className="text-xs"
-                    onClick={() => setStatusFilter(val)}
+                    onClick={handleBack}
+                    variant="ghost"
+                    size="icon"
+                    className="mb-3"
                   >
-                    {label}
+                    <ArrowLeft size={20} />
                   </Button>
-                ))}
+                )}
+                <h1 className="font-semibold text-lg md:text-xl">Donasi</h1>
               </div>
             </CardContent>
           </Card>

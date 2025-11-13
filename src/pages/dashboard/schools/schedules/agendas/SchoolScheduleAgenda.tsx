@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
-  CalendarDays,
   ChevronLeft,
   ChevronRight,
   ArrowLeft,
@@ -81,8 +80,8 @@ function seedMonth(y: number, m: number): ScheduleRow[] {
         type === "exam"
           ? `Ujian materi ${title.toLowerCase()} — persiapkan alat tulis.`
           : type === "event"
-          ? `Acara sekolah: ${title} — ${desc}`
-          : desc,
+            ? `Acara sekolah: ${title} — ${desc}`
+            : desc,
     });
   };
 
@@ -154,18 +153,25 @@ const scheduleApi = {
 };
 
 /* ===== Page (UX sama dengan TeacherSchedule) ===== */
-export default function SchoolScheduleAgenda() {
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
+
+export default function SchoolScheduleAgenda({
+  showBack = false,
+  backTo,
+}: Props) {
   const navigate = useNavigate();
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
   const qc = useQueryClient();
 
   /* ✅ Tambah breadcrumb seperti SchoolAcademic */
   const { setHeader } = useDashboardHeader();
   useEffect(() => {
     setHeader({
-      title: "Jadwal Sekolah",
+      title: "Agenda",
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Jadwal" },
+        { label: "Agenda" },
       ],
     });
   }, [setHeader]);
@@ -234,15 +240,20 @@ export default function SchoolScheduleAgenda() {
     <div className="w-full bg-background text-foreground">
       <div className="mx-auto flex flex-col gap-4">
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft size={20} />
-          </Button>
-          <div className="h-10 w-10 grid place-items-center rounded-xl bg-primary/10 text-primary">
-            <CalendarDays size={18} />
-          </div>
+        <div className="md:flex hidden gap-3 items-center">
+          {showBack && (
+            <Button
+              onClick={handleBack}
+              variant="ghost"
+              size="icon"
+              className="cursor-pointer self-start"
+            >
+              <ArrowLeft size={20} />
+            </Button>
+          )}
+
           <div>
-            <div className="font-semibold text-base">Jadwal Sekolah</div>
+            <div className="font-semibold text-lg md:text-xl">Agenda</div>
             <p className="text-sm text-muted-foreground">
               Kelola aktivitas sekolah per bulan atau dalam bentuk daftar
             </p>

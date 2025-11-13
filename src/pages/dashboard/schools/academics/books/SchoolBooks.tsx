@@ -1,6 +1,6 @@
 // src/pages/sekolahislamku/dashboard-school/books/SchoolBooks.shadcn.tsx
 import * as React from "react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "@/lib/axios";
@@ -14,7 +14,11 @@ import {
 
   MoreHorizontal,
   Eye,
+  ArrowLeft,
 } from "lucide-react";
+
+/* ✅ Import untuk breadcrumb header */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* shadcn/ui */
 import { Button } from "@/components/ui/button";
@@ -330,14 +334,35 @@ function BookModal({
 /* =========================================================
    Page — sama layout & interaksi dengan Academic
 ========================================================= */
-export default function SchoolBooks() {
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
+
+export default function SchoolBooks({
+  showBack = false,
+  backTo,
+}: Props) {
   const navigate = useNavigate();
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
+
+  /* ✅ Breadcrumb */
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Buku",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Akademik" },
+        { label: "Buku" },
+      ],
+      actions: null,
+    });
+  }, [setHeader]);
+
   const params = useParams<{ schoolId?: string }>();
   const schoolId = params.schoolId || "";
 
   const booksQ = useBooksListPublic({ schoolId });
   const rows = booksQ.data?.data ?? [];
-  const total = booksQ.data?.pagination?.total ?? 0;
+
 
   const createBook = useCreateBook(schoolId);
   const updateBook = useUpdateBook();
@@ -383,10 +408,10 @@ export default function SchoolBooks() {
       {
         id: "title_author",
         header: "Judul & Penulis",
-        align: "left",
+        align: "center",
         minW: "260px",
         cell: (r) => (
-          <div className="text-left">
+          <div className="">
             <div className="truncate font-medium">{r.books_title}</div>
             <div className="truncate text-sm text-muted-foreground">
               {r.books_author || "-"}
@@ -410,7 +435,7 @@ export default function SchoolBooks() {
         id: "slug",
         header: "Slug",
         minW: "200px",
-        align: "left",
+        align: "center",
         cell: (r) => r.books_slug ?? "-",
       },
     ];
@@ -431,7 +456,7 @@ export default function SchoolBooks() {
       </Button>
     </div>
   ) : (
-    <div className="text-sm text-muted-foreground">{total} total</div>
+    <div className="text-sm text-muted-foreground"></div>
   );
 
   /* ====== Actions (Dropdown) — konsisten Academic ====== */
@@ -458,10 +483,25 @@ export default function SchoolBooks() {
     <div className="min-h-screen w-full overflow-x-hidden bg-background text-foreground">
       <main className="w-full">
         <div className="mx-auto flex flex-col gap-4 lg:gap-6">
+          {/* Header Back seperti SchoolAcademic */}
+          <div className="md:flex hidden gap-3 items-center">
+            {showBack && (
+              <Button
+                onClick={handleBack}
+                variant="ghost"
+                size="icon"
+                className="cursor-pointer self-start"
+              >
+                <ArrowLeft size={20} />
+              </Button>
+            )}
+
+            <h1 className="font-semibold text-lg md:text-xl">Daftar Buku</h1>
+          </div>
+
           <DataTable<BookAPI>
             /* ===== Toolbar (sama Academic) ===== */
-            title="Daftar Buku"
-            onBack={() => navigate(-1)}
+
             onAdd={() => {
               setModalMode("create");
               setModalBook(null);
@@ -484,7 +524,7 @@ export default function SchoolBooks() {
             rows={rows}
             getRowId={(r) => r.books_id}
             /* ===== UX ===== */
-            defaultAlign="left"
+            defaultAlign="center"
             stickyHeader
             zebra
             pageSize={20}

@@ -98,18 +98,17 @@ export default function SchoolClassesSection({
     classId?: string;
   }>();
   const navigate = useNavigate();
-
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
   /* ✅ Breadcrumb */
   const { setHeader } = useDashboardHeader();
   useEffect(() => {
     setHeader({
-      title: "Daftar Section Kelas",
+      title: "Semua Kelas",
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Kelas" },
-        { label: "Section" },
+        { label: "Semua Kelas" },
       ],
       actions: null,
     });
@@ -133,7 +132,7 @@ export default function SchoolClassesSection({
             </Button>
           )}
           <h1 className="font-semibold text-lg md:text-xl">
-            Daftar Section Kelas
+            Semua Kelas
           </h1>
         </div>
 

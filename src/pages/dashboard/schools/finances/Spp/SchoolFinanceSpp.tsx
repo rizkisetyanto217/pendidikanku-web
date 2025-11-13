@@ -115,8 +115,14 @@ function downloadCsv(filename: string, csv: string) {
 }
 
 /* ================= Page ================= */
-const SchoolSpp: React.FC = () => {
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
+
+const SchoolSpp: React.FC<Props> = ({
+  showBack = false,
+  backTo,
+}) => {
   const navigate = useNavigate();
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
   /* ✅ Breadcrumb setup */
   const { setHeader } = useDashboardHeader();
@@ -298,15 +304,17 @@ const SchoolSpp: React.FC = () => {
       <main className="w-full">
         <div className="mx-auto flex flex-col gap-4 lg:gap-6">
           {/* ===== Navbar row: back + title ===== */}
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate(-1)}
-              aria-label="Kembali"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
+          <div className="md:flex hidden gap-3 items-center">
+            {showBack && (
+              <Button
+                onClick={handleBack}
+                variant="ghost"
+                size="icon"
+                className="cursor-pointer self-start"
+              >
+                <ArrowLeft size={20} />
+              </Button>
+            )}
             <h1 className="text-lg font-semibold">SPP</h1>
           </div>
 
@@ -422,8 +430,6 @@ const SchoolSpp: React.FC = () => {
 
           {/* ===== DataTable ===== */}
           <DataTable<SppBillRow>
-            title={undefined}
-            onBack={undefined}
             controlsPlacement="above"
             defaultQuery=""
             searchPlaceholder="Cari nama siswa atau kelas…"

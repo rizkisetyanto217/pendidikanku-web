@@ -7,11 +7,13 @@ import axios from "@/lib/axios";
 /* icons */
 import {
   ArrowLeft,
-  Filter,
   ArrowUpDown,
   Loader2,
   AlertCircle,
 } from "lucide-react";
+
+/* ---------- BreadCrum ---------- */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* shadcn/ui */
 import { Card, CardContent } from "@/components/ui/card";
@@ -580,10 +582,29 @@ function ConfirmDeleteDialog({
 }
 
 /* ================= Page (TABLE) ================= */
-const SchoolSubjectTable: React.FC = () => {
-  const navigate = useNavigate();
-  const schoolId = useResolvedSchoolId();
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
+const SchoolSubjectTable: React.FC<Props> = ({
+  showBack = false,
+  backTo,
+}) => {
+  const navigate = useNavigate();
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
+
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Mapel",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Akademik" },
+        { label: "Mapel" },
+      ],
+      actions: null, // bisa isi tombol kalau perlu
+    });
+  }, [setHeader]);
+
+  const schoolId = useResolvedSchoolId();
   const [detailData, setDetailData] = useState<SubjectRow | null>(null);
   const [openCreate, setOpenCreate] = useState(false);
   const [editData, setEditData] = useState<SubjectRow | null>(null);
@@ -591,7 +612,7 @@ const SchoolSubjectTable: React.FC = () => {
 
   // controls (mengikat ke DataTable)
   const [query, setQuery] = useState("");
-  const [onlyActive, setOnlyActive] = useState<"1" | "0">("1");
+  const [onlyActive] = useState<"1" | "0">("1");
   const [sortBy, setSortBy] = useState<
     "name-asc" | "name-desc" | "code-asc" | "code-desc"
   >("name-asc");
@@ -745,20 +766,6 @@ const SchoolSubjectTable: React.FC = () => {
   /* ===== Right controls slot (status + sort + tombol tambah) ===== */
   const RightSlot = (
     <div className="flex items-center gap-2">
-      <Select
-        value={onlyActive}
-        onValueChange={(v) => setOnlyActive(v as "1" | "0")}
-      >
-        <SelectTrigger className="h-9 w-[150px]" data-interactive>
-          <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
-          <SelectValue placeholder="Filter status" />
-        </SelectTrigger>
-        <SelectContent align="end">
-          <SelectItem value="1">Aktif saja</SelectItem>
-          <SelectItem value="0">Semua</SelectItem>
-        </SelectContent>
-      </Select>
-
       <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
         <SelectTrigger className="h-9 w-[170px]" data-interactive>
           <ArrowUpDown className="mr-2 h-4 w-4 text-muted-foreground" />
@@ -785,15 +792,17 @@ const SchoolSubjectTable: React.FC = () => {
           {/* Header minimal (back + title) */}
           <div className="flex items-center justify-between">
             <div className="md:flex hidden items-center gap-3">
-              <Button
-                variant="ghost"
-                onClick={() => navigate(-1)}
-                className="gap-1.5"
-              >
-                <ArrowLeft size={18} />
-                Kembali
-              </Button>
-              <h1 className="font-semibold text-lg">Daftar Pelajaran</h1>
+              {showBack && (
+                <Button
+                  onClick={handleBack}
+                  variant="ghost"
+                  size="icon"
+                  className="cursor-pointer self-start"
+                >
+                  <ArrowLeft size={20} />
+                </Button>
+              )}
+              <h1 className="font-semibold text-lg">Mapel</h1>
             </div>
           </div>
 
@@ -816,8 +825,6 @@ const SchoolSubjectTable: React.FC = () => {
           {/* DataTable */}
           {!mergedQ.isLoading && !mergedQ.isError && (
             <DataTable<SubjectRow>
-              title="Daftar Pelajaran"
-              onBack={() => navigate(-1)}
               defaultQuery={query}
               onQueryChange={setQuery}
               searchByKeys={["name", "code"]}

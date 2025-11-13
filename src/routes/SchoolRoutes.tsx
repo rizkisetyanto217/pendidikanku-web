@@ -72,8 +72,8 @@ export const SchoolRoutes = (
         element={<SchoolSectionDetail />}
       />
       <Route path="level" element={<SchoolClassParent />} />
-      <Route path="akademik" element={<SchoolClass />} />
-      <Route path="kelas" element={<SchoolClassesSection />} />
+      <Route path="daftar-kelas" element={<SchoolClass />} />
+      <Route path="semua-kelas" element={<SchoolClassesSection />} />
       <Route path="pelajaran" element={<SchoolCSST />} />
     </Route>
 
