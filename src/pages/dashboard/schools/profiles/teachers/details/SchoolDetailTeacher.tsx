@@ -1,6 +1,6 @@
 // src/pages/school/CSchoolDetailTeacher.tsx
 /* ================= Imports ================= */
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "@/lib/axios";
@@ -19,6 +19,9 @@ import {
   BadgeInfo,
   Link as LinkIcon,
 } from "lucide-react";
+
+/* Tambahan untuk breadcrumb sistem dashboard */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* ===== shadcn/ui ===== */
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -215,31 +218,55 @@ const DUMMY_DETAIL: TeacherDetail = {
   default_subject: "Ilmu Balaghoh",
 };
 
+/* ===================== HeaderBackArea (mobile) ===================== */
+function HeaderBackArea({
+  title,
+  onBack,
+}: {
+  title: string;
+  onBack: () => void;
+}) {
+  return (
+    <div className="min-w-0">
+      {/* Mobile only */}
+      <div className="md:hidden flex items-center gap-1 min-w-0">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 rounded-xl"
+          aria-label="Kembali"
+          onClick={onBack}
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
+        <div
+          className="text-base font-semibold truncate max-w-[60vw]"
+          title={title}
+        >
+          {title}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ================= Helpers ================= */
 const genderLabel = (g?: Gender | GenderLP | null) =>
   g === "male" || g === "L"
     ? "Laki-laki"
     : g === "female" || g === "P"
-    ? "Perempuan"
-    : "-";
+      ? "Perempuan"
+      : "-";
 
-const hijriWithWeekday = (iso?: string) =>
-  iso
-    ? new Date(iso).toLocaleDateString("id-ID-u-ca-islamic-umalqura", {
-        weekday: "long",
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      })
-    : "-";
+
 
 const toDateLong = (d?: string | null) =>
   d
     ? new Date(d).toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      })
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    })
     : "-";
 
 const empBadge = (e?: Employment | null) => {
@@ -301,10 +328,34 @@ const initials = (name?: string | null) =>
     .toUpperCase();
 
 /* ================= Component ================= */
-const SchoolDetailTeacher: React.FC = () => {
+
+
+const SchoolDetailTeacher: React.FC = ({
+}) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: user } = useCurrentUser();
+
+  /* Atur breadcrumb dan title seperti SchoolAcademic */
+  const { setHeader } = useDashboardHeader();
+
+  useEffect(() => {
+    setHeader({
+      title: "Detail Guru",
+      headerLeft: (
+        <HeaderBackArea
+          title="Detail Guru"
+          onBack={() => navigate(-1)}
+        />
+      ),
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Profil" },
+        { label: "Guru", href: "profil/guru" },
+        { label: "Detail Guru" },
+      ],
+    });
+  }, [setHeader, navigate]);
 
   const schoolId = useMemo(() => {
     const u: any = user || {};
@@ -382,7 +433,7 @@ const SchoolDetailTeacher: React.FC = () => {
   })();
 
   const detail: TeacherDetail = fromApi ?? DUMMY_DETAIL;
-  const usingDummy = !fromApi;
+
 
   const prefix =
     detail.school_teacher_user_teacher_title_prefix_snapshot?.trim();
@@ -404,14 +455,19 @@ const SchoolDetailTeacher: React.FC = () => {
     <TooltipProvider>
       <div className="w-full bg-background text-foreground">
         {/* Header */}
-        <header className="w-full border-b bg-card/70 backdrop-blur supports-[backdrop-filter]:bg-card/50">
+        {/* <header className="w-full border-b bg-card/70 backdrop-blur supports-[backdrop-filter]:bg-card/50">
           <div className="max-w-screen-2xl mx-auto px-4 md:px-6 h-14 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <div className="md:flex hidden gap-3 items-center">
+              <Button
+                onClick={() => navigate(-1)}
+                variant="ghost"
+                size="icon"
+                className="cursor-pointer self-start"
+              >
                 <ArrowLeft size={20} />
               </Button>
               <div className="flex flex-col">
-                <h1 className="font-semibold">Detail Guru</h1>
+                <h1 className="font-semibold text-lg md:text-xl">Detail</h1>
                 <span className="text-xs text-muted-foreground">
                   {hijriWithWeekday(new Date().toISOString())}
                 </span>
@@ -424,7 +480,7 @@ const SchoolDetailTeacher: React.FC = () => {
               </Badge>
             )}
           </div>
-        </header>
+        </header> */}
 
         {/* Main */}
         <main className="w-full px-4 md:px-6 py-6">
@@ -626,8 +682,8 @@ const SchoolDetailTeacher: React.FC = () => {
                             s.role === "homeroom"
                               ? "Wali Kelas"
                               : s.role === "assistant"
-                              ? "Asisten"
-                              : "Pengajar"
+                                ? "Asisten"
+                                : "Pengajar"
                           }
                           imageUrl={s.class_section_image_url}
                           rightBadge={s.is_active ? "Aktif" : "Nonaktif"}

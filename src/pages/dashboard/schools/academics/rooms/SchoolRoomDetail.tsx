@@ -402,13 +402,13 @@ export default function SchoolRoomDetail() {
                   <div className="text-xs text-muted-foreground mb-1">
                     {note.ts
                       ? new Date(note.ts).toLocaleString("id-ID", {
-                          weekday: "short",
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
+                        weekday: "short",
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
                       : "—"}
                   </div>
                   <div className="text-sm">{note.text ?? "—"}</div>

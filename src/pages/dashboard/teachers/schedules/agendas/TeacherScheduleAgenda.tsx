@@ -1,3 +1,4 @@
+// src/pages/sekolahislamku/teacher/TeacherScheduleAgenda.tsx
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -16,10 +17,8 @@ import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayou
 
 // ✅ default import untuk default export
 import CalendarView from "@/pages/dashboard/components/calender/CalenderView";
-// (kalau kamu juga pakai komponen ini di file yang sama)
 import ScheduleList from "@/pages/dashboard/components/calender/ScheduleList";
 import EditScheduleDialog from "@/pages/dashboard/components/calender/components/EditSchedule";
-// ✅ value vs type dipisah
 import {
   toMonthStr,
   monthLabel,
@@ -87,8 +86,8 @@ function seedMonth(y: number, m: number): ScheduleRow[] {
         type === "exam"
           ? `Ujian materi ${title.toLowerCase()} — persiapkan alat tulis.`
           : type === "event"
-          ? `Acara sekolah: ${title} — ${desc}`
-          : desc,
+            ? `Acara sekolah: ${title} — ${desc}`
+            : desc,
     });
   };
 
@@ -254,6 +253,16 @@ export default function TeacherScheduleAgenda() {
       time: "07:00",
     });
 
+  // 🔹 handler ke halaman detail
+  const goToDetail = (row: ScheduleRow) => {
+    navigate(`${row.id}`, {
+      state: {
+        schedule: row,
+        month,
+      },
+    });
+  };
+
   return (
     <div className="w-full bg-background text-foreground">
       <div className="mx-auto flex flex-col gap-4">
@@ -284,11 +293,8 @@ export default function TeacherScheduleAgenda() {
               size="sm"
               onClick={() => {
                 const now = new Date();
-                // set ke bulan & tanggal hari ini
                 setMonth(toMonthStr(now));
                 setSelectedDay(dateKeyFrom(now));
-                // ⛔ jangan paksa pindah tab — hormati tab aktif
-                // trigger re-scroll untuk List (kalau tab=List)
                 setScrollToTodaySig(Date.now());
               }}
               className="ml-1"
@@ -316,7 +322,8 @@ export default function TeacherScheduleAgenda() {
               selectedDay={selectedDay}
               setSelectedDay={setSelectedDay}
               onAddNew={onAddNew}
-              onEdit={(row) => setEditing(row)}
+              // 🔹 klik agenda di kalender → detail
+              onEdit={(row) => goToDetail(row)}
               onDelete={(id) => deleteMut.mutate(id)}
               updating={updateMut.isPending || createMut.isPending}
               deleting={deleteMut.isPending}
@@ -326,18 +333,18 @@ export default function TeacherScheduleAgenda() {
               data={schedulesQ.data ?? []}
               loading={schedulesQ.isLoading}
               onAddNew={() => onAddNew()}
-              onEdit={(row) => setEditing(row)}
+              // 🔹 klik agenda di list → detail
+              onEdit={(row) => goToDetail(row)}
               onDelete={(id) => deleteMut.mutate(id)}
               updating={updateMut.isPending || createMut.isPending}
               deleting={deleteMut.isPending}
-              // ⤵️ signal untuk memaksa auto-scroll saat klik "Hari ini"
               scrollSignal={scrollToTodaySig}
             />
           )}
         </div>
       </div>
 
-      {/* Dialog */}
+      {/* Dialog (khusus tambah baru, bukan detail) */}
       {editing && (
         <EditScheduleDialog
           value={editing}
@@ -345,6 +352,8 @@ export default function TeacherScheduleAgenda() {
           onSubmit={(v) => {
             if (!v.title.trim()) return;
             if (v.id) {
+              // Secara normal v.id kosong untuk create.
+              // Kalau suatu saat dipakai edit, tetap aman.
               updateMut.mutate(v, { onSuccess: () => setEditing(null) });
             } else {
               const { id, ...payload } = v;

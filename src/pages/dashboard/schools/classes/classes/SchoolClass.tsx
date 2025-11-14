@@ -240,10 +240,9 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
       {
         id: "name",
         header: "Nama Kelas",
-        align: "left",
         minW: "260px",
         cell: (r) => (
-          <div className="text-left">
+          <div className="text-center">
             <div className="font-medium truncate">{r.name}</div>
             <div className="mt-0.5 text-xs text-muted-foreground truncate">
               Slug: {r.slug}
@@ -255,6 +254,7 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
         id: "parent",
         header: "Tingkat",
         minW: "160px",
+        align: "center",
         cell: (r) => (
           <span className="truncate">
             {r.parentName ?? "-"}
@@ -266,12 +266,14 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
         id: "term",
         header: "Periode Akademik",
         minW: "180px",
+        align: "center",
         cell: (r) => r.term ?? "-",
       },
       {
         id: "reg",
         header: "Jendela Pendaftaran",
         minW: "220px",
+        align: "center",
         cell: (r) => (
           <span className="truncate">
             {fmtDate(r.regOpen)} — {fmtDate(r.regClose)}
@@ -428,7 +430,6 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
               columns={columns}
               rows={pagedRows}
               getRowId={(r) => r.id}
-              defaultAlign="left"
               stickyHeader
               zebra
               viewModes={["table", "card"] as ViewMode[]}

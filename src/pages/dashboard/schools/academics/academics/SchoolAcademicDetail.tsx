@@ -9,7 +9,6 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock,
-  ArrowLeft,
   School,
   Flag,
   Pencil,
@@ -116,8 +115,8 @@ function HeaderBackArea({
 
   return (
     <div className="min-w-0">
-      {/* Mobile: back + title */}
-      <div className="md:hidden flex items-center gap-1 min-w-0">
+      {/* Back button should always show */}
+      <div className="flex items-center gap-1 min-w-0">
         <Button
           variant="ghost"
           size="icon"
@@ -125,15 +124,16 @@ function HeaderBackArea({
           aria-label="Kembali"
           onClick={onBack}
         >
-          <ArrowLeft className="w-5 h-5" />
         </Button>
+        {/* Title hanya untuk mobile */}
         <div
-          className="text-base font-semibold truncate max-w-[60vw]"
+          className="text-base font-semibold truncate max-w-[60vw] md:hidden"
           title={title}
         >
           {mobileTitle}
         </div>
       </div>
+
 
       {/* Desktop/Tablet: breadcrumb */}
       <Breadcrumb className="hidden md:block min-w-0">
@@ -196,7 +196,8 @@ export default function SchoolAcademicDetail() {
           onBack={() => navigate(-1)}
           crumbs={[
             { label: "Dashboard", href: "dashboard" },
-            { label: "Akademik", href: "akademik" },
+            { label: "Akademik" },
+            { label: "Tahun Akademik", href: "akademik/tahun-akademik" },
             { label: "Detail Akademik" },
           ]}
         />
@@ -316,7 +317,9 @@ export default function SchoolAcademicDetail() {
               {/* Aksi halaman pindah ke kanan atas lewat header.actions jika mau.
                   Atau tetap di sini: */}
               <div className="px-5 pb-5 flex gap-2">
-                <Button variant="outline" onClick={() => setOpenEdit(true)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setOpenEdit(true)}>
                   <Pencil size={16} className="mr-2" />
                   Edit
                 </Button>

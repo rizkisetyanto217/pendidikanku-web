@@ -110,7 +110,7 @@ export const SchoolRoutes = (
         <Route path="profil-sekolah" element={<SchoolProfile showBack />} />
         <Route path="guru">
           <Route index element={<SchoolTeacher showBack />} />
-          <Route path=":id" element={<SchoolDetailTeacher />} />
+          <Route path="guru/:id" element={<SchoolDetailTeacher />} />
         </Route>
       </Route>
 

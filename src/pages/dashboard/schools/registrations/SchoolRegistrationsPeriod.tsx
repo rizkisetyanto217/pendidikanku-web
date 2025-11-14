@@ -300,7 +300,7 @@ export default function SchoolRegistrationsPeriod() {
       id: "class_name",
       header: "Kelas",
       minW: "180px",
-      align: "left",
+
       cell: (r) => r.class_name,
     },
     {
@@ -336,9 +336,8 @@ export default function SchoolRegistrationsPeriod() {
       id: "general_billing_title",
       header: "Judul",
       minW: "260px",
-      align: "left",
       cell: (r) => (
-        <div className="text-left">
+        <div className="text-center">
           <div className="font-medium">{r.general_billing_title}</div>
         </div>
       ),

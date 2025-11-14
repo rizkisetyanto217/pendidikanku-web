@@ -712,17 +712,15 @@ const SchoolSubjectTable: React.FC<Props> = ({
     {
       id: "code",
       header: "Kode",
-      align: "left",
       minW: "120px",
       cell: (r) => (r.code ? <span className="font-mono">{r.code}</span> : "-"),
     },
     {
       id: "name",
       header: "Nama",
-      align: "left",
       minW: "220px",
       cell: (r) => (
-        <div className="text-left">
+        <div>
           <div className="font-medium">{r.name}</div>
           <div className="text-[11px] text-muted-foreground">
             {r.assignments.length} kelas ditugaskan

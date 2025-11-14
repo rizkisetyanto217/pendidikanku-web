@@ -694,7 +694,7 @@ const SchoolAcademic: React.FC<Props> = ({
             /* ⬇️ Klik baris/card langsung ke detail */
             onRowClick={(row) =>
               navigate(
-                `/${schoolId}/sekolah/akademik/tahun-akademik/detail/${row.id}`,
+                `${row.id}`,
                 {
                   state: {
                     term: {

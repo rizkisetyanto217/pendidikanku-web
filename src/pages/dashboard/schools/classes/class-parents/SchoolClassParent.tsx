@@ -191,6 +191,7 @@ const SchoolClassParent: React.FC = () => {
         id: "name",
         header: "Nama Tingkat",
         minW: "240px",
+        align: "center",
         cell: (r) => (
           <div>
             <div className="font-medium truncate">{r.name}</div>

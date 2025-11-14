@@ -32,6 +32,7 @@ import TeacherScheduleRoutine from "@/pages/dashboard/teachers/schedules/routine
 import TeacherScheduleAgenda from "@/pages/dashboard/teachers/schedules/agendas/TeacherScheduleAgenda";
 import TeacherQuizBuilder from "@/pages/dashboard/teachers/quiz/SchoolQuiz";
 import TeacherScheduleRoutineDetail from "@/pages/dashboard/teachers/schedules/routines/details/TeacherScheduleRoutineDetail";
+import TeacherScheduleAgendaDetail from "@/pages/dashboard/teachers/schedules/agendas/details/TeacherScheduleAgendaDetail";
 
 export const TeacherRoutes = (
   <Route path="guru" element={<DashboardLayout />}>
@@ -82,8 +83,12 @@ export const TeacherRoutes = (
     {/* === Jadwal Sekolah === */}
     <Route path="jadwal">
       <Route path="agenda" element={<TeacherScheduleAgenda />} />
+      <Route path="agenda/:id" element={<TeacherScheduleAgendaDetail />} />
       <Route path="rutin" element={<TeacherScheduleRoutine />} />
-      <Route path="rutin/:routineId" element={<TeacherScheduleRoutineDetail />} />
+      <Route
+        path="rutin/:routineId"
+        element={<TeacherScheduleRoutineDetail />}
+      />
     </Route>
 
     {/* Menu Utama Guru */}
