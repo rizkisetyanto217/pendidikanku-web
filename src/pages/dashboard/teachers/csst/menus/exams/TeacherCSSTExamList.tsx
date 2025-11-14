@@ -45,7 +45,7 @@ import {
 import {
   StatsGrid,
   type StatItem,
-} from "@/components/costum/card/StatsCardGrid";
+} from "@/components/costum/common/CStatsCardGrid";
 
 /* ===================== Types & Helpers ===================== */
 type ExamStatus = "draft" | "published" | "ongoing" | "finished" | "closed";

@@ -38,6 +38,7 @@ import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayou
 
 import CTeacherModalExportResult from "./components/CTeacherModalExportResult";
 import CTeacherModalGrading from "./components/CTeacherModalGrading";
+import { CSegmentedTabs } from "@/components/costum/common/CSegmentedTabs";
 
 /* ================= Types ================ */
 type Assignment = {
@@ -82,11 +83,11 @@ const toLocalNoonISO = (d: Date) => atLocalNoon(d).toISOString();
 const hijriLong = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID-u-ca-islamic-umalqura", {
-      weekday: "long",
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    })
+        weekday: "long",
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      })
     : "-";
 
 async function fetchTeacherAssignment(): Promise<GradingPayload> {
@@ -177,19 +178,19 @@ async function fetchTeacherAssignment(): Promise<GradingPayload> {
 const dateLong = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
     : "-";
 
 const dateShort = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-      day: "2-digit",
-      month: "short",
-    })
+        day: "2-digit",
+        month: "short",
+      })
     : "-";
 
 const pct = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 100) : 0);
@@ -212,8 +213,8 @@ function StatCard({
     trend === "up"
       ? "text-green-600"
       : trend === "down"
-        ? "text-red-600"
-        : "text-muted-foreground";
+      ? "text-red-600"
+      : "text-muted-foreground";
   return (
     <Card>
       <CardContent className="p-4">
@@ -260,8 +261,9 @@ function FilterChip({
       {label}
       {typeof count === "number" && (
         <span
-          className={`text-xs rounded-full px-2 py-0.5 ${active ? "bg-background" : "bg-muted"
-            }`}
+          className={`text-xs rounded-full px-2 py-0.5 ${
+            active ? "bg-background" : "bg-muted"
+          }`}
         >
           {count}
         </span>
@@ -380,8 +382,9 @@ export default function TeacherCSSTAssignment() {
         student={gradingStudent ?? undefined}
         assignmentTitle={
           selected
-            ? `${selected.title}${selected.className ? ` — (${selected.className})` : ""
-            }`
+            ? `${selected.title}${
+                selected.className ? ` — (${selected.className})` : ""
+              }`
             : undefined
         }
         onSubmit={(payload: { id: string; score: number }) => {
@@ -511,27 +514,25 @@ export default function TeacherCSSTAssignment() {
             </Card>
 
             {/* ---- Mobile Tabs (daftar/detail) ---- */}
-            <Card className="p-2 block lg:hidden">
-              <div className="grid grid-cols-2 gap-1 rounded-xl p-1 border">
-                {(["list", "detail"] as const).map((t) => (
-                  <Button
-                    key={t}
-                    variant={mobileTab === t ? "default" : "ghost"}
-                    className="h-9 rounded-lg text-sm font-semibold"
-                    onClick={() => setMobileTab(t)}
-                  >
-                    {t === "list" ? "Daftar Tugas" : "Detail Tugas"}
-                  </Button>
-                ))}
-              </div>
-            </Card>
+            {/* ---- Mobile Tabs (daftar/detail) ---- */}
+            <div className="block lg:hidden">
+              <CSegmentedTabs
+                value={mobileTab}
+                onValueChange={(val) => setMobileTab(val as "list" | "detail")}
+                tabs={[
+                  { value: "list", label: "Daftar Tugas", icon: ClipboardList },
+                  { value: "detail", label: "Detail Tugas", icon: Eye },
+                ]}
+              />
+            </div>
 
             {/* ---- Assignment List & Detail ---- */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               {/* ----- LIST ----- */}
               <Card
-                className={`lg:col-span-5 ${mobileTab === "list" ? "block" : "hidden lg:block"
-                  }`}
+                className={`lg:col-span-5 ${
+                  mobileTab === "list" ? "block" : "hidden lg:block"
+                }`}
               >
                 <CardContent className="p-4 md:p-6">
                   <h3 className="text-base md:text-lg font-semibold mb-4 flex items-center gap-2">
@@ -578,10 +579,11 @@ export default function TeacherCSSTAssignment() {
                               setSelectedId(a.id);
                               setMobileTab("detail");
                             }}
-                            className={`w-full text-left rounded-xl border p-3 md:p-4 transition-all hover:shadow-sm ${active
-                              ? "border-primary bg-primary/10"
-                              : "border-border bg-card"
-                              }`}
+                            className={`w-full text-left rounded-xl border p-3 md:p-4 transition-all hover:shadow-sm ${
+                              active
+                                ? "border-primary bg-primary/10"
+                                : "border-border bg-card"
+                            }`}
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0 flex-1">
@@ -596,10 +598,11 @@ export default function TeacherCSSTAssignment() {
                                     {a.className}
                                   </Badge>
                                   <span
-                                    className={`text-[11px] md:text-xs flex items-center gap-1 ${isOverdue
-                                      ? "text-red-500"
-                                      : "text-muted-foreground"
-                                      }`}
+                                    className={`text-[11px] md:text-xs flex items-center gap-1 ${
+                                      isOverdue
+                                        ? "text-red-500"
+                                        : "text-muted-foreground"
+                                    }`}
                                   >
                                     <CalendarDays className="h-3 w-3" />
                                     {dateShort(a.dueDate)}
@@ -608,10 +611,11 @@ export default function TeacherCSSTAssignment() {
                               </div>
                               <div className="text-right shrink-0">
                                 <div
-                                  className={`text-sm md:text-lg font-bold ${donePct === 100
-                                    ? "text-green-600"
-                                    : "text-primary"
-                                    }`}
+                                  className={`text-sm md:text-lg font-bold ${
+                                    donePct === 100
+                                      ? "text-green-600"
+                                      : "text-primary"
+                                  }`}
                                 >
                                   {donePct}%
                                 </div>
@@ -655,8 +659,9 @@ export default function TeacherCSSTAssignment() {
 
               {/* ----- DETAIL ----- */}
               <Card
-                className={`lg:col-span-7 ${mobileTab === "list" ? "hidden lg:block" : "block"
-                  }`}
+                className={`lg:col-span-7 ${
+                  mobileTab === "list" ? "hidden lg:block" : "block"
+                }`}
               >
                 <CardContent className="p-4 md:p-6">
                   {!selected ? (
@@ -886,15 +891,15 @@ export default function TeacherCSSTAssignment() {
                                   s.status === "graded"
                                     ? "default"
                                     : s.status === "submitted"
-                                      ? "secondary"
-                                      : "destructive"
+                                    ? "secondary"
+                                    : "destructive"
                                 }
                               >
                                 {s.status === "graded"
                                   ? "Dinilai"
                                   : s.status === "submitted"
-                                    ? "Terkumpul"
-                                    : "Missing"}
+                                  ? "Terkumpul"
+                                  : "Missing"}
                               </Badge>
                             </div>
 

@@ -39,8 +39,8 @@ import type { ScheduleRow } from "@/pages/dashboard/components/calender/types/ty
 /* =========================
    Types untuk Jadwal Rutin
 ========================= */
-type RoutineDay = 0 | 1 | 2 | 3 | 4 | 5 | 6; // 0=Sun .. 6=Sat
-type RoutineItem = {
+export type RoutineDay = 0 | 1 | 2 | 3 | 4 | 5 | 6; // 0=Sun .. 6=Sat
+export type RoutineItem = {
   id: string;
   weekday: RoutineDay;
   time: string; // "HH:mm"
@@ -311,12 +311,14 @@ function RoutineBoard({
   onAdd,
   onEdit,
   onDelete,
+  onView,
   deleting,
 }: {
   data: RoutineItem[];
   onAdd: (weekday?: RoutineDay) => void;
   onEdit: (item: RoutineItem) => void;
   onDelete: (id: string) => void;
+  onView: (item: RoutineItem) => void;
   deleting?: boolean;
 }) {
   const byDay = useMemo(() => {
@@ -341,7 +343,15 @@ function RoutineBoard({
     return ordered.filter((d) => byDay[d] && byDay[d].length > 0);
   }, [byDay]);
 
-  const weekdayShort = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jum'at", "Sabtu"];
+  const weekdayFull = [
+    "Minggu",
+    "Senin",
+    "Selasa",
+    "Rabu",
+    "Kamis",
+    "Jum'at",
+    "Sabtu",
+  ];
   const todayIdx = new Date().getDay() as RoutineDay;
 
   if (daysWithData.length === 0) {
@@ -370,7 +380,7 @@ function RoutineBoard({
           >
             <div className="p-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="font-medium">{weekdayShort[d]}</div>
+                <div className="font-medium">{weekdayFull[d]}</div>
                 {isToday && (
                   <span className="text-[11px] px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30">
                     Hari ini
@@ -386,8 +396,9 @@ function RoutineBoard({
               {byDay[d].map((it) => (
                 <div
                   key={it.id}
+                  onClick={() => onView(it)}
                   className={[
-                    "rounded-lg border p-2 bg-background",
+                    "rounded-lg border p-2 bg-background cursor-pointer",
                     it.active === false ? "opacity-60" : "",
                     isToday ? "border-primary/50" : "",
                   ].join(" ")}
@@ -408,7 +419,10 @@ function RoutineBoard({
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => onEdit(it)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEdit(it);
+                        }}
                       >
                         <Edit size={16} />
                       </Button>
@@ -416,7 +430,10 @@ function RoutineBoard({
                         variant="ghost"
                         size="icon"
                         disabled={deleting}
-                        onClick={() => onDelete(it.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(it.id);
+                        }}
                       >
                         <Trash2 size={16} />
                       </Button>
@@ -673,6 +690,11 @@ export default function TeacherScheduleRoutine() {
               onEdit={(it) => setEditingRoutine(it)}
               onDelete={(id) => routineDelete.mutate(id)}
               deleting={routineDelete.isPending}
+              onView={(it) =>
+                navigate(`${it.id}`, {
+                  state: { routine: it },
+                })
+              }
             />
             <div className="mt-3">
               <Button onClick={() => onAddRoutine()}>
@@ -706,7 +728,9 @@ export default function TeacherScheduleRoutine() {
               onceUpdate.mutate(v, { onSuccess: () => setEditing(null) });
             } else {
               const { id, ...payload } = v;
-              onceCreate.mutate(payload, { onSuccess: () => setEditing(null) });
+              onceCreate.mutate(payload, {
+                onSuccess: () => setEditing(null),
+              });
             }
           }}
         />

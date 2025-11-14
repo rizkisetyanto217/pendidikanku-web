@@ -6,14 +6,13 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowLeft,
+  Rows3,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 /* Tambahan untuk breadcrumb sistem dashboard */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
-
 
 // ✅ default import untuk default export
 import CalendarView from "@/pages/dashboard/components/calender/CalenderView";
@@ -27,6 +26,12 @@ import {
   dateKeyFrom,
 } from "@/pages/dashboard/components/calender/types/types";
 import type { ScheduleRow } from "@/pages/dashboard/components/calender/types/types";
+
+// 🔹 segmented tabs custom
+import {
+  CSegmentedTabs,
+  type SegmentedTabItem,
+} from "@/components/costum/common/CSegmentedTabs";
 
 // ===== Dummy API (sementara tetap di file halaman) =====
 const scheduleStore = new Map<string, ScheduleRow[]>();
@@ -82,8 +87,8 @@ function seedMonth(y: number, m: number): ScheduleRow[] {
         type === "exam"
           ? `Ujian materi ${title.toLowerCase()} — persiapkan alat tulis.`
           : type === "event"
-            ? `Acara sekolah: ${title} — ${desc}`
-            : desc,
+          ? `Acara sekolah: ${title} — ${desc}`
+          : desc,
     });
   };
 
@@ -153,6 +158,20 @@ const scheduleApi = {
     );
   },
 };
+
+// 🔹 Items untuk segmented tabs
+const TAB_ITEMS: SegmentedTabItem[] = [
+  {
+    value: "calendar",
+    label: "Kalender",
+    icon: CalendarDays,
+  },
+  {
+    value: "list",
+    label: "List",
+    icon: Rows3,
+  },
+];
 
 export default function TeacherScheduleAgenda() {
   const navigate = useNavigate();
@@ -279,18 +298,17 @@ export default function TeacherScheduleAgenda() {
           </div>
         </div>
 
-        {/* Tabs */}
-        <Tabs
+        {/* Segmented Tabs */}
+        <CSegmentedTabs
           value={tab}
           onValueChange={(v) => setTab(v as "calendar" | "list")}
-          className="w-full"
-        >
-          <TabsList className="w-fit">
-            <TabsTrigger value="calendar">Kalender</TabsTrigger>
-            <TabsTrigger value="list">List</TabsTrigger>
-          </TabsList>
+          tabs={TAB_ITEMS}
+          className="mt-1"
+        />
 
-          <TabsContent value="calendar" className="mt-4">
+        {/* Content */}
+        <div className="mt-4">
+          {tab === "calendar" ? (
             <CalendarView
               month={month}
               data={schedulesQ.data ?? []}
@@ -303,9 +321,7 @@ export default function TeacherScheduleAgenda() {
               updating={updateMut.isPending || createMut.isPending}
               deleting={deleteMut.isPending}
             />
-          </TabsContent>
-
-          <TabsContent value="list" className="mt-4">
+          ) : (
             <ScheduleList
               data={schedulesQ.data ?? []}
               loading={schedulesQ.isLoading}
@@ -317,8 +333,8 @@ export default function TeacherScheduleAgenda() {
               // ⤵️ signal untuk memaksa auto-scroll saat klik "Hari ini"
               scrollSignal={scrollToTodaySig}
             />
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
       </div>
 
       {/* Dialog */}
