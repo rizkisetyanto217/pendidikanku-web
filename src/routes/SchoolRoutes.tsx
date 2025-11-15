@@ -36,11 +36,17 @@ import SchoolClass from "@/pages/dashboard/schools/classes/classes/SchoolClass";
 import SchoolClassesSection from "@/pages/dashboard/schools/classes/class-sections/SchoolClassSections";
 import SchoolCSST from "@/pages/dashboard/schools/classes/class-section-subject-teachers/SchoolCSST";
 import SchoolCampaignDetail from "@/pages/dashboard/schools/campaign/SchoolCampaignDetail";
+import Setting from "@/pages/dashboard/components/page/Setting";
+import Help from "@/pages/dashboard/components/page/Help";
 
 export const SchoolRoutes = (
   <Route path="sekolah" element={<DashboardLayout />}>
     {/* === Dashboard Utama === */}
     <Route path="dashboard" element={<SchoolDashboard />} />
+    <Route path="pengaturan" element={<Setting />} />
+    <Route path="bantuan" element={<Help />} />
+
+
 
     {/* === Jadwal === */}
     <Route path="jadwal" element={<SchoolSchedule />} />

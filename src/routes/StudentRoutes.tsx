@@ -5,8 +5,8 @@ import StudentAllSchedule from "@/pages/dashboard/students/schedules/agendas/Stu
 import StudentDetailSchedule from "@/pages/dashboard/students/schedules/agendas/StudentScheduleAgendaDetail";
 import StudentMenuGrids from "@/pages/dashboard/students/menus/StudentMenuGrids";
 import StudentClassesAssignment from "@/pages/dashboard/students/classes/my-classes/assignments/StudentClassesAssignment";
-import StudentFinance from "@/pages/dashboard/students/finances/StudentFinance";
-import StudentListFinance from "@/pages/dashboard/students/finances/StudentFinanceList";
+import StudentFinance from "@/pages/dashboard/students/administration/StudentFinance";
+import StudentListFinance from "@/pages/dashboard/students/administration/StudentFinanceList";
 import StudentProgress from "@/pages/dashboard/students/classes/progress/StudentProgress";
 import StudentRaport from "@/pages/dashboard/students/classes/progress/raports/StudentProgressRaport";
 import StudentAbsence from "@/pages/dashboard/students/classes/progress/absences/StudentProgessAbsence";
@@ -20,6 +20,8 @@ import StudentExam from "@/pages/dashboard/students/classes/my-classes/exams/Stu
 import StudentClassesContact from "@/pages/dashboard/students/classes/contacts/StudentClassesContact";
 import StudentScheduleAgenda from "@/pages/dashboard/students/schedules/agendas/StudentScheduleAgenda";
 import StudentScheduleRoutine from "@/pages/dashboard/students/schedules/routine/StudentScheduleRoutine";
+import StudentEnrollment from "@/pages/dashboard/students/administration/StudentAdministrationEnrollment";
+import StudentReEnrollment from "@/pages/dashboard/students/administration/StudentAdministrationReEnrollment";
 
 // ======================
 // Routing untuk halaman MURID (Student Dashboard)
@@ -100,6 +102,17 @@ export const StudentRoutes = (
     <Route path="jadwal">
       <Route path="agenda" element={<StudentScheduleAgenda />} />
       <Route path="rutin" element={<StudentScheduleRoutine />} />
+    </Route>
+
+    {/* === Jadwal Sekolah === */}
+    <Route path="administrasi">
+      <Route path="pendaftaran" element={<StudentEnrollment />} />
+      <Route path="daftar-ulang" element={<StudentReEnrollment />} />
+      {/* Halaman keuangan ringkas */}
+      <Route path="keuangan" element={<StudentFinance />} />
+      {/* Daftar seluruh tagihan */}
+      <Route path="keuangan-list" element={<StudentListFinance />} />
+      {/* Detail tagihan berdasarkan ID */}
     </Route>
 
     {/* =====================

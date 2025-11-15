@@ -35,11 +35,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import UserSettingsModal, {
-  type SettingsState,
-} from "@/pages/dashboard/components/modal/SettingModal";
-import UserHelpModal from "@/pages/dashboard/components/modal/HelpModal";
-
 /* ================= CSS-only Theming Helpers ================= */
 type Mode = "light" | "dark" | "system";
 type ThemeName = "default" | "green" | "yellow";
@@ -166,15 +161,6 @@ function applyFontFamily(fontId: FontId) {
 }
 
 /* ================= UI Scale (GLOBAL) ================= */
-/**
- * Mengatur ukuran global untuk Sidebar:
- * - Lebar background (panel)
- * - Lebar mode ikon (collapsed)
- * - Ukuran ikon
- * - Tinggi item menu & sub-menu
- * - Font size sidebar
- * - Tinggi label group
- */
 type UiScale = "normal" | "large" | "xl";
 const UI_SCALE_KEY = "app-ui-scale";
 
@@ -186,8 +172,8 @@ const UI_TOKENS: Record<
     sidebarWidthIcon: string;
     itemH: string;
     subItemH: string;
-    icon: string; // icon size
-    text: string; // base text size
+    icon: string;
+    text: string;
     labelH: string;
   }
 > = {
@@ -248,11 +234,6 @@ interface PublicUserDropdownProps {
   variant?: "icon" | "button";
 }
 
-const getUserDisplayName = (
-  user?: { user_name?: string; email?: string } | null
-) =>
-  (user?.user_name && user.user_name.trim()) ||
-  (user?.email ? user.email.split("@")[0] : "");
 
 export default function CMenuDropdown({
   withBg = true,
@@ -262,7 +243,7 @@ export default function CMenuDropdown({
     () => (localStorage.getItem(MODE_KEY) as Mode) || "system"
   );
   const [themeName, setThemeName] = useState<ThemeName>(readThemeFromStorage);
-  const [fontScale, setFontScale] = useState<number>(() => {
+  const [fontScale, ] = useState<number>(() => {
     try {
       return readFontScale();
     } catch {
@@ -286,72 +267,7 @@ export default function CMenuDropdown({
     }
   });
 
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [helpOpen, setHelpOpen] = useState(false);
   const { data: user } = useCurrentUser();
-
-  const [settingsValue, setSettingsValue] = useState<SettingsState>(() => ({
-    mode: (mode as SettingsState["mode"]) || "system",
-    theme: themeName,
-    fontScalePct: Math.round(fontScale * 100),
-    fontFamily: fontId,
-    density: "normal",
-    sidebarBehavior: "sticky",
-    displayName: getUserDisplayName(user),
-    email: user?.email || "",
-    notifInApp: true,
-    notifEmail: !!user?.email,
-    notifPush: false,
-    notifSound: true,
-    notifVerbosity: "summary",
-    locale: "id",
-    timezone:
-      Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Jakarta",
-    dateFormat: "DD/MM/YYYY",
-    timeFormat: "24h",
-    currency: "IDR",
-    twoFA: false,
-    activeSchoolName: undefined,
-    activeRole: undefined,
-    telemetry: true,
-    appVersion: import.meta.env.VITE_APP_VERSION || "v0.0.0",
-  }));
-
-  // sinkron user → settings
-  useEffect(() => {
-    setSettingsValue((s) => ({
-      ...s,
-      displayName: getUserDisplayName(user),
-      email: user?.email || "",
-      notifEmail: !!user?.email,
-    }));
-  }, [user]);
-
-  const patchSettings = (next: Partial<SettingsState>) =>
-    setSettingsValue((s) => ({ ...s, ...next }));
-
-  /* ===== INSTANT APPLY: setiap settingsValue berubah (dari modal) ===== */
-  useEffect(() => {
-    applyMode(settingsValue.mode);
-    applyThemeName(settingsValue.theme);
-    const scale = Math.max(
-      0.75,
-      Math.min(1.5, settingsValue.fontScalePct / 100)
-    );
-    applyFontScale(scale);
-    applyFontFamily(settingsValue.fontFamily);
-
-    // mirror ke quick controls
-    setMode(settingsValue.mode);
-    setThemeName(settingsValue.theme);
-    setFontScale(scale);
-    setFontId(settingsValue.fontFamily);
-  }, [
-    settingsValue.mode,
-    settingsValue.theme,
-    settingsValue.fontScalePct,
-    settingsValue.fontFamily,
-  ]);
 
   // apply sekali saat mount (seed)
   useEffect(() => {
@@ -360,8 +276,10 @@ export default function CMenuDropdown({
       applyThemeName(themeName);
       applyFontScale(fontScale);
       applyFontFamily(fontId);
-      applyUiScale(uiScale); // <-- penting: terapkan ukuran UI saat mount
-    } catch {}
+      applyUiScale(uiScale);
+    } catch {
+      // ignore
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -387,6 +305,12 @@ export default function CMenuDropdown({
     }
   };
 
+  // URL tujuan halaman pengaturan & bantuan
+  const settingsUrl = isMobile
+    ? `pengaturan`
+    : `pengaturan`;
+  const helpUrl = base ? `bantuan` : "bantuan";
+
   type ModeOption = { value: Mode; label: string; icon: ReactNode };
   const modeOptions: ModeOption[] = [
     {
@@ -411,67 +335,29 @@ export default function CMenuDropdown({
       ? "Default (Hijau+Kuning)"
       : t[0].toUpperCase() + t.slice(1);
 
-  const handleApplySettings = () => {
-    setSettingsOpen(false);
-    // kalau mau persist ke server, kirim settingsValue di sini
-  };
-
   /* ====== HANDLERS QUICK CONTROLS ====== */
   const handleQuickMode = (v: Mode) => {
     setMode(v);
     applyMode(v);
-    setSettingsValue((s) => ({ ...s, mode: v }));
   };
 
   const handleQuickTheme = (v: ThemeName) => {
     setThemeName(v);
     applyThemeName(v);
-    setSettingsValue((s) => ({ ...s, theme: v }));
   };
 
   const handleQuickFont = (v: FontId) => {
     setFontId(v);
     applyFontFamily(v);
-    setSettingsValue((s) => ({ ...s, fontFamily: v }));
   };
 
   const handleQuickUiScale = (v: UiScale) => {
     setUiScale(v);
     applyUiScale(v);
-    // kalau mau disimpan juga di settings modal, tinggal extend SettingsState
   };
 
   return (
     <div className="relative">
-      {/* Modal Settings */}
-      <UserSettingsModal
-        open={settingsOpen}
-        onOpenChange={setSettingsOpen}
-        value={settingsValue}
-        onChange={patchSettings}
-        onApply={handleApplySettings}
-        onReset={() =>
-          setSettingsValue((s) => ({
-            ...s,
-            mode: "system",
-            theme: "default",
-            fontScalePct: 100,
-            fontFamily: "system",
-            density: "normal",
-          }))
-        }
-        onLogout={handleLogout}
-        onSwitchContext={() => {
-          const url = isMobile
-            ? `${base}/aktivitas/pengaturan/menu`
-            : `${base}/aktivitas/pengaturan/profil-saya`;
-          navigate(url);
-        }}
-      />
-
-      {/* Modal Bantuan */}
-      <UserHelpModal open={helpOpen} onOpenChange={setHelpOpen} />
-
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -497,7 +383,7 @@ export default function CMenuDropdown({
                 <span>Login</span>
               </DropdownMenuItem>
             ) : (
-              <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
+              <DropdownMenuItem onClick={() => navigate(settingsUrl)}>
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Pengaturan</span>
               </DropdownMenuItem>
@@ -506,7 +392,7 @@ export default function CMenuDropdown({
             <DropdownMenuItem
               onSelect={(e) => {
                 e.preventDefault();
-                setHelpOpen(true);
+                navigate(helpUrl);
               }}
             >
               <HelpCircle className="mr-2 h-4 w-4" />
@@ -593,7 +479,7 @@ export default function CMenuDropdown({
             </Select>
           </div>
 
-          {/* Ukuran UI (baru) */}
+          {/* Ukuran UI */}
           <div className="px-2 pb-2">
             <p className="text-[11px] text-muted-foreground mb-2">Ukuran UI</p>
             <Select value={uiScale} onValueChange={handleQuickUiScale}>

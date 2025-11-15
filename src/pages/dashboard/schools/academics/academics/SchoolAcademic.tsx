@@ -98,10 +98,10 @@ const TERMS_QKEY = (schoolId?: string) =>
 const dateShort = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    })
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
     : "-";
 
 function normalizeAcademicYear(input: string) {
@@ -224,15 +224,15 @@ function useUpdateTerm(schoolId?: string) {
           previous.map((t) =>
             t.id === id
               ? {
-                ...t,
-                academic_year: normalizeAcademicYear(payload.academic_year),
-                name: payload.name,
-                start_date: toZDate(payload.start_date),
-                end_date: toZDate(payload.end_date),
-                angkatan: Number(payload.angkatan),
-                is_active: Boolean(payload.is_active),
-                slug: payload.slug ?? t.slug,
-              }
+                  ...t,
+                  academic_year: normalizeAcademicYear(payload.academic_year),
+                  name: payload.name,
+                  start_date: toZDate(payload.start_date),
+                  end_date: toZDate(payload.end_date),
+                  angkatan: Number(payload.angkatan),
+                  is_active: Boolean(payload.is_active),
+                  slug: payload.slug ?? t.slug,
+                }
               : t
           )
         );
@@ -478,10 +478,7 @@ function TermFormDialog({
 /* ===================== Page (pakai DataTable) ===================== */
 type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
-const SchoolAcademic: React.FC<Props> = ({
-  showBack = false,
-  backTo,
-}) => {
+const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
   const { schoolId } = useParams<{ schoolId: string }>();
   const navigate = useNavigate();
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
@@ -495,9 +492,9 @@ const SchoolAcademic: React.FC<Props> = ({
         { label: "Akademik" },
         { label: "Tahun Akademik" },
       ],
-      actions: null, // bisa isi tombol kalau perlu
+      showBack, // ⬅️ pakai prop, bukan selalu true
     });
-  }, [setHeader]);
+  }, [setHeader, showBack]);
 
   useEffect(() => {
     if (!schoolId) console.warn("[SchoolAcademic] Missing :schoolId in params");
@@ -693,23 +690,20 @@ const SchoolAcademic: React.FC<Props> = ({
             getRowId={(t) => t.id}
             /* ⬇️ Klik baris/card langsung ke detail */
             onRowClick={(row) =>
-              navigate(
-                `${row.id}`,
-                {
-                  state: {
-                    term: {
-                      academic_terms_school_id: row.school_id,
-                      academic_terms_academic_year: row.academic_year,
-                      academic_terms_name: row.name,
-                      academic_terms_start_date: row.start_date,
-                      academic_terms_end_date: row.end_date,
-                      academic_terms_is_active: row.is_active,
-                      academic_terms_angkatan: row.angkatan,
-                      academic_terms_id: row.id,
-                    },
+              navigate(`${row.id}`, {
+                state: {
+                  term: {
+                    academic_terms_school_id: row.school_id,
+                    academic_terms_academic_year: row.academic_year,
+                    academic_terms_name: row.name,
+                    academic_terms_start_date: row.start_date,
+                    academic_terms_end_date: row.end_date,
+                    academic_terms_is_active: row.is_active,
+                    academic_terms_angkatan: row.angkatan,
+                    academic_terms_id: row.id,
                   },
-                }
-              )
+                },
+              })
             }
             renderActions={(t) => (
               <ActionsMenu

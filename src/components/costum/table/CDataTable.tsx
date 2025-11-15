@@ -13,7 +13,6 @@ import {
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
-import { CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -142,7 +141,6 @@ export function CDataTable<T>(props: DataTableProps<T>) {
     rightControls,
     rightSlot,
     controlsPlacement = "header",
-    statsSlot,
     emptySlot,
 
     loading,
@@ -488,10 +486,6 @@ export function CDataTable<T>(props: DataTableProps<T>) {
         </div>
         {controlsPlacement === "header" && ControlsRow}
       </div>
-
-      {statsSlot != null && (
-        <CardContent className="p-5">{statsSlot}</CardContent>
-      )}
 
       {controlsPlacement === "above" && (
         <div className="px-0">{ControlsRow}</div>

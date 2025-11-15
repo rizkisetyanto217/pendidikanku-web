@@ -45,14 +45,14 @@ export const NAVS: NavDict = {
       path: "dashboard",
       label: "Dashboard",
       icon: LayoutDashboard,
-      end: true
+      end: true,
     },
 
     // (Opsional) Menu Utama tetap ada bila mau ditampilkan
     {
       path: "menu-utama",
       label: "Menu Utama",
-      icon: ChartBar
+      icon: ChartBar,
     },
     // 1) PROFIL
     {
@@ -63,12 +63,12 @@ export const NAVS: NavDict = {
         {
           path: "profil-sekolah",
           label: "Sekolah",
-          end: true
+          end: true,
         }, // → /sekolah/profil-sekolah
         {
           path: "guru",
           label: "Guru",
-          to: "guru"
+          to: "guru",
         }, // → /sekolah/guru
       ],
     },
@@ -83,18 +83,18 @@ export const NAVS: NavDict = {
         {
           path: "tahun-akademik",
           label: "Tahun Akademik",
-          end: true
+          end: true,
         }, // → /sekolah/akademik
         // Tiga item berikut diarahkan ke rute yang sudah ada (di luar /akademik)
         {
           path: "ruangan",
           label: "Ruangan",
-          to: "ruangan"
+          to: "ruangan",
         }, // → /sekolah/menu-utama/ruangan
         {
           path: "buku",
           label: "Buku",
-          to: "buku"
+          to: "buku",
         }, // → /sekolah/buku
         {
           path: "mata-pelajaran",
@@ -113,22 +113,22 @@ export const NAVS: NavDict = {
         {
           path: "level",
           label: "Level",
-          end: true
+          end: true,
         }, // → /sekolah/kelas
         {
           path: "daftar-kelas",
           label: "Daftar Kelas",
-          to: "daftar-kelas"
+          to: "daftar-kelas",
         }, // → /sekolah/kelas/akademik
         {
           path: "semua-kelas",
           label: "Semua Kelas",
-          to: "semua-kelas"
+          to: "semua-kelas",
         }, // → /sekolah/kelas/kelas
         {
           path: "pelajaran",
           label: "Pelajaran",
-          to: "pelajaran"
+          to: "pelajaran",
         }, // → /sekolah/kelas/pelajaran
       ],
     },
@@ -142,18 +142,18 @@ export const NAVS: NavDict = {
         {
           path: "spp",
           label: "SPP",
-          to: "spp"
+          to: "spp",
         }, // → /sekolah/spp
         {
           path: "lainnya",
           label: "Lainnya",
-          end: true
+          end: true,
         }, // → /sekolah/keuangan
         // kalau nanti ada route khusus pengaturan keuangan, ganti to: "keuangan/pengaturan"
         {
           path: "pengaturan",
           label: "Pengaturan",
-          to: "keuangan"
+          to: "keuangan",
         },
       ],
     },
@@ -167,7 +167,7 @@ export const NAVS: NavDict = {
         {
           path: "agenda",
           label: "Agenda",
-          to: "agenda"
+          to: "agenda",
         },
         {
           path: "rutin",
@@ -186,15 +186,15 @@ export const NAVS: NavDict = {
         {
           path: "",
           label: "Periode",
-          end: true
+          end: true,
         }, // → /sekolah/pendaftaran
         {
           path: "murid",
-          label: "Murid"
+          label: "Murid",
         }, // → /sekolah/pendaftaran/murid
         {
           path: "pengaturan",
-          label: "Pengaturan"
+          label: "Pengaturan",
         }, // → /sekolah/pendaftaran/pengaturan
       ],
     },
@@ -208,7 +208,7 @@ export const NAVS: NavDict = {
         {
           path: "donasi",
           label: "Donasi",
-          end: true
+          end: true,
         }, // → /sekolah/dukungan
       ],
     },
@@ -220,12 +220,12 @@ export const NAVS: NavDict = {
       path: "dashboard",
       label: "Dashboard",
       icon: LayoutDashboard,
-      end: true
+      end: true,
     },
     {
       path: "menu-utama",
       label: "Menu Utama",
-      icon: ChartBar
+      icon: ChartBar,
     },
     // 3) KELAS
     {
@@ -236,12 +236,12 @@ export const NAVS: NavDict = {
         {
           path: "kelas-saya",
           label: "Kelas Saya",
-          to: "kelas-saya"
+          to: "kelas-saya",
         },
         {
           path: "progress",
           label: "Progress",
-          to: "progress"
+          to: "progress",
         },
         {
           path: "tugas",
@@ -269,7 +269,7 @@ export const NAVS: NavDict = {
         {
           path: "agenda",
           label: "Agenda",
-          to: "agenda"
+          to: "agenda",
         },
         {
           path: "rutin",
@@ -279,14 +279,37 @@ export const NAVS: NavDict = {
       ],
     },
     {
-      path: "keuangan",
-      label: "Pembayaran",
-      icon: Wallet
+      path: "Administrasi",
+      label: "Administrasi",
+      icon: CalendarDays,
+      children: [
+        {
+          path: "pendaftaran",
+          label: "Pendaftaran",
+          to: "pendaftaran",
+        },
+        {
+          path: "daftar-ulang",
+          label: "Daftar Ulang",
+          to: "daftar-ulang",
+        },
+        {
+          path: "Keuangan",
+          label: "Keuangan",
+          to: "keuangan",
+        },
+        {
+          path: "keuangan-list",
+          label: "Keuangan List",
+          to: "keuangan",
+        },
+      ],
     },
+
     {
       path: "profil-murid",
       label: "Profil",
-      icon: Users
+      icon: Users,
     },
   ],
   guru: [
@@ -294,22 +317,22 @@ export const NAVS: NavDict = {
       path: "dashboard",
       label: "Dashboard",
       icon: LayoutDashboard,
-      end: true
+      end: true,
     },
     {
       path: "menu-utama",
       label: "Menu Utama",
-      icon: ChartBar
+      icon: ChartBar,
     },
     {
       path: "wali-kelas",
       label: "Wali Kelas",
-      icon: Users
+      icon: Users,
     },
     {
       path: "guru-mapel",
       label: "Guru Mapel",
-      icon: UserCog
+      icon: UserCog,
     },
     // 3) KELAS
     {
@@ -320,7 +343,7 @@ export const NAVS: NavDict = {
         {
           path: "agenda",
           label: "Agenda",
-          to: "agenda"
+          to: "agenda",
         },
         {
           path: "rutin",
@@ -332,7 +355,7 @@ export const NAVS: NavDict = {
     {
       path: "profil-guru",
       label: "Profil",
-      icon: Users
+      icon: Users,
     },
   ],
 };

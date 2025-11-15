@@ -1,6 +1,6 @@
 // src/pages/pendidikanku-dashboard/dashboard-school/academic/SchoolDetailAcademic.tsx
 import React, { useMemo, useState, useEffect } from "react";
-import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "@/lib/axios";
 
@@ -42,19 +42,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 
-/* === header layout hooks & crumbs === */
-import {
-  useDashboardHeader,
-  type Crumb,
-} from "@/components/layout/dashboard/DashboardLayout";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
+/* === header layout hook === */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* ===== Type ===== */
 type AcademicTerm = {
@@ -83,93 +72,11 @@ const DUMMY_TERM: AcademicTerm = {
 const dateShort = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    })
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
     : "-";
-
-/* ======== Header area with Back (mobile) + Breadcrumb (md+) ======== */
-function HeaderBackArea({
-  title,
-  crumbs,
-  basePath,
-  onBack,
-}: {
-  title: string;
-  crumbs: Crumb[];
-  basePath: string; // e.g. "/<schoolId>/sekolah"
-  onBack: () => void;
-}) {
-  const normalize = (href?: string) => {
-    if (!href) return undefined;
-    if (href.startsWith("/") || href.startsWith("http")) return href;
-    return `${basePath}/${href.replace(/^\/+/, "")}`;
-  };
-
-  // potong judul mobile per kata supaya rapih
-  const mobileTitle = (() => {
-    const parts = (title || "").trim().split(/\s+/);
-    return parts.length > 6 ? parts.slice(0, 6).join(" ") + "…" : title;
-  })();
-
-  return (
-    <div className="min-w-0">
-      {/* Back button should always show */}
-      <div className="flex items-center gap-1 min-w-0">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 rounded-xl"
-          aria-label="Kembali"
-          onClick={onBack}
-        >
-        </Button>
-        {/* Title hanya untuk mobile */}
-        <div
-          className="text-base font-semibold truncate max-w-[60vw] md:hidden"
-          title={title}
-        >
-          {mobileTitle}
-        </div>
-      </div>
-
-
-      {/* Desktop/Tablet: breadcrumb */}
-      <Breadcrumb className="hidden md:block min-w-0">
-        <BreadcrumbList className="flex-nowrap overflow-hidden">
-          {crumbs.map((c, i) => {
-            const isLast = i === crumbs.length - 1;
-            return (
-              <React.Fragment key={`${c.label}-${i}`}>
-                <BreadcrumbItem className={i === 0 ? "hidden md:block" : ""}>
-                  {isLast ? (
-                    <BreadcrumbPage variant="chip" className="truncate">
-                      {c.label}
-                    </BreadcrumbPage>
-                  ) : c.href ? (
-                    <BreadcrumbLink asChild className="truncate">
-                      <Link to={normalize(c.href)!}>{c.label}</Link>
-                    </BreadcrumbLink>
-                  ) : (
-                    <span className="truncate text-foreground/80">
-                      {c.label}
-                    </span>
-                  )}
-                </BreadcrumbItem>
-                {!isLast && (
-                  <BreadcrumbSeparator
-                    className={i === 0 ? "hidden md:block" : ""}
-                  />
-                )}
-              </React.Fragment>
-            );
-          })}
-        </BreadcrumbList>
-      </Breadcrumb>
-    </div>
-  );
-}
 
 /* ===================== Page ===================== */
 export default function SchoolAcademicDetail() {
@@ -183,27 +90,19 @@ export default function SchoolAcademicDetail() {
     [state?.term]
   );
 
-  /* ===== Inject header (back + breadcrumb) ===== */
   const { setHeader } = useDashboardHeader();
   useEffect(() => {
-    const base = `/${term.academic_terms_school_id}/sekolah`;
     setHeader({
-      title: "Detail Akademik", // penting, biar nggak fallback “Dashboard”
-      headerLeft: (
-        <HeaderBackArea
-          title="Detail Akademik"
-          basePath={base}
-          onBack={() => navigate(-1)}
-          crumbs={[
-            { label: "Dashboard", href: "dashboard" },
-            { label: "Akademik" },
-            { label: "Tahun Akademik", href: "akademik/tahun-akademik" },
-            { label: "Detail Akademik" },
-          ]}
-        />
-      ),
+      title: "Tahun Akademik",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Akademik" },
+        { label: "Tahun Akademik", href: "akademik/tahun-akademik" },
+        { label: "Detail" },
+      ],
+      showBack: true,
     });
-  }, [setHeader, navigate, term.academic_terms_school_id]);
+  }, [setHeader]);
 
   /* === PATCH (edit) === */
   const patchMut = useMutation({
@@ -272,8 +171,6 @@ export default function SchoolAcademicDetail() {
 
       <main className="w-full">
         <div className="mx-auto flex flex-col gap-6">
-          {/* (Header lokal dihapus—sudah ditangani header layout) */}
-
           {/* Info utama */}
           <Card>
             <CardContent className="p-0">
@@ -314,12 +211,8 @@ export default function SchoolAcademicDetail() {
                 />
               </div>
 
-              {/* Aksi halaman pindah ke kanan atas lewat header.actions jika mau.
-                  Atau tetap di sini: */}
               <div className="px-5 pb-5 flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setOpenEdit(true)}>
+                <Button variant="outline" onClick={() => setOpenEdit(true)}>
                   <Pencil size={16} className="mr-2" />
                   Edit
                 </Button>
