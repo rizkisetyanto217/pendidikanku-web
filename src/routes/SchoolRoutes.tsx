@@ -136,7 +136,7 @@ export const SchoolRoutes = (
       <Route path="buku/:id" element={<SchoolBookDetail />} />
 
       {/* Ruangan */}
-      <Route path="ruangan" element={<SchoolRoom />} />
+      <Route path="ruangan" element={<SchoolRoom showBack/>} />
       <Route path="ruangan/:id" element={<SchoolDetailRoom />} />
 
       {/* Mata Pelajaran */}

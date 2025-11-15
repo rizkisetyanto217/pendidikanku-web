@@ -260,9 +260,9 @@ export default function SchoolRoom({
         { label: "Akademik" },
         { label: "Ruangan" },
       ],
-      actions: null,
+      showBack,
     });
-  }, [setHeader]);
+  }, [setHeader, showBack]);
 
   /* 🔍 Query (sinkron URL) */
   const [sp, setSp] = useSearchParams();
