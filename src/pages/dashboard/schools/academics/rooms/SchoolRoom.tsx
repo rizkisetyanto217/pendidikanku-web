@@ -240,10 +240,7 @@ function ActionsMenu({
 /* ===================== PAGE ===================== */
 type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
-export default function SchoolRoom({
-  showBack = false,
-  backTo,
-}: Props) {
+export default function SchoolRoom({ showBack = false, backTo }: Props) {
   const { schoolId } = useParams<{ schoolId?: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -280,9 +277,7 @@ export default function SchoolRoom({
 
   /* Pagination server-side */
   const [page] = useState(() => Number(sp.get("page") ?? 1) || 1);
-  const [perPage] = useState(
-    () => Number(sp.get("per") ?? 20) || 20
-  );
+  const [perPage] = useState(() => Number(sp.get("per") ?? 20) || 20);
   useEffect(() => {
     const copy = new URLSearchParams(sp);
     copy.set("page", String(page));
@@ -292,7 +287,6 @@ export default function SchoolRoom({
 
   const roomsQ = usePublicRoomsQuery(schoolId ?? "", q, page, perPage);
   const data = roomsQ.data?.data ?? [];
-
 
   const rooms: Room[] = useMemo(
     () =>
@@ -447,7 +441,6 @@ export default function SchoolRoom({
             <h1 className="font-semibold text-lg md:text-xl">Daftar Ruangan</h1>
           </div>
           <DataTable<Room>
-
             onAdd={() => {
               setModalInitial(null);
               setModalOpen(true);
