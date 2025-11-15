@@ -1,5 +1,5 @@
 // src/pages/sekolahislamku/dashboard-school/books/SchoolBookDetail.tsx
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "@/lib/axios";
@@ -10,6 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+
+/* === header layout hook === */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+
 
 /* ================= Types ================= */
 export type SectionLite = {
@@ -90,6 +94,20 @@ export default function SchoolBookDetail() {
   const { slug = "", id = "" } = useParams<{ slug: string; id: string }>();
   const base = slug ? `/${encodeURIComponent(slug)}` : "";
   const navigate = useNavigate();
+
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Detail Buku",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Akademik" },
+        { label: "Tahun Akademik", href: "akademik/buku" },
+        { label: "Detail" },
+      ],
+      showBack: true,
+    });
+  }, [setHeader]);
 
   const q = useQuery({
     queryKey: ["book-detail", id],

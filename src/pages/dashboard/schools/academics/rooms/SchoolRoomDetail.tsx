@@ -1,7 +1,15 @@
 // src/pages/sekolahislamku/dashboard-school/rooms/DetailRoomSchool.shadcn.tsx
-import React from "react";
+import React, { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Building2, MapPin, Users } from "lucide-react";
+import { 
+  ArrowLeft, 
+  Building2, 
+  MapPin, 
+  Users 
+} from "lucide-react";
+
+/* === header layout hook === */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -187,6 +195,20 @@ export default function SchoolRoomDetail() {
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
 
+  const { setHeader } = useDashboardHeader();
+    useEffect(() => {
+      setHeader({
+        title: "Detail Ruangan",
+        breadcrumbs: [
+          { label: "Dashboard", href: "dashboard" },
+          { label: "Akademik" },
+          { label: "ruangan", href: "akademik/ruangan" },
+          { label: "Detail" },
+        ],
+        showBack: true,
+      });
+    }, [setHeader]);
+
   const room = (id && DUMMY_ROOMS[id]) || null;
 
   // Not found
@@ -215,10 +237,10 @@ export default function SchoolRoomDetail() {
   }
 
   return (
-    <main className="px-4 md:px-6 md:py-8">
+    <main className=" md:py-8">
       <div className="max-w-screen-2xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-3">
+        <div className="md:flex hidden items-center gap-3">
           <Button
             variant="ghost"
             size="icon"

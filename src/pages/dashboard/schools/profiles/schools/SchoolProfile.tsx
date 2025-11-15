@@ -117,8 +117,9 @@ const SchoolProfile: React.FC<Props> = ({ showBack = false, backTo }) => {
         { label: "Profil" },
         { label: "Sekolah" },
       ],
+      showBack,
     });
-  }, [setHeader]);
+  }, [setHeader, showBack]);
 
   // Queries
   const qSchool = useQuery({

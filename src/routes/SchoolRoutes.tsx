@@ -68,6 +68,7 @@ export const SchoolRoutes = (
       <Route path="ruangan" element={<SchoolRoom />} />
       <Route path="ruangan/:id" element={<SchoolDetailRoom />} />
       <Route path="buku" element={<SchoolBooks />} />
+      <Route path="buku/:id" element={<SchoolBookDetail />} />
       <Route path="mata-pelajaran" element={<SchoolSubject />} />
       <Route path="mata-pelajaran/:id" element={<SchoolSubjectDetail />} />
     </Route>
@@ -126,13 +127,10 @@ export const SchoolRoutes = (
 
       {/* Akademik */}
       <Route path="tahun-akademik" element={<SchoolAcademic showBack />} />
-      <Route
-        path="tahun-akademik/detail/:id"
-        element={<SchoolDetailAcademic />}
-      />
+      <Route path="tahun-akademik/:id" element={<SchoolDetailAcademic />} />
 
       {/* Buku */}
-      <Route path="buku" element={<SchoolBooks />} />
+      <Route path="buku" element={<SchoolBooks showBack/>} />
       <Route path="buku/:id" element={<SchoolBookDetail />} />
 
       {/* Ruangan */}
@@ -141,6 +139,7 @@ export const SchoolRoutes = (
 
       {/* Mata Pelajaran */}
       <Route path="pelajaran" element={<SchoolSubject />} />
+      <Route path="pelajaran/:id" element={<SchoolSubjectDetail />} />
 
       {/* Kelas */}
       <Route path="kelas" element={<SchoolClass showBack />} />

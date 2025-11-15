@@ -93,7 +93,7 @@ export default function SchoolAcademicDetail() {
   const { setHeader } = useDashboardHeader();
   useEffect(() => {
     setHeader({
-      title: "Tahun Akademik",
+      title: "Detail Akademik",
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Akademik" },

@@ -353,9 +353,9 @@ export default function SchoolBooks({
         { label: "Akademik" },
         { label: "Buku" },
       ],
-      actions: null,
+      showBack,
     });
-  }, [setHeader]);
+  }, [setHeader, showBack]);
 
   const params = useParams<{ schoolId?: string }>();
   const schoolId = params.schoolId || "";
@@ -495,13 +495,11 @@ export default function SchoolBooks({
                 <ArrowLeft size={20} />
               </Button>
             )}
-
             <h1 className="font-semibold text-lg md:text-xl">Daftar Buku</h1>
           </div>
 
           <DataTable<BookAPI>
             /* ===== Toolbar (sama Academic) ===== */
-
             onAdd={() => {
               setModalMode("create");
               setModalBook(null);
