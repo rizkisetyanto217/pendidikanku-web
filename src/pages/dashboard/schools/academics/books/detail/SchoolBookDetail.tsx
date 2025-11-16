@@ -138,7 +138,7 @@ export default function SchoolBookDetail() {
               onClick={() => navigate(-1)}
               className="hidden md:inline-flex items-center gap-1.5"
             >
-              <ArrowLeft size={18} />
+              <ArrowLeft size={20} />
             </Button>
             <h1 className="font-semibold text-lg md:text-xl">Detail Buku</h1>
             <div className="min-w-0">

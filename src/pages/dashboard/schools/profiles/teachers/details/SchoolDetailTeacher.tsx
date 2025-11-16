@@ -219,36 +219,36 @@ const DUMMY_DETAIL: TeacherDetail = {
 };
 
 /* ===================== HeaderBackArea (mobile) ===================== */
-function HeaderBackArea({
-  title,
-  onBack,
-}: {
-  title: string;
-  onBack: () => void;
-}) {
-  return (
-    <div className="min-w-0">
-      {/* Mobile only */}
-      <div className="md:hidden flex items-center gap-1 min-w-0">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 rounded-xl"
-          aria-label="Kembali"
-          onClick={onBack}
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
-        <div
-          className="text-base font-semibold truncate max-w-[60vw]"
-          title={title}
-        >
-          {title}
-        </div>
-      </div>
-    </div>
-  );
-}
+// function HeaderBackArea({
+//   title,
+//   onBack,
+// }: {
+//   title: string;
+//   onBack: () => void;
+// }) {
+//   return (
+//     <div className="min-w-0">
+//       {/* Mobile only */}
+//       <div className="md:hidden flex items-center gap-1 min-w-0">
+//         <Button
+//           variant="ghost"
+//           size="icon"
+//           className="h-9 w-9 rounded-xl"
+//           aria-label="Kembali"
+//           onClick={onBack}
+//         >
+//           <ArrowLeft className="w-5 h-5" />
+//         </Button>
+//         <div
+//           className="text-base font-semibold truncate max-w-[60vw]"
+//           title={title}
+//         >
+//           {title}
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
 
 /* ================= Helpers ================= */
 const genderLabel = (g?: Gender | GenderLP | null) =>
@@ -337,25 +337,19 @@ const SchoolDetailTeacher: React.FC = ({
   const { data: user } = useCurrentUser();
 
   /* Atur breadcrumb dan title seperti SchoolAcademic */
-  const { setHeader } = useDashboardHeader();
-
-  useEffect(() => {
-    setHeader({
-      title: "Detail Guru",
-      headerLeft: (
-        <HeaderBackArea
-          title="Detail Guru"
-          onBack={() => navigate(-1)}
-        />
-      ),
-      breadcrumbs: [
-        { label: "Dashboard", href: "dashboard" },
-        { label: "Profil" },
-        { label: "Guru", href: "profil/guru" },
-        { label: "Detail Guru" },
-      ],
-    });
-  }, [setHeader, navigate]);
+    const { setHeader } = useDashboardHeader();
+    useEffect(() => {
+      setHeader({
+        title: "Detail Guru",
+        breadcrumbs: [
+          { label: "Dashboard", href: "dashboard" },
+          { label: "profil" },
+          { label: "guru", href: "profil/guru" },
+          { label: "Detail" },
+        ],
+        showBack: true,
+      });
+    }, [setHeader]);
 
   const schoolId = useMemo(() => {
     const u: any = user || {};
@@ -455,8 +449,8 @@ const SchoolDetailTeacher: React.FC = ({
     <TooltipProvider>
       <div className="w-full bg-background text-foreground">
         {/* Header */}
-        {/* <header className="w-full border-b bg-card/70 backdrop-blur supports-[backdrop-filter]:bg-card/50">
-          <div className="max-w-screen-2xl mx-auto px-4 md:px-6 h-14 flex items-center justify-between">
+        <header className="w-full bg-card/70 backdrop-blur supports-[backdrop-filter]:bg-card/50">
+          <div className="max-w-screen-2xl mx-auto h-14 flex items-center justify-between">
             <div className="md:flex hidden gap-3 items-center">
               <Button
                 onClick={() => navigate(-1)}
@@ -466,24 +460,25 @@ const SchoolDetailTeacher: React.FC = ({
               >
                 <ArrowLeft size={20} />
               </Button>
-              <div className="flex flex-col">
+              <h1 className="font-semibold text-lg md:text-xl">Detail Guru</h1>
+              {/* <div className="flex flex-col">
                 <h1 className="font-semibold text-lg md:text-xl">Detail</h1>
                 <span className="text-xs text-muted-foreground">
                   {hijriWithWeekday(new Date().toISOString())}
                 </span>
-              </div>
+              </div> */}
             </div>
 
-            {usingDummy && (
+            {/* {usingDummy && (
               <Badge variant="outline" className="text-xs">
                 Data Dummy
               </Badge>
-            )}
+            )} */}
           </div>
-        </header> */}
+        </header>
 
         {/* Main */}
-        <main className="w-full px-4 md:px-6 py-6">
+        <main className="w-full">
           <div className="max-w-screen-2xl mx-auto grid lg:grid-cols-3 gap-6">
             {/* Left: Profile Card */}
             <Card className="lg:col-span-1 overflow-hidden">
