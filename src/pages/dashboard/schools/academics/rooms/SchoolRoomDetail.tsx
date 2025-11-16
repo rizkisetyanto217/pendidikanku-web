@@ -202,7 +202,7 @@ export default function SchoolRoomDetail() {
         breadcrumbs: [
           { label: "Dashboard", href: "dashboard" },
           { label: "Akademik" },
-          { label: "ruangan", href: "akademik/ruangan" },
+          { label: "Ruangan", href: "akademik/ruangan" },
           { label: "Detail" },
         ],
         showBack: true,

@@ -171,9 +171,9 @@ export default function SchoolMenuGrids() {
         note: "Buka dari Ruangan",
       },
       {
-        key: "pelajaran",
-        label: "Pelajaran",
-        to: "pelajaran",
+        key: "mata-pelajaran",
+        label: "Mapel",
+        to: "mata-pelajaran",
         icon: <LibraryBig />,
       },
       {

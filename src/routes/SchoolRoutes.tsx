@@ -138,8 +138,8 @@ export const SchoolRoutes = (
       <Route path="ruangan/:id" element={<SchoolDetailRoom />} />
 
       {/* Mata Pelajaran */}
-      <Route path="pelajaran" element={<SchoolSubject />} />
-      <Route path="pelajaran/:id" element={<SchoolSubjectDetail />} />
+      <Route path="mata-pelajaran" element={<SchoolSubject showBack />} />
+      <Route path="mata-pelajaran/:id" element={<SchoolSubjectDetail />} />
 
       {/* Kelas */}
       <Route path="kelas" element={<SchoolClass showBack />} />

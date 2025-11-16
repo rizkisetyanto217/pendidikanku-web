@@ -1,4 +1,4 @@
-//src/routes/IndexRoute.tsx
+// src/routes/IndexRoute.tsx
 
 import { Routes, Route } from "react-router-dom";
 
@@ -6,9 +6,8 @@ import Unauthorized from "@/pages/UnAuthorized";
 import NotFound from "@/pages/NotFound";
 
 import { SchoolRoutes } from "./SchoolRoutes";
-import Login from "@/pages/dashboard/auth/AuthLogin";
+import Login from "@/pages/dashboard/auth/AuthLogin"; // ⬅️ pastikan path-nya sesuai file baru
 import Forbidden403 from "@/pages/Forbidden403";
-// import RequireschoolRoles from "./RequireSchoolRoles";
 import Register from "@/pages/dashboard/auth/AuthRegister";
 import { TeacherRoutes } from "./TeacherRoutes";
 import { StudentRoutes } from "./StudentRoutes";
@@ -21,12 +20,12 @@ import PendWebFeature from "@/pages/profile/website/website/pages/navbar-page/Pe
 import PendWebAbout from "@/pages/profile/website/website/pages/navbar-page/PendWebAbout";
 import PendWebContact from "@/pages/profile/website/website/pages/navbar-page/PendWebContact";
 import PendWebSupportUs from "@/pages/profile/website/website/support-us/PendWebSupportUs";
-import DataKelasPage from "@/pages/Test";
+// import PublicProgramsPage from "@/pages/PublicProgramsPage";
 
 export default function AppRoutes() {
   return (
     <Routes>
-      {/* --- Public schoolku --- */}
+      {/* --- Public Pendidikanku website --- */}
       <Route element={<PendWebLayout />}>
         <Route index element={<PendWebHome />} />
         <Route path="website" element={<PendWebHome />} />
@@ -38,29 +37,13 @@ export default function AppRoutes() {
       </Route>
 
       {/* --- Public Auth --- */}
-      <Route path="/login" element={<Login />} />
+      {/* Login sekarang per-tenant pakai slug:
+          contoh: /madinahsalam/login, /pendidikanku-demo/login */}
+      <Route path=":school_slug/login" element={<Login />} />
+      {/* Kalau mau masih punya global register tanpa slug, bisa tetap di sini */}
       <Route path="/register" element={<Register />} />
 
-      {/* --- LinkTree --- */}
-      {/* <Route path="/" element={<PendWebLayout />}>
-        <Route path="school/:slug" index element={<PendLinkTree />} />
-        <Route path="school/:slug">
-          <Route path="login" element={<Login />} />
-          <Route path="login/:id" element={<RegisterAdminMasji />} />
-          <Route path="register-school" element={<RegisterAdminschool />} />
-          <Route
-            path="soal-materi/:lecture_session_slug/latihan-soal"
-            element={<schoolQuizLectureSessions />}
-          />
-          <Route
-            path="soal-materi/:lecture_session_slug/latihan-soal/hasil"
-            element={<schoolResultQuizLectureSessions />}
-          />
-        </Route>
-      </Route> */}
-
-      {/* --- Protected (dengan schoolId) --- */}
-      {/* Ganti :schoolId -> :schoolId agar konsisten */}
+      {/* --- Protected (dengan schoolId di path, dari token) --- */}
       <Route path=":schoolId" element={<ProtectedRoute />}>
         {/* ===== Guru cluster: hanya teacher/admin/dkm ===== */}
         <Route
@@ -90,7 +73,8 @@ export default function AppRoutes() {
       <Route path="/not-found" element={<NotFound />} />
       <Route path="*" element={<NotFound />} />
 
-      <Route path="kelas" element={<DataKelasPage />} />
+      {/* --- Playground / testing --- */}
+      {/* <Route path="public-program" element={<PublicProgramsPage />} /> */}
     </Routes>
   );
 }

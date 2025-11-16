@@ -85,12 +85,23 @@ type AcademicTermApi = {
 };
 
 type AdminTermsResponse = {
+  success: boolean;
+  message?: string;
   data: AcademicTermApi[];
-  pagination?: { limit: number; offset: number; total: number };
+  pagination?: {
+    page: number;
+    per_page: number;
+    total: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+    count: number;
+    per_page_options: number[];
+  };
 };
 
 /* ===================== Const & Helpers ===================== */
-const API_PREFIX = "/public";
+const USER_PREFIX = "/u";
 const ADMIN_PREFIX = "/a";
 const TERMS_QKEY = (schoolId?: string) =>
   ["academic-terms-merged", schoolId] as const;
@@ -357,7 +368,16 @@ function TermFormDialog({
       slug: initial?.slug ?? "",
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [
+    open,
+    initial?.academic_year,
+    initial?.name,
+    initial?.start_date,
+    initial?.end_date,
+    initial?.angkatan,
+    initial?.is_active,
+    initial?.slug,
+  ]);
 
   const set = <K extends keyof TermPayload>(k: K, v: TermPayload[K]) =>
     setValues((s) => ({ ...s, [k]: v }));
@@ -492,9 +512,13 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
         { label: "Akademik" },
         { label: "Tahun Akademik" },
       ],
-      showBack, // ⬅️ pakai prop, bukan selalu true
+      showBack,
     });
   }, [setHeader, showBack]);
+
+  useEffect(() => {
+    if (!schoolId) console.warn("[SchoolAcademic] Missing :schoolId in params");
+  }, [schoolId]);
 
   useEffect(() => {
     if (!schoolId) console.warn("[SchoolAcademic] Missing :schoolId in params");
@@ -503,13 +527,19 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
   const termsQ = useQuery<AcademicTerm[], Error>({
     queryKey: TERMS_QKEY(schoolId),
     enabled: !!schoolId,
-    staleTime: 60_000,
+    staleTime: 5 * 60 * 1000, // 5 menit
     retry: 1,
-    placeholderData: (prev) => prev ?? [],
+    // ⬅️ v5: tidak ada keepPreviousData lagi, otomatis preserve data saat refetch
+    placeholderData: [] as AcademicTerm[], // default kosong, tipe jelas
     queryFn: async () => {
       const res = await axios.get<AdminTermsResponse>(
-        `${API_PREFIX}/${encodeURIComponent(schoolId!)}/academic-terms/list`,
-        { params: { limit: 999, offset: 0, _: Date.now() } }
+        `${USER_PREFIX}/academic-terms/list`,
+        {
+          params: {
+            page: 1,
+            per_page: 100,
+          },
+        }
       );
       const raw = res.data?.data ?? [];
       return raw.map(mapApiToTerm);
@@ -522,8 +552,7 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
     if (!terms.length) return null;
     const actives = terms.filter((t) => t.is_active);
     return actives[0] ?? terms[0] ?? null;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [terms.map((t) => `${t.id}-${t.is_active}`).join("|")]);
+  }, [terms]);
 
   const createTerm = useCreateTerm(schoolId);
   const updateTerm = useUpdateTerm(schoolId);
@@ -676,7 +705,7 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
             /* ===== Toolbar ===== */
             onAdd={() => setModal({ mode: "create" })}
             addLabel="Tambah"
-            controlsPlacement="above" // ⬅️ kontrol persis di atas tabel
+            controlsPlacement="above"
             /* Search */
             defaultQuery=""
             searchByKeys={["academic_year", "name", "angkatan"]}
@@ -688,7 +717,6 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
             columns={columns}
             rows={terms}
             getRowId={(t) => t.id}
-            /* ⬇️ Klik baris/card langsung ke detail */
             onRowClick={(row) =>
               navigate(`${row.id}`, {
                 state: {
@@ -735,7 +763,6 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
                 setConfirmOpen(true);
               },
             }}
-            /* ===== Pagination (client-side) ===== */
             pageSize={20}
           />
         </div>
@@ -746,7 +773,23 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
         key={modal?.editing?.id ?? modal?.mode ?? "closed"}
         open={!!modal}
         onClose={() => setModal(null)}
-        initial={modal ? undefined : undefined}
+        initial={
+          modal?.editing
+            ? {
+                academic_year: modal.editing.academic_year,
+                name: modal.editing.name,
+                start_date: modal.editing.start_date
+                  ? modal.editing.start_date.slice(0, 10)
+                  : "",
+                end_date: modal.editing.end_date
+                  ? modal.editing.end_date.slice(0, 10)
+                  : "",
+                angkatan: modal.editing.angkatan,
+                is_active: modal.editing.is_active,
+                slug: modal.editing.slug,
+              }
+            : undefined
+        }
         loading={createTerm.isPending || updateTerm.isPending}
         onSubmit={(v) => handleSubmit(v)}
       />

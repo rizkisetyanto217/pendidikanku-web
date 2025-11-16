@@ -1,41 +1,17 @@
 // src/pages/dashboard/school/classes/class-list/section/SchoolSectionCSST.tsx
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "@/lib/axios";
-import {
-  ArrowLeft,
-  BookOpen,
-  MapPin,
-  Layers,
-  Users,
-  Clock4,
-  Hash,
-  Link as LinkIcon,
-} from "lucide-react";
+import { ArrowLeft, BookOpen, Layers, Users, Hash } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
-/* ========= Types ========= */
+/* ========= Types dari API baru ========= */
+
 type DeliveryMode = "offline" | "online" | "hybrid";
-
-type ApiSchedule = {
-  start?: string;
-  end?: string;
-  days?: string[];
-  location?: string;
-};
-
-type ApiRoomSnapshot = {
-  code?: string | null;
-  name?: string | null;
-  slug?: string | null;
-  capacity?: number | null;
-  location?: string | null;
-  is_virtual?: boolean | null;
-};
 
 type ApiTeacherSnapshot = {
   id?: string | null;
@@ -62,106 +38,79 @@ type ApiSubjectSnapshot = {
   slug?: string | null;
 };
 
+type ApiClassSubjectBookSnapshot = {
+  book?: ApiBookSnapshot | null;
+  subject?: ApiSubjectSnapshot | null;
+};
+
 type ApiCSSTItem = {
   class_section_subject_teacher_id: string;
   class_section_subject_teacher_school_id: string;
-  class_section_subject_teacher_section_id: string;
+  class_section_subject_teacher_slug: string;
+  class_section_subject_teacher_total_attendance: number;
+  class_section_subject_teacher_enrolled_count: number;
+  class_section_subject_teacher_delivery_mode: DeliveryMode;
+  class_section_subject_teacher_class_section_id: string;
+  class_section_subject_teacher_class_section_slug_snapshot: string;
+  class_section_subject_teacher_class_section_name_snapshot: string;
+  class_section_subject_teacher_class_section_code_snapshot: string;
+  class_section_subject_teacher_school_teacher_id: string;
+  class_section_subject_teacher_school_teacher_snapshot?: ApiTeacherSnapshot | null;
+  class_section_subject_teacher_school_teacher_name_snapshot?: string | null;
   class_section_subject_teacher_class_subject_book_id: string | null;
-  class_section_subject_teacher_teacher_id?: string | null;
-  class_section_subject_teacher_name?: string | null;
-  class_section_subject_teacher_slug?: string | null;
-  class_section_subject_teacher_room_id?: string | null;
-  class_section_subject_teacher_total_attendance?: number;
-  class_section_subject_teacher_enrolled_count?: number;
-  class_section_subject_teacher_delivery_mode?: DeliveryMode;
-  class_section_subject_teacher_room_snapshot?: ApiRoomSnapshot | null;
-  class_section_subject_teacher_teacher_snapshot?: ApiTeacherSnapshot | null;
-  class_section_subject_teacher_class_subject_book_snapshot?: {
-    book?: ApiBookSnapshot | null;
-    subject?: ApiSubjectSnapshot | null;
-  } | null;
-  class_section_subject_teacher_is_active?: boolean;
-  class_section_subject_teacher_created_at?: string;
-  class_section_subject_teacher_updated_at?: string;
+  class_section_subject_teacher_class_subject_book_snapshot?: ApiClassSubjectBookSnapshot | null;
+  class_section_subject_teacher_book_title_snapshot?: string | null;
+  class_section_subject_teacher_book_author_snapshot?: string | null;
+  class_section_subject_teacher_book_slug_snapshot?: string | null;
+  class_section_subject_teacher_book_image_url_snapshot?: string | null;
+  class_section_subject_teacher_subject_name_snapshot?: string | null;
+  class_section_subject_teacher_subject_code_snapshot?: string | null;
+  class_section_subject_teacher_subject_slug_snapshot?: string | null;
+  class_section_subject_teacher_is_active: boolean;
+  class_section_subject_teacher_created_at: string;
+  class_section_subject_teacher_updated_at: string;
+  class_section_subject_teacher_deleted_at?: string | null;
 };
 
-type ApiClassSection = {
-  class_section_id: string;
-  class_section_school_id: string;
-  class_section_class_id: string;
-  class_section_name: string;
-  class_section_code?: string | null;
-  class_section_schedule?: ApiSchedule | null;
-  class_section_capacity?: number | null;
-  class_section_total_students?: number | null;
-  class_section_group_url?: string | null;
-  class_section_is_active: boolean;
-  class_section_parent_name_snap?: string | null;
-  class_section_parent_slug_snap?: string | null;
-  class_section_room_name_snap?: string | null;
-  class_section_room_location_snap?: string | null;
-  class_section_term_name_snap?: string | null;
-  class_section_term_year_label_snap?: string | null;
-  class_section_room_snapshot?: ApiRoomSnapshot | null;
-  class_sections_csst?: ApiCSSTItem[] | [];
+type ApiCSSTListResponse = {
+  success: boolean;
+  message: string;
+  data: ApiCSSTItem[];
+  pagination: {
+    page: number;
+    per_page: number;
+    total: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+    count: number;
+    per_page_options: number[];
+  };
 };
 
-type ApiIncludes = {
-  csst_by_section?: Record<string, ApiCSSTItem[]>;
+type GroupedSection = {
+  sectionId: string;
+  sectionName: string;
+  sectionSlug?: string;
+  sectionCode?: string;
+  items: ApiCSSTItem[];
 };
 
-type ApiSectionListWithIncludes = {
-  data: ApiClassSection[];
-  includes?: ApiIncludes;
-};
+/* ========= Query: ambil semua CSST (per sekolah) ========= */
 
-/* ========= Helpers ========= */
-const scheduleToText = (sch?: ApiSchedule | null): string => {
-  if (!sch) return "-";
-  const days = (sch.days ?? []).join(", ");
-  const time =
-    sch.start && sch.end
-      ? `${sch.start}–${sch.end}`
-      : sch.start || sch.end || "";
-  const loc = sch.location ? ` @${sch.location}` : "";
-  const left = [days, time].filter(Boolean).join(" ");
-  return left ? `${left}${loc}` : "-";
-};
-
-/* ========= Query: ambil SATU section + CSST ========= */
-function useSectionWithCSST(
-  schoolId: string,
-  sectionId?: string,
-  classId?: string
-) {
+function useCSSTList() {
   return useQuery({
-    queryKey: [
-      "section-manage-one-csst",
-      schoolId,
-      sectionId ?? null,
-      classId ?? null,
-    ],
-    enabled: !!schoolId && !!sectionId,
+    queryKey: ["csst-list"],
     queryFn: async () => {
-      const params: Record<string, any> = { with_csst: true };
-      if (classId) params.class_id = classId;
-
-      const res = await axios.get<ApiSectionListWithIncludes>(
-        `/public/${schoolId}/class-sections/list`,
-        { params }
+      const res = await axios.get<ApiCSSTListResponse>(
+        "/u/class-section-subject-teachers/list",
+        {
+          params: {
+            // bisa tambahin is_active, per_page, dll kalau perlu
+          },
+        }
       );
-
-      const list = res.data?.data ?? [];
-      const bySec = res.data?.includes?.csst_by_section ?? {};
-
-      const rows = list.map((s) => ({
-        ...s,
-        class_sections_csst:
-          bySec[s.class_section_id] ?? s.class_sections_csst ?? [],
-      }));
-
-      const found = rows.find((s) => s.class_section_id === sectionId);
-      return found ?? null;
+      return res.data?.data ?? [];
     },
     staleTime: 60_000,
     refetchOnWindowFocus: false,
@@ -169,55 +118,75 @@ function useSectionWithCSST(
 }
 
 /* =========================================================
-   PAGE B: Detail Section – Mapel & Pengajar (CSST)
+   PAGE: Pelajaran & Pengajar (semua section)
 ========================================================= */
+
 type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
 export default function SchoolCSST({ showBack = false, backTo }: Props) {
-  const {
-    schoolId = "",
-    classId,
-    sectionId,
-  } = useParams<{
-    schoolId: string;
-    classId?: string;
-    sectionId?: string;
-  }>();
+  const { schoolId = "" } = useParams<{ schoolId: string }>();
   const navigate = useNavigate();
+  const { setHeader } = useDashboardHeader();
 
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
-  const { setHeader } = useDashboardHeader();
-  const sectionQ = useSectionWithCSST(schoolId, sectionId, classId);
-  const section = sectionQ.data;
+  const csstQ = useCSSTList();
+  const rows = csstQ.data ?? [];
+
+  const groupedBySection: GroupedSection[] = useMemo(() => {
+    const map = new Map<string, GroupedSection>();
+
+    rows.forEach((row) => {
+      const secId = row.class_section_subject_teacher_class_section_id;
+      if (!map.has(secId)) {
+        map.set(secId, {
+          sectionId: secId,
+          sectionName:
+            row.class_section_subject_teacher_class_section_name_snapshot ||
+            "Section tanpa nama",
+          sectionSlug:
+            row.class_section_subject_teacher_class_section_slug_snapshot ||
+            undefined,
+          sectionCode:
+            row.class_section_subject_teacher_class_section_code_snapshot ||
+            undefined,
+          items: [],
+        });
+      }
+      map.get(secId)!.items.push(row);
+    });
+
+    return Array.from(map.values()).sort((a, b) =>
+      a.sectionName.localeCompare(b.sectionName)
+    );
+  }, [rows]);
 
   useEffect(() => {
     setHeader({
-      title: section
-        ? `Mapel & Pengajar – ${section.class_section_name}`
-        : "Mapel & Pengajar Section",
+      title: "Pelajaran & Pengajar Kelas",
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Kelas" },
-        { label: "Section", href: "section" },
-        { label: "Mapel & Pengajar" },
+        { label: "Pelajaran" },
       ],
       actions: null,
     });
-  }, [setHeader, section]);
+  }, [setHeader]);
 
-  if (sectionQ.isLoading) {
+  if (csstQ.isLoading) {
     return (
       <div className="min-h-screen w-full bg-background text-foreground flex items-center justify-center">
-        <div className="text-muted-foreground">Memuat data…</div>
+        <div className="text-muted-foreground">Memuat data pelajaran…</div>
       </div>
     );
   }
 
-  if (!section) {
+  if (csstQ.isError) {
     return (
       <div className="min-h-screen w-full bg-background text-foreground flex flex-col items-center justify-center gap-4">
-        <div className="text-muted-foreground">Section tidak ditemukan.</div>
+        <div className="text-muted-foreground">
+          Gagal memuat data pelajaran & pengajar.
+        </div>
         <Button variant="outline" onClick={handleBack}>
           <ArrowLeft className="mr-2" size={16} />
           Kembali
@@ -226,213 +195,261 @@ export default function SchoolCSST({ showBack = false, backTo }: Props) {
     );
   }
 
+  const totalSubjects = rows.length;
+
   return (
     <div className="min-h-screen w-full bg-background text-foreground">
-      <main className="mx-auto space-y-6">
-        {/* Header */}
-        <div className="md:flex hidden gap-3 items-center">
+      <main className="mx-auto max-w-6xl space-y-6 px-3 pb-10 pt-2 md:px-4">
+        {/* Header dalam page */}
+        <div className="flex items-center gap-3">
           {showBack && (
             <Button
               onClick={handleBack}
               variant="ghost"
               size="icon"
-              className="cursor-pointer self-start"
+              className="cursor-pointer"
             >
               <ArrowLeft size={20} />
             </Button>
           )}
-          <h1 className="font-semibold text-lg md:text-xl">
-            Mapel & Pengajar – {section.class_section_name}
-          </h1>
+          <div>
+            <h1 className="text-xl font-semibold md:text-2xl">
+              Pelajaran & Pengajar Kelas
+            </h1>
+            <p className="mt-1 text-xs text-muted-foreground md:text-sm">
+              Ringkasan mata pelajaran yang terhubung dengan masing-masing
+              kelas/section beserta pengajarnya.
+            </p>
+          </div>
         </div>
 
-        {/* Kartu info Section */}
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-medium flex items-center gap-2">
-                <Layers size={18} /> {section.class_section_name}
-              </CardTitle>
-              <Badge
-                variant={
-                  section.class_section_is_active ? "default" : "outline"
-                }
-                className={
-                  section.class_section_is_active ? "bg-green-600" : ""
-                }
-              >
-                {section.class_section_is_active ? "Aktif" : "Nonaktif"}
-              </Badge>
+        {/* Ringkasan singkat */}
+        <Card className="border-border/70">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2 text-primary">
+              <Layers className="h-4 w-4" />
+              <span className="text-xs font-medium uppercase tracking-wide">
+                Ringkasan Pelajaran
+              </span>
             </div>
           </CardHeader>
-
-          <CardContent className="space-y-4">
-            <div className="grid md:grid-cols-3 gap-3">
-              <div className="rounded-xl border p-3">
-                <div className="text-xs text-muted-foreground">Kode</div>
-                <div className="font-semibold">
-                  {section.class_section_code ?? "-"}
-                </div>
-              </div>
-              <div className="rounded-xl border p-3">
-                <div className="text-xs text-muted-foreground">
-                  Parent / Tingkat
-                </div>
-                <div className="font-semibold truncate">
-                  {section.class_section_parent_name_snap ?? "-"}
-                </div>
-                <div className="text-xs text-muted-foreground truncate">
-                  {section.class_section_parent_slug_snap ?? "-"}
-                </div>
-              </div>
-              <div className="rounded-xl border p-3">
-                <div className="text-xs text-muted-foreground">Ruang</div>
-                <div className="font-semibold truncate">
-                  {section.class_section_room_name_snap ??
-                    section.class_section_room_snapshot?.name ??
-                    "-"}
-                </div>
-                <div className="text-xs flex items-center gap-1 text-muted-foreground truncate">
-                  <MapPin size={14} />
-                  {section.class_section_room_location_snap ??
-                    section.class_section_room_snapshot?.location ??
-                    "-"}
-                </div>
-              </div>
+          <CardContent className="grid gap-3 md:grid-cols-3">
+            <div className="rounded-xl border bg-muted/40 px-4 py-3">
+              <p className="text-xs text-muted-foreground">Jumlah Section</p>
+              <p className="mt-1 text-xl font-semibold">
+                {groupedBySection.length}
+              </p>
+              <p className="text-xs text-muted-foreground">kelas aktif</p>
             </div>
-
-            <div className="rounded-xl border p-3 text-sm">
-              <span className="text-muted-foreground mr-2">Jadwal:</span>
-              <span className="font-medium">
-                {scheduleToText(section.class_section_schedule)}
-              </span>
-              {!!section.class_section_group_url && (
-                <a
-                  href={section.class_section_group_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="ml-3 underline inline-flex items-center gap-1 text-xs text-primary"
-                >
-                  <LinkIcon size={12} />
-                  Link Grup
-                </a>
-              )}
+            <div className="rounded-xl border bg-muted/40 px-4 py-3">
+              <p className="text-xs text-muted-foreground">
+                Total Mata Pelajaran
+              </p>
+              <p className="mt-1 text-xl font-semibold">{totalSubjects}</p>
+              <p className="text-xs text-muted-foreground">
+                mapel terhubung dengan kelas
+              </p>
+            </div>
+            <div className="rounded-xl border bg-muted/40 px-4 py-3">
+              <p className="text-xs text-muted-foreground">Sekolah (context)</p>
+              <p className="mt-1 text-sm font-semibold truncate">
+                {schoolId || "Dari token aktif"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                digunakan saat mengambil data CSST
+              </p>
             </div>
           </CardContent>
         </Card>
 
-        {/* ==== CSST di section ini ==== */}
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-medium flex items-center gap-2">
-                <BookOpen size={18} /> Mata Pelajaran & Pengajar
-              </CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {section.class_sections_csst &&
-            section.class_sections_csst.length ? (
-              <div className="space-y-4">
-                {section.class_sections_csst.map((row) => {
-                  const teacher =
-                    row.class_section_subject_teacher_teacher_snapshot;
-                  const subj =
-                    row
-                      .class_section_subject_teacher_class_subject_book_snapshot
-                      ?.subject;
-                  const book =
-                    row
-                      .class_section_subject_teacher_class_subject_book_snapshot
-                      ?.book;
-                  const room = row.class_section_subject_teacher_room_snapshot;
-
-                  return (
-                    <div
-                      key={row.class_section_subject_teacher_id}
-                      className="rounded-xl border bg-card p-4 space-y-3"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="font-semibold flex items-center gap-2">
-                          <Hash size={16} />{" "}
-                          {subj?.name ??
-                            row.class_section_subject_teacher_name ??
-                            "-"}
-                        </div>
+        {/* List grouped per section */}
+        {groupedBySection.length === 0 ? (
+          <Card className="border-dashed">
+            <CardContent className="py-10 text-center text-sm text-muted-foreground">
+              Belum ada pelajaran yang terhubung dengan kelas / section.
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-5">
+            {groupedBySection.map((sec) => (
+              <Card
+                key={sec.sectionId}
+                className="border-border/70 bg-card/80 shadow-sm"
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="h-4 w-4 text-primary" />
+                        <CardTitle className="text-base font-semibold md:text-lg">
+                          {sec.sectionName}
+                        </CardTitle>
                         <Badge
-                          variant={
-                            row.class_section_subject_teacher_is_active
-                              ? "default"
-                              : "outline"
-                          }
-                          className={
-                            row.class_section_subject_teacher_is_active
-                              ? "bg-green-600"
-                              : ""
-                          }
+                          variant="outline"
+                          className="border-primary/40 text-[11px] font-normal"
                         >
-                          {row.class_section_subject_teacher_is_active
-                            ? "Aktif"
-                            : "Nonaktif"}
+                          {sec.items.length} mapel
                         </Badge>
                       </div>
-
-                      <div className="grid md:grid-cols-3 gap-2 text-sm">
-                        <div className="flex items-center gap-1">
-                          <Users size={14} />
-                          <span>
-                            Pengajar:{" "}
-                            {teacher
-                              ? `${teacher.title_prefix ?? ""} ${
-                                  teacher.name ?? ""
-                                } ${teacher.title_suffix ?? ""}`.trim()
-                              : "-"}
+                      <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground">
+                        <span>
+                          Kode:{" "}
+                          <span className="font-medium">
+                            {sec.sectionCode ?? "-"}
                           </span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <MapPin size={14} />
-                          <span>Ruang: {room?.name ?? "-"}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Clock4 size={14} />
-                          <span>
-                            Mode:{" "}
-                            {row.class_section_subject_teacher_delivery_mode ??
-                              "-"}
+                        </span>
+                        <span>
+                          Slug:{" "}
+                          <span className="font-mono">
+                            {sec.sectionSlug ?? "-"}
                           </span>
-                        </div>
+                        </span>
                       </div>
+                    </div>
+                  </div>
+                </CardHeader>
 
-                      {book && (
-                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                          {book.image_url ? (
-                            <img
-                              src={book.image_url}
-                              alt={book.title ?? "Book cover"}
-                              className="w-12 h-16 object-cover rounded-md border"
-                            />
-                          ) : null}
-                          <div>
-                            <div className="font-medium text-foreground">
-                              {book.title ?? "-"}
+                <CardContent className="space-y-4">
+                  {/* grid mapel per section */}
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {sec.items.map((row) => {
+                      const teacher =
+                        row.class_section_subject_teacher_school_teacher_snapshot;
+                      const csBook =
+                        row.class_section_subject_teacher_class_subject_book_snapshot;
+                      const subj = csBook?.subject;
+                      const book = csBook?.book;
+
+                      const teacherDisplay = teacher
+                        ? `${teacher.title_prefix ?? ""} ${
+                            teacher.name ?? ""
+                          } ${teacher.title_suffix ?? ""}`
+                            .replace(/\s+/g, " ")
+                            .trim()
+                        : row.class_section_subject_teacher_school_teacher_name_snapshot ??
+                          "-";
+
+                      return (
+                        <div
+                          key={row.class_section_subject_teacher_id}
+                          className="flex h-full flex-col rounded-xl border bg-muted/40 px-3 py-3 text-sm"
+                        >
+                          {/* header mapel */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Hash className="h-3 w-3" />
+                                <span>
+                                  {row.class_section_subject_teacher_subject_code_snapshot ??
+                                    subj?.code ??
+                                    "-"}
+                                </span>
+                              </div>
+                              <div className="mt-0.5 font-semibold leading-snug">
+                                {subj?.name ??
+                                  row.class_section_subject_teacher_subject_name_snapshot ??
+                                  "Mata pelajaran tanpa nama"}
+                              </div>
                             </div>
-                            <div className="text-xs">
-                              Penulis: {book.author ?? "-"}
+                            <Badge
+                              variant={
+                                row.class_section_subject_teacher_is_active
+                                  ? "default"
+                                  : "outline"
+                              }
+                              className={`ml-1 text-[10px] ${
+                                row.class_section_subject_teacher_is_active
+                                  ? "bg-emerald-600"
+                                  : ""
+                              }`}
+                            >
+                              {row.class_section_subject_teacher_is_active
+                                ? "Aktif"
+                                : "Nonaktif"}
+                            </Badge>
+                          </div>
+
+                          {/* meta info */}
+                          <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Users className="h-3 w-3" />
+                              <span>
+                                Pengajar:{" "}
+                                <span className="font-medium text-foreground">
+                                  {teacherDisplay || "-"}
+                                </span>
+                              </span>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span>
+                                Mode:{" "}
+                                <span className="font-medium text-foreground">
+                                  {row.class_section_subject_teacher_delivery_mode ??
+                                    "-"}
+                                </span>
+                              </span>
+                              <span className="h-[3px] w-[3px] rounded-full bg-muted-foreground/60" />
+                              <span>
+                                Kehadiran:{" "}
+                                {row.class_section_subject_teacher_total_attendance ??
+                                  0}
+                              </span>
+                              <span className="h-[3px] w-[3px] rounded-full bg-muted-foreground/60" />
+                              <span>
+                                Terdaftar:{" "}
+                                {row.class_section_subject_teacher_enrolled_count ??
+                                  0}{" "}
+                                siswa
+                              </span>
                             </div>
                           </div>
+
+                          {/* book */}
+                          {book && (
+                            <div className="mt-3 flex items-center gap-3 rounded-lg border bg-background/60 p-2 text-xs text-muted-foreground">
+                              {(book.image_url ||
+                                row.class_section_subject_teacher_book_image_url_snapshot) && (
+                                <img
+                                  src={
+                                    book.image_url ??
+                                    row.class_section_subject_teacher_book_image_url_snapshot ??
+                                    ""
+                                  }
+                                  alt={
+                                    book.title ??
+                                    row.class_section_subject_teacher_book_title_snapshot ??
+                                    "Book cover"
+                                  }
+                                  className="h-14 w-10 rounded-md border object-cover"
+                                />
+                              )}
+                              <div className="space-y-1">
+                                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                                  Buku yang digunakan
+                                </div>
+                                <div className="text-sm font-medium text-foreground">
+                                  {book.title ??
+                                    row.class_section_subject_teacher_book_title_snapshot ??
+                                    "-"}
+                                </div>
+                                <div>
+                                  Penulis:{" "}
+                                  {book.author ??
+                                    row.class_section_subject_teacher_book_author_snapshot ??
+                                    "-"}
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-sm text-muted-foreground text-center py-3">
-                Belum ada mata pelajaran untuk section ini.
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </main>
     </div>
   );

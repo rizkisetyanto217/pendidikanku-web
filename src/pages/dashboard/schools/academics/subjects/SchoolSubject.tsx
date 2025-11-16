@@ -5,12 +5,7 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import axios from "@/lib/axios";
 
 /* icons */
-import {
-  ArrowLeft,
-  ArrowUpDown,
-  Loader2,
-  AlertCircle,
-} from "lucide-react";
+import { ArrowLeft, ArrowUpDown, Loader2, AlertCircle } from "lucide-react";
 
 /* ---------- BreadCrum ---------- */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
@@ -55,7 +50,7 @@ import {
   type ColumnDef,
 } from "@/components/costum/table/CDataTable"; // ⬅️ sesuaikan path file CDataTable kamu
 
-/* ================= Types (sama seperti file asli) ================= */
+/* ================= Types ================= */
 export type SubjectStatus = "active" | "inactive";
 
 export type SubjectRow = {
@@ -81,9 +76,19 @@ type SubjectsAPIItem = {
   subject_created_at: string;
   subject_updated_at: string;
 };
+
 type SubjectsAPIResp = {
   data: SubjectsAPIItem[];
-  pagination?: { limit: number; offset: number; total: number };
+  pagination?: {
+    page: number;
+    per_page: number;
+    total: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+    count: number;
+    per_page_options: number[];
+  };
 };
 
 type ClassSubjectItem = {
@@ -105,9 +110,17 @@ type ClassSubjectItem = {
   class_subject_created_at: string;
   class_subject_updated_at: string;
 };
+
 type ClassSubjectsAPIResp = {
   data: ClassSubjectItem[];
-  pagination?: { limit: number; offset: number; total: number };
+  pagination?: {
+    page: number;
+    per_page: number;
+    total: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+  };
 };
 
 type ClassSubjectBookItem = {
@@ -128,6 +141,7 @@ type ClassSubjectBookItem = {
   class_subject_book_created_at: string;
   class_subject_book_updated_at: string;
 };
+
 type CSBListResp = {
   data: ClassSubjectBookItem[];
   pagination?: {
@@ -141,7 +155,7 @@ type CSBListResp = {
 };
 
 /* ================= Const ================= */
-const API_PREFIX = "/public";
+const API_PREFIX = "/u"; // ⬅️ pakai API user-scope terbaru
 const ADMIN_PREFIX = "/a";
 
 /* ================= Helpers ================= */
@@ -177,6 +191,7 @@ function useCreateSubjectMutation(school_id: string) {
     },
   });
 }
+
 function useUpdateSubjectMutation(school_id: string, subjectId: string) {
   const qc = useQueryClient();
   return useMutation({
@@ -193,6 +208,7 @@ function useUpdateSubjectMutation(school_id: string, subjectId: string) {
     },
   });
 }
+
 function useDeleteSubjectMutation(school_id: string, subjectId: string) {
   const qc = useQueryClient();
   return useMutation({
@@ -584,10 +600,7 @@ function ConfirmDeleteDialog({
 /* ================= Page (TABLE) ================= */
 type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
-const SchoolSubjectTable: React.FC<Props> = ({
-  showBack = false,
-  backTo,
-}) => {
+const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
   const navigate = useNavigate();
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
@@ -600,7 +613,7 @@ const SchoolSubjectTable: React.FC<Props> = ({
         { label: "Akademik" },
         { label: "Mapel" },
       ],
-      actions: null, // bisa isi tombol kalau perlu
+      actions: null,
     });
   }, [setHeader]);
 
@@ -624,24 +637,25 @@ const SchoolSubjectTable: React.FC<Props> = ({
     enabled: !!schoolId,
     queryFn: async (): Promise<SubjectRow[]> => {
       const [subjectsResp, classSubjectsResp, booksResp] = await Promise.all([
+        // 🔹 SUBJECTS — API BARU: GET /api/u/subjects/list
         axios
-          .get<SubjectsAPIResp>(`${API_PREFIX}/${schoolId}/subjects/list`, {
-            params: { limit: 500, offset: 0 },
+          .get<SubjectsAPIResp>(`${API_PREFIX}/subjects/list`, {
+            params: { page: 1, per_page: 500 },
           })
           .then((r) => r.data),
+
+        // 🔹 CLASS SUBJECTS — API BARU: GET /api/u/class-subjects/list
         axios
-          .get<ClassSubjectsAPIResp>(
-            `${API_PREFIX}/${schoolId}/class-subjects/list`,
-            { params: { limit: 1000, offset: 0 } }
-          )
+          .get<ClassSubjectsAPIResp>(`${API_PREFIX}/class-subjects/list`, {
+            params: { page: 1, per_page: 1000 },
+          })
           .then((r) => r.data),
+
+        // 🔹 CLASS SUBJECT BOOKS — API BARU: GET /api/u/class-subject-books/list
         axios
-          .get<CSBListResp>(
-            `${API_PREFIX}/${schoolId}/class-subject-books/list`,
-            {
-              params: { per_page: 1000, page: 1 },
-            }
-          )
+          .get<CSBListResp>(`${API_PREFIX}/class-subject-books/list`, {
+            params: { page: 1, per_page: 1000 },
+          })
           .then((r) => r.data),
       ]);
 
@@ -848,12 +862,9 @@ const SchoolSubjectTable: React.FC<Props> = ({
                 labels: { view: "Detail", edit: "Edit", delete: "Hapus" },
                 size: "sm",
               }}
-              // klik baris juga langsung ke halaman detail
               onRowClick={(row) => navigate(`${row.id}`)}
-              // Optional: klik baris buat quick detail
               storageKey="subjects.table.view"
               minTableWidth={880}
-              // Card renderer (bila user ganti ke tampilan kartu)
               renderCard={(r) => (
                 <div className="rounded-xl border p-4 space-y-1">
                   <div className="flex items-center justify-between">

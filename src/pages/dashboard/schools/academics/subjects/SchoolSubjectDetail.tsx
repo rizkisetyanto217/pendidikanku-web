@@ -10,6 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle, ArrowLeft, Loader2 } from "lucide-react";
 
+/* === header layout hook === */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+
 /* DataTable */
 import {
   DataTable,
@@ -107,6 +110,20 @@ const SchoolSubjectDetail: React.FC = () => {
 
   const [qAssign, setQAssign] = useState("");
   const [qBooks, setQBooks] = useState("");
+
+  const { setHeader } = useDashboardHeader();
+    useEffect(() => {
+      setHeader({
+        title: "Detail Mapel",
+        breadcrumbs: [
+          { label: "Dashboard", href: "dashboard" },
+          { label: "Akademik" },
+          { label: "Mapel", href: "akademik/pelajaran" },
+          { label: "Detail" },
+        ],
+        showBack: true,
+      });
+    }, [setHeader]);
 
   /* =========================
      REAL QUERIES (dipakai bila USE_DUMMY=false)
@@ -344,7 +361,6 @@ const SchoolSubjectDetail: React.FC = () => {
                 className="gap-1.5"
               >
                 <ArrowLeft size={18} />
-                Kembali
               </Button>
               <h1 className="font-semibold text-lg">Detail Pelajaran</h1>
             </div>

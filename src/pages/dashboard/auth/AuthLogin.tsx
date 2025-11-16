@@ -1,6 +1,6 @@
 // src/pages/auth/AuthLogin.tsx
 import React, { useState, useMemo } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useParams } from "react-router-dom";
 import {
   EyeIcon,
   EyeOffIcon,
@@ -32,8 +32,6 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
-import ModalJoinOrCreate from "./components/CAuthModalJoinOrCreate";
-import ModalChooseRole from "./components/CAuthModalChooseRole";
 import ModalDemoAccounts from "./components/CAuthModalDemoAccount";
 
 /* =========================
@@ -41,168 +39,77 @@ import ModalDemoAccounts from "./components/CAuthModalDemoAccount";
 ========================= */
 type schoolRole = "dkm" | "admin" | "teacher" | "student" | "user";
 
-/* =========================
-   Modal Pilih school & Role (tetap)
-========================= */
-type schoolItem = {
-  school_id: string;
-  school_name: string;
-  school_icon_url?: string;
-  roles: schoolRole[];
-};
+function roleLabel(r: schoolRole) {
+  switch (r) {
+    case "dkm":
+      return "DKM / Pengelola";
+    case "admin":
+      return "Admin Sekolah";
+    case "teacher":
+      return "Guru / Pengajar";
+    case "student":
+      return "Murid / Santri";
+    default:
+      return "Pengguna";
+  }
+}
 
-function ModalSelectRoleschool({
+/* =========================
+   Modal pilih role (untuk multi-role)
+========================= */
+function RolePickerModal({
   open,
+  roles,
   onClose,
   onSelect,
 }: {
   open: boolean;
+  roles: schoolRole[];
   onClose: () => void;
-  onSelect: (schoolId: string, role: schoolRole) => void;
+  onSelect: (role: schoolRole) => void;
 }) {
-  const [schools, setschools] = React.useState<schoolItem[]>([]);
-  const [selected, setSelected] = React.useState<{
-    school_id: string;
-    role: schoolRole;
-  } | null>(null);
-  const [loading, setLoading] = React.useState(false);
-
-  React.useEffect(() => {
-    let mounted = true;
-    if (!open) return;
-    setLoading(true);
-    api
-      .get("/auth/me/simple-context")
-      .then((res) => {
-        if (!mounted) return;
-        const memberships = res.data?.data?.memberships ?? [];
-        const mapped: schoolItem[] = memberships.map((m: any) => ({
-          school_id: m.school_id,
-          school_name: m.school_name,
-          school_icon_url: m.school_icon_url,
-          roles: (m.roles ?? []) as schoolRole[],
-        }));
-        setschools(mapped);
-      })
-      .catch(() => {
-        if (!mounted) return;
-        setschools([]);
-      })
-      .finally(() => {
-        if (!mounted) return;
-        setLoading(false);
-      });
-    return () => {
-      mounted = false;
-    };
-  }, [open]);
-
   if (!open) return null;
+  const uniqueRoles = Array.from(new Set(roles));
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm animate-in fade-in duration-200 bg-black/50"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
-      aria-label="Pilih school dan Role"
+      aria-label="Pilih peran"
     >
-      <Card className="w-full max-w-md animate-in zoom-in-95 duration-200 overflow-hidden">
-        <CardHeader className="space-y-1">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full grid place-items-center bg-primary text-primary-foreground">
-              <GraduationCap className="w-5 h-5" />
-            </div>
-            <CardTitle>Pilih school & Role</CardTitle>
-          </div>
+      <Card className="w-full max-w-sm shadow-lg animate-in fade-in zoom-in-95 duration-150">
+        <CardHeader>
+          <CardTitle className="text-base">Pilih peran</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Pilih school dan peran yang ingin kamu gunakan untuk melanjutkan.
+            Kamu terdaftar dengan beberapa peran. Pilih mau masuk sebagai apa.
           </p>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <div className="text-center py-10">
-              <div className="w-10 h-10 border-4 border-muted-foreground/30 border-t-foreground rounded-full animate-spin mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">Memuat data...</p>
-            </div>
-          ) : (
-            <div className="max-h-80 overflow-y-auto space-y-3 pr-1">
-              {schools.map((m) => (
-                <button
-                  key={m.school_id}
-                  onClick={() =>
-                    setSelected((prev) => {
-                      const keepRole =
-                        prev?.school_id === m.school_id && prev?.role
-                          ? prev.role
-                          : undefined;
-                      const fallback: schoolRole =
-                        keepRole ?? (m.roles?.[0] as schoolRole) ?? "user";
-                      return { school_id: m.school_id, role: fallback };
-                    })
-                  }
-                  className={cn(
-                    "w-full text-left rounded-xl border p-4 transition-colors",
-                    selected?.school_id === m.school_id
-                      ? "border-primary/60 bg-primary/5"
-                      : "hover:bg-muted"
-                  )}
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <img
-                      src={m.school_icon_url || "/image/Gambar-school.jpeg"}
-                      alt={m.school_name}
-                      className="w-12 h-12 rounded-lg object-cover border"
-                    />
-                    <span className="font-medium">{m.school_name}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {(m.roles?.length
-                      ? m.roles
-                      : (["user"] as schoolRole[])
-                    ).map((r) => (
-                      <Button
-                        key={r}
-                        type="button"
-                        size="sm"
-                        variant={
-                          selected?.school_id === m.school_id &&
-                            selected?.role === r
-                            ? "default"
-                            : "outline"
-                        }
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelected({ school_id: m.school_id, role: r });
-                        }}
-                        className="ring-inset"
-                      >
-                        {r.toUpperCase()}
-                      </Button>
-                    ))}
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="flex flex-wrap gap-2">
+            {uniqueRoles.map((r) => (
+              <Button
+                key={r}
+                type="button"
+                variant="outline"
+                size="sm"
+                className="ring-inset"
+                onClick={() => onSelect(r)}
+              >
+                {roleLabel(r)}
+              </Button>
+            ))}
+          </div>
         </CardContent>
-        <CardFooter className="gap-3">
+        <CardFooter className="justify-end">
           <Button
             type="button"
-            variant="outline"
-            className="flex-1 ring-inset"
+            variant="ghost"
+            size="sm"
+            className="ring-inset"
             onClick={onClose}
           >
             Batal
-          </Button>
-          <Button
-            type="button"
-            className="flex-1 ring-inset"
-            disabled={!selected}
-            onClick={() =>
-              selected && onSelect(selected.school_id, selected.role)
-            }
-          >
-            Pilih & Lanjutkan
           </Button>
         </CardFooter>
       </Card>
@@ -215,6 +122,7 @@ function ModalSelectRoleschool({
 ========================= */
 export default function Login() {
   const navigate = useNavigate();
+  const { school_slug } = useParams<{ school_slug: string }>();
 
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -224,14 +132,12 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const [openSelectschool, setOpenSelectschool] = useState(false);
-  const [openPilihTujuan, setOpenPilihTujuan] = useState(false);
-  const [openJoinAtauBuat, setOpenJoinAtauBuat] = useState(false);
-  const [selectedTujuan, setSelectedTujuan] = useState<
-    "dkm" | "teacher" | "student" | null
-  >(null);
-
   const [openDemo, setOpenDemo] = useState(false);
+
+  // state untuk pemilihan role (multi-role)
+  const [openRolePicker, setOpenRolePicker] = useState(false);
+  const [availableRoles, setAvailableRoles] = useState<schoolRole[]>([]);
+  const [pendingSchoolId, setPendingSchoolId] = useState<string | null>(null);
 
   // strength meter (0-4 → label 0-4)
   const strength = useMemo(() => {
@@ -252,115 +158,82 @@ export default function Login() {
     "Sangat kuat",
   ][strength];
 
+  function navigateByRole(schoolId: string, role: schoolRole) {
+    const section =
+      role === "teacher" ? "guru" : role === "student" ? "murid" : "sekolah";
+
+    setActiveschoolContext(schoolId, role);
+    navigate(`/${schoolId}/${section}/dashboard`, { replace: true });
+  }
+
+  function handleRolePicked(role: schoolRole) {
+    if (!pendingSchoolId) return;
+    navigateByRole(pendingSchoolId, role);
+    setOpenRolePicker(false);
+  }
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError("");
+
     try {
-      const res = await api.post("/auth/login", {
+      const slug = school_slug?.trim();
+      if (!slug) {
+        throw new Error("school_slug tidak ditemukan di URL.");
+      }
+
+      // Backend: POST /api/:school_slug/auth/login
+      const res = await api.post(`/${slug}/auth/login`, {
         identifier,
         password,
         remember_me: remember,
       });
-      const { access_token } = res.data?.data ?? {};
-      if (!access_token) throw new Error("Token tidak ditemukan.");
 
+      const { access_token, user } = res.data?.data ?? {};
+      if (!access_token || !user) {
+        throw new Error("Respon login tidak lengkap (token / user kosong).");
+      }
+
+      // Simpan access token (sessionStorage + header axios)
       setTokens(access_token);
 
-      const ctx = await api.get("/auth/me/simple-context");
-      const memberships = ctx.data?.data?.memberships ?? [];
+      // Ambil info sekolah & roles dari payload user
+      const schoolId: string | undefined = user.school_id;
+      const rawRoles: string[] = Array.isArray(user.roles)
+        ? user.roles.map((r: string) => r.toLowerCase())
+        : [];
 
-      if (memberships.length === 0) {
-        setOpenPilihTujuan(true);
+      if (!schoolId) {
+        // fallback ekstrem: tidak ada school_id padahal login via slug
+        navigate("/", { replace: true });
         return;
       }
 
-      if (memberships.length === 1) {
-        const m = memberships[0];
-        const role: schoolRole = (m.roles?.[0] as schoolRole) ?? "user";
-        await handleSelectschoolRole(m.school_id, role);
-        return;
-      }
+      // Filter & normalisasi roles ke union type
+      const normalizedRoles = rawRoles.filter((r) =>
+        ["dkm", "admin", "teacher", "student", "user"].includes(r)
+      ) as schoolRole[];
 
-      setOpenSelectschool(true);
+      if (normalizedRoles.length <= 1) {
+        // cuma 0 atau 1 role → auto-pick
+        const activeRole: schoolRole = normalizedRoles[0] ?? "user";
+        navigateByRole(schoolId, activeRole);
+      } else {
+        // multi-role → buka modal pilih peran
+        setPendingSchoolId(schoolId);
+        setAvailableRoles(normalizedRoles);
+        setOpenRolePicker(true);
+      }
     } catch (err: any) {
       console.error(err);
-      setError(err?.response?.data?.message || err?.message || "Login gagal.");
+      setError(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Login gagal. Silakan coba lagi."
+      );
     } finally {
       setLoading(false);
-    }
-  }
-
-  function handleChooseRole(tujuan: "dkm" | "teacher" | "student") {
-    setSelectedTujuan(tujuan);
-    setOpenPilihTujuan(false);
-    setOpenJoinAtauBuat(true);
-  }
-
-  async function handleCreateschool(data: { name: string; file?: File }) {
-    try {
-      const fd = new FormData();
-      fd.append("school_name", data.name);
-      if (data.file) fd.append("icon", data.file);
-
-      const res = await api.post("/u/schools/user", fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      const item = res.data?.data?.item;
-      if (!item) throw new Error("school gagal dibuat.");
-
-      const schoolId = item.school_id;
-      await setActiveschoolContext(schoolId, "dkm");
-
-      setOpenJoinAtauBuat(false);
-      navigate(`/${schoolId}/sekolah/dashboard`, { replace: true });
-    } catch (err: any) {
-      alert(
-        err?.response?.data?.message || err?.message || "Gagal membuat school."
-      );
-    }
-  }
-
-  async function handleJoinSekolah(code: string, role: "teacher" | "student") {
-    try {
-      await api.post("/u/student-class-sections/join", { student_code: code });
-
-      const ctx = await api.get("/auth/me/simple-context");
-      const memberships = ctx.data?.data?.memberships ?? [];
-      if (memberships.length > 0) {
-        const m = memberships[0];
-        await setActiveschoolContext(m.school_id, role);
-        const path = role === "teacher" ? "guru" : "murid";
-        navigate(`/${m.school_id}/${path}`, { replace: true });
-      }
-    } catch (err: any) {
-      alert(
-        err?.response?.data?.message ||
-        err?.message ||
-        "Gagal bergabung ke sekolah."
-      );
-    }
-  }
-
-  async function handleSelectschoolRole(schoolId: string, role: schoolRole) {
-    try {
-      const res = await api.get("/auth/me/simple-context");
-      const m = (res.data?.data?.memberships ?? []).find(
-        (x: any) => x.school_id === schoolId
-      );
-      try {
-        localStorage.setItem("active_role", role);
-      } catch { }
-      await setActiveschoolContext(schoolId, role, {
-        name: m?.school_name ?? undefined,
-        icon: m?.school_icon_url ?? undefined,
-      });
-      const path =
-        role === "teacher" ? "guru" : role === "student" ? "murid" : "sekolah";
-      navigate(`/${schoolId}/${path}/dashboard`, { replace: true });
-    } catch (err) {
-      console.error(err);
     }
   }
 
@@ -368,7 +241,6 @@ export default function Login() {
     <AuthLayout
       mode="login"
       fullWidth
-      // ⬇️ Clip semua isi agar garis/pseudo-element tidak meluber
       contentClassName="max-w-xl mx-auto relative overflow-hidden"
     >
       {/* Header brand */}
@@ -399,7 +271,6 @@ export default function Login() {
         </Alert>
       )}
 
-      {/* ⬇️ Card di-clip juga */}
       <Card className="shadow-sm overflow-hidden">
         <CardHeader>
           <CardTitle className="text-lg">Masuk ke Akun</CardTitle>
@@ -479,7 +350,7 @@ export default function Login() {
                     className={cn("h-full transition-all", {
                       "bg-destructive": strength < 2,
                       "bg-primary": strength >= 2 && strength < 3,
-                      "bg-green-600": strength >= 3, // kontras OK
+                      "bg-green-600": strength >= 3,
                     })}
                     style={{ width: `${(strength / 4) * 100}%` }}
                   />
@@ -533,7 +404,6 @@ export default function Login() {
             </Button>
           </form>
 
-          {/* Divider optional */}
           <Separator className="my-6" />
 
           {/* Quick actions */}
@@ -576,23 +446,12 @@ export default function Login() {
         </CardFooter>
       </Card>
 
-      {/* Modals (tetap pakai yang sudah ada) */}
-      <ModalSelectRoleschool
-        open={openSelectschool}
-        onClose={() => setOpenSelectschool(false)}
-        onSelect={handleSelectschoolRole}
-      />
-      <ModalChooseRole
-        open={openPilihTujuan}
-        onClose={() => setOpenPilihTujuan(false)}
-        onPilih={handleChooseRole}
-      />
-      <ModalJoinOrCreate
-        open={openJoinAtauBuat}
-        mode={selectedTujuan || "dkm"}
-        onClose={() => setOpenJoinAtauBuat(false)}
-        onCreateschool={handleCreateschool}
-        onJoinSekolah={handleJoinSekolah}
+      {/* Modal pilih role kalau punya banyak role di sekolah ini */}
+      <RolePickerModal
+        open={openRolePicker}
+        roles={availableRoles}
+        onClose={() => setOpenRolePicker(false)}
+        onSelect={handleRolePicked}
       />
     </AuthLayout>
   );
