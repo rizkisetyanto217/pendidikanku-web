@@ -814,7 +814,7 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
                   <ArrowLeft size={20} />
                 </Button>
               )}
-              <h1 className="font-semibold text-lg">Mapel</h1>
+              <h1 className="font-semibold text-lg md:text-xl">Mapel</h1>
             </div>
           </div>
 

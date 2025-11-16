@@ -315,7 +315,7 @@ const SchoolSpp: React.FC<Props> = ({
                 <ArrowLeft size={20} />
               </Button>
             )}
-            <h1 className="text-lg font-semibold">SPP</h1>
+            <h1 className="font-semibold text-lg md:text-xl">SPP</h1>
           </div>
 
           {/* ===== Chips ringkasan ===== */}

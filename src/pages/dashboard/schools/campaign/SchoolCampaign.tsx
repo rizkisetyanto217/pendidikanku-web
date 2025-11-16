@@ -451,7 +451,7 @@ const SchoolCampaign: React.FC<Props> = ({
 
   return (
     <div className="w-full bg-background text-foreground">
-      <main className="max-w-screen-2xl mx-auto py-6 px-4 space-y-6">
+      <main className="max-w-screen-2xl mx-auto space-y-6">
         {/* Header */}
         <div>
           <h1 className="font-semibold text-lg md:text-xl">Donasi</h1>

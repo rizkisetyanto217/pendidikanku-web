@@ -187,7 +187,9 @@ export default function SchoolCSST({ showBack = false, backTo }: Props) {
         <div className="text-muted-foreground">
           Gagal memuat data pelajaran & pengajar.
         </div>
-        <Button variant="outline" onClick={handleBack}>
+        <Button 
+        variant="outline" 
+        onClick={handleBack}>
           <ArrowLeft className="mr-2" size={16} />
           Kembali
         </Button>
@@ -199,9 +201,9 @@ export default function SchoolCSST({ showBack = false, backTo }: Props) {
 
   return (
     <div className="min-h-screen w-full bg-background text-foreground">
-      <main className="mx-auto max-w-6xl space-y-6 px-3 pb-10 pt-2 md:px-4">
+      <main className="mx-auto max-w-6xl space-y-6 pb-10 pt-2">
         {/* Header dalam page */}
-        <div className="flex items-center gap-3">
+        <div className="md:flex hidden items-center gap-3">
           {showBack && (
             <Button
               onClick={handleBack}
@@ -213,7 +215,7 @@ export default function SchoolCSST({ showBack = false, backTo }: Props) {
             </Button>
           )}
           <div>
-            <h1 className="text-xl font-semibold md:text-2xl">
+            <h1 className="text-lg font-semibold md:text-xl">
               Pelajaran & Pengajar Kelas
             </h1>
             <p className="mt-1 text-xs text-muted-foreground md:text-sm">

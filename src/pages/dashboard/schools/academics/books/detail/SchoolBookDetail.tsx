@@ -132,6 +132,7 @@ export default function SchoolBookDetail() {
         <div className="max-w-screen-2xl mx-auto flex flex-col gap-6">
           {/* Header */}
           <div className="flex items-center gap-3">
+            <div className="md:flex hidden gap-3 items-center">
             <Button
               variant="ghost"
               onClick={() => navigate(-1)}
@@ -139,6 +140,7 @@ export default function SchoolBookDetail() {
             >
               <ArrowLeft size={18} />
             </Button>
+            <h1 className="font-semibold text-lg md:text-xl">Detail Buku</h1>
             <div className="min-w-0">
               {isLoading ? (
                 <>
@@ -147,14 +149,15 @@ export default function SchoolBookDetail() {
                 </>
               ) : (
                 <>
-                  <h1 className="text-lg md:text-xl font-semibold truncate">
+                  {/* <h1 className="text-lg md:text-xl font-semibold truncate">
                     {book?.books_title ?? "Buku tidak ditemukan"}
                   </h1>
                   <p className="text-sm text-muted-foreground">
                     {book?.books_author ?? "—"}
-                  </p>
+                  </p> */}
                 </>
               )}
+              </div>
             </div>
           </div>
 

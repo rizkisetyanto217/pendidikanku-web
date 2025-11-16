@@ -2,11 +2,11 @@
 import { useMemo, useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useParams, useNavigate } from "react-router-dom";
-import { Plus, Info, Loader2 } from "lucide-react";
+import { Info, Loader2 } from "lucide-react";
 import axios from "@/lib/axios";
 
 /* shadcn/ui */
-import { CardContent, CardHeader } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -398,17 +398,16 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
 
           {/* Daftar Kelas */}
 
-          <CardHeader className="py-3 px-4 md:px-5">
+          {/* <CardHeader className="py-3 px-4 md:px-5">
             <div className="flex items-center justify-between">
               <Button
-                className="sm:hidden"
                 size="sm"
                 onClick={() => setOpenTambah(true)}
               >
                 <Plus size={16} className="mr-2" /> Tambah
               </Button>
             </div>
-          </CardHeader>
+          </CardHeader> */}
 
           <CardContent className="px-4 md:px-5 pb-4">
             <DataTable<MiddleClassRow>

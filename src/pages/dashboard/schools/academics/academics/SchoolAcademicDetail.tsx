@@ -16,6 +16,7 @@ import {
   Loader2,
   Users,
   Layers,
+  ArrowLeft,
 } from "lucide-react";
 
 /* shadcn/ui */
@@ -173,7 +174,7 @@ export default function SchoolAcademicDetail() {
   const { setHeader } = useDashboardHeader();
   useEffect(() => {
     setHeader({
-      title: "Tahun Akademik",
+      title: "Detail Akademik",
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Akademik" },
@@ -271,6 +272,19 @@ export default function SchoolAcademicDetail() {
 
       <main className="w-full">
         <div className="mx-auto flex max-w-6xl flex-col gap-6 py-4">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="md:flex hidden items-center gap-3">
+              <Button
+                variant="ghost"
+                onClick={() => navigate(-1)}
+                className="gap-1.5"
+              >
+                <ArrowLeft size={18} />
+              </Button>
+              <h1 className="font-semibold text-lg md:text-xl">Detail akademik</h1>
+            </div>
+          </div>
           {/* Loading / kosong */}
           {isLoading && (
             <Card>

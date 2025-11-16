@@ -1,7 +1,7 @@
 // src/pages/dashboard/schools/finance/SchoolFinance.tsx
 import React, { useMemo, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import {
   Wallet,
@@ -129,6 +129,7 @@ const SchoolFinance: React.FC<Props> = ({
   showBack = false,
   backTo,
 }) => {
+  const { schoolId } = useParams<{ schoolId: string }>();
   const navigate = useNavigate();
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
@@ -228,7 +229,7 @@ const SchoolFinance: React.FC<Props> = ({
                 <ArrowLeft size={20} />
               </Button>
             )}
-            <h1 className="text-lg font-semibold">Keuangan Sekolah</h1>
+            <h1 className="font-semibold text-lg md:text-xl">Keuangan Sekolah</h1>
           </div>
         </div>
 
@@ -338,7 +339,15 @@ const SchoolFinance: React.FC<Props> = ({
                     {/* Mobile cards */}
                     <div className="md:hidden p-4 grid gap-3">
                       {pageInvoices.map((inv) => (
-                        <div key={inv.id} className="rounded-xl border p-4">
+                        <div
+                          key={inv.id}
+                          className="rounded-xl border p-4 cursor-pointer hover:bg-muted/50 transition"
+                          onClick={() =>
+                          navigate(`/${schoolId}/sekolah/keuangan/lainnya/${inv.id}`, {
+                            state: { invoice: inv },
+                          })
+                        }
+                        >
                           <div className="flex justify-between items-start">
                             <div className="font-semibold">{inv.title}</div>
                             <StatusBadge s={inv.status} />
@@ -373,7 +382,15 @@ const SchoolFinance: React.FC<Props> = ({
                         </TableHeader>
                         <TableBody>
                           {pageInvoices.map((x) => (
-                            <TableRow key={x.id}>
+                            <TableRow
+                              key={x.id}
+                              className="cursor-pointer hover:bg-muted/50 transition"
+                              onClick={() =>
+                              navigate(`/${schoolId}/sekolah/keuangan/lainnya/${x.id}`, {
+                                state: { invoice: x },
+                              })
+                            }
+                            >
                               <TableCell className="font-medium">
                                 {x.title}
                               </TableCell>

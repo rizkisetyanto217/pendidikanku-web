@@ -1,11 +1,14 @@
-// src/pages/sekolahislamku/dashboard-school/rooms/DetailRoomSchool.shadcn.tsx
+// src/pages/sekolahislamku/dashboard-school/rooms/RoomDetailSchool.shadcn.tsx
 import React, { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { 
-  ArrowLeft, 
-  Building2, 
-  MapPin, 
-  Users 
+import { useQuery } from "@tanstack/react-query";
+import axios from "@/lib/axios";
+import {
+  ArrowLeft,
+  Building2,
+  MapPin,
+  Users,
+  Layers,
 } from "lucide-react";
 
 /* === header layout hook === */
@@ -16,140 +19,53 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
-/* ===================== TYPES (UI) ================= */
-export type Room = {
+/* ===================== API TYPES ===================== */
+type ApiClassSection = {
   id: string;
-  school_id?: string;
+  class_id: string;
+  class_room_id: string;
+  slug: string;
   name: string;
-  code?: string;
-  slug?: string;
-  description?: string;
-  capacity: number;
-  location?: string | null;
-  is_virtual?: boolean;
+  code: string | null;
+  total_students: number | null;
   is_active: boolean;
-
-  image_url?: string | null;
-
-  features?: string[];
-  platform?: string | null; // zoom | google_meet | ms_teams | dll
-  join_url?: string | null;
-  meeting_id?: string | null;
-  passcode?: string | null;
-
-  schedule?: {
-    label: string;
-    day?: string;
-    date?: string;
-    from: string;
-    to: string;
-    group?: string;
-  }[];
-
-  notes?: Array<{ ts?: string; text?: string }>;
-  created_at?: string;
-  updated_at?: string;
-  deleted_at?: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
-/* ===================== DUMMY DATA =====================
+type ApiClassRoom = {
+  class_room_id: string;
+  class_room_school_id: string;
+  class_room_name: string;
+  class_room_code?: string | null;
+  class_room_slug?: string | null;
+  class_room_description?: string | null;
+  class_room_capacity?: number | null;
+  class_room_location?: string | null;
+  class_room_is_virtual?: boolean;
+  class_room_is_active: boolean;
 
-   Skenario:
-   - virtual-1  => Ruangan Virtual (is_virtual: true) + platform & join_url
-   - offline-1  => Ruangan Offline (is_virtual: false)
+  class_room_image_url?: string | null;
 
-   Field disesuaikan dengan skema tabel class_rooms:
-   class_room_*  → kita representasikan di objek Room agar 1:1 secara makna
-   (name, code, slug, location, capacity, description, is_virtual, is_active, 
-   image_url, features, schedule, notes, metadata timestamps)
-=======================================================*/
-const DUMMY_ROOMS: Record<string, Room> = {
-  "virtual-1": {
-    id: "virtual-1",
-    school_id: "0c864ac5-74f4-4a2a-9f1d-c88b7fb7ad12",
-    name: "Ruang Virtual — Balaghoh B",
-    code: "VR-BAL-B-01",
-    slug: "vr-balaghoh-b",
-    description:
-      "Ruang daring untuk kelas Balaghoh B. Mohon masuk 5 menit sebelum mulai. Kamera on saat diskusi.",
-    capacity: 120,
-    location: "Online",
-    is_virtual: true,
-    is_active: true,
+  class_room_features?: string[];
+  class_room_platform?: string | null; // zoom | google_meet | ms_teams | dll
+  class_room_join_url?: string | null;
+  class_room_meeting_id?: string | null;
+  class_room_passcode?: string | null;
 
-    image_url:
-      "https://dummyimage.com/1200x400/0f592a/ffffff&text=Virtual+Room",
+  class_room_schedule?: any[];
+  class_room_notes?: Array<{ ts?: string; text?: string }>;
 
-    features: ["Rekaman Otomatis", "Breakout Rooms", "Screen Sharing", "Chat"],
-    platform: "zoom",
-    join_url: "https://us02web.zoom.us/j/123456789?pwd=abcDEF123",
-    meeting_id: "123-456-789",
-    passcode: "BALB2025",
+  class_room_created_at?: string;
+  class_room_updated_at?: string;
+  class_room_deleted_at?: string | null;
 
-    schedule: [
-      {
-        label: "Pertemuan Rutin",
-        day: "senin",
-        from: "19:30",
-        to: "21:00",
-        group: "A",
-      },
-      { label: "Sesi Tanya Jawab", day: "kamis", from: "20:00", to: "21:00" },
-    ],
-    notes: [
-      {
-        ts: "2025-11-10T19:00:00Z",
-        text: "Harap update Zoom ke versi terbaru.",
-      },
-      {
-        ts: "2025-11-11T12:15:00Z",
-        text: "Gunakan earphone untuk mengurangi noise.",
-      },
-    ],
-    created_at: "2025-09-01T08:00:00Z",
-    updated_at: "2025-11-01T10:30:00Z",
-    deleted_at: null,
-  },
+  class_sections?: ApiClassSection[];
+  class_sections_count?: number;
+};
 
-  "offline-1": {
-    id: "offline-1",
-    school_id: "0c864ac5-74f4-4a2a-9f1d-c88b7fb7ad12",
-    name: "Ruang Kelas — 2B",
-    code: "CR-2B-01",
-    slug: "kelas-2b-01",
-    description:
-      "Ruang kelas lantai 2, dekat perpustakaan. Cocok untuk kelas teori dan diskusi.",
-    capacity: 36,
-    location: "Gedung Utama Lt.2 — Sayap Timur",
-    is_virtual: false,
-    is_active: true,
-
-    image_url: "https://dummyimage.com/1200x400/ffde59/111&text=Classroom+2B",
-
-    features: ["AC", "Proyektor", "Whiteboard", "Colokan Meja", "Wi-Fi"],
-    platform: null,
-    join_url: null,
-    meeting_id: null,
-    passcode: null,
-
-    schedule: [
-      { label: "Pelajaran Pagi", day: "selasa", from: "08:00", to: "09:40" },
-      { label: "Pelajaran Siang", day: "jumat", from: "13:00", to: "14:40" },
-    ],
-    notes: [
-      {
-        ts: "2025-11-05T07:30:00Z",
-        text: "Spidol baru sudah diletakkan di laci.",
-      },
-      {
-        ts: "2025-11-08T15:10:00Z",
-        text: "Proyektor diganti — lebih terang.",
-      },
-    ],
-    created_at: "2025-08-20T07:00:00Z",
-    updated_at: "2025-10-28T09:20:00Z",
-    deleted_at: null,
-  },
+type ApiRoomListResp = {
+  data: ApiClassRoom[];
 };
 
 /* ============== REUSABLE COMPONENTS ============== */
@@ -171,7 +87,7 @@ function InfoSection({
 }) {
   return (
     <div className="space-y-3">
-      <h3 className="font-semibold text-sm">{title}</h3>
+      <h3 className="text-sm font-semibold">{title}</h3>
       <Separator />
       {children}
     </div>
@@ -185,46 +101,87 @@ function StatusBadge({ active }: { active: boolean }) {
   return <Badge variant="outline">Nonaktif</Badge>;
 }
 
-/* ===================== PAGE =======================
+/* ===================== HOOK: FETCH DETAIL ===================== */
+function useRoomDetail(id?: string) {
+  return useQuery({
+    queryKey: ["class-room-detail", id],
+    enabled: !!id,
+    queryFn: async (): Promise<ApiClassRoom | null> => {
+      const res = await axios.get<ApiRoomListResp>("/u/class-rooms/list", {
+        params: {
+          id,
+          include: "sections",
+          per_page: 1,
+        },
+      });
+      return res.data?.data?.[0] ?? null;
+    },
+    staleTime: 60_000,
+  });
+}
 
-   Cara uji cepat:
-   - /rooms/virtual-1  → skenario ruangan virtual
-   - /rooms/offline-1  → skenario ruangan offline
-====================================================*/
+/* ===================== PAGE ======================= */
 export default function SchoolRoomDetail() {
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
 
   const { setHeader } = useDashboardHeader();
-    useEffect(() => {
-      setHeader({
-        title: "Detail Ruangan",
-        breadcrumbs: [
-          { label: "Dashboard", href: "dashboard" },
-          { label: "Akademik" },
-          { label: "Ruangan", href: "akademik/ruangan" },
-          { label: "Detail" },
-        ],
-        showBack: true,
-      });
-    }, [setHeader]);
+      useEffect(() => {
+        setHeader({
+          title: "Detail Ruangan",
+          breadcrumbs: [
+            { label: "Dashboard", href: "dashboard" },
+            { label: "Akademik" },
+            { label: "Ruangan", href: "akademik/ruangan" },
+            { label: "Detail" },
+          ],
+          showBack: true,
+        });
+      }, [setHeader]);
 
-  const room = (id && DUMMY_ROOMS[id]) || null;
+  const { data: room, isLoading, isError } = useRoomDetail(id);
 
-  // Not found
-  if (!room) {
+  const capacity = room?.class_room_capacity ?? 0;
+  const isVirtual = Boolean(room?.class_room_is_virtual);
+  const isActive = Boolean(room?.class_room_is_active);
+  const location =
+    room?.class_room_location ?? (isVirtual ? "Online" : "—");
+  const features = room?.class_room_features ?? [];
+  const schedule = (room?.class_room_schedule ?? []) as any[];
+  const notes = room?.class_room_notes ?? [];
+  const sections = room?.class_sections ?? [];
+  const sectionsCount = room?.class_sections_count ?? sections.length;
+
+  /* ======= LOADING / ERROR / NOT FOUND ======= */
+  if (isLoading) {
     return (
       <main className="px-4 md:px-6 md:py-8">
-        <div className="max-w-screen-2xl mx-auto">
+        <div className="mx-auto max-w-screen-2xl">
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
+              <Building2 className="mb-1 size-10 opacity-40" />
+              Memuat detail ruangan…
+            </CardContent>
+          </Card>
+        </div>
+      </main>
+    );
+  }
+
+  if (isError || !room) {
+    return (
+      <main className="px-4 md:px-6 md:py-8">
+        <div className="mx-auto max-w-screen-2xl">
           <Card>
             <CardContent className="py-10 text-center">
               <Building2 className="mx-auto mb-3 opacity-40" size={48} />
-              <h2 className="text-lg font-semibold">Ruangan tidak ditemukan</h2>
-              <p className="text-sm text-muted-foreground mt-1 mb-4">
-                Gunakan ID <code>virtual-1</code> atau <code>offline-1</code>{" "}
-                untuk mencoba skenario.
+              <h2 className="text-lg font-semibold">
+                Ruangan tidak ditemukan
+              </h2>
+              <p className="mt-1 mb-4 text-sm text-muted-foreground">
+                Pastikan link atau ID ruangan yang digunakan sudah benar.
               </p>
-              <div className="flex gap-2 justify-center">
+              <div className="flex justify-center gap-2">
                 <Button onClick={() => navigate(-1)} variant="outline">
                   Kembali
                 </Button>
@@ -236,71 +193,95 @@ export default function SchoolRoomDetail() {
     );
   }
 
-  return (
-    <main className=" md:py-8">
-      <div className="max-w-screen-2xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="md:flex hidden items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate(-1)}
-            title="Kembali"
-            className="shrink-0"
-          >
-            <ArrowLeft className="size-5" />
-          </Button>
-          <div className="flex-1 min-w-0">
-            <h1 className="font-semibold text-base truncate">{room.name}</h1>
-            {room.code && (
-              <p className="text-sm text-muted-foreground mt-1">
-                Kode: {room.code}
-              </p>
-            )}
-          </div>
+return (
+  <main className="">
+    <div className="mx-auto space-y-6">
+      {/* Header atas */}
+      <div className="md:flex hidden items-center gap-3 mb-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate(-1)}
+          title="Kembali"
+          className="shrink-0"
+        >
+          <ArrowLeft className="size-5" />
+        </Button>
+        <h1 className="font-semibold text-lg md:text-xl">Detail Ruangan</h1>
+      </div>
+
+  {/* Judul Ruangan + Slug + Status */}
+  <Card className="shadow-none border-none p-0">
+    <CardContent className="p-0">
+      <div className="flex items-center justify-between">
+        <div className="min-w-0 flex-1">
+          <h2 className="truncate text-xl font-semibold">
+            {room.class_room_name}
+          </h2>
+
+          {(room.class_room_code || room.class_room_slug) && (
+            <p className="mt-1 text-sm text-muted-foreground">
+              {room.class_room_code && (
+                <>
+                  Kode: <span className="font-medium">{room.class_room_code}</span>
+                </>
+              )}
+              {room.class_room_slug && (
+                <>
+                  {room.class_room_code ? " · " : ""}
+                  Slug: <code>{room.class_room_slug}</code>
+                </>
+              )}
+            </p>
+          )}
         </div>
 
-        {/* Hero Image (opsional) */}
-        {room.image_url && (
-          // eslint-disable-next-line @next/next/no-img-element
+        <StatusBadge active={isActive} />
+      </div>
+    </CardContent>
+  </Card>
+
+        {/* Hero Image (opsional, kalau nanti ada di API) */}
+        {room.class_room_image_url && (
+          // eslint-disable-next-line jsx-a11y/alt-text
           <img
-            src={room.image_url}
-            alt={room.name}
-            className="w-full h-40 md:h-56 object-cover rounded-xl border"
+            src={room.class_room_image_url}
+            alt={room.class_room_name}
+            className="h-40 w-full rounded-xl border object-cover md:h-56"
           />
         )}
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg grid place-items-center bg-primary/10 text-primary">
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="grid h-10 w-10 place-items-center rounded-lg bg-primary/10 text-primary">
                 <Users className="size-5" />
               </div>
               <div>
-                <div className="text-xs text-muted-foreground">Kapasitas</div>
-                <div className="text-lg font-semibold">{room.capacity}</div>
+                <div className="text-xs text-muted-foreground">
+                  Kapasitas
+                </div>
+                <div className="text-lg font-semibold">{capacity}</div>
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg grid place-items-center bg-primary/10 text-primary">
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="grid h-10 w-10 place-items-center rounded-lg bg-primary/10 text-primary">
                 <MapPin className="size-5" />
               </div>
               <div>
                 <div className="text-xs text-muted-foreground">Lokasi</div>
-                <div className="text-sm font-medium">
-                  {room.location || "—"}
-                </div>
+                <div className="text-sm font-medium">{location}</div>
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Main grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {/* Informasi Dasar */}
           <Card>
             <CardHeader className="pb-3">
@@ -308,21 +289,37 @@ export default function SchoolRoomDetail() {
               <Separator />
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <InfoRow label="Nama Ruangan" value={room.name} />
-                <InfoRow label="Kode" value={room.code ?? "—"} />
-                <InfoRow label="Kapasitas" value={`${room.capacity} siswa`} />
-                <InfoRow label="Lokasi" value={room.location ?? "—"} />
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <InfoRow label="Nama Ruangan" value={room.class_room_name} />
+                <InfoRow
+                  label="Kode"
+                  value={room.class_room_code ?? "—"}
+                />
+                <InfoRow
+                  label="Kapasitas"
+                  value={
+                    capacity
+                      ? `${capacity} siswa`
+                      : "—"
+                  }
+                />
+                <InfoRow label="Lokasi" value={location} />
                 <InfoRow
                   label="Status"
-                  value={<StatusBadge active={room.is_active} />}
+                  value={<StatusBadge active={isActive} />}
+                />
+                <InfoRow
+                  label="Tipe Ruangan"
+                  value={isVirtual ? "Virtual / Online" : "Fisik / Offline"}
                 />
               </div>
 
-              {room.description && (
+              {room.class_room_description && (
                 <div className="pt-4">
                   <InfoSection title="Deskripsi">
-                    <p className="text-sm">{room.description}</p>
+                    <p className="text-sm">
+                      {room.class_room_description}
+                    </p>
                   </InfoSection>
                 </div>
               )}
@@ -330,7 +327,7 @@ export default function SchoolRoomDetail() {
           </Card>
 
           {/* Virtual Room Info (skenario virtual) */}
-          {room.is_virtual && (
+          {isVirtual && (
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">
@@ -339,21 +336,31 @@ export default function SchoolRoomDetail() {
                 <Separator />
               </CardHeader>
               <CardContent className="pt-0">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <InfoRow label="Platform" value={room.platform ?? "—"} />
-                  <InfoRow label="Meeting ID" value={room.meeting_id ?? "—"} />
-                  <InfoRow label="Passcode" value={room.passcode ?? "—"} />
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <InfoRow
+                    label="Platform"
+                    value={room.class_room_platform ?? "—"}
+                  />
+                  <InfoRow
+                    label="Meeting ID"
+                    value={room.class_room_meeting_id ?? "—"}
+                  />
+                  <InfoRow
+                    label="Passcode"
+                    value={room.class_room_passcode ?? "—"}
+                  />
                   <InfoRow
                     label="Join URL"
                     value={
-                      room.join_url ? (
+                      room.class_room_join_url ? (
                         <a
-                          href={room.join_url}
+                          href={room.class_room_join_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-primary underline break-all"
+                          className="break-all text-primary underline"
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          {room.join_url}
+                          {room.class_room_join_url}
                         </a>
                       ) : (
                         "—"
@@ -366,8 +373,8 @@ export default function SchoolRoomDetail() {
           )}
         </div>
 
-        {/* Features */}
-        {room.features && room.features.length > 0 && (
+        {/* Fasilitas */}
+        {features.length > 0 && (
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Fasilitas</CardTitle>
@@ -375,7 +382,7 @@ export default function SchoolRoomDetail() {
             <CardContent className="pt-0">
               <Separator className="mb-3" />
               <div className="flex flex-wrap gap-2">
-                {room.features.map((feature, idx) => (
+                {features.map((feature, idx) => (
                   <Badge key={idx} variant="outline">
                     {feature}
                   </Badge>
@@ -385,25 +392,86 @@ export default function SchoolRoomDetail() {
           </Card>
         )}
 
-        {/* Schedule */}
-        {room.schedule && room.schedule.length > 0 && (
+        {/* Jadwal (kalau nanti sudah diisi di backend) */}
+        {schedule.length > 0 && (
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Jadwal</CardTitle>
             </CardHeader>
-            <CardContent className="pt-0 space-y-2">
+            <CardContent className="space-y-2 pt-0">
               <Separator className="mb-3" />
-              {room.schedule.map((s, idx) => (
-                <div
-                  key={idx}
-                  className="p-3 rounded-lg border bg-card text-card-foreground"
-                >
-                  <div className="font-medium text-sm mb-0.5">
-                    {s.label || "—"}
+              {schedule.map((s, idx) => {
+                const label = s.label ?? "Jadwal";
+                const dayOrDate = s.day ?? s.date ?? "—";
+                const from = s.from ?? s.start ?? "??";
+                const to = s.to ?? s.end ?? "??";
+                const group = s.group ? ` • Grup ${s.group}` : "";
+                return (
+                  <div
+                    key={idx}
+                    className="rounded-lg border bg-card p-3 text-sm"
+                  >
+                    <div className="mb-0.5 font-medium">{label}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {dayOrDate} • {from} – {to}
+                      {group}
+                    </div>
                   </div>
-                  <div className="text-sm text-muted-foreground">
-                    {s.day ?? s.date ?? "—"} • {s.from} – {s.to}
-                    {s.group ? ` • Grup ${s.group}` : ""}
+                );
+              })}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Rombongan belajar yang memakai ruangan ini */}
+        {sectionsCount > 0 && (
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between gap-2">
+                <CardTitle className="text-base">
+                  Kelas yang Menggunakan Ruangan Ini
+                </CardTitle>
+                <Badge variant="outline">Total: {sectionsCount}</Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2 pt-0">
+              <Separator className="mb-3" />
+              {sections.map((sec) => (
+                <div
+                  key={sec.id}
+                  className="flex items-start gap-3 rounded-lg border bg-card p-3 text-xs"
+                >
+                  <div className="mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground">
+                    <Layers className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="truncate text-sm font-semibold">
+                        {sec.name}
+                      </div>
+                      <Badge
+                        variant={sec.is_active ? "default" : "outline"}
+                        className="text-[10px]"
+                      >
+                        {sec.is_active ? "Aktif" : "Nonaktif"}
+                      </Badge>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+                      <span className="rounded-full border px-2 py-0.5">
+                        {sec.slug}
+                      </span>
+                      {sec.code && (
+                        <span className="rounded-full border px-2 py-0.5 font-mono">
+                          {sec.code}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      Siswa terdaftar:{" "}
+                      <span className="font-medium">
+                        {sec.total_students ?? 0}
+                      </span>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -411,26 +479,26 @@ export default function SchoolRoomDetail() {
           </Card>
         )}
 
-        {/* Notes */}
-        {room.notes && room.notes.length > 0 && (
+        {/* Catatan */}
+        {notes.length > 0 && (
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Catatan</CardTitle>
             </CardHeader>
-            <CardContent className="pt-0 space-y-2">
+            <CardContent className="space-y-2 pt-0">
               <Separator className="mb-3" />
-              {room.notes.map((note, idx) => (
-                <div key={idx} className="p-3 rounded-lg border bg-card">
-                  <div className="text-xs text-muted-foreground mb-1">
+              {notes.map((note, idx) => (
+                <div key={idx} className="rounded-lg border bg-card p-3">
+                  <div className="mb-1 text-xs text-muted-foreground">
                     {note.ts
                       ? new Date(note.ts).toLocaleString("id-ID", {
-                        weekday: "short",
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })
+                          weekday: "short",
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
                       : "—"}
                   </div>
                   <div className="text-sm">{note.text ?? "—"}</div>
@@ -447,20 +515,24 @@ export default function SchoolRoomDetail() {
           </CardHeader>
           <CardContent className="pt-0">
             <Separator className="mb-3" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <InfoRow
                 label="Dibuat pada"
                 value={
-                  room.created_at
-                    ? new Date(room.created_at).toLocaleString("id-ID")
+                  room.class_room_created_at
+                    ? new Date(
+                        room.class_room_created_at
+                      ).toLocaleString("id-ID")
                     : "—"
                 }
               />
               <InfoRow
                 label="Diperbarui pada"
                 value={
-                  room.updated_at
-                    ? new Date(room.updated_at).toLocaleString("id-ID")
+                  room.class_room_updated_at
+                    ? new Date(
+                        room.class_room_updated_at
+                      ).toLocaleString("id-ID")
                     : "—"
                 }
               />

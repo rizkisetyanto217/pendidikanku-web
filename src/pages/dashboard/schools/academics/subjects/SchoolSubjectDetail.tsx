@@ -362,7 +362,7 @@ const SchoolSubjectDetail: React.FC = () => {
               >
                 <ArrowLeft size={18} />
               </Button>
-              <h1 className="font-semibold text-lg">Detail Pelajaran</h1>
+              <h1 className="font-semibold text-lg md:text-xl">Detail Mapel</h1>
             </div>
           </div>
 
@@ -436,9 +436,9 @@ const SchoolSubjectDetail: React.FC = () => {
               </Card>
 
               {/* Tabel Penugasan */}
+             <div className="space-y-2">
+              <h2 className="text-base font-semibold">Penugasan Per Kelas</h2>
               <DataTable<ClassSubjectItem>
-                title="Penugasan per Kelas"
-                onBack={() => navigate(-1)}
                 defaultQuery={qAssign}
                 onQueryChange={setQAssign}
                 searchByKeys={
@@ -458,10 +458,12 @@ const SchoolSubjectDetail: React.FC = () => {
                 minTableWidth={980}
                 onRowClick={undefined}
               />
+            </div>
 
               {/* Tabel Buku */}
+            <div className="space-y-2">
+              <h2 className="text-base font-semibold">Buku Terkait</h2>
               <DataTable<ClassSubjectBookItem>
-                title="Buku Terkait"
                 defaultQuery={qBooks}
                 onQueryChange={setQBooks}
                 searchByKeys={
@@ -480,7 +482,9 @@ const SchoolSubjectDetail: React.FC = () => {
                 zebra
                 minTableWidth={960}
               />
+            </div>
             </>
+            
           )}
         </div>
       </main>
