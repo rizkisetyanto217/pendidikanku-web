@@ -46,8 +46,6 @@ export const SchoolRoutes = (
     <Route path="pengaturan" element={<Setting />} />
     <Route path="bantuan" element={<Help />} />
 
-
-
     {/* === Jadwal === */}
     <Route path="jadwal" element={<SchoolSchedule />} />
 

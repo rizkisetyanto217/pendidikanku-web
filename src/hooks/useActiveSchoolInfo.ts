@@ -1,54 +1,54 @@
-// --- di src/hooks/useActiveschoolInfo.tsx --- //
-import { useEffect, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import {
-  getActiveschoolId,
-  getActiveschoolDisplay,
-  fetchSimpleContext,
-} from "@/lib/axios";
+// --- src/hooks/useActiveschoolInfo.tsx --- //
+import { useEffect, useMemo, useState } from "react";
+import { getActiveschoolId, getActiveschoolDisplay } from "@/lib/axios";
+
+type ActiveschoolState = {
+  id: string | null;
+  name: string | null;
+  icon: string | null;
+};
 
 export function useActiveschoolInfo() {
-  const activeId = getActiveschoolId();
-  const display = getActiveschoolDisplay(); // fallback instan {name, icon}
-
-  const { data, isLoading, refetch } = useQuery({
-    queryKey: ["me", "simple-context", activeId], // ikat ke id
-    queryFn: () => fetchSimpleContext(), // ⬅️ pakai cache 5 menit
-    enabled: Boolean(activeId),
-    staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
+  const [state, setState] = useState<ActiveschoolState>(() => {
+    const id = getActiveschoolId();
+    const display = getActiveschoolDisplay();
+    return {
+      id,
+      name: display.name,
+      icon: display.icon,
+    };
   });
 
   useEffect(() => {
-    const onschoolChanged = () => refetch();
-    const onAuth = () => refetch();
-    const onLogout = () => refetch();
+    const refresh = () => {
+      const id = getActiveschoolId();
+      const display = getActiveschoolDisplay();
+      setState({
+        id,
+        name: display.name,
+        icon: display.icon,
+      });
+    };
 
-    window.addEventListener("school:changed", onschoolChanged as any);
-    window.addEventListener("auth:authorized", onAuth as any);
-    window.addEventListener("auth:logout", onLogout as any);
+    window.addEventListener("school:changed", refresh as any);
+    window.addEventListener("auth:authorized", refresh as any);
+    window.addEventListener("auth:logout", refresh as any);
 
     return () => {
-      window.removeEventListener("school:changed", onschoolChanged as any);
-      window.removeEventListener("auth:authorized", onAuth as any);
-      window.removeEventListener("auth:logout", onLogout as any);
+      window.removeEventListener("school:changed", refresh as any);
+      window.removeEventListener("auth:authorized", refresh as any);
+      window.removeEventListener("auth:logout", refresh as any);
     };
-  }, [refetch]);
-
-  const memberships = data?.memberships ?? [];
-  const active = memberships.find((m) => m.school_id === activeId);
-
-  const name = active?.school_name ?? display.name ?? null;
-  const icon = active?.school_icon_url ?? display.icon ?? null;
+  }, []);
 
   return useMemo(
     () => ({
-      loading: isLoading,
-      id: activeId || null,
-      name,
-      icon,
-      roles: active?.roles ?? [],
+      loading: false, // sudah tidak ada request ke server
+      id: state.id,
+      name: state.name,
+      icon: state.icon,
+      roles: [] as string[], // simple: tidak ambil roles lagi
     }),
-    [isLoading, activeId, name, icon, active?.roles]
+    [state.id, state.name, state.icon]
   );
 }
