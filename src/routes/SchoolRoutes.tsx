@@ -20,7 +20,7 @@ import SchoolBooks from "@/pages/dashboard/schools/academics/books/SchoolBooks";
 import SchoolRoom from "@/pages/dashboard/schools/academics/rooms/SchoolRoom";
 import SchoolSubject from "@/pages/dashboard/schools/academics/subjects/SchoolSubject";
 import SchoolDetailRoom from "@/pages/dashboard/schools/academics/rooms/SchoolRoomDetail";
-import SchoolBookDetail from "@/pages/dashboard/schools/academics/books/detail/SchoolBookDetail";
+import SchoolBookDetail from "@/pages/dashboard/schools/academics/books/details/SchoolBookDetail";
 
 import SchoolSchedule from "@/pages/dashboard/schools/schedules/agendas/SchoolScheduleAgenda";
 import SchoolRegistrationsPeriod from "@/pages/dashboard/schools/registrations/SchoolRegistrationsPeriod";
@@ -33,11 +33,13 @@ import SchoolAcademicManage from "@/pages/dashboard/schools/academics/academics/
 import SchoolCampaign from "@/pages/dashboard/schools/campaign/SchoolCampaign";
 import SchoolClassParent from "@/pages/dashboard/schools/classes/class-parents/SchoolClassParent";
 import SchoolClass from "@/pages/dashboard/schools/classes/classes/SchoolClass";
-import SchoolClassesSection from "@/pages/dashboard/schools/classes/class-sections/SchoolClassSections";
+import SchoolClassSection from "@/pages/dashboard/schools/classes/class-sections/SchoolClassSections";
 import SchoolCSST from "@/pages/dashboard/schools/classes/class-section-subject-teachers/SchoolCSST";
 import SchoolCampaignDetail from "@/pages/dashboard/schools/campaign/SchoolCampaignDetail";
 import Setting from "@/pages/dashboard/components/page/Setting";
 import Help from "@/pages/dashboard/components/page/Help";
+import SchoolClassParentDetail from "@/pages/dashboard/schools/classes/class-parents/details/SchoolClassParentDetail";
+import SchoolClassDetail from "@/pages/dashboard/schools/classes/classes/details/SchoolClassDetail";
 
 export const SchoolRoutes = (
   <Route path="sekolah" element={<DashboardLayout />}>
@@ -77,8 +79,13 @@ export const SchoolRoutes = (
         element={<SchoolSectionDetail />}
       />
       <Route path="level" element={<SchoolClassParent />} />
+      <Route
+        path="level/:classParentId"
+        element={<SchoolClassParentDetail />}
+      />
       <Route path="daftar-kelas" element={<SchoolClass />} />
-      <Route path="semua-kelas" element={<SchoolClassesSection />} />
+      <Route path="daftar-kelas/:classId" element={<SchoolClassDetail />} />
+      <Route path="semua-kelas" element={<SchoolClassSection />} />
       <Route path="pelajaran" element={<SchoolCSST />} />
     </Route>
 
@@ -128,7 +135,7 @@ export const SchoolRoutes = (
       <Route path="tahun-akademik/:id" element={<SchoolDetailAcademic />} />
 
       {/* Buku */}
-      <Route path="buku" element={<SchoolBooks showBack/>} />
+      <Route path="buku" element={<SchoolBooks showBack />} />
       <Route path="buku/:id" element={<SchoolBookDetail />} />
 
       {/* Ruangan */}

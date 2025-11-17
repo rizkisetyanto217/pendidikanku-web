@@ -1,4 +1,4 @@
-// src/pages/dashboard/school/classes/class-list/section/SchoolSection.tsx
+// src/pages/dashboard/school/classes/class-list/section/SchoolClassSection.tsx
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -70,6 +70,26 @@ type ApiSectionList = {
   };
 };
 
+/* ========= Filter Types & Options ========= */
+
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
+
+type StatusFilter = "all" | "active" | "inactive";
+type ModeFilter = "all" | "self_select" | "assigned" | "closed";
+
+const STATUS_FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
+  { value: "all", label: "Semua" },
+  { value: "active", label: "Aktif" },
+  { value: "inactive", label: "Nonaktif" },
+];
+
+const MODE_FILTER_OPTIONS: { value: ModeFilter; label: string }[] = [
+  { value: "all", label: "Semua" },
+  { value: "self_select", label: "Siswa pilih sendiri" },
+  { value: "assigned", label: "Ditentukan admin" },
+  { value: "closed", label: "Tutup" },
+];
+
 /* ========= Helpers ========= */
 
 function enrollmentModeLabel(
@@ -124,11 +144,11 @@ function EmptyState({ isFiltered }: { isFiltered: boolean }) {
 
 function LoadingGrid() {
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="flex flex-col gap-4">
       {Array.from({ length: 2 }).map((_, i) => (
         <Card
           key={i}
-          className="border-muted/40 bg-muted/10 animate-pulse overflow-hidden"
+          className="overflow-hidden animate-pulse border-muted/40 bg-muted/10"
         >
           <div className="h-24 w-full bg-muted/60" />
           <CardHeader className="pb-2">
@@ -140,8 +160,8 @@ function LoadingGrid() {
               <div className="h-5 w-14 rounded-full bg-muted/50" />
             </div>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid gap-3 md:grid-cols-2 text-xs">
+          <CardContent className="space-y-3 text-xs">
+            <div className="grid gap-3 md:grid-cols-2">
               <div className="h-10 rounded bg-muted/40" />
               <div className="h-10 rounded bg-muted/40" />
             </div>
@@ -152,6 +172,8 @@ function LoadingGrid() {
     </div>
   );
 }
+
+/* ========= Section Card ========= */
 
 function SectionCard({
   section,
@@ -169,169 +191,173 @@ function SectionCard({
     section.class_section_subject_teachers_self_select_requires_approval
   );
 
+  const cardClassName = `group relative flex cursor-pointer flex-col overflow-hidden border transition-all duration-150 ${isActive
+      ? "border-emerald-500/60 hover:border-emerald-400 hover:bg-emerald-950/10"
+      : "border-border/70 hover:border-primary/50 hover:bg-muted/10"
+    }`;
+
+  const stripClassName = `absolute inset-y-0 left-0 w-1 rounded-r-full ${isActive ? "bg-emerald-500" : "bg-muted-foreground/40"
+    }`;
+
+  const statusBadgeClassName = `pointer-events-auto border px-2 py-0.5 text-[10px] font-semibold ${isActive ? "bg-emerald-500 text-emerald-950" : "bg-black/40"
+    }`;
+
   return (
-    <Card
-      className={[
-        "group relative flex cursor-pointer flex-col overflow-hidden border transition-all duration-150",
-        isActive
-          ? "border-emerald-500/60 hover:border-emerald-400 hover:bg-emerald-950/10"
-          : "border-border/70 hover:border-primary/50 hover:bg-muted/10",
-      ].join(" ")}
-      onClick={onOpenDetail}
-    >
+    <Card className={cardClassName} onClick={onOpenDetail}>
       {/* Strip accent kiri */}
-      <span
-        className={[
-          "absolute inset-y-0 left-0 w-1 rounded-r-full",
-          isActive ? "bg-emerald-500" : "bg-muted-foreground/40",
-        ].join(" ")}
-      />
+      <span className={stripClassName} />
 
-      {/* Image header */}
-      <div className="relative h-24 w-full overflow-hidden bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900">
-        {section.class_section_image_url ? (
-          <img
-            src={section.class_section_image_url}
-            alt={section.class_section_name}
-            className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.03]"
-            loading="lazy"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center gap-2 text-xs text-muted-foreground/80">
-            <Layers className="h-4 w-4" />
-            <span>Belum ada gambar kelas</span>
-          </div>
-        )}
-
-        {/* overlay nama kelas singkat di pojok kiri bawah */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/70 via-black/30 to-transparent px-4 pb-2 pt-6 text-xs text-white">
-          <div className="space-y-0.5">
-            <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-wide text-white/80">
-              <Layers className="h-3 w-3" />
-              {section.class_section_class_parent_name_snapshot}
-            </div>
-            <div className="text-xs font-semibold leading-tight">
-              {section.class_section_class_name_snapshot}
-            </div>
-          </div>
-          <Badge
-            variant={isActive ? "default" : "outline"}
-            className={[
-              "pointer-events-auto border px-2 py-0.5 text-[10px] font-semibold",
-              isActive ? "bg-emerald-500 text-emerald-950" : "bg-black/40",
-            ].join(" ")}
-          >
-            {isActive ? "Aktif" : "Nonaktif"}
-          </Badge>
-        </div>
-      </div>
-
-      {/* Content */}
-      <CardHeader className="pb-2 pt-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <CardTitle className="text-base font-semibold leading-tight">
-              {section.class_section_name}
-            </CardTitle>
-            <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
-              <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5">
-                <BookOpen className="h-3 w-3" />
-                {section.class_section_class_slug_snapshot}
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-muted/60 px-2 py-0.5">
-                <Hash className="h-3 w-3" />
-                {section.class_section_slug}
-              </span>
-            </div>
-          </div>
-
-          {section.class_section_code && (
-            <div className="rounded-md bg-muted px-2 py-1 text-right">
-              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                Kode
-              </div>
-              <div className="font-mono text-[11px]">
-                {section.class_section_code}
-              </div>
+      <div className="flex flex-col gap-0 md:flex-row">
+        {/* Thumbnail kiri */}
+        <div className="relative w-full md:w-64 md:min-h-[160px] overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+          {section.class_section_image_url ? (
+            <img
+              src={section.class_section_image_url}
+              alt={section.class_section_name}
+              className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.03]"
+              loading="lazy"
+            />
+          ) : (
+            <div className="flex h-full min-h-[140px] w-full items-center justify-center gap-2 text-xs text-muted-foreground/80">
+              <Layers className="h-4 w-4" />
+              <span>Belum ada gambar kelas</span>
             </div>
           )}
-        </div>
-      </CardHeader>
 
-      <CardContent className="space-y-4 pb-3 pt-0 text-xs">
-        {/* Meta grid */}
-        <div className="grid gap-3 md:grid-cols-2">
-          <div className="rounded-lg border bg-background/40 p-3">
-            <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-              Level / Parent
+          {/* overlay nama kelas singkat di pojok kiri bawah */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/80 via-black/40 to-transparent px-3 pb-2 pt-6 text-xs text-white">
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-wide text-white/80">
+                <Layers className="h-3 w-3" />
+                {section.class_section_class_parent_name_snapshot}
+              </div>
+              <div className="text-xs font-semibold leading-tight">
+                {section.class_section_class_name_snapshot}
+              </div>
             </div>
-            <div className="font-medium">
-              {section.class_section_class_parent_name_snapshot}
-            </div>
-            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-              <span>{section.class_section_class_parent_slug_snapshot}</span>
-              <span>
-                Level {section.class_section_class_parent_level_snapshot}
-              </span>
-            </div>
-          </div>
-
-          <div className="rounded-lg border bg-background/40 p-3">
-            <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-              Siswa & Kapasitas
-            </div>
-            <div className="flex items-center justify-between text-[13px]">
-              <span className="inline-flex items-center gap-1.5">
-                <Users className="h-3 w-3" />
-                <span className="font-semibold">
-                  {totalStudents > 0 ? totalStudents : "-"}
-                </span>
-                <span className="text-[11px] text-muted-foreground">siswa</span>
-              </span>
-              <span className="text-[11px] text-muted-foreground">
-                Kapasitas: {capacity !== null && capacity > 0 ? capacity : "-"}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Enrollment mode + link grup + tombol kelola */}
-        <div className="flex flex-col gap-2 rounded-lg border bg-background/40 p-3 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-start gap-2 text-[11px]">
-            <ShieldCheck className="mt-0.5 h-3.5 w-3.5 text-emerald-500" />
-            <div>
-              <div className="font-medium">Mode mapel &amp; pengajar</div>
-              <div className="text-muted-foreground">{modeLabel}</div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-end gap-2 pt-1 md:pt-0">
-            {section.class_section_group_url && (
-              <a
-                href={section.class_section_group_url}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] text-primary hover:bg-primary/5"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <LinkIcon className="h-3 w-3" />
-                Link Grup
-              </a>
-            )}
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 text-xs"
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpenDetail();
-              }}
+            <Badge
+              variant={isActive ? "default" : "outline"}
+              className={statusBadgeClassName}
             >
-              Kelola Mapel &amp; Pengajar
-            </Button>
+              {isActive ? "Aktif" : "Nonaktif"}
+            </Badge>
           </div>
         </div>
-      </CardContent>
+
+        {/* Konten kanan */}
+        <div className="flex flex-1 flex-col">
+          <CardHeader className="pb-2 pt-3 md:px-4 md:pb-3 md:pt-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1">
+                <CardTitle className="text-base font-semibold leading-tight">
+                  {section.class_section_name}
+                </CardTitle>
+                <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5">
+                    <BookOpen className="h-3 w-3" />
+                    {section.class_section_class_slug_snapshot}
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-muted/60 px-2 py-0.5">
+                    <Hash className="h-3 w-3" />
+                    {section.class_section_slug}
+                  </span>
+                </div>
+              </div>
+
+              {section.class_section_code && (
+                <div className="rounded-md bg-muted px-2 py-1 text-right">
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                    Kode
+                  </div>
+                  <div className="font-mono text-[11px]">
+                    {section.class_section_code}
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardHeader>
+
+          <CardContent className="space-y-4 pb-3 pt-0 text-xs md:px-4 md:pb-4">
+            {/* Meta grid */}
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="rounded-lg border bg-background/40 p-3">
+                <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Level / Parent
+                </div>
+                <div className="font-medium">
+                  {section.class_section_class_parent_name_snapshot}
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                  <span>
+                    {section.class_section_class_parent_slug_snapshot}
+                  </span>
+                  <span>
+                    Level {section.class_section_class_parent_level_snapshot}
+                  </span>
+                </div>
+              </div>
+
+              <div className="rounded-lg border bg-background/40 p-3">
+                <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Siswa & Kapasitas
+                </div>
+                <div className="flex items-center justify-between text-[13px]">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Users className="h-3 w-3" />
+                    <span className="font-semibold">
+                      {totalStudents > 0 ? totalStudents : "-"}
+                    </span>
+                    <span className="text-[11px] text-muted-foreground">
+                      siswa
+                    </span>
+                  </span>
+                  <span className="text-[11px] text-muted-foreground">
+                    Kapasitas:{" "}
+                    {capacity !== null && capacity > 0 ? capacity : "-"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Enrollment mode + link grup + tombol kelola */}
+            <div className="flex flex-col gap-2 rounded-lg border bg-background/40 p-3 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-start gap-2 text-[11px]">
+                <ShieldCheck className="mt-0.5 h-3.5 w-3.5 text-emerald-500" />
+                <div>
+                  <div className="font-medium">Mode mapel &amp; pengajar</div>
+                  <div className="text-muted-foreground">{modeLabel}</div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-1 md:pt-0">
+                {section.class_section_group_url && (
+                  <a
+                    href={section.class_section_group_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] text-primary hover:bg-primary/5"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <LinkIcon className="h-3 w-3" />
+                    Link Grup
+                  </a>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 text-xs"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenDetail();
+                  }}
+                >
+                  Kelola Mapel &amp; Pengajar
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </div>
+      </div>
     </Card>
   );
 }
@@ -340,12 +366,7 @@ function SectionCard({
    PAGE: Daftar Class Sections (rombongan belajar)
 ========================================================= */
 
-type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
-
-type StatusFilter = "all" | "active" | "inactive";
-type ModeFilter = "all" | "self_select" | "assigned" | "closed";
-
-export default function SchoolClassesSection({
+export default function SchoolClassSection({
   showBack = false,
   backTo,
 }: Props) {
@@ -397,10 +418,10 @@ export default function SchoolClassesSection({
 
   return (
     <div className="min-h-screen w-full bg-background text-foreground">
-      <main className="mx-auto flex max-w-6xl flex-col gap-6 py-4">
+      <main className="mx-auto flex max-w-6xl flex-col gap-6 px-3 py-4 md:px-4">
         {/* Header lokal */}
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="md:flex hidden items-center gap-3">
+          <div className="flex items-center gap-3">
             {showBack && (
               <Button
                 onClick={handleBack}
@@ -450,28 +471,28 @@ export default function SchoolClassesSection({
               <div className="flex items-center gap-1">
                 <span className="text-xs text-muted-foreground">Status:</span>
                 <div className="flex rounded-md border bg-background">
-                  {(
-                    [
-                      ["all", "Semua"],
-                      ["active", "Aktif"],
-                      ["inactive", "Nonaktif"],
-                    ] as [StatusFilter, string][]
-                  ).map(([value, label]) => (
-                    <Button
-                      key={value}
-                      type="button"
-                      variant={statusFilter === value ? "default" : "ghost"}
-                      size="sm"
-                      className={[
-                        "h-8 rounded-none px-3 text-xs",
-                        value === "all" ? "rounded-l-md" : "",
-                        value === "inactive" ? "rounded-r-md" : "",
-                      ].join(" ")}
-                      onClick={() => setStatusFilter(value)}
-                    >
-                      {label}
-                    </Button>
-                  ))}
+                  {STATUS_FILTER_OPTIONS.map(({ value, label }) => {
+                    const isActive = statusFilter === value;
+                    const extraClass =
+                      value === "all"
+                        ? "rounded-l-md"
+                        : value === "inactive"
+                          ? "rounded-r-md"
+                          : "";
+
+                    return (
+                      <Button
+                        key={value}
+                        type="button"
+                        variant={isActive ? "default" : "ghost"}
+                        size="sm"
+                        className={`h-8 rounded-none px-3 text-xs ${extraClass}`}
+                        onClick={() => setStatusFilter(value)}
+                      >
+                        {label}
+                      </Button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -479,25 +500,21 @@ export default function SchoolClassesSection({
               <div className="flex items-center gap-1">
                 <span className="text-xs text-muted-foreground">Mode:</span>
                 <div className="flex rounded-md border bg-background">
-                  {(
-                    [
-                      ["all", "Semua"],
-                      ["self_select", "Siswa pilih sendiri"],
-                      ["assigned", "Ditentukan admin"],
-                      ["closed", "Tutup"],
-                    ] as [ModeFilter, string][]
-                  ).map(([value, label]) => (
-                    <Button
-                      key={value}
-                      type="button"
-                      variant={modeFilter === value ? "default" : "ghost"}
-                      size="sm"
-                      className="h-8 rounded-none px-3 text-[11px]"
-                      onClick={() => setModeFilter(value)}
-                    >
-                      {label}
-                    </Button>
-                  ))}
+                  {MODE_FILTER_OPTIONS.map(({ value, label }) => {
+                    const isActive = modeFilter === value;
+                    return (
+                      <Button
+                        key={value}
+                        type="button"
+                        variant={isActive ? "default" : "ghost"}
+                        size="sm"
+                        className="h-8 rounded-none px-3 text-[11px]"
+                        onClick={() => setModeFilter(value)}
+                      >
+                        {label}
+                      </Button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -512,9 +529,9 @@ export default function SchoolClassesSection({
           <EmptyState isFiltered={isFiltered} />
         )}
 
-        {/* List sections */}
+        {/* List sections (FULL WIDTH, stack vertikal) */}
         {!isLoading && filteredSections.length > 0 && (
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="flex flex-col gap-4">
             {filteredSections.map((section) => (
               <SectionCard
                 key={section.class_section_id}

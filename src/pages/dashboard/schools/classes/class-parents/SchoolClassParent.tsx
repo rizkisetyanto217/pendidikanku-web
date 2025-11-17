@@ -2,17 +2,14 @@
 import { useMemo, useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { Info, Loader2 } from "lucide-react";
+import { Plus, Info, Loader2 } from "lucide-react";
 import axios from "@/lib/axios";
 
 /* shadcn/ui */
-import { CardContent} from "@/components/ui/card";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import {
-  Select,
-
-} from "@/components/ui/select";
+import { Select } from "@/components/ui/select";
 
 /* Layout header hook */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
@@ -267,9 +264,9 @@ const SchoolClassParent: React.FC = () => {
   };
 
   return (
-    <div className="w-full overflow-x-hidden bg-background text-foreground">
+    <div className="h-full w-full overflow-x-hidden bg-background text-foreground">
       <main className="w-full">
-        <div className="mx-auto flex flex-col gap-4 lg:gap-6">
+        <div className="mx-auto flex-col gap-6">
           {/* Header sederhana */}
           <div className="md:flex hidden gap-3 items-center">
             <h1 className="font-semibold text-lg md:text-xl">Level</h1>
@@ -277,22 +274,18 @@ const SchoolClassParent: React.FC = () => {
 
           {/* Daftar Tingkat */}
 
-          {/* <CardHeader className="py-3 px-4 md:px-5">
+          <CardHeader className="py-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-
-              </CardTitle>
-              <Button 
-              size="sm" 
-              onClick={() => setOpenTambahLevel(true)}>
-                <Plus size={16} className="mr-2" /> Tambah
+              <CardTitle className="text-base flex items-center gap-2"></CardTitle>
+              <Button size="sm" onClick={() => setOpenTambahLevel(true)}>
+                <Plus size={16} className="mr-2" /> Tambah Tingkat
               </Button>
             </div>
-          </CardHeader> */}
-          <CardContent className="px-4 md:px-5 pb-4">
+          </CardHeader>
+          <CardContent className="pb-4">
             <DataTable<Row>
               onAdd={() => setOpenTambahLevel(true)}
-              addLabel="Tambah"
+              addLabel="Tambah Tingkat"
               controlsPlacement="above"
               defaultQuery={q}
               onQueryChange={handleQueryChange}
@@ -315,31 +308,24 @@ const SchoolClassParent: React.FC = () => {
               viewModes={["table", "card"] as ViewMode[]}
               defaultView="table"
               storageKey={`class-parents:${schoolId}`}
-              onRowClick={(r) =>
-                navigate(`/${schoolId}/sekolah/kelas/tingkat/${r.id}`)
-              }
+              onRowClick={(r) => navigate(`${r.id}`)}
               pageSize={perPage}
               pageSizeOptions={[10, 20, 50, 100, 200]}
             />
 
             {/* Footer pagination */}
             <div className="mt-2 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
-
               <div className="order-1 sm:order-2 flex items-center gap-2">
-
                 <Select
                   value={String(perPage)}
                   onValueChange={(v) => {
                     setPerPage(Number(v));
                     setPage(1);
                   }}
-                >
-
-                </Select>
+                ></Select>
               </div>
             </div>
           </CardContent>
-
         </div>
       </main>
 

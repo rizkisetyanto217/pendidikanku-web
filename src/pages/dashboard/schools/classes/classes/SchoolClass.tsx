@@ -2,11 +2,11 @@
 import { useMemo, useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useParams, useNavigate } from "react-router-dom";
-import { Info, Loader2 } from "lucide-react";
+import { Plus, Info, Loader2 } from "lucide-react";
 import axios from "@/lib/axios";
 
 /* shadcn/ui */
-import { CardContent } from "@/components/ui/card";
+import { CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -140,9 +140,7 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
   const levelId = sp.get("level_id") ?? ""; // tetap didukung via query, tapi tanpa UI panel
 
   const [page, setPage] = useState(() => Number(sp.get("page") ?? 1) || 1);
-  const [perPage] = useState(
-    () => Number(sp.get("per") ?? 20) || 20
-  );
+  const [perPage] = useState(() => Number(sp.get("per") ?? 20) || 20);
   useEffect(() => {
     const copy = new URLSearchParams(sp);
     copy.set("page", String(page));
@@ -398,16 +396,17 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
 
           {/* Daftar Kelas */}
 
-          {/* <CardHeader className="py-3 px-4 md:px-5">
+          <CardHeader className="py-3 px-4 md:px-5">
             <div className="flex items-center justify-between">
               <Button
+                className="sm:hidden"
                 size="sm"
                 onClick={() => setOpenTambah(true)}
               >
                 <Plus size={16} className="mr-2" /> Tambah
               </Button>
             </div>
-          </CardHeader> */}
+          </CardHeader>
 
           <CardContent className="px-4 md:px-5 pb-4">
             <DataTable<MiddleClassRow>
@@ -434,12 +433,11 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
               viewModes={["table", "card"] as ViewMode[]}
               defaultView="table"
               storageKey={`classes:${schoolId}`}
-              onRowClick={(r) => navigate(`kelas/${r.id}`)}
+              onRowClick={(r) => navigate(`${r.id}`)}
               pageSize={perPage}
               pageSizeOptions={[10, 20, 50, 100, 200]}
             />
           </CardContent>
-
         </div>
       </main>
 
