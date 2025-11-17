@@ -1,4 +1,4 @@
-// src/pages/sekolahislamku/teacher/teacherSubject/TeacherSubjects.tsx
+// src/pages/sekolahislamku/teachers/csst/TeacherCSST.tsx
 import { useState, useMemo, useDeferredValue, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -13,20 +13,107 @@ import {
   LayoutGrid,
   LayoutList,
   Filter,
+  AlertTriangle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
+/* axios + token helper */
+import axios, { getAccessToken } from "@/lib/axios";
+
 /* Tambahan untuk breadcrumb sistem dashboard */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* =====================
-   Types & Dummy Data
+   Types API CSST
 ===================== */
+
+type DeliveryMode = "offline" | "online" | "hybrid" | string;
+
+type ApiTeacherSnapshot = {
+  id?: string | null;
+  name?: string | null;
+  avatar_url?: string | null;
+  title_prefix?: string | null;
+  title_suffix?: string | null;
+  whatsapp_url?: string | null;
+};
+
+type ApiBookSnapshot = {
+  id?: string | null;
+  slug?: string | null;
+  title?: string | null;
+  author?: string | null;
+  image_url?: string | null;
+};
+
+type ApiSubjectSnapshot = {
+  id?: string | null;
+  url?: string | null;
+  code?: string | null;
+  name?: string | null;
+  slug?: string | null;
+};
+
+type ApiClassSubjectBookSnapshot = {
+  book?: ApiBookSnapshot | null;
+  subject?: ApiSubjectSnapshot | null;
+};
+
+type ApiCSSTItem = {
+  class_section_subject_teacher_id: string;
+  class_section_subject_teacher_school_id: string;
+  class_section_subject_teacher_slug: string;
+  class_section_subject_teacher_total_attendance: number;
+  class_section_subject_teacher_enrolled_count: number;
+  class_section_subject_teacher_delivery_mode: DeliveryMode;
+  class_section_subject_teacher_class_section_id: string;
+  class_section_subject_teacher_class_section_slug_snapshot: string;
+  class_section_subject_teacher_class_section_name_snapshot: string;
+  class_section_subject_teacher_class_section_code_snapshot: string;
+  class_section_subject_teacher_school_teacher_id: string;
+  class_section_subject_teacher_school_teacher_snapshot?: ApiTeacherSnapshot | null;
+  class_section_subject_teacher_school_teacher_name_snapshot?: string | null;
+  class_section_subject_teacher_class_subject_book_id: string | null;
+  class_section_subject_teacher_class_subject_book_snapshot?: ApiClassSubjectBookSnapshot | null;
+  class_section_subject_teacher_book_title_snapshot?: string | null;
+  class_section_subject_teacher_book_author_snapshot?: string | null;
+  class_section_subject_teacher_book_slug_snapshot?: string | null;
+  class_section_subject_teacher_book_image_url_snapshot?: string | null;
+  class_section_subject_teacher_subject_name_snapshot?: string | null;
+  class_section_subject_teacher_subject_code_snapshot?: string | null;
+  class_section_subject_teacher_subject_slug_snapshot?: string | null;
+  class_section_subject_teacher_is_active: boolean;
+  class_section_subject_teacher_created_at: string;
+  class_section_subject_teacher_updated_at: string;
+  class_section_subject_teacher_deleted_at?: string | null;
+};
+
+type ApiCSSTListResponse = {
+  success: boolean;
+  message: string;
+  data: ApiCSSTItem[];
+  pagination: {
+    page: number;
+    per_page: number;
+    total: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+    count: number;
+    per_page_options: number[];
+  };
+};
+
+/* =====================
+   View model untuk UI
+===================== */
+
 type TeacherSubject = {
   id: string;
-  name: string;
+  name: string; // nama mapel
+  sectionName: string; // nama rombel/kelas
   room: string;
   day: string;
   time: string;
@@ -36,77 +123,94 @@ type TeacherSubject = {
   nextTopic: string;
 };
 
-const TEACHER_SUBJECTS_FIXED: TeacherSubject[] = [
-  {
-    id: "fiqih-1",
-    name: "Fiqih Dasar",
-    room: "Aula 1",
-    day: "Senin",
-    time: "08:00",
-    level: "Pemula",
-    studentsCount: 24,
-    academicTerm: "2025/2026 — Ganjil",
-    nextTopic: "Bab Thaharah (Bersuci)",
-  },
-  {
-    id: "arab-1",
-    name: "Bahasa Arab",
-    room: "Lab Bahasa",
-    day: "Selasa",
-    time: "09:30",
-    level: "Menengah",
-    studentsCount: 20,
-    academicTerm: "2025/2026 — Ganjil",
-    nextTopic: "Isim, Fi'il, dan Huruf",
-  },
-  {
-    id: "tahfiz-1",
-    name: "Tahfiz Juz 29",
-    room: "R. Tahfiz",
-    day: "Rabu",
-    time: "15:30",
-    level: "Lanjutan",
-    studentsCount: 19,
-    academicTerm: "2025/2026 — Ganjil",
-    nextTopic: "Setoran An-Naba 1–10",
-  },
-  {
-    id: "akidah-1",
-    name: "Aqidah Akhlak",
-    room: "R. 101",
-    day: "Kamis",
-    time: "10:00",
-    level: "Pemula",
-    studentsCount: 22,
-    academicTerm: "2024/2025 — Genap",
-    nextTopic: "Sifat Wajib bagi Allah",
-  },
-  {
-    id: "sirah-1",
-    name: "Sirah Nabawiyah",
-    room: "Aula 2",
-    day: "Jumat",
-    time: "13:00",
-    level: "Menengah",
-    studentsCount: 18,
-    academicTerm: "2025/2026 — Ganjil",
-    nextTopic: "Perjalanan Nabi ke Thaif",
-  },
-];
+/* =====================
+   JWT helper: ambil teacher_id
+===================== */
+
+function parseJwt(token: string): any | null {
+  try {
+    const [, payload] = token.split(".");
+    if (!payload) return null;
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const json = atob(base64);
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
+
+function getTeacherIdFromToken(): string | null {
+  const token = getAccessToken();
+  if (!token) return null;
+  const payload = parseJwt(token);
+  if (!payload) return null;
+
+  // sesuaikan dengan claim yang kamu pakai di backend
+  return (
+    payload.school_teacher_id || payload.teacher_id || payload.teacherID || null
+  );
+}
 
 /* =====================
-   Fake Fetch
+   Fetch dari API
 ===================== */
-async function fetchTeacherSubjects(): Promise<TeacherSubject[]> {
-  return Promise.resolve(TEACHER_SUBJECTS_FIXED.map((x) => ({ ...x })));
+
+async function fetchTeacherSubjectsFromApi(): Promise<TeacherSubject[]> {
+  const teacherId = getTeacherIdFromToken();
+  if (!teacherId) {
+    throw new Error("Tidak dapat membaca teacher_id dari token.");
+  }
+
+  const res = await axios.get<ApiCSSTListResponse>(
+    "/u/class-section-subject-teachers/list",
+    {
+      params: {
+        teacher_id: teacherId,
+      },
+    }
+  );
+
+  const items = res.data?.data ?? [];
+
+  // Map ApiCSSTItem -> TeacherSubject (view model)
+  const mapped: TeacherSubject[] = items.map((it) => {
+    const csBook = it.class_section_subject_teacher_class_subject_book_snapshot;
+    const subj = csBook?.subject;
+
+    const subjectName =
+      it.class_section_subject_teacher_subject_name_snapshot ||
+      subj?.name ||
+      "Mata pelajaran tanpa nama";
+
+    const sectionName =
+      it.class_section_subject_teacher_class_section_name_snapshot ||
+      "Rombel tanpa nama";
+
+    return {
+      id: it.class_section_subject_teacher_id,
+      name: subjectName,
+      sectionName,
+      // Belum ada room/day/time/term dari API ini → tampilkan sederhana dulu
+      room:
+        it.class_section_subject_teacher_class_section_code_snapshot ??
+        sectionName,
+      day: "-",
+      time: "-",
+      level: "-", // bisa diisi dari level rombel kalau nanti ada field-nya
+      studentsCount: it.class_section_subject_teacher_enrolled_count ?? 0,
+      academicTerm: "—", // bisa di-bind dari snapshot academic term kalau ada
+      nextTopic: "-", // nanti bisa isi dari jadwal / materi terdekat
+    };
+  });
+
+  return mapped;
 }
 
 function useTeacherSubjects() {
   return useQuery({
     queryKey: ["teacher-subjects"],
-    queryFn: fetchTeacherSubjects,
-    staleTime: Infinity,
-    gcTime: Infinity,
+    queryFn: fetchTeacherSubjectsFromApi,
+    staleTime: 60_000,
   });
 }
 
@@ -114,7 +218,13 @@ function useTeacherSubjects() {
    Main Component
 ===================== */
 export default function TeacherCSST() {
-  const { data: subjects = [] } = useTeacherSubjects();
+  const {
+    data: subjects = [],
+    isLoading,
+    isError,
+    error,
+  } = useTeacherSubjects();
+
   const [viewMode, setViewMode] = useState<"detailed" | "simple">("detailed");
   const [search, setSearch] = useState("");
   const [day, setDay] = useState("all");
@@ -138,6 +248,7 @@ export default function TeacherCSST() {
 
   const deferredSearch = useDeferredValue(search);
 
+  // Karena day/level/term belum ada data real → tetap pakai opsi standar
   const days = ["all", "Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
   const levels = ["all", "Pemula", "Menengah", "Lanjutan"];
   const terms = ["all", ...new Set(subjects.map((s) => s.academicTerm))];
@@ -159,6 +270,34 @@ export default function TeacherCSST() {
 
     return list;
   }, [subjects, deferredSearch, day, level, term, sortBy]);
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-muted-foreground gap-2">
+        <Clock size={16} className="animate-spin" />
+        Memuat daftar mata pelajaran…
+      </div>
+    );
+  }
+
+  // Error state
+  if (isError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 text-center px-4">
+        <AlertTriangle className="h-8 w-8 text-destructive" />
+        <div className="space-y-1">
+          <p className="font-semibold text-foreground">
+            Gagal memuat mata pelajaran.
+          </p>
+          <p className="text-sm text-muted-foreground break-all">
+            {(error as any)?.message ??
+              "Periksa koneksi atau coba beberapa saat lagi."}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen space-y-6">
@@ -244,8 +383,8 @@ export default function TeacherCSST() {
       {/* Cards */}
       <div
         className={`grid gap-6 ${viewMode === "simple"
-          ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
-          : "grid-cols-1 lg:grid-cols-2"
+            ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
+            : "grid-cols-1 lg:grid-cols-2"
           }`}
       >
         {filtered.map((s) => (
@@ -256,11 +395,11 @@ export default function TeacherCSST() {
             <CardHeader className="flex justify-between items-start">
               <div>
                 <CardTitle className="text-lg font-bold">{s.name}</CardTitle>
-                <p className="text-sm text-muted-foreground">{s.level}</p>
+                <p className="text-sm text-muted-foreground">{s.sectionName}</p>
               </div>
               <Badge variant="outline" className="flex items-center gap-1">
                 <MapPin size={12} />
-                {s.room}
+                {s.room || "-"}
               </Badge>
             </CardHeader>
 
@@ -307,7 +446,7 @@ export default function TeacherCSST() {
                         sakit: 0,
                         izin: 0,
                         alpa: 0,
-                      }, // dummy
+                      }, // dummy dulu
                       materialsCount: 0,
                       assignmentsCount: 0,
                     },

@@ -1,6 +1,6 @@
 // src/pages/ParentContacts.tsx
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -8,13 +8,16 @@ import { Separator } from "@/components/ui/separator";
 import {
   Phone,
   Mail,
-  MessageSquare,
   Users,
   UserSquare2,
   GraduationCap,
   Building2,
   ArrowLeft,
 } from "lucide-react";
+
+/* ✅ Import untuk breadcrumb header */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+import { useEffect } from "react";
 
 /* ===================== Types (ringkas) ===================== */
 type Lecturer = {
@@ -157,7 +160,29 @@ function PersonRow({ p, right }: { p: Lecturer; right?: React.ReactNode }) {
   );
 }
 
-export default function StudentClassesContact() {
+/* =========================================================
+   Page — sama layout & interaksi dengan Academic
+========================================================= */
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
+
+export default function StudentClassesContact({ showBack = false, backTo }: Props) {
+  const navigate = useNavigate();
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
+
+  /* ✅ Breadcrumb */
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Kontak",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Kelas" },
+        { label: "Kontak" },
+      ],
+      showBack,
+    });
+  }, [setHeader, showBack]);
+
   const { data } = useQuery({
     queryKey: ["parent-contacts"],
     queryFn: fetchContacts,
@@ -177,17 +202,18 @@ export default function StudentClassesContact() {
       <main className="w-full">
         <div className="max-w-screen-2xl mx-auto flex flex-col gap-6 px-4 md:px-6 py-4 md:py-6">
           {/* Header mini */}
-          <div className="flex items-center justify-between">
-            <Link to=".." relative="path">
-              <Button variant="ghost" size="sm" className="gap-2">
-                <ArrowLeft className="w-4 h-4" /> Kembali
+          <div className="md:flex hidden gap-3 items-center">
+            {showBack && (
+              <Button
+                onClick={handleBack}
+                variant="ghost"
+                size="icon"
+                className="cursor-pointer self-start"
+              >
+                <ArrowLeft size={20} />
               </Button>
-            </Link>
-            <Link to="/student/komunikasi">
-              <Button size="sm" className="gap-2">
-                <MessageSquare className="w-4 h-4" /> Pusat Komunikasi
-              </Button>
-            </Link>
+            )}
+            <h1 className="font-semibold text-lg md:text-xl">Kontak</h1>
           </div>
 
           {/* Wali Kelas */}

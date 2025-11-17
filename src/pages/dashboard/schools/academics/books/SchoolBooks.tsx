@@ -1,17 +1,15 @@
-// src/pages/sekolahislamku/dashboard-school/books/SchoolBooks.shadcn.tsx
+// src/pages/sekolahislamku/dashboard-school/books/SchoolBooks.tsx
 import * as React from "react";
 import { useMemo, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "@/lib/axios";
 import {
-  ExternalLink,
   ImageOff,
   Pencil,
   Trash2,
   Info,
   Loader2,
-
   MoreHorizontal,
   Eye,
   ArrowLeft,
@@ -59,59 +57,72 @@ import {
 } from "@/components/costum/table/CDataTable";
 
 /* =========================================================
-   Types
+   Types (disesuaikan dengan /api/u/books/list)
 ========================================================= */
 export type BookAPI = {
-  books_id: string;
-  books_school_id: string;
-  books_title: string;
-  books_author?: string | null;
-  books_desc?: string | null;
-  books_url?: string | null;
-  books_image_url?: string | null;
-  books_slug?: string | null;
-  usages: any[];
+  book_id: string;
+  book_school_id: string;
+  book_title: string;
+  book_author?: string | null;
+  book_desc?: string | null;
+  book_slug?: string | null;
+  book_image_url?: string | null;
+  book_image_object_key?: string | null;
+  book_created_at?: string;
+  book_updated_at?: string;
+  book_is_deleted?: boolean;
 };
+
 export type BooksResponse = {
   data: BookAPI[];
-  pagination?: { limit: number; offset: number; total: number };
+  pagination?: {
+    page: number;
+    per_page: number;
+    total: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+  };
 };
 
 /* =========================================================
-   Fetch list public
+   Fetch list (USER) - /api/u/books/list
 ========================================================= */
-function useBooksListPublic(params: { schoolId: string }) {
-  const { schoolId } = params;
+function useBooksList(params: { schoolId: string }) {
+  const { schoolId } = params; // masih dipakai buat context & routing
+
   return useQuery<BooksResponse>({
     queryKey: ["books-list-public", { schoolId }],
     queryFn: async () => {
-      const r = await axios.get(
-        `/public/${encodeURIComponent(schoolId)}/books/list`,
-        { withCredentials: false, params: { _: Date.now() } }
-      );
-      const mapped = (r.data?.data ?? []).map((b: any) => ({
-        books_id: b.book_id,
-        books_school_id: b.book_school_id,
-        books_title: b.book_title,
-        books_author: b.book_author ?? null,
-        books_desc: b.book_desc ?? null,
-        books_url: null,
-        books_image_url: b.book_image_url ?? null,
-        books_slug: b.book_slug ?? null,
-        usages: [],
-      })) as BookAPI[];
+      const r = await axios.get<BooksResponse>("/u/books/list", {
+        withCredentials: true,
+        params: { _: Date.now() },
+      });
+
+      const rows = (r.data?.data ?? []) as BookAPI[];
+
       return {
-        data: mapped,
-        pagination: { limit: mapped.length, offset: 0, total: mapped.length },
+        data: rows,
+        pagination: r.data?.pagination,
       };
     },
     placeholderData: (prev) =>
-      prev ?? { data: [], pagination: { limit: 0, offset: 0, total: 0 } },
+      prev ?? {
+        data: [],
+        pagination: {
+          page: 1,
+          per_page: 0,
+          total: 0,
+          total_pages: 1,
+          has_next: false,
+          has_prev: false,
+        },
+      },
   });
 }
 
 /* =========================================================
-   CRUD hooks
+   CRUD hooks (tetap pakai /api/a/... seperti sebelumnya)
 ========================================================= */
 function useCreateBook(schoolId: string) {
   const qc = useQueryClient();
@@ -223,12 +234,12 @@ function BookModal({
   onSubmit: (data: FormData) => Promise<void> | void;
   submitting?: boolean;
 }) {
-  const [title, setTitle] = useState(book?.books_title ?? "");
-  const [author, setAuthor] = useState(book?.books_author ?? "");
-  const [desc, setDesc] = useState(book?.books_desc ?? "");
+  const [title, setTitle] = useState(book?.book_title ?? "");
+  const [author, setAuthor] = useState(book?.book_author ?? "");
+  const [desc, setDesc] = useState(book?.book_desc ?? "");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(
-    book?.books_image_url ?? null
+    book?.book_image_url ?? null
   );
 
   React.useEffect(() => {
@@ -336,10 +347,7 @@ function BookModal({
 ========================================================= */
 type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
-export default function SchoolBooks({
-  showBack = false,
-  backTo,
-}: Props) {
+export default function SchoolBooks({ showBack = false, backTo }: Props) {
   const navigate = useNavigate();
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
@@ -360,9 +368,8 @@ export default function SchoolBooks({
   const params = useParams<{ schoolId?: string }>();
   const schoolId = params.schoolId || "";
 
-  const booksQ = useBooksListPublic({ schoolId });
+  const booksQ = useBooksList({ schoolId });
   const rows = booksQ.data?.data ?? [];
-
 
   const createBook = useCreateBook(schoolId);
   const updateBook = useUpdateBook();
@@ -393,10 +400,10 @@ export default function SchoolBooks({
         className: "align-middle",
         headerClassName: "w-[64px]",
         cell: (r) =>
-          r.books_image_url ? (
+          r.book_image_url ? (
             <img
-              src={r.books_image_url}
-              alt={r.books_title}
+              src={r.book_image_url}
+              alt={r.book_title}
               className="h-14 w-10 rounded-md object-cover mx-auto"
             />
           ) : (
@@ -411,33 +418,26 @@ export default function SchoolBooks({
         align: "center",
         minW: "260px",
         cell: (r) => (
-          <div className="">
-            <div className="truncate font-medium">{r.books_title}</div>
+          <div>
+            <div className="truncate font-medium">{r.book_title}</div>
             <div className="truncate text-sm text-muted-foreground">
-              {r.books_author || "-"}
+              {r.book_author || "-"}
             </div>
-            {r.books_url && (
-              <a
-                href={r.books_url}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-1 inline-flex items-center gap-1 text-xs text-primary underline underline-offset-4"
-                onClick={(e) => e.stopPropagation()}
-                data-interactive
-              >
-                <ExternalLink className="h-3.5 w-3.5" /> Kunjungi
-              </a>
-            )}
           </div>
         ),
       },
       {
-        id: "slug",
-        header: "Slug",
-        minW: "200px",
+        id: "desc",
+        header: "Deskripsi",
+        minW: "260px",
         align: "center",
-        cell: (r) => r.books_slug ?? "-",
+        cell: (r) => (
+          <div className="text-sm text-muted-foreground line-clamp-2">
+            {r.book_desc || "—"}
+          </div>
+        ),
       },
+      // ❌ Kolom slug dihapus dari table utama
     ];
   }, []);
 
@@ -456,14 +456,16 @@ export default function SchoolBooks({
       </Button>
     </div>
   ) : (
-    <div className="text-sm text-muted-foreground"></div>
+    <div className="text-sm text-muted-foreground">
+      Total buku: {rows.length}
+    </div>
   );
 
   /* ====== Actions (Dropdown) — konsisten Academic ====== */
   const renderActions = (r: BookAPI) => (
     <ActionsMenu
       onView={() =>
-        navigate(`/${schoolId}/sekolah/buku/${r.books_id}`, {
+        navigate(`/${schoolId}/sekolah/buku/${r.book_id}`, {
           state: { book: r },
         })
       }
@@ -509,8 +511,8 @@ export default function SchoolBooks({
             controlsPlacement="above"
             /* ===== Search ===== */
             defaultQuery=""
-            searchPlaceholder="Cari judul, penulis, atau slug…"
-            searchByKeys={["books_title", "books_author", "books_slug"]}
+            searchPlaceholder="Cari judul atau penulis…"
+            searchByKeys={["book_title", "book_author", "book_slug"]}
             /* ===== Stats ===== */
             statsSlot={statsSlot}
             /* ===== Data ===== */
@@ -520,7 +522,7 @@ export default function SchoolBooks({
             }
             columns={columns}
             rows={rows}
-            getRowId={(r) => r.books_id}
+            getRowId={(r) => r.book_id}
             /* ===== UX ===== */
             defaultAlign="center"
             stickyHeader
@@ -533,19 +535,19 @@ export default function SchoolBooks({
             renderActions={renderActions}
             /* Klik baris/card → detail */
             onRowClick={(r) =>
-              navigate(`${r.books_id}`, {
+              navigate(`${r.book_id}`, {
                 state: { book: r },
               })
             }
             /* Renderer kartu */
             renderCard={(r) => (
-              <div className="rounded-xl borderspace-y-3">
+              <div className="rounded-xl border space-y-3 p-3">
                 <div className="flex gap-3">
                   <div className="w-16">
-                    {r.books_image_url ? (
+                    {r.book_image_url ? (
                       <img
-                        src={r.books_image_url}
-                        alt={r.books_title}
+                        src={r.book_image_url}
+                        alt={r.book_title}
                         className="h-24 w-16 rounded-md object-cover"
                       />
                     ) : (
@@ -554,13 +556,13 @@ export default function SchoolBooks({
                       </div>
                     )}
                   </div>
-                  <div className="flex-1">
-                    <div className="font-medium">{r.books_title}</div>
+                  <div className="flex-1 space-y-1">
+                    <div className="font-medium">{r.book_title}</div>
                     <div className="text-sm text-muted-foreground">
-                      {r.books_author || "-"}
+                      {r.book_author || "-"}
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      {r.books_slug || "-"}
+                    <div className="text-xs text-muted-foreground line-clamp-2">
+                      {r.book_desc || "Belum ada deskripsi."}
                     </div>
                   </div>
                 </div>
@@ -580,9 +582,9 @@ export default function SchoolBooks({
         submitting={createBook.isPending || updateBook.isPending}
         onSubmit={async (fd) => {
           if (modalMode === "create") await createBook.mutateAsync(fd);
-          else if (modalBook?.books_id)
+          else if (modalBook?.book_id)
             await updateBook.mutateAsync({
-              id: modalBook.books_id,
+              id: modalBook.book_id,
               payload: fd,
             });
         }}
@@ -594,8 +596,7 @@ export default function SchoolBooks({
             <AlertDialogTitle>Hapus Buku?</AlertDialogTitle>
             <AlertDialogDescription>
               Yakin ingin menghapus buku{" "}
-              <span className="font-medium">“{deleteTarget?.books_title}”</span>
-              ?
+              <span className="font-medium">“{deleteTarget?.book_title}”</span>?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -604,7 +605,7 @@ export default function SchoolBooks({
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={async () => {
                 if (!deleteTarget) return;
-                await deleteBook.mutateAsync(deleteTarget.books_id);
+                await deleteBook.mutateAsync(deleteTarget.book_id);
                 setDeleteOpen(false);
               }}
             >

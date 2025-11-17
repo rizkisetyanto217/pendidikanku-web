@@ -7,7 +7,7 @@ import TeacherDashboard from "@/pages/dashboard/teachers/TeacherMainDashboard";
 
 // Menu utama guru
 import TeacherMenuGrids from "@/pages/dashboard/teachers/menus/TeacherMenuGrids";
-import TeacherClass from "@/pages/dashboard/teachers/classes/TeacherClasses";
+import TeacherClass from "@/pages/dashboard/teachers/classes/TeacherClassFromSections";
 import TeacherSubjects from "@/pages/dashboard/teachers/csst/TeacherCSST";
 import TeacherSchedule from "@/pages/dashboard/teachers/schedules/agendas/TeacherScheduleAgenda";
 
@@ -54,7 +54,7 @@ export const TeacherRoutes = (
     {/* Wali Kelas */}
     <Route path="wali-kelas">
       <Route index element={<TeacherClass />} />
-      <Route path=":id" element={<TeacherClassDetail />} />
+      <Route path=":classSectionId" element={<TeacherClassDetail />} />
     </Route>
 
     <Route path="kelola-kelas/:name" element={<TeacherManagementClass />} />
@@ -63,7 +63,7 @@ export const TeacherRoutes = (
     {/* Guru Mapel */}
     <Route path="guru-mapel">
       <Route index element={<TeacherSubjects />} />
-      <Route path=":id" element={<TeacherDetailClass />} />
+      <Route path=":csstId" element={<TeacherDetailClass />} />
       <Route path=":id/absensi-hari-ini" element={<TeacherClassAttendance />} />
       <Route path=":id/quiz" element={<TeacherDetailClassQuiz />} />
       <Route path=":id/murid" element={<TeacherClassStudentsList />} />

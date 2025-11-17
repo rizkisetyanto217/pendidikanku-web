@@ -1,37 +1,17 @@
-import { useMemo, useEffect } from "react";
-import {
-  BookOpen,
-  Wallet,
-  CalendarDays,
-  IdCard,
-  FileText,
-  BadgeCheck,
-  UserCheck,
-  StickyNote,
-  ListChecks,
-  NotebookPen,
-  FileStack,
-  BookText,
-} from "lucide-react";
-
-/* Tambahan untuk breadcrumb sistem dashboard */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+import type { CMenuItem } from "../../components/card/CMainMenuGridCard";
+import { useEffect, useMemo } from "react";
+import { BadgeCheck, BookOpen, BookText, CalendarDays, FileStack, FileText, IdCard, ListChecks, NotebookPen, StickyNote, UserCheck, Wallet } from "lucide-react";
+import CMainMenuGridCard from "../../components/card/CMainMenuGridCard";
 
-import CMainMenuGridCard, {
-  type CMenuItem,
-} from "@/pages/dashboard/components/card/CMainMenuGridCard";
-
-/* ================= Components ================= */
 export default function StudentMenuGrids() {
-
-  /* Atur breadcrumb dan title seperti SchoolAcademic */
   const { setHeader } = useDashboardHeader();
 
   useEffect(() => {
     setHeader({
       title: "Menu Utama",
       breadcrumbs: [
-        { label: "Dashboard", href: "dashboard" },
+        { label: "Dashboard", href: "/murid/dashboard" },
         { label: "Menu Utama" },
       ],
       actions: null,
@@ -40,26 +20,36 @@ export default function StudentMenuGrids() {
 
   const items: CMenuItem[] = useMemo(
     () => [
-      // ===== Menu utama (lokal) =====
+      // ======================
+      // MENU UTAMA (lokal /menu-utama)
+      // ======================
       { key: "kelas-saya", label: "Kelas Saya", to: "kelas-saya", icon: <BookOpen /> },
       { key: "keuangan", label: "Pembayaran", to: "keuangan", icon: <Wallet /> },
       { key: "jadwal-local", label: "Jadwal", to: "jadwal", icon: <CalendarDays /> },
       { key: "profil", label: "Profil Murid", to: "profil-murid", icon: <IdCard /> },
 
-      // ===== Root pages (/murid/*) =====
+      // ======================
+      // ROOT ROUTES (/murid/*)
+      // ======================
       { key: "tugas", label: "Daftar Tugas", to: "tugas", icon: <NotebookPen /> },
-      { key: "keuangan-list", label: "Daftar Tagihan", to: "keuangan", icon: <FileStack /> },
+      { key: "tagihan", label: "Daftar Tagihan", to: "/keuangan-list", icon: <FileStack /> },
 
-      // ===== Progress cluster =====
+      // ======================
+      // PROGRESS AKADEMIK (lokal menu-utama)
+      // ======================
       { key: "progress", label: "Progress Akademik", to: "progress", icon: <ListChecks /> },
-      { key: "raport", label: "Raport", to: "progress/raport", icon: <FileText /> },
-      { key: "absensi", label: "Absensi", to: "progress/absensi", icon: <UserCheck /> },
-      { key: "catatan-hasil", label: "Catatan Hasil", to: "progress/catatan-hasil", icon: <StickyNote /> },
+      { key: "raport", label: "Raport", to: "raport", icon: <FileText /> },
+      { key: "absensi", label: "Absensi", to: "absensi", icon: <UserCheck /> },
+      { key: "catatan-hasil", label: "Catatan Hasil", to: "catatan-hasil", icon: <StickyNote /> },
 
-      // ===== Jadwal root (duplikasi aman: versi root) =====
-      { key: "jadwal-root", label: "Jadwal (Root)", to: "jadwal", icon: <CalendarDays /> },
+      // ======================
+      // JADWAL ROOT (/murid/jadwal)
+      // ======================
+      { key: "jadwal-root", label: "Jadwal", to: "jadwal", icon: <CalendarDays /> },
 
-      // ===== Halaman dengan param (:id) =====
+      // ======================
+      // DETAIL KELAS (butuh param)
+      // ======================
       {
         key: "kelas-materi",
         label: "Materi Kelas",

@@ -1,6 +1,7 @@
 // src/pages/sekolahislamku/pages/student/StudentAssignment.tsx
+
 import React, { useMemo, useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import {
   CalendarDays,
   Clock,
@@ -11,6 +12,7 @@ import {
   Play,
   Paperclip,
   BookOpen,
+  ArrowLeft,
 } from "lucide-react";
 
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
@@ -20,18 +22,21 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+
 import { cn } from "@/lib/utils";
+
+/* NEW: Segmented Tabs */
+import { CSegmentedTabs } from "@/components/costum/common/CSegmentedTabs";
 
 /* ===== Helpers ringkas ===== */
 const dateLong = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        weekday: "long",
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      })
+      weekday: "long",
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    })
     : "-";
 
 const diffDays = (iso: string) => {
@@ -82,16 +87,12 @@ type Assignment = {
   subject: Subject;
   title: string;
   description?: string;
-  dueAt: string; // ISO
+  dueAt: string;
   points?: number;
-
   type: AssignmentType;
-
   status: AssignmentStatus;
   submittedAt?: string;
-
   submittedLink?: string;
-
   quizDurationMin?: number;
   quizAttempt?: number;
   quizMaxAttempt?: number;
@@ -115,7 +116,7 @@ const DUMMY: Assignment[] = [
     id: "tahsin-file-1",
     subject: "tahsin",
     title: "Ringkasan Hukum Nun Sakinah",
-    description: "Tulis 1 halaman, unggah link Google Drive (boleh view).",
+    description: "Tulis 1 halaman, unggah link Google Drive.",
     dueAt: plus(2, 20),
     points: 100,
     type: "file",
@@ -137,8 +138,7 @@ const DUMMY: Assignment[] = [
   {
     id: "tahfidz-file-1",
     subject: "tahfidz",
-    title: "Setoran An-Naba' 1–10 (Audio)",
-    description: "Rekam audio dan unggah link Google Drive.",
+    title: "Setoran An-Naba' 1–10",
     dueAt: plus(0, 23),
     points: 100,
     type: "file",
@@ -150,7 +150,6 @@ const DUMMY: Assignment[] = [
     id: "tahfidz-quiz-1",
     subject: "tahfidz",
     title: "Quiz Muraja'ah Juz 30",
-    description: "25 soal. Bisa 1x attempt.",
     dueAt: plus(-2, 20),
     points: 100,
     type: "quiz",
@@ -165,7 +164,6 @@ const DUMMY: Assignment[] = [
     id: "fiqih-file-1",
     subject: "fiqih",
     title: "Rangkuman Thaharah",
-    description: "Rangkum bab najis & cara menyucikannya (max 2 halaman).",
     dueAt: plus(5, 18),
     points: 100,
     type: "file",
@@ -175,7 +173,6 @@ const DUMMY: Assignment[] = [
     id: "fiqih-quiz-1",
     subject: "fiqih",
     title: "Quiz: Rukun & Sunnah Wudhu",
-    description: "15 soal, auto-graded.",
     dueAt: plus(-1, 19),
     points: 100,
     type: "quiz",
@@ -189,7 +186,11 @@ const DUMMY: Assignment[] = [
 ];
 
 /* ================== Component ================== */
-const StudentClassesAssignment: React.FC = () => {
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
+
+const StudentClassesAssignment: React.FC<Props> = ({ showBack = false, backTo }) => {
+  const navigate = useNavigate();
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
   const { subject } = useParams<{ subject?: Subject }>();
   const [data, setData] = useState<Assignment[]>(DUMMY);
   const [search, setSearch] = useState("");
@@ -200,7 +201,7 @@ const StudentClassesAssignment: React.FC = () => {
       : "semua";
   const [tab, setTab] = useState<"semua" | Subject>(tabDefault);
 
-  // optional header
+  /* Header */
   const { setHeader } = useDashboardHeader();
   useEffect(() => {
     setHeader?.({
@@ -209,11 +210,11 @@ const StudentClassesAssignment: React.FC = () => {
         { label: "Dashboard", href: "dashboard" },
         { label: "Tugas" },
       ],
-      actions: null,
+      showBack,
     });
-  }, [setHeader]);
+  }, [setHeader, showBack]);
 
-  // filter by subject & search (ini dasar sebelum dibagi 2)
+  /* Filter search + subject */
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
     return data.filter((a) => {
@@ -226,7 +227,6 @@ const StudentClassesAssignment: React.FC = () => {
     });
   }, [data, tab, search]);
 
-  // split: pending vs done
   const pending = useMemo(
     () =>
       filtered
@@ -234,12 +234,12 @@ const StudentClassesAssignment: React.FC = () => {
         .sort((a, b) => +new Date(a.dueAt) - +new Date(b.dueAt)),
     [filtered]
   );
+
   const done = useMemo(
     () =>
       filtered
         .filter((a) => a.status !== "belum")
         .sort((a, b) => {
-          // urutkan yang sudah dikerjakan: terbaru di atas (berdasar submittedAt jika ada, fallback dueAt)
           const ta = +new Date(a.submittedAt ?? a.dueAt);
           const tb = +new Date(b.submittedAt ?? b.dueAt);
           return tb - ta;
@@ -247,25 +247,24 @@ const StudentClassesAssignment: React.FC = () => {
     [filtered]
   );
 
-  // quick counts (untuk tab)
   const counts = useMemo(() => {
     const base = { tahsin: 0, tahfidz: 0, fiqih: 0, semua: filtered.length };
     filtered.forEach((a) => (base[a.subject] += 1));
     return base;
   }, [filtered]);
 
-  /* ===== Handlers (dummy) ===== */
+  /* Handlers */
   const submitLink = (id: string, link: string) => {
     setData((list) =>
       list.map((a) =>
         a.id === id
           ? {
-              ...a,
-              status: "terkumpul",
-              submittedAt: new Date().toISOString(),
-              submittedLink:
-                link || a.submittedLink || "https://drive.google.com/...",
-            }
+            ...a,
+            status: "terkumpul",
+            submittedAt: new Date().toISOString(),
+            submittedLink:
+              link || a.submittedLink || "https://drive.google.com/...",
+          }
           : a
       )
     );
@@ -277,22 +276,20 @@ const StudentClassesAssignment: React.FC = () => {
       list.map((a) =>
         a.id === id
           ? {
-              ...a,
-              status: "dinilai",
-              quizAttempt: Math.min(
-                (a.quizAttempt ?? 0) + 1,
-                a.quizMaxAttempt ?? 1
-              ),
-              grade: Math.max(70, Math.round(70 + Math.random() * 30)),
-              reviewUrl: `/murid/quiz/review/${id}`,
-              submittedAt: new Date().toISOString(),
-            }
+            ...a,
+            status: "dinilai",
+            quizAttempt: Math.min(
+              (a.quizAttempt ?? 0) + 1,
+              a.quizMaxAttempt ?? 1
+            ),
+            grade: Math.max(70, Math.round(70 + Math.random() * 30)),
+            reviewUrl: `/murid/quiz/review/${id}`,
+            submittedAt: new Date().toISOString(),
+          }
           : a
       )
     );
-    alert(
-      "Quiz selesai & nilai otomatis tersimpan. Kamu bisa review hasilnya."
-    );
+    alert("Quiz selesai & nilai otomatis tersimpan.");
   };
 
   return (
@@ -300,111 +297,106 @@ const StudentClassesAssignment: React.FC = () => {
       <main className="w-full">
         <div className="mx-auto flex flex-col gap-6">
           {/* Header */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className="md:flex hidden gap-3 items-center">
+            {showBack && (
+              <Button
+                onClick={handleBack}
+                variant="ghost"
+                size="icon"
+                className="cursor-pointer self-start"
+              >
+                <ArrowLeft size={20} />
+              </Button>
+            )}
             <h1 className="text-lg font-semibold">Daftar Tugas</h1>
           </div>
 
-          {/* Search + Tabs */}
-          <Card>
-            <CardContent className="p-4 md:p-5 flex flex-col gap-3">
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Cari tugas atau deskripsi…"
-              />
+          {/* Search + Segmented Tabs */}
 
-              <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
-                <TabsList className="flex flex-wrap gap-2">
-                  <TabsTrigger value="semua">
-                    Semua{" "}
-                    <Badge variant="outline" className="ml-2">
-                      {counts.semua}
-                    </Badge>
-                  </TabsTrigger>
-                  <TabsTrigger value="tahsin">
-                    Tahsin{" "}
-                    <Badge variant="outline" className="ml-2">
-                      {counts.tahsin}
-                    </Badge>
-                  </TabsTrigger>
-                  <TabsTrigger value="tahfidz">
-                    Tahfidz{" "}
-                    <Badge variant="outline" className="ml-2">
-                      {counts.tahfidz}
-                    </Badge>
-                  </TabsTrigger>
-                  <TabsTrigger value="fiqih">
-                    Fiqih{" "}
-                    <Badge variant="outline" className="ml-2">
-                      {counts.fiqih}
-                    </Badge>
-                  </TabsTrigger>
-                </TabsList>
+          <CardContent className=" flex flex-col gap-3">
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Cari tugas atau deskripsi…"
+            />
 
-                <TabsContent value={tab} className="mt-4 space-y-6">
-                  {/* ===== Card 1: Belum dikerjakan ===== */}
-                  <Card className="overflow-hidden">
-                    <CardContent className="p-4 md:p-5 space-y-3">
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="h-4 w-4" />
-                        <h2 className="text-base md:text-lg font-semibold">
-                          Belum dikerjakan
-                        </h2>
-                        <Badge variant="outline">{pending.length}</Badge>
-                      </div>
+            {/* ============== NEW: Segmented Tabs ============== */}
+            <CSegmentedTabs
+              value={tab}
+              onValueChange={(v) => setTab(v as any)}
+              tabs={[
+                { value: "semua", label: `Semua (${counts.semua})` },
+                { value: "tahsin", label: `Tahsin (${counts.tahsin})` },
+                { value: "tahfidz", label: `Tahfidz (${counts.tahfidz})` },
+                { value: "fiqih", label: `Fiqih (${counts.fiqih})` },
+              ]}
+              className="mt-1"
+            />
 
-                      {pending.length === 0 ? (
-                        <div className="text-sm text-muted-foreground border rounded-lg p-4 text-center">
-                          Semua tugas sudah dikerjakan. Mantap! 🎉
-                        </div>
-                      ) : (
-                        <div className="grid gap-3">
-                          {pending.map((a) => (
-                            <AssignmentCard
-                              key={a.id}
-                              a={a}
-                              onSubmitLink={submitLink}
-                              onStartQuiz={startQuiz}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+            {/* ============== CONTENT ============== */}
+            <div className="mt-4 space-y-6">
+              {/* Pending */}
+              <Card className="overflow-hidden">
+                <CardContent className="p-4 md:p-5 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="h-4 w-4" />
+                    <h2 className="text-base md:text-lg font-semibold">
+                      Belum dikerjakan
+                    </h2>
+                    <Badge variant="outline">{pending.length}</Badge>
+                  </div>
 
-                  {/* ===== Card 2: Sudah dikerjakan / Riwayat ===== */}
-                  <Card className="overflow-hidden">
-                    <CardContent className="p-4 md:p-5 space-y-3">
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="h-4 w-4" />
-                        <h2 className="text-base md:text-lg font-semibold">
-                          Riwayat (sudah dikerjakan)
-                        </h2>
-                        <Badge variant="outline">{done.length}</Badge>
-                      </div>
+                  {pending.length === 0 ? (
+                    <div className="text-sm text-muted-foreground border rounded-lg p-4 text-center">
+                      Semua tugas sudah dikerjakan. Mantap! 🎉
+                    </div>
+                  ) : (
+                    <div className="grid gap-3">
+                      {pending.map((a) => (
+                        <AssignmentCard
+                          key={a.id}
+                          a={a}
+                          onSubmitLink={submitLink}
+                          onStartQuiz={startQuiz}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
-                      {done.length === 0 ? (
-                        <div className="text-sm text-muted-foreground border rounded-lg p-4 text-center">
-                          Belum ada riwayat pengumpulan/penilaian.
-                        </div>
-                      ) : (
-                        <div className="grid gap-3">
-                          {done.map((a) => (
-                            <AssignmentCard
-                              key={a.id}
-                              a={a}
-                              onSubmitLink={submitLink}
-                              onStartQuiz={startQuiz}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
+              {/* Done */}
+              <Card className="overflow-hidden">
+                <CardContent className="p-4 md:p-5 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="h-4 w-4" />
+                    <h2 className="text-base md:text-lg font-semibold">
+                      Riwayat (sudah dikerjakan)
+                    </h2>
+                    <Badge variant="outline">{done.length}</Badge>
+                  </div>
+
+                  {done.length === 0 ? (
+                    <div className="text-sm text-muted-foreground border rounded-lg p-4 text-center">
+                      Belum ada riwayat pengumpulan/penilaian.
+                    </div>
+                  ) : (
+                    <div className="grid gap-3">
+                      {done.map((a) => (
+                        <AssignmentCard
+                          key={a.id}
+                          a={a}
+                          onSubmitLink={submitLink}
+                          onStartQuiz={startQuiz}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </CardContent>
+
         </div>
       </main>
     </div>
@@ -435,12 +427,10 @@ function AssignmentCard({
                 {a.title}
               </div>
 
-              {/* Subject */}
               <Badge variant="outline" className="h-6">
                 {SUBJECT_LABEL[a.subject]}
               </Badge>
 
-              {/* Type */}
               <Badge
                 variant={a.type === "quiz" ? "default" : "secondary"}
                 className="h-6"
@@ -448,7 +438,6 @@ function AssignmentCard({
                 {a.type === "quiz" ? "Quiz" : "File Link"}
               </Badge>
 
-              {/* Status */}
               {a.status === "dinilai" ? (
                 <Badge className="h-6">Dinilai</Badge>
               ) : a.status === "terkumpul" ? (
@@ -461,14 +450,12 @@ function AssignmentCard({
                 </Badge>
               )}
 
-              {/* Poin */}
               {typeof a.points === "number" && (
                 <Badge variant="outline" className="h-6">
                   Poin: {a.points}
                 </Badge>
               )}
 
-              {/* Nilai (quiz) */}
               {typeof a.grade === "number" && (
                 <Badge
                   variant="outline"
@@ -478,7 +465,6 @@ function AssignmentCard({
                 </Badge>
               )}
 
-              {/* Deadline */}
               <Badge variant="outline" className={cn("h-6", badge.className)}>
                 {badge.text}
               </Badge>
@@ -493,6 +479,7 @@ function AssignmentCard({
             <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
               <CalendarDays className="h-4 w-4" />
               <span>Jatuh tempo: {dateLong(a.dueAt)}</span>
+
               {a.submittedAt && (
                 <>
                   <span>•</span>
@@ -500,6 +487,7 @@ function AssignmentCard({
                   <span>Dikumpulkan: {dateLong(a.submittedAt)}</span>
                 </>
               )}
+
               {a.submittedLink && (
                 <>
                   <span>•</span>
@@ -535,6 +523,7 @@ function AssignmentCard({
               disabled={a.status !== "belum"}
               className="sm:w-[360px]"
             />
+
             {a.status === "belum" ? (
               <Button size="sm" onClick={() => onSubmitLink(a.id, linkVal)}>
                 <Send className="h-4 w-4 mr-1" />
@@ -554,6 +543,7 @@ function AssignmentCard({
                   <CheckCircle className="h-4 w-4" />
                   Selesai
                 </Badge>
+
                 {a.submittedLink && (
                   <a
                     className="text-sm underline"
@@ -575,6 +565,7 @@ function AssignmentCard({
             <Badge variant="outline" className="h-6">
               Durasi: {a.quizDurationMin ?? 0} m
             </Badge>
+
             <Badge variant="outline" className="h-6">
               Attempt: {a.quizAttempt ?? 0}/{a.quizMaxAttempt ?? 1}
             </Badge>
@@ -597,14 +588,14 @@ function AssignmentCard({
                 {typeof a.grade === "number" && (
                   <Badge className="h-6">Nilai: {a.grade}</Badge>
                 )}
-                {a.reviewUrl ? (
+                {a.reviewUrl && (
                   <Link to={a.reviewUrl}>
                     <Button size="sm" variant="outline">
                       <Eye className="h-4 w-4 mr-1" />
                       Review Quiz
                     </Button>
                   </Link>
-                ) : null}
+                )}
               </div>
             )}
           </div>

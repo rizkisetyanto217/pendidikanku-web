@@ -123,13 +123,19 @@ export const StudentRoutes = (
       <Route index element={<StudentMenuGrids />} />
 
       {/* Halaman daftar kelas */}
-      <Route path="kelas-saya" element={<StudentMyClass />} />
+      <Route path="kelas-saya" element={<StudentMyClass showBack />} />
 
       {/* Halaman keuangan ringkas */}
       <Route path="keuangan" element={<StudentFinance />} />
 
       {/* Jadwal utama (khusus tampilan kelas saya / tab jadwal) */}
       <Route path="jadwal" element={<StudentAllSchedule />} />
+
+      {/* Halaman tugas */}
+      <Route path="tugas" element={<StudentClassesAssignment showBack />} />
+
+      {/* Halaman ujian */}
+      <Route path="ujian" element={<StudentExam showBack />} />
 
       {/* Detail per kelas (dengan dynamic :id) */}
       <Route path="kelas-saya/:id/materi" element={<StudentMaterial />} />
@@ -144,13 +150,13 @@ export const StudentRoutes = (
       />
 
       {/* Detail perkembangan belajar murid */}
-      <Route path="progress" element={<StudentProgress />} />
+      <Route path="progress" element={<StudentProgress showBack />} />
       {/* Halaman raport */}
-      <Route path="progress/raport" element={<StudentRaport />} />
+      <Route path="raport" element={<StudentRaport />} />
       {/* Halaman absensi */}
-      <Route path="progress/absensi" element={<StudentAbsence />} />
+      <Route path="absensi" element={<StudentAbsence />} />
       {/* Halaman catatan hasil belajar */}
-      <Route path="progress/catatan-hasil" element={<StudentNotesSummary />} />
+      <Route path="catatan-hasil" element={<StudentNotesSummary />} />
 
       {/* Profil murid dari menu utama */}
       <Route path="profil-murid" element={<StudentProfil />} />

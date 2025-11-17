@@ -1,5 +1,5 @@
 // src/pages/sekolahislamku/student/StudentExamList.tsx
-import { useMemo, useState, useDeferredValue } from "react";
+import { useMemo, useState, useEffect, useDeferredValue } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
@@ -26,7 +26,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 /* Icons */
 import {
@@ -34,7 +33,6 @@ import {
   CalendarDays,
   Clock,
   Search,
-  Filter,
   ClipboardList,
   CheckCircle2,
   Play,
@@ -43,11 +41,16 @@ import {
   AlertCircle,
 } from "lucide-react";
 
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+
 /* Stats Grid (custom) */
 import {
   StatsGrid,
   type StatItem,
 } from "@/components/costum/common/CStatsCardGrid";
+
+/* NEW: Segmented Tabs */
+import { CSegmentedTabs } from "@/components/costum/common/CSegmentedTabs";
 
 /* ================= Types & Helpers ================= */
 type ExamMode = "online" | "onsite";
@@ -79,11 +82,11 @@ type StudentExamItem = {
 const fmtDate = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleString("id-ID", {
-        day: "2-digit",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
     : "-";
 
 const withinRange = (now: Date, startISO: string, endISO: string) =>
@@ -298,12 +301,31 @@ const QK = {
 };
 
 /* ================= Page ================= */
-export default function StudentExam() {
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
+
+export default function StudentExam({
+  showBack = false,
+  backTo,
+}: Props) {
+  const navigate = useNavigate();
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
   // Fallback supaya dummy tetap jalan meski route tanpa :id
   const { id: classIdParam } = useParams<{ id?: string }>();
   const classId = (classIdParam ?? "demo-class").trim() || "demo-class";
 
-  const navigate = useNavigate();
+  /* ✅ Breadcrumb */
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Ujian Saya",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Kelas" },
+        { label: "Ujian" },
+      ],
+      showBack,
+    });
+  }, [setHeader, showBack]);
 
   const [q, setQ] = useState("");
   const qDeferred = useDeferredValue(q);
@@ -381,12 +403,14 @@ export default function StudentExam() {
       {
         label: "Total Ujian",
         metric: sTotal,
-        icon: <ClipboardList className="h-4 w-4" />,
+        icon: <ClipboardList className="h-4 w-4"
+          style={{ color: "hsl(var(--muted-foreground))" }} />,
       },
       {
         label: "Siap Dikerjakan",
         metric: sReady,
-        icon: <Play className="h-4 w-4" />,
+        icon: <Play className="h-4 w-4"
+          style={{ color: "hsl(var(--chart-3))" }} />,
       },
       {
         label: "Berlangsung",
@@ -396,12 +420,15 @@ export default function StudentExam() {
       {
         label: "Selesai",
         metric: sFinished,
-        icon: <CheckCircle2 className="h-4 w-4" />,
+        icon: <CheckCircle2 className="h-4 w-4"
+          style={{ color: "hsl(var(--chart-1))" }} />,
       },
       {
         label: "Lewat",
         metric: sMissed,
-        icon: <AlertCircle className="h-4 w-4" />,
+        icon: <AlertCircle className="h-4 w-4"
+          style={{ color: "hsl(var(--chart-2))" }} />,
+
       },
     ],
     [sTotal, sReady, sOngoing, sFinished, sMissed]
@@ -430,13 +457,20 @@ export default function StudentExam() {
   /* ================= RENDER ================= */
   return (
     <div className="w-full bg-background text-foreground">
-      <main className="w-full px-4 md:px-6 md:py-8">
-        <div className="max-w-screen-2xl mx-auto flex flex-col gap-6">
+      <main className="w-full">
+        <div className="mx-auto flex flex-col gap-6">
           {/* Top bar */}
-          <div className="hidden md:flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
+          <div className="md:flex hidden gap-3 items-center">
+            {showBack && (
+              <Button
+                onClick={handleBack}
+                variant="ghost"
+                size="icon"
+                className="cursor-pointer self-start"
+              >
+                <ArrowLeft size={20} />
+              </Button>
+            )}
             <h1 className="text-lg font-semibold">Ujian Saya</h1>
           </div>
 
@@ -457,350 +491,320 @@ export default function StudentExam() {
             </CardContent>
           </Card>
 
-          {/* Tabs Jenis Ujian */}
-          <Tabs
+          {/* NEW: Segmented Tabs jenis ujian */}
+          <CSegmentedTabs
             value={tabType}
             onValueChange={(v) => setTabType(v as ExamTypeTab)}
-          >
-            <TabsList className="flex flex-wrap gap-2">
-              <TabsTrigger
-                value="ALL"
-                className="data-[state=active]:bg-primary/10"
-              >
-                Semua
-                <Badge variant="outline" className="ml-2">
-                  {view.length}
-                </Badge>
-              </TabsTrigger>
-              <TabsTrigger
-                value="UH"
-                className="data-[state=active]:bg-primary/10"
-              >
-                UH
-                <Badge variant="outline" className="ml-2">
-                  {countsByType.UH}
-                </Badge>
-              </TabsTrigger>
-              <TabsTrigger
-                value="UTS"
-                className="data-[state=active]:bg-primary/10"
-              >
-                UTS
-                <Badge variant="outline" className="ml-2">
-                  {countsByType.UTS}
-                </Badge>
-              </TabsTrigger>
-              <TabsTrigger
-                value="UAS"
-                className="data-[state=active]:bg-primary/10"
-              >
-                UAS
-                <Badge variant="outline" className="ml-2">
-                  {countsByType.UAS}
-                </Badge>
-              </TabsTrigger>
-            </TabsList>
+            className="mt-1"
+            tabs={[
+              {
+                value: "ALL",
+                label: `Semua (${view.length})`,
+              },
+              {
+                value: "UH",
+                label: `UH (${countsByType.UH})`,
+              },
+              {
+                value: "UTS",
+                label: `UTS (${countsByType.UTS})`,
+              },
+              {
+                value: "UAS",
+                label: `UAS (${countsByType.UAS})`,
+              },
+            ]}
+          />
 
-            {/* Stats (tergantung tab/filter) */}
-            <TabsContent value={tabType} className="mt-4">
-              <StatsGrid
-                items={statItems}
-                loading={isFetching}
-                minCardWidth="16rem"
-                mobileCols={2}
-                formatMetric={(n) =>
-                  new Intl.NumberFormat("id-ID", {
-                    notation: "compact",
-                  }).format(n)
-                }
+          {/* Stats (tergantung tab/filter) */}
+          <StatsGrid
+            items={statItems}
+            loading={isFetching}
+            minCardWidth="16rem"
+            mobileCols={2}
+            formatMetric={(n) =>
+              new Intl.NumberFormat("id-ID", {
+                notation: "compact",
+              }).format(n)
+            }
+          />
+
+          {/* Filters */}
+          <Separator />
+          <CardContent className="p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="relative flex-1 max-w-xl">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                className="pl-8"
+                placeholder="Cari judul atau kelas…"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
               />
+            </div>
+            <div className="flex items-center gap-2">
+              <Select
+                value={statusFilter}
+                onValueChange={(v) =>
+                  setStatusFilter(
+                    (v as StudentExamStatus | "all") ?? "all"
+                  )
+                }
+              >
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Status</SelectItem>
+                  <SelectItem value="ready">Siap</SelectItem>
+                  <SelectItem value="ongoing">Berlangsung</SelectItem>
+                  <SelectItem value="finished">Selesai</SelectItem>
+                  <SelectItem value="graded">Dinilai</SelectItem>
+                  <SelectItem value="missed">Lewat Waktu</SelectItem>
+                </SelectContent>
+              </Select>
 
-              {/* Filters */}
-              <Card className="mt-4">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Filter className="h-4 w-4" />
-                    Pencarian & Filter
-                  </CardTitle>
-                </CardHeader>
-                <Separator />
-                <CardContent className="p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                  <div className="relative flex-1 max-w-xl">
-                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      className="pl-8"
-                      placeholder="Cari judul atau kelas…"
-                      value={q}
-                      onChange={(e) => setQ(e.target.value)}
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Select
-                      value={statusFilter}
-                      onValueChange={(v) =>
-                        setStatusFilter(
-                          (v as StudentExamStatus | "all") ?? "all"
-                        )
-                      }
-                    >
-                      <SelectTrigger className="w-[160px]">
-                        <SelectValue placeholder="Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Semua Status</SelectItem>
-                        <SelectItem value="ready">Siap</SelectItem>
-                        <SelectItem value="ongoing">Berlangsung</SelectItem>
-                        <SelectItem value="finished">Selesai</SelectItem>
-                        <SelectItem value="graded">Dinilai</SelectItem>
-                        <SelectItem value="missed">Lewat Waktu</SelectItem>
-                      </SelectContent>
-                    </Select>
+              <Select
+                value={modeFilter}
+                onValueChange={(v) =>
+                  setModeFilter((v as ExamMode | "all") ?? "all")
+                }
+              >
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Mode" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Mode</SelectItem>
+                  <SelectItem value="online">Online</SelectItem>
+                  <SelectItem value="onsite">Onsite</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
 
-                    <Select
-                      value={modeFilter}
-                      onValueChange={(v) =>
-                        setModeFilter((v as ExamMode | "all") ?? "all")
-                      }
-                    >
-                      <SelectTrigger className="w-[140px]">
-                        <SelectValue placeholder="Mode" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Semua Mode</SelectItem>
-                        <SelectItem value="online">Online</SelectItem>
-                        <SelectItem value="onsite">Onsite</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* ===== Desktop Table ===== */}
-              <Card className="hidden md:block mt-4">
-                <CardContent className="p-0">
-                  <Table>
-                    <TableCaption className="text-xs text-muted-foreground">
-                      {isLoading
-                        ? "Memuat data ujian…"
-                        : filtered.length === 0
-                        ? "Tidak ada ujian yang cocok dengan filter."
-                        : undefined}
-                    </TableCaption>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[24%]">Judul</TableHead>
-                        <TableHead className="w-[10%]">Jenis</TableHead>
-                        <TableHead className="w-[12%]">Kelas</TableHead>
-                        <TableHead className="w-[18%]">Waktu</TableHead>
-                        <TableHead className="w-[10%]">Durasi</TableHead>
-                        <TableHead className="w-[12%]">Attempt</TableHead>
-                        <TableHead className="w-[8%]">Mode</TableHead>
-                        <TableHead className="w-[10%]">Status</TableHead>
-                        <TableHead className="w-[10%] text-right">
-                          Aksi
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {isLoading
-                        ? Array.from({ length: 6 }).map((_, i) => (
-                            <TableRow key={i}>
-                              <TableCell colSpan={9}>
-                                <div className="flex items-center gap-2">
-                                  <Skeleton className="h-4 w-1/3" />
-                                  <Skeleton className="h-4 w-24" />
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        : filtered.map((ex) => {
-                            const status = ex._status as StudentExamStatus;
-                            const cta = ctaFor(ex, status);
-                            return (
-                              <TableRow
-                                key={ex.id}
-                                className={
-                                  status === "ongoing" ? "bg-primary/5" : ""
-                                }
-                              >
-                                <TableCell className="font-medium">
-                                  {ex.title}
-                                </TableCell>
-                                <TableCell>
-                                  <Badge variant={typeBadgeVariant[ex.type]}>
-                                    {ex.type}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>{ex.className}</TableCell>
-                                <TableCell>
-                                  {fmtDate(ex.startAt)} – {fmtDate(ex.endAt)}
-                                  {ex.mode === "onsite" && ex.roomName ? (
-                                    <span className="block text-xs text-muted-foreground">
-                                      Ruangan: {ex.roomName}
-                                    </span>
-                                  ) : null}
-                                </TableCell>
-                                <TableCell>{ex.durationMin} m</TableCell>
-                                <TableCell>
-                                  {ex.attemptsUsed}/{ex.attemptsAllowed}
-                                  {ex.lastAttemptAt && (
-                                    <span className="text-xs text-muted-foreground block">
-                                      Terakhir: {fmtDate(ex.lastAttemptAt)}
-                                    </span>
-                                  )}
-                                </TableCell>
-                                <TableCell>
-                                  <Badge variant="secondary">
-                                    {ex.mode === "online" ? "Online" : "Onsite"}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>
-                                  <Badge variant={badgeByStatus[status]}>
-                                    {status.toUpperCase()}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  {status === "missed" ? (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      disabled
-                                    >
-                                      Lewat
-                                    </Button>
-                                  ) : cta.to ? (
-                                    <Link to={cta.to}>
-                                      <Button size="sm">
-                                        {status === "graded" ? (
-                                          <Award className="mr-1 h-4 w-4" />
-                                        ) : status === "ongoing" ? (
-                                          <RotateCcw className="mr-1 h-4 w-4" />
-                                        ) : (
-                                          <Play className="mr-1 h-4 w-4" />
-                                        )}
-                                        {cta.label}
-                                      </Button>
-                                    </Link>
-                                  ) : null}
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-
-              {/* ===== Mobile Card List ===== */}
-              <div className="grid grid-cols-1 gap-4 md:hidden mt-4">
-                {isLoading
-                  ? Array.from({ length: 4 }).map((_, i) => (
-                      <Card key={i}>
-                        <CardContent className="p-4 space-y-3">
-                          <Skeleton className="h-5 w-2/3" />
-                          <Skeleton className="h-4 w-1/2" />
-                          <Skeleton className="h-4 w-1/3" />
-                          <div className="flex gap-2">
-                            <Skeleton className="h-9 w-24" />
+          {/* ===== Desktop Table ===== */}
+          <Card className="hidden md:block mt-4">
+            <CardContent className="p-0">
+              <Table>
+                <TableCaption className="text-xs text-muted-foreground">
+                  {isLoading
+                    ? "Memuat data ujian…"
+                    : filtered.length === 0
+                      ? "Tidak ada ujian yang cocok dengan filter."
+                      : undefined}
+                </TableCaption>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[24%]">Judul</TableHead>
+                    <TableHead className="w-[10%]">Jenis</TableHead>
+                    <TableHead className="w-[12%]">Kelas</TableHead>
+                    <TableHead className="w-[18%]">Waktu</TableHead>
+                    <TableHead className="w-[10%]">Durasi</TableHead>
+                    <TableHead className="w-[12%]">Attempt</TableHead>
+                    <TableHead className="w-[8%]">Mode</TableHead>
+                    <TableHead className="w-[10%]">Status</TableHead>
+                    <TableHead className="w-[10%] text-right">
+                      Aksi
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading
+                    ? Array.from({ length: 6 }).map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell colSpan={9}>
+                          <div className="flex items-center gap-2">
+                            <Skeleton className="h-4 w-1/3" />
+                            <Skeleton className="h-4 w-24" />
                           </div>
-                        </CardContent>
-                      </Card>
+                        </TableCell>
+                      </TableRow>
                     ))
-                  : filtered.map((ex) => {
+                    : filtered.map((ex) => {
                       const status = ex._status as StudentExamStatus;
                       const cta = ctaFor(ex, status);
                       return (
-                        <Card key={ex.id} className="overflow-hidden">
-                          <CardHeader className="pb-2">
-                            <div className="flex items-center justify-between gap-2">
-                              <CardTitle className="text-base font-semibold truncate">
-                                {ex.title}
-                              </CardTitle>
-                              <div className="flex items-center gap-2">
-                                <Badge variant={typeBadgeVariant[ex.type]}>
-                                  {ex.type}
-                                </Badge>
-                                <Badge variant={badgeByStatus[status]}>
-                                  {status.toUpperCase()}
-                                </Badge>
-                              </div>
-                            </div>
-                          </CardHeader>
-                          <Separator />
-                          <CardContent className="p-4 space-y-3">
-                            <div className="text-sm text-muted-foreground flex flex-wrap items-center gap-2">
-                              <span className="inline-flex items-center gap-1">
-                                <CalendarDays className="h-4 w-4" />
-                                {fmtDate(ex.startAt)} – {fmtDate(ex.endAt)}
+                        <TableRow
+                          key={ex.id}
+                          className={
+                            status === "ongoing" ? "bg-primary/5" : ""
+                          }
+                        >
+                          <TableCell className="font-medium">
+                            {ex.title}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={typeBadgeVariant[ex.type]}>
+                              {ex.type}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{ex.className}</TableCell>
+                          <TableCell>
+                            {fmtDate(ex.startAt)} – {fmtDate(ex.endAt)}
+                            {ex.mode === "onsite" && ex.roomName ? (
+                              <span className="block text-xs text-muted-foreground">
+                                Ruangan: {ex.roomName}
                               </span>
-                              <span className="inline-flex items-center gap-1">
-                                <Clock className="h-4 w-4" />
-                                {ex.durationMin} menit
+                            ) : null}
+                          </TableCell>
+                          <TableCell>{ex.durationMin} m</TableCell>
+                          <TableCell>
+                            {ex.attemptsUsed}/{ex.attemptsAllowed}
+                            {ex.lastAttemptAt && (
+                              <span className="text-xs text-muted-foreground block">
+                                Terakhir: {fmtDate(ex.lastAttemptAt)}
                               </span>
-                            </div>
-
-                            <div className="text-sm flex flex-wrap items-center gap-2">
-                              <Badge variant="outline">{ex.className}</Badge>
-                              <Badge variant="secondary">
-                                {ex.mode === "online" ? "Online" : "Onsite"}
-                              </Badge>
-                              {ex.mode === "onsite" && ex.roomName ? (
-                                <Badge variant="outline">
-                                  Ruangan {ex.roomName}
-                                </Badge>
-                              ) : null}
-                              <Badge variant="outline">
-                                {ex.questionCount} Soal
-                              </Badge>
-                              <Badge variant="outline">
-                                {ex.attemptsUsed}/{ex.attemptsAllowed} Attempt
-                              </Badge>
-                              {typeof ex.score === "number" && (
-                                <Badge>
-                                  <Award className="mr-1 h-3.5 w-3.5" />
-                                  {ex.score}
-                                </Badge>
-                              )}
-                            </div>
-
-                            <div className="pt-1 flex items-center gap-2">
-                              {status === "missed" ? (
-                                <Button size="sm" variant="outline" disabled>
-                                  Lewat Waktu
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">
+                              {ex.mode === "online" ? "Online" : "Onsite"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={badgeByStatus[status]}>
+                              {status.toUpperCase()}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {status === "missed" ? (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled
+                              >
+                                Lewat
+                              </Button>
+                            ) : cta.to ? (
+                              <Link to={cta.to}>
+                                <Button size="sm">
+                                  {status === "graded" ? (
+                                    <Award className="mr-1 h-4 w-4" />
+                                  ) : status === "ongoing" ? (
+                                    <RotateCcw className="mr-1 h-4 w-4" />
+                                  ) : (
+                                    <Play className="mr-1 h-4 w-4" />
+                                  )}
+                                  {cta.label}
                                 </Button>
-                              ) : cta.to ? (
-                                <Link to={cta.to}>
-                                  <Button size="sm">
-                                    {status === "graded" ? (
-                                      <Award className="mr-1 h-4 w-4" />
-                                    ) : status === "ongoing" ? (
-                                      <RotateCcw className="mr-1 h-4 w-4" />
-                                    ) : (
-                                      <Play className="mr-1 h-4 w-4" />
-                                    )}
-                                    {cta.label}
-                                  </Button>
-                                </Link>
-                              ) : null}
-                            </div>
-                          </CardContent>
-                        </Card>
+                              </Link>
+                            ) : null}
+                          </TableCell>
+                        </TableRow>
                       );
                     })}
-              </div>
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
 
-              {/* Empty state */}
-              {!isLoading && filtered.length === 0 && (
-                <Card className="mt-4">
-                  <CardContent className="p-6 text-sm text-muted-foreground">
-                    Tidak ada ujian yang cocok dengan filter.
+          {/* ===== Mobile Card List ===== */}
+          <div className="grid grid-cols-1 gap-4 md:hidden mt-4">
+            {isLoading
+              ? Array.from({ length: 4 }).map((_, i) => (
+                <Card key={i}>
+                  <CardContent className="p-4 space-y-3">
+                    <Skeleton className="h-5 w-2/3" />
+                    <Skeleton className="h-4 w-1/2" />
+                    <Skeleton className="h-4 w-1/3" />
+                    <div className="flex gap-2">
+                      <Skeleton className="h-9 w-24" />
+                    </div>
                   </CardContent>
                 </Card>
-              )}
-            </TabsContent>
-          </Tabs>
+              ))
+              : filtered.map((ex) => {
+                const status = ex._status as StudentExamStatus;
+                const cta = ctaFor(ex, status);
+                return (
+                  <Card key={ex.id} className="overflow-hidden">
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <CardTitle className="text-base font-semibold truncate">
+                          {ex.title}
+                        </CardTitle>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={typeBadgeVariant[ex.type]}>
+                            {ex.type}
+                          </Badge>
+                          <Badge variant={badgeByStatus[status]}>
+                            {status.toUpperCase()}
+                          </Badge>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <Separator />
+                    <CardContent className="p-4 space-y-3">
+                      <div className="text-sm text-muted-foreground flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center gap-1">
+                          <CalendarDays className="h-4 w-4" />
+                          {fmtDate(ex.startAt)} – {fmtDate(ex.endAt)}
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <Clock className="h-4 w-4" />
+                          {ex.durationMin} menit
+                        </span>
+                      </div>
+
+                      <div className="text-sm flex flex-wrap items-center gap-2">
+                        <Badge variant="outline">{ex.className}</Badge>
+                        <Badge variant="secondary">
+                          {ex.mode === "online" ? "Online" : "Onsite"}
+                        </Badge>
+                        {ex.mode === "onsite" && ex.roomName ? (
+                          <Badge variant="outline">
+                            Ruangan {ex.roomName}
+                          </Badge>
+                        ) : null}
+                        <Badge variant="outline">
+                          {ex.questionCount} Soal
+                        </Badge>
+                        <Badge variant="outline">
+                          {ex.attemptsUsed}/{ex.attemptsAllowed} Attempt
+                        </Badge>
+                        {typeof ex.score === "number" && (
+                          <Badge>
+                            <Award className="mr-1 h-3.5 w-3.5" />
+                            {ex.score}
+                          </Badge>
+                        )}
+                      </div>
+
+                      <div className="pt-1 flex items-center gap-2">
+                        {status === "missed" ? (
+                          <Button size="sm" variant="outline" disabled>
+                            Lewat Waktu
+                          </Button>
+                        ) : cta.to ? (
+                          <Link to={cta.to}>
+                            <Button size="sm">
+                              {status === "graded" ? (
+                                <Award className="mr-1 h-4 w-4" />
+                              ) : status === "ongoing" ? (
+                                <RotateCcw className="mr-1 h-4 w-4" />
+                              ) : (
+                                <Play className="mr-1 h-4 w-4" />
+                              )}
+                              {cta.label}
+                            </Button>
+                          </Link>
+                        ) : null}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+          </div>
+
+          {/* Empty state */}
+          {!isLoading && filtered.length === 0 && (
+            <Card className="mt-4">
+              <CardContent className="p-6 text-sm text-muted-foreground">
+                Tidak ada ujian yang cocok dengan filter.
+              </CardContent>
+            </Card>
+          )}
         </div>
-      </main>
-    </div>
+      </main >
+    </div >
   );
 }

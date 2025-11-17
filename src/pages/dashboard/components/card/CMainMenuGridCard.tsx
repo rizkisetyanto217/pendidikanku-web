@@ -40,8 +40,8 @@ export default function CMainMenuGridCard({
 
     return (
         <div className="w-full bg-background text-foreground">
-            <div className="pb-3">
-                <h2 className="text-lg font-semibold">{title}</h2>
+            <div className="pb-6">
+                <h2 className="text-lg font-semibold md:text-xl">{title}</h2>
             </div>
 
             <div className={gridClass}>

@@ -1,6 +1,6 @@
 // src/pages/ParentChildDetail.tsx
 import { useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   CalendarDays,
@@ -10,6 +10,7 @@ import {
   GraduationCap,
   Hash,
   School,
+  ArrowLeft,
 } from "lucide-react";
 
 /* Tambahan untuk breadcrumb sistem dashboard */
@@ -350,7 +351,15 @@ async function fetchProgramDetail(): Promise<ProgramDetail> {
 }
 
 /* ===================== Page ===================== */
-export default function StudentProgress() {
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
+
+
+export default function StudentProgress({
+  showBack = false,
+  backTo,
+}: Props) {
+  const navigate = useNavigate();
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
   const { data } = useQuery({
     queryKey: ["diploma-program-detail"],
     queryFn: fetchProgramDetail,
@@ -367,9 +376,9 @@ export default function StudentProgress() {
         { label: "Dashboard", href: "dashboard" },
         { label: "Progress" },
       ],
-      actions: null,
+      showBack,
     });
-  }, [setHeader]);
+  }, [setHeader, showBack]);
 
   const s = data?.student;
   const sum = data?.summary;
@@ -387,6 +396,20 @@ export default function StudentProgress() {
     <div className="w-full bg-background text-foreground">
       <main className="w-full">
         <div className="mx-auto flex flex-col gap-6">
+          {/* Header Back seperti SchoolAcademic */}
+          <div className="md:flex hidden gap-3 items-center">
+            {showBack && (
+              <Button
+                onClick={handleBack}
+                variant="ghost"
+                size="icon"
+                className="cursor-pointer self-start"
+              >
+                <ArrowLeft size={20} />
+              </Button>
+            )}
+            <h1 className="font-semibold text-lg md:text-xl">Progress Akademik</h1>
+          </div>
           {/* ==== Header: Identitas Mahasiswa & Ringkas Program ==== */}
           <Card>
             <CardContent className="p-4 md:p-5">

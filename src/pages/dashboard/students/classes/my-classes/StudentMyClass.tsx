@@ -35,11 +35,11 @@ import { cn } from "@/lib/utils";
 const dateLong = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        weekday: "long",
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      })
+      weekday: "long",
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    })
     : "-";
 
 const isSameDay = (iso?: string) => {
@@ -117,12 +117,12 @@ const ENROLLED: EnrolledClass[] = [
 const ZOOM_INFO: Record<
   string,
   | {
-      url: string;
-      topic: string;
-      meetingId: string;
-      passcode: string;
-      startAtLabel: string;
-    }
+    url: string;
+    topic: string;
+    meetingId: string;
+    passcode: string;
+    startAtLabel: string;
+  }
   | undefined
 > = {
   tahsin: {
@@ -141,10 +141,31 @@ const ZOOM_INFO: Record<
   },
 };
 
-export default function StudentMyClass() {
+
+/* ===================== Page ===================== */
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
+
+export default function StudentMyClass({
+  showBack = false,
+  backTo,
+}: Props) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
   const base = `/${slug}/murid`;
+
+  /* Breadcrumb/title */
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader?.({
+      title: "Kelas Saya",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Kelas Saya" },
+      ],
+      showBack,
+    });
+  }, [setHeader, showBack]);
 
   const [q, setQ] = useState("");
   const list = useMemo(() => {
@@ -166,29 +187,23 @@ export default function StudentMyClass() {
     (c) => !isSameDay(c.nextSession?.dateISO)
   );
 
-  /* Breadcrumb/title */
-  const { setHeader } = useDashboardHeader();
-  useEffect(() => {
-    setHeader?.({
-      title: "Kelas Saya",
-      breadcrumbs: [
-        { label: "Dashboard", href: "dashboard" },
-        { label: "Kelas Saya" },
-      ],
-      actions: null,
-    });
-  }, [setHeader]);
-
   return (
     <div className="w-full bg-background text-foreground">
       <main className="w-full">
         <div className="mx-auto flex flex-col gap-6">
           {/* Back + title */}
           <div className="md:flex hidden gap-3 items-center">
-            <Button variant="ghost" onClick={() => navigate(-1)}>
-              <ArrowLeft size={20} />
-            </Button>
-            <h1 className="text-lg font-semibold">Daftar Kelas</h1>
+            {showBack && (
+              <Button
+                onClick={handleBack}
+                variant="ghost"
+                size="icon"
+                className="cursor-pointer self-start"
+              >
+                <ArrowLeft size={20} />
+              </Button>
+            )}
+            <h1 className="text-lg font-semibold md:text-xl">Kelas Yang Saya Ajar</h1>
           </div>
 
           {/* Search */}

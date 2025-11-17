@@ -1,3 +1,4 @@
+// src/pages/sekolahislamku/teacher/TeacherClassFromSections.tsx
 import { useMemo, useState, useDeferredValue, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -20,13 +21,89 @@ import {
   ArrowLeft,
   ChevronRight,
   Search,
+  AlertTriangle,
 } from "lucide-react";
+
+/* axios + token helper */
+import axios, { getAccessToken } from "@/lib/axios";
 
 /* Tambahan untuk breadcrumb sistem dashboard */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* ==========================================================
-   Types
+   Types API
+========================================================== */
+
+type ApiClassRoomSnapshot = {
+  name?: string | null;
+  slug?: string | null;
+  join_url?: string | null;
+  platform?: string | null;
+  is_virtual?: boolean | null;
+};
+
+type ApiTeacherSnapshot = {
+  name?: string | null;
+  title_prefix?: string | null;
+  title_suffix?: string | null;
+  whatsapp_url?: string | null;
+};
+
+type ApiClassSectionItem = {
+  class_section_id: string;
+  class_section_school_id: string;
+  class_section_class_id: string;
+  class_section_slug: string;
+  class_section_name: string;
+  class_section_code: string;
+  class_section_schedule: string | null;
+  class_section_capacity: number | null;
+  class_section_total_students: number;
+  class_section_group_url: string | null;
+  class_section_image_url: string | null;
+  class_section_image_object_key: string | null;
+  class_section_image_url_old: string | null;
+  class_section_image_object_key_old: string | null;
+  class_section_image_delete_pending_until: string | null;
+  class_section_is_active: boolean;
+  class_section_created_at: string;
+  class_section_updated_at: string;
+  class_section_class_name_snapshot: string;
+  class_section_class_slug_snapshot: string;
+  class_section_class_parent_id: string;
+  class_section_class_parent_name_snapshot: string;
+  class_section_class_parent_slug_snapshot: string;
+  class_section_class_parent_level_snapshot: number;
+  class_section_school_teacher_id: string;
+  class_section_school_teacher_snapshot?: ApiTeacherSnapshot | null;
+  class_section_class_room_id: string | null;
+  class_section_class_room_slug_snapshot: string | null;
+  class_section_class_room_name_snapshot: string | null;
+  class_section_class_room_snapshot?: ApiClassRoomSnapshot | null;
+  class_section_academic_term_id: string | null;
+  class_section_snapshot_updated_at: string;
+  class_section_subject_teachers_enrollment_mode: string | null;
+  class_section_subject_teachers_self_select_requires_approval: boolean;
+};
+
+type ApiClassSectionListResponse = {
+  success: boolean;
+  message: string;
+  data: ApiClassSectionItem[];
+  pagination: {
+    page: number;
+    per_page: number;
+    total: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+    count: number;
+    per_page_options: number[];
+  };
+};
+
+/* ==========================================================
+   View Model untuk UI
 ========================================================== */
 export type SectionRow = {
   id: string;
@@ -47,64 +124,95 @@ export type SectionRow = {
 };
 
 /* ==========================================================
-   Dummy Data
+   JWT Helper: ambil teacher_id dari token
 ========================================================== */
-const DUMMY_SECTIONS: SectionRow[] = [
-  {
-    id: crypto.randomUUID(),
-    schoolId: "00000000-0000-0000-0000-000000000001",
-    name: "TPA A",
-    slug: "tpa-a",
-    code: "A-01",
-    roomName: "Aula 1",
-    roomLocation: "Gedung Utama Lt.1",
-    homeroomName: "Ustadz Abdullah",
-    assistantName: "Ustadzah Amina",
-    termName: "2025/2026 — Ganjil",
-    termYearLabel: "2025/2026",
-    scheduleText: "Senin & Rabu 07:30–09:00",
-    totalStudents: 22,
-    isActive: true,
-  },
-  {
-    id: crypto.randomUUID(),
-    schoolId: "00000000-0000-0000-0000-000000000001",
-    name: "TPA B",
-    slug: "tpa-b",
-    code: "B-01",
-    roomName: "R. Tahfiz",
-    roomLocation: "Gedung Timur",
-    homeroomName: "Ustadz Salman",
-    assistantName: "Ustadzah Maryam",
-    termName: "2025/2026 — Ganjil",
-    termYearLabel: "2025/2026",
-    scheduleText: "Selasa & Kamis 09:30–11:00",
-    totalStudents: 20,
-    isActive: true,
-  },
-  {
-    id: crypto.randomUUID(),
-    schoolId: "00000000-0000-0000-0000-000000000001",
-    name: "TPA C",
-    slug: "tpa-c",
-    code: "C-01",
-    roomName: "Aula 2",
-    homeroomName: "Ustadz Abu Bakar",
-    assistantName: "",
-    termName: "2024/2025 — Genap",
-    termYearLabel: "2024/2025",
-    scheduleText: "Jumat 08:00–09:30",
-    totalStudents: 18,
-    isActive: false,
-  },
-];
+
+function parseJwt(token: string): any | null {
+  try {
+    const [, payload] = token.split(".");
+    if (!payload) return null;
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const json = atob(base64);
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
+
+function getTeacherIdFromToken(): string | null {
+  const token = getAccessToken();
+  if (!token) return null;
+  const payload = parseJwt(token);
+  if (!payload) return null;
+
+  // sesuaikan dengan claim yang kamu pakai di backend
+  return (
+    payload.school_teacher_id || payload.teacher_id || payload.teacherID || null
+  );
+}
 
 /* ==========================================================
-   Fetch (Dummy)
+   Fetch dari API /u/class-sections/list?teacher_id=
 ========================================================== */
+
 async function fetchSections(): Promise<SectionRow[]> {
-  await new Promise((r) => setTimeout(r, 250));
-  return DUMMY_SECTIONS.map((x) => ({ ...x }));
+  const teacherId = getTeacherIdFromToken();
+  if (!teacherId) {
+    throw new Error("Tidak dapat membaca teacher_id dari token.");
+  }
+
+  const res = await axios.get<ApiClassSectionListResponse>(
+    "/u/class-sections/list",
+    {
+      params: {
+        teacher_id: teacherId,
+      },
+    }
+  );
+
+  const items = res.data?.data ?? [];
+
+  const mapped: SectionRow[] = items.map((it) => {
+    const teacher = it.class_section_school_teacher_snapshot;
+    const roomSnap = it.class_section_class_room_snapshot;
+
+    const homeroomName =
+      teacher?.name ?? it.class_section_school_teacher_id ?? undefined;
+
+    const termName = it.class_section_class_parent_name_snapshot || undefined;
+
+    const termYearLabel =
+      termName && /\d{4}\/\d{4}/.test(termName)
+        ? termName.match(/\d{4}\/\d{4}/)?.[0] ?? undefined
+        : undefined;
+
+    const scheduleText =
+      it.class_section_schedule ??
+      (roomSnap?.is_virtual ? "Kelas daring (jadwal belum diatur)" : undefined);
+
+    return {
+      id: it.class_section_id,
+      schoolId: it.class_section_school_id,
+      name: it.class_section_name,
+      slug: it.class_section_slug,
+      code: it.class_section_code,
+      roomName:
+        it.class_section_class_room_name_snapshot ??
+        roomSnap?.name ??
+        undefined,
+      roomLocation: roomSnap?.platform ?? undefined,
+      homeroomName,
+      assistantName: undefined,
+      termName,
+      termYearLabel,
+      scheduleText: scheduleText ?? undefined,
+      totalStudents: it.class_section_total_students ?? 0,
+      isActive: it.class_section_is_active,
+      createdAt: it.class_section_created_at,
+    };
+  });
+
+  return mapped;
 }
 
 function useSections() {
@@ -172,9 +280,14 @@ function useFilters(rows: SectionRow[]) {
     if (active === "active") list = list.filter((r) => r.isActive);
     if (active === "inactive") list = list.filter((r) => !r.isActive);
 
-    if (sortBy === "name") list = [...list].sort((a, b) => a.name.localeCompare(b.name));
-    if (sortBy === "students") list = [...list].sort((a, b) => b.totalStudents - a.totalStudents);
-    if (sortBy === "created") list = [...list].reverse();
+    if (sortBy === "name")
+      list = [...list].sort((a, b) => a.name.localeCompare(b.name));
+    if (sortBy === "students")
+      list = [...list].sort((a, b) => b.totalStudents - a.totalStudents);
+    if (sortBy === "created")
+      list = [...list].sort((a, b) =>
+        (b.createdAt ?? "").localeCompare(a.createdAt ?? "")
+      );
 
     return list;
   }, [rows, dq, term, room, active, sortBy]);
@@ -259,7 +372,7 @@ function SectionCard({ s }: { s: SectionRow }) {
 ========================================================== */
 export default function TeacherClassFromSections() {
   const navigate = useNavigate();
-  const { data: sections = [], isLoading } = useSections();
+  const { data: sections = [], isLoading, isError, error } = useSections();
   const f = useFilters(sections);
 
   /* Atur breadcrumb dan title seperti SchoolAcademic */
@@ -276,9 +389,43 @@ export default function TeacherClassFromSections() {
     });
   }, [setHeader]);
 
+  if (isLoading) {
+    return (
+      <div className="w-full bg-background text-foreground">
+        <main className="mx-auto max-w-5xl px-3 py-10 md:px-4">
+          <div className="flex items-center justify-center gap-2 text-muted-foreground">
+            <CalendarDays className="h-4 w-4 animate-spin" />
+            Memuat kelas yang Anda ajar…
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="w-full bg-background text-foreground">
+        <main className="mx-auto max-w-5xl px-3 py-10 md:px-4 space-y-3">
+          <div className="flex items-center gap-2 text-destructive">
+            <AlertTriangle className="h-5 w-5" />
+            <span>Gagal memuat data kelas.</span>
+          </div>
+          <div className="text-xs text-muted-foreground break-all">
+            {(error as any)?.message ??
+              "Periksa koneksi atau coba beberapa saat lagi."}
+          </div>
+          <Button variant="outline" onClick={() => navigate(-1)}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Kembali
+          </Button>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full bg-background text-foreground">
-      <main className="mx-auto space-y-6">
+      <main className="mx-auto max-w-5xl space-y-6 px-3 pb-10 pt-4 md:px-4">
         {/* Header Section */}
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
@@ -355,14 +502,10 @@ export default function TeacherClassFromSections() {
 
         {/* Grid */}
         <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
-          {isLoading ? (
-            Array.from({ length: 4 }).map((_, i) => (
-              <Card key={i} className="p-4 h-[160px] animate-pulse" />
-            ))
-          ) : f.filtered.length ? (
+          {f.filtered.length ? (
             f.filtered.map((s) => <SectionCard key={s.id} s={s} />)
           ) : (
-            <Card className="col-span-2 md:col-span-3 lg:col-span-4 p-10 text-center">
+            <Card className="col-span-2 p-10 text-center">
               Tidak ada kelas ditemukan.
             </Card>
           )}

@@ -1,4 +1,4 @@
-// src/pages/dashboard/school/classes/class-list/section/SchoolSectionCSSTDetail.tsx
+// src/pages/dashboard/school/classes/section/SchoolCSSTDetail.tsx
 import { useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";

@@ -1,293 +1,329 @@
-// src/pages/sekolahislamku/teacher/DetailClass.tsx
-import { useMemo, useEffect } from "react";
-import { useLocation, useParams, Link, useNavigate } from "react-router-dom";
+// src/pages/sekolahislamku/teacher/TeacherCSStDetail.tsx
+import { useEffect, useMemo } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import axios from "@/lib/axios";
 
 /* shadcn/ui */
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
 
 /* icons */
 import {
   Users,
   CalendarDays,
-  Clock,
-  ClipboardList,
   BookOpen,
-  ClipboardCheck,
-  GraduationCap,
   ChevronRight,
   ArrowLeft,
+  CheckCircle2,
+  ClipboardList,
+  GraduationCap,
   UserSquare2,
 } from "lucide-react";
 
-/* Tambahan untuk breadcrumb sistem dashboard */
+/* dashboard header */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+import type { AxiosError } from "axios";
 
-/* ===== Helpers & Types ===== */
-type AttendanceStatus = "hadir" | "sakit" | "izin" | "alpa" | "online";
+/* ========= Types dari API /u/class-section-subject-teachers/list ========= */
 
-const dateShort = (iso?: string) =>
-  iso
-    ? new Date(iso).toLocaleDateString("id-ID", {
-      day: "2-digit",
-      month: "short",
-    })
-    : "-";
+type DeliveryMode = "offline" | "online" | "hybrid" | string;
 
-type NextSession = {
-  dateISO: string;
-  time: string;
-  title: string;
-  room?: string;
+type ApiTeacherSnapshot = {
+  id?: string | null;
+  name?: string | null;
+  avatar_url?: string | null;
+  title_prefix?: string | null;
+  title_suffix?: string | null;
+  whatsapp_url?: string | null;
 };
 
-type TeacherClassSummary = {
-  id: string;
-  name: string;
-  room?: string;
-  homeroom: string;
-  assistants?: string[];
-  studentsCount: number;
-  todayAttendance: Record<AttendanceStatus, number>;
-  nextSession?: NextSession;
-  materialsCount: number;
-  assignmentsCount: number;
-  academicTerm: string;
-  cohortYear: number;
+type ApiBookSnapshot = {
+  id?: string | null;
+  slug?: string | null;
+  title?: string | null;
+  author?: string | null;
+  image_url?: string | null;
 };
 
-/* ===== Dummy fetch ===== */
-import {
-  fetchStudentsByClasses,
-  type ClassStudentsMap,
-  type StudentSummary,
-} from "../types/teacherClass";
+type ApiSubjectSnapshot = {
+  id?: string | null;
+  url?: string | null;
+  code?: string | null;
+  name?: string | null;
+  slug?: string | null;
+};
 
-async function fetchTeacherClasses(): Promise<TeacherClassSummary[]> {
-  const now = new Date();
-  const mk = (d: Date, addDay = 0) => {
-    const x = new Date(d);
-    x.setDate(x.getDate() + addDay);
-    return x.toISOString();
+type ApiClassSubjectBookSnapshot = {
+  book?: ApiBookSnapshot | null;
+  subject?: ApiSubjectSnapshot | null;
+};
+
+type ApiCSSTItem = {
+  class_section_subject_teacher_id: string;
+  class_section_subject_teacher_school_id: string;
+  class_section_subject_teacher_slug: string;
+  class_section_subject_teacher_total_attendance: number;
+  class_section_subject_teacher_enrolled_count: number;
+  class_section_subject_teacher_delivery_mode: DeliveryMode;
+  class_section_subject_teacher_class_section_id: string;
+  class_section_subject_teacher_class_section_slug_snapshot: string;
+  class_section_subject_teacher_class_section_name_snapshot: string;
+  class_section_subject_teacher_class_section_code_snapshot: string;
+  class_section_subject_teacher_school_teacher_id: string;
+  class_section_subject_teacher_school_teacher_snapshot?: ApiTeacherSnapshot | null;
+  class_section_subject_teacher_school_teacher_name_snapshot?: string | null;
+  class_section_subject_teacher_class_subject_book_id: string | null;
+  class_section_subject_teacher_class_subject_book_snapshot?: ApiClassSubjectBookSnapshot | null;
+  class_section_subject_teacher_book_title_snapshot?: string | null;
+  class_section_subject_teacher_book_author_snapshot?: string | null;
+  class_section_subject_teacher_book_slug_snapshot?: string | null;
+  class_section_subject_teacher_book_image_url_snapshot?: string | null;
+  class_section_subject_teacher_subject_name_snapshot?: string | null;
+  class_section_subject_teacher_subject_code_snapshot?: string | null;
+  class_section_subject_teacher_subject_slug_snapshot?: string | null;
+  class_section_subject_teacher_is_active: boolean;
+  class_section_subject_teacher_created_at: string;
+  class_section_subject_teacher_updated_at: string;
+  class_section_subject_teacher_deleted_at?: string | null;
+};
+
+type ApiCSSTDetailResponse = {
+  success: boolean;
+  message: string;
+  data: ApiCSSTItem[];
+  pagination: {
+    page: number;
+    per_page: number;
+    total: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+    count: number;
+    per_page_options: number[];
   };
-  return [
-    {
-      id: "tpa-a",
-      name: "TPA A",
-      room: "Aula 1",
-      homeroom: "Ustadz Abdullah",
-      assistants: ["Ustadzah Amina"],
-      studentsCount: 22,
-      todayAttendance: { hadir: 18, online: 1, sakit: 1, izin: 1, alpa: 1 },
-      nextSession: {
-        dateISO: mk(now, 0),
-        time: "07:30",
-        title: "Tahsin — Tajwid & Makhraj",
-        room: "Aula 1",
-      },
-      materialsCount: 12,
-      assignmentsCount: 4,
-      academicTerm: "2025/2026 — Ganjil",
-      cohortYear: 2025,
-    },
-    {
-      id: "tpa-b",
-      name: "TPA B",
-      room: "R. Tahfiz",
-      homeroom: "Ustadz Salman",
-      assistants: ["Ustadzah Maryam"],
-      studentsCount: 20,
-      todayAttendance: { hadir: 15, online: 2, sakit: 1, izin: 1, alpa: 1 },
-      nextSession: {
-        dateISO: mk(now, 1),
-        time: "09:30",
-        title: "Hafalan Juz 30",
-        room: "R. Tahfiz",
-      },
-      materialsCount: 9,
-      assignmentsCount: 3,
-      academicTerm: "2025/2026 — Ganjil",
-      cohortYear: 2025,
-    },
-    {
-      id: "tpa-c",
-      name: "TPA C",
-      room: "Aula 2",
-      homeroom: "Ustadz Abu Bakar",
-      assistants: [],
-      studentsCount: 18,
-      todayAttendance: { hadir: 14, online: 0, sakit: 2, izin: 1, alpa: 1 },
-      nextSession: {
-        dateISO: mk(now, 2),
-        time: "08:00",
-        title: "Latihan Makhraj",
-        room: "Aula 2",
-      },
-      materialsCount: 7,
-      assignmentsCount: 2,
-      academicTerm: "2024/2025 — Genap",
-      cohortYear: 2024,
-    },
-  ];
-}
-
-/* ===== Query Keys ===== */
-const QK = {
-  CLASSES: ["teacher-classes-list"] as const,
-  CLASS_STUDENTS: (id: string) => ["teacher-class-students", id] as const,
 };
 
-/* ===== Page ===== */
-type LocationState = {
-  academicTerm?: string;
-  cohortYear?: number;
-  clsOverride?: Partial<TeacherClassSummary>;
+/* View model kecil untuk header */
+type SectionView = {
+  sectionId: string;
+  sectionName: string;
+  sectionSlug: string;
+  sectionCode: string;
 };
 
-export default function TeacherCSSTDetail() {
-  const { id = "" } = useParams<{ id: string }>();
+type CsstView = {
+  id: string;
+  slug: string;
+  subjectName: string;
+  subjectCode?: string | null;
+  subjectSlug?: string | null;
+  teacherName: string;
+  teacherTitle?: string;
+  deliveryMode: DeliveryMode;
+  enrolledCount: number;
+  totalAttendance: number;
+  isActive: boolean;
+  bookTitle?: string | null;
+  bookAuthor?: string | null;
+  bookImageUrl?: string | null;
+};
+
+/* ========== Utils kecil ========== */
+
+const extractErrorMessage = (err: unknown): string => {
+  const ax = err as AxiosError<any>;
+  const msgFromResp =
+    ax?.response?.data?.message ||
+    ax?.response?.data?.error ||
+    ax?.response?.statusText;
+  if (msgFromResp) return String(msgFromResp);
+  if (ax?.message) return ax.message;
+  return "Terjadi kesalahan saat memuat data.";
+};
+
+const formatDeliveryMode = (m: DeliveryMode | undefined) => {
+  if (!m) return "-";
+  switch (m) {
+    case "offline":
+      return "Offline";
+    case "online":
+      return "Online";
+    case "hybrid":
+      return "Hybrid";
+    default:
+      return String(m).replace(/_/g, " ");
+  }
+};
+
+/* ========== Page ========== */
+
+const TeacherCSSTDetail: React.FC = () => {
+  const { csstId, teacherId } = useParams<{
+    csstId: string;
+    teacherId?: string;
+  }>();
+
   const navigate = useNavigate();
-  const location = useLocation() as { state?: LocationState };
-
-  /* Atur breadcrumb dan title seperti SchoolAcademic */
   const { setHeader } = useDashboardHeader();
 
+  /* ===== Query detail CSST (pakai API yang kamu kasih) ===== */
+  const csstQ = useQuery<ApiCSSTItem | undefined, AxiosError>({
+    queryKey: ["teacher-csst-detail", csstId, teacherId],
+    enabled: !!csstId,
+    queryFn: async () => {
+      const res = await axios.get<ApiCSSTDetailResponse>(
+        "/u/class-section-subject-teachers/list",
+        {
+          params: {
+            id: csstId,
+            ...(teacherId ? { teacher_id: teacherId } : {}),
+          },
+        }
+      );
+      const items = res.data?.data ?? [];
+      return items[0];
+    },
+    staleTime: 60_000,
+  });
+
+  const csstError: string | null = csstQ.isError
+    ? extractErrorMessage(csstQ.error)
+    : null;
+
+  /* ===== Derive view models dari API ===== */
+  const sectionView: SectionView | null = useMemo(() => {
+    const it = csstQ.data;
+    if (!it) return null;
+    return {
+      sectionId: it.class_section_subject_teacher_class_section_id,
+      sectionName: it.class_section_subject_teacher_class_section_name_snapshot,
+      sectionSlug: it.class_section_subject_teacher_class_section_slug_snapshot,
+      sectionCode: it.class_section_subject_teacher_class_section_code_snapshot,
+    };
+  }, [csstQ.data]);
+
+  const csstView: CsstView | null = useMemo(() => {
+    const it = csstQ.data;
+    if (!it) return null;
+
+    const teacher = it.class_section_subject_teacher_school_teacher_snapshot;
+    const teacherName =
+      it.class_section_subject_teacher_school_teacher_name_snapshot ||
+      teacher?.name ||
+      "-";
+
+    const teacherTitleParts = [
+      teacher?.title_prefix ?? "",
+      teacher?.title_suffix ?? "",
+    ]
+      .map((x) => x?.trim())
+      .filter(Boolean);
+    const teacherTitle =
+      teacherTitleParts.length > 0 ? teacherTitleParts.join(" ") : undefined;
+
+    const csBook = it.class_section_subject_teacher_class_subject_book_snapshot;
+    const subj = csBook?.subject;
+    const book = csBook?.book;
+
+    const subjectName =
+      it.class_section_subject_teacher_subject_name_snapshot ||
+      subj?.name ||
+      "Mata pelajaran tanpa nama";
+
+    const subjectCode =
+      it.class_section_subject_teacher_subject_code_snapshot ||
+      subj?.code ||
+      null;
+
+    const subjectSlug =
+      it.class_section_subject_teacher_subject_slug_snapshot ||
+      subj?.slug ||
+      null;
+
+    const bookTitle =
+      it.class_section_subject_teacher_book_title_snapshot ||
+      book?.title ||
+      null;
+
+    const bookAuthor =
+      it.class_section_subject_teacher_book_author_snapshot ||
+      book?.author ||
+      null;
+
+    const bookImageUrl =
+      it.class_section_subject_teacher_book_image_url_snapshot ||
+      book?.image_url ||
+      null;
+
+    return {
+      id: it.class_section_subject_teacher_id,
+      slug: it.class_section_subject_teacher_slug,
+      subjectName,
+      subjectCode,
+      subjectSlug,
+      teacherName,
+      teacherTitle,
+      deliveryMode: it.class_section_subject_teacher_delivery_mode,
+      enrolledCount: it.class_section_subject_teacher_enrolled_count,
+      totalAttendance: it.class_section_subject_teacher_total_attendance,
+      isActive: it.class_section_subject_teacher_is_active,
+      bookTitle,
+      bookAuthor,
+      bookImageUrl,
+    };
+  }, [csstQ.data]);
+
+  /* ===== Set header dashboard ===== */
   useEffect(() => {
+    if (!csstView) return;
     setHeader({
-      title: "Detail Mapel",
+      title: `Detail Mapel`,
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Guru Mapel" },
-        { label: "Detail Mapel" },
+        { label: csstView.subjectName },
       ],
       actions: null,
     });
-  }, [setHeader]);
+  }, [csstView, setHeader]);
 
-  // 1) Kelas
-  const { data: classes = [], isLoading: isLoadingClasses } = useQuery({
-    queryKey: QK.CLASSES,
-    queryFn: fetchTeacherClasses,
-    staleTime: 5 * 60_000,
-  });
+  /* ===== Loading & error ===== */
+  if (csstQ.isLoading) {
+    return (
+      <div className="flex h-full items-center justify-center text-muted-foreground gap-2">
+        Memuat detail mapel…
+      </div>
+    );
+  }
 
-  // Ambil dari API dulu; kalau tidak ada, pakai state override dari list
-  const cls = useMemo<TeacherClassSummary | undefined>(() => {
-    const found = classes.find((c) => c.id === id);
-    if (found) return found;
+  if (csstError || !csstView || !sectionView) {
+    const msg = csstError ?? "Data mapel tidak ditemukan.";
+    return (
+      <div className="p-6 space-y-3">
+        <div className="text-destructive text-sm">
+          Gagal memuat detail mapel.
+        </div>
+        <div className="text-xs text-muted-foreground break-all">{msg}</div>
+        <Button variant="outline" onClick={() => navigate(-1)}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Kembali
+        </Button>
+      </div>
+    );
+  }
 
-    const ov = location.state?.clsOverride;
-    if (!ov) return undefined;
+  /* ===== Render utama (semua sudah pure dari API) ===== */
 
-    return {
-      id: ov.id ?? id,
-      name: ov.name ?? "—",
-      room: ov.room ?? "-",
-      homeroom: "—",
-      assistants: ov.assistants ?? [],
-      studentsCount: ov.studentsCount ?? 0,
-      todayAttendance: ov.todayAttendance ?? {
-        hadir: 0,
-        online: 0,
-        sakit: 0,
-        izin: 0,
-        alpa: 0,
-      },
-      nextSession: ov.nextSession,
-      materialsCount: ov.materialsCount ?? 0,
-      assignmentsCount: ov.assignmentsCount ?? 0,
-      academicTerm: ov.academicTerm ?? location.state?.academicTerm ?? "—",
-      cohortYear:
-        ov.cohortYear ?? location.state?.cohortYear ?? new Date().getFullYear(),
-    };
-  }, [classes, id, location.state]);
-
-  // 2) Siswa per kelas
-  const { data: studentsMap = {}, isLoading: isLoadingStudents } = useQuery({
-    queryKey: QK.CLASS_STUDENTS(id),
-    queryFn: () => fetchStudentsByClasses(id ? [id] : []),
-    enabled: !!id,
-    staleTime: 5 * 60_000,
-  });
-
-  const students: StudentSummary[] =
-    (studentsMap as ClassStudentsMap)[id] ?? [];
-
-  // 3) Angka untuk kartu
-  const fallbackTotal = cls?.studentsCount ?? 0;
-  const total = students.length || fallbackTotal;
-  const hadir = cls?.todayAttendance?.hadir ?? 0;
-
-  const loadingAny = isLoadingClasses || isLoadingStudents;
-
-  // 4) Quick links (relative to /guru/kelas/:id)
-  const quick = [
-    {
-      key: "murid",
-      label: "Jumlah Murid",
-      metric: total.toString(),
-      icon: <Users className="h-4 w-4" />,
-      to: "murid",
-      aria: "Lihat daftar murid",
-    },
-    {
-      key: "kehadiran",
-      label: "Kehadiran Hari Ini",
-      metric: `${hadir}/${total || 0}`,
-      icon: <ClipboardList className="h-4 w-4" />,
-      to: "absensi-hari-ini",
-      aria: "Lihat kehadiran hari ini",
-    },
-    {
-      key: "materi",
-      label: "Materi",
-      metric: `${cls?.materialsCount ?? 0}`,
-      icon: <BookOpen className="h-4 w-4" />,
-      to: "materi",
-      aria: "Lihat materi",
-    },
-    {
-      key: "tugas",
-      label: "Tugas",
-      metric: `${cls?.assignmentsCount ?? 0}`,
-      icon: <ClipboardCheck className="h-4 w-4" />,
-      to: "tugas",
-      aria: "Lihat tugas",
-    },
-    {
-      key: "ujian",
-      label: "Ujian",
-      metric: `${cls?.assignmentsCount ?? 0}`,
-      icon: <GraduationCap className="h-4 w-4" />,
-      to: "ujian",
-      aria: "Lihat ujian",
-    },
-    {
-      key: "buku",
-      label: "Buku",
-      metric: "-",
-      icon: <BookOpen className="h-4 w-4" />,
-      to: "buku",
-      aria: "Lihat buku kelas",
-    },
-    {
-      key: "profil",
-      label: "Profil",
-      metric: "-",
-      icon: <UserSquare2 className="h-4 w-4" />,
-      to: "profil",
-      aria: "Lihat profil kelas",
-    },
-  ] as const;
+  const totalStudents = csstView.enrolledCount ?? 0;
+  const totalMeetings = csstView.totalAttendance ?? 0;
 
   return (
     <div className="w-full bg-background text-foreground">
       <main className="w-full">
-        <div className="mx-auto flex flex-col gap-6">
+        <div className="mx-auto flex flex-col gap-6 px-3 pb-10 pt-2 md:px-4">
           {/* Top bar */}
           <div className="hidden md:flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
@@ -296,106 +332,254 @@ export default function TeacherCSSTDetail() {
             <h1 className="text-lg font-semibold">Detail Mapel</h1>
           </div>
 
-          {/* Header */}
+          {/* Header mapel */}
           <Card>
             <CardContent className="p-4 md:p-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div className="min-w-0">
                 <div className="text-lg md:text-xl font-semibold">
-                  {loadingAny ? (
-                    <Skeleton className="h-5 w-48" />
-                  ) : (
-                    cls?.name ?? "—"
-                  )}
+                  {csstView.subjectName}
                 </div>
 
                 <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                  <Badge variant="outline">{cls?.room ?? "-"}</Badge>
-                  <span>Wali Kelas: {cls?.homeroom ?? "—"}</span>
-                  <span>• {cls?.academicTerm ?? "—"}</span>
-                  <span>• Angkatan {cls?.cohortYear ?? "—"}</span>
+                  <Badge variant="outline">{sectionView.sectionName}</Badge>
+                  <span>
+                    Kode kelas:{" "}
+                    <span className="font-mono">{sectionView.sectionCode}</span>
+                  </span>
+                  <span>•</span>
+                  <span>
+                    Guru:{" "}
+                    <span className="font-medium">
+                      {csstView.teacherTitle
+                        ? `${csstView.teacherTitle} ${csstView.teacherName}`
+                        : csstView.teacherName}
+                    </span>
+                  </span>
+                </div>
+
+                <div className="mt-1 text-xs text-muted-foreground flex flex-wrap gap-3">
+                  <span>
+                    Slug CSST:{" "}
+                    <span className="font-mono">{csstView.slug}</span>
+                  </span>
+                  {csstView.subjectSlug && (
+                    <span>
+                      Slug mapel:{" "}
+                      <span className="font-mono">{csstView.subjectSlug}</span>
+                    </span>
+                  )}
+                  <span>
+                    Section slug:{" "}
+                    <span className="font-mono">{sectionView.sectionSlug}</span>
+                  </span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 flex-wrap">
-                <Link to="absensi-hari-ini">
-                  <Button size="sm" variant="secondary">
-                    Absensi Hari Ini <ChevronRight className="ml-1 h-4 w-4" />
-                  </Button>
-                </Link>
-                <Link to="buku">
-                  <Button size="sm">
-                    Buku Kelas <ChevronRight className="ml-1 h-4 w-4" />
-                  </Button>
-                </Link>
+              <div className="flex items-center gap-2 flex-wrap justify-end">
+                <Badge
+                  variant={csstView.isActive ? "default" : "outline"}
+                  className="text-[11px]"
+                >
+                  {csstView.isActive ? "Aktif" : "Nonaktif"}
+                </Badge>
+                <Badge variant="outline" className="text-[11px]">
+                  {formatDeliveryMode(csstView.deliveryMode)}
+                </Badge>
               </div>
             </CardContent>
           </Card>
 
-          {/* Quick Links */}
-          <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {quick.map((q) => (
-              <Card
-                key={q.key}
-                className="cursor-pointer transition hover:shadow-md"
-                onClick={() => navigate(q.to)}
-                aria-label={q.aria}
-              >
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div className="space-y-1">
-                    <div className="text-sm text-muted-foreground flex items-center gap-2">
-                      {q.icon}
-                      <span>{q.label}</span>
-                    </div>
-                    <div className="text-xl font-semibold">{q.metric}</div>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          {/* Ringkasan angka */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">
+                Ringkasan Mapel di Rombel Ini
+              </CardTitle>
+            </CardHeader>
+            <Separator />
+            <CardContent className="grid gap-3 md:grid-cols-3">
+              <div className="rounded-xl border bg-muted/40 px-4 py-3">
+                <p className="text-xs text-muted-foreground">Siswa Terdaftar</p>
+                <p className="mt-1 text-xl font-semibold tabular-nums">
+                  {totalStudents}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  jumlah siswa yang memilih mapel ini
+                </p>
+              </div>
 
-          {/* Jadwal terdekat */}
+              <div className="rounded-xl border bg-muted/40 px-4 py-3">
+                <p className="text-xs text-muted-foreground">Total Pertemuan</p>
+                <p className="mt-1 text-xl font-semibold tabular-nums">
+                  {totalMeetings}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  akumulasi sesi kehadiran yang tercatat
+                </p>
+              </div>
+
+              <div className="rounded-xl border bg-muted/40 px-4 py-3">
+                <p className="text-xs text-muted-foreground">Mode & Status</p>
+                <div className="mt-1 flex flex-col gap-1 text-sm">
+                  <span>{formatDeliveryMode(csstView.deliveryMode)}</span>
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <CheckCircle2 className="h-3 w-3" />
+                    {csstView.isActive
+                      ? "Mapel sedang berjalan"
+                      : "Mapel nonaktif / arsip"}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Buku yang digunakan */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <CalendarDays className="h-4 w-4" />
-                Jadwal Terdekat
+                <BookOpen className="h-4 w-4" />
+                Buku & Materi
               </CardTitle>
             </CardHeader>
             <Separator />
             <CardContent className="p-4">
-              {cls?.nextSession ? (
-                <div className="rounded-xl border p-3 bg-card">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Clock className="h-4 w-4" />
-                    <span>
-                      {dateShort(cls.nextSession.dateISO)} •{" "}
-                      {cls.nextSession.time}
-                    </span>
-                  </div>
-                  <div className="mt-1 text-sm">
-                    {cls.nextSession.title}
-                    {cls.nextSession.room ? ` • ${cls.nextSession.room}` : ""}
+              {csstView.bookTitle ? (
+                <div className="flex items-center gap-3 rounded-xl border bg-muted/40 p-3 text-sm">
+                  {csstView.bookImageUrl && (
+                    <img
+                      src={csstView.bookImageUrl}
+                      alt={csstView.bookTitle}
+                      className="h-16 w-12 rounded-md border object-cover"
+                    />
+                  )}
+                  <div className="space-y-1">
+                    <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                      Buku utama
+                    </div>
+                    <div className="text-sm font-semibold">
+                      {csstView.bookTitle}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Penulis: {csstView.bookAuthor ?? "-"}
+                    </div>
                   </div>
                 </div>
               ) : (
                 <div className="text-sm text-muted-foreground">
-                  Belum ada jadwal.
+                  Belum ada buku yang terhubung dengan mapel ini.
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Empty state bila benar-benar tak ketemu */}
-          {!loadingAny && !cls && (
-            <Card>
-              <CardContent className="p-6 text-sm text-muted-foreground">
-                Kelas tidak ditemukan.
+          {/* Quick links */}
+          <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {/* Peserta */}
+            <Card
+              className="cursor-pointer transition hover:shadow-md"
+              onClick={() => navigate("peserta")}
+            >
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    <span>Peserta</span>
+                  </div>
+                  <div className="text-xl font-semibold">{totalStudents}</div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </CardContent>
             </Card>
-          )}
+
+            {/* Rekap Kehadiran */}
+            <Card
+              className="cursor-pointer transition hover:shadow-md"
+              onClick={() => navigate("kehadiran")}
+            >
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4" />
+                    <span>Rekap Kehadiran</span>
+                  </div>
+                  <div className="text-xl font-semibold">{totalMeetings}</div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </CardContent>
+            </Card>
+
+            {/* Materi */}
+            <Card
+              className="cursor-pointer transition hover:shadow-md"
+              onClick={() => navigate("materi")}
+            >
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <BookOpen className="h-4 w-4" />
+                    <span>Materi</span>
+                  </div>
+                  <div className="text-xl font-semibold">-</div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </CardContent>
+            </Card>
+
+            {/* Tugas */}
+            <Card
+              className="cursor-pointer transition hover:shadow-md"
+              onClick={() => navigate("tugas")}
+            >
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <ClipboardList className="h-4 w-4" />
+                    <span>Tugas</span>
+                  </div>
+                  <div className="text-xl font-semibold">-</div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </CardContent>
+            </Card>
+
+            {/* Ujian */}
+            <Card
+              className="cursor-pointer transition hover:shadow-md"
+              onClick={() => navigate("ujian")}
+            >
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <GraduationCap className="h-4 w-4" />
+                    <span>Ujian</span>
+                  </div>
+                  <div className="text-xl font-semibold">-</div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </CardContent>
+            </Card>
+
+            {/* Profil Mapel */}
+            <Card
+              className="cursor-pointer transition hover:shadow-md"
+              onClick={() => navigate("profil")}
+            >
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <UserSquare2 className="h-4 w-4" />
+                    <span>Profil Mapel</span>
+                  </div>
+                  <div className="text-xl font-semibold">Detail</div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </main>
     </div>
   );
-}
+};
+
+export default TeacherCSSTDetail;
