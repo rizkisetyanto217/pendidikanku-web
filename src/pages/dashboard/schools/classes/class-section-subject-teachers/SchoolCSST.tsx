@@ -1,4 +1,4 @@
-// src/pages/dashboard/school/classes/class-list/section/SchoolSectionCSST.tsx
+// src/pages/dashboard/school/classes/class-list/section/SchoolSCSST.tsx
 import { useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -187,9 +187,7 @@ export default function SchoolCSST({ showBack = false, backTo }: Props) {
         <div className="text-muted-foreground">
           Gagal memuat data pelajaran & pengajar.
         </div>
-        <Button 
-        variant="outline" 
-        onClick={handleBack}>
+        <Button variant="outline" onClick={handleBack}>
           <ArrowLeft className="mr-2" size={16} />
           Kembali
         </Button>
@@ -201,9 +199,9 @@ export default function SchoolCSST({ showBack = false, backTo }: Props) {
 
   return (
     <div className="min-h-screen w-full bg-background text-foreground">
-      <main className="mx-auto max-w-6xl space-y-6 pb-10 pt-2">
+      <main className="mx-auto max-w-6xl space-y-6 px-3 pb-10 pt-2 md:px-4">
         {/* Header dalam page */}
-        <div className="md:flex hidden items-center gap-3">
+        <div className="flex items-center gap-3">
           {showBack && (
             <Button
               onClick={handleBack}
@@ -215,7 +213,7 @@ export default function SchoolCSST({ showBack = false, backTo }: Props) {
             </Button>
           )}
           <div>
-            <h1 className="text-lg font-semibold md:text-xl">
+            <h1 className="text-xl font-semibold md:text-2xl">
               Pelajaran & Pengajar Kelas
             </h1>
             <p className="mt-1 text-xs text-muted-foreground md:text-sm">
@@ -323,18 +321,24 @@ export default function SchoolCSST({ showBack = false, backTo }: Props) {
                       const book = csBook?.book;
 
                       const teacherDisplay = teacher
-                        ? `${teacher.title_prefix ?? ""} ${
-                            teacher.name ?? ""
+                        ? `${teacher.title_prefix ?? ""} ${teacher.name ?? ""
                           } ${teacher.title_suffix ?? ""}`
-                            .replace(/\s+/g, " ")
-                            .trim()
+                          .replace(/\s+/g, " ")
+                          .trim()
                         : row.class_section_subject_teacher_school_teacher_name_snapshot ??
-                          "-";
+                        "-";
 
                       return (
                         <div
                           key={row.class_section_subject_teacher_id}
-                          className="flex h-full flex-col rounded-xl border bg-muted/40 px-3 py-3 text-sm"
+                          className="flex h-full flex-col rounded-xl border bg-muted/40 px-3 py-3 text-sm cursor-pointer transition hover:shadow-md"
+                          onClick={() =>
+                            navigate(`${row.class_section_subject_teacher_id}`)
+                          }
+                          aria-label={`Detail mapel ${row.class_section_subject_teacher_subject_name_snapshot ??
+                            subj?.name ??
+                            "Mata pelajaran"
+                            }`}
                         >
                           {/* header mapel */}
                           <div className="flex items-start justify-between gap-2">
@@ -359,11 +363,10 @@ export default function SchoolCSST({ showBack = false, backTo }: Props) {
                                   ? "default"
                                   : "outline"
                               }
-                              className={`ml-1 text-[10px] ${
-                                row.class_section_subject_teacher_is_active
-                                  ? "bg-emerald-600"
-                                  : ""
-                              }`}
+                              className={`ml-1 text-[10px] ${row.class_section_subject_teacher_is_active
+                                ? "bg-emerald-600"
+                                : ""
+                                }`}
                             >
                               {row.class_section_subject_teacher_is_active
                                 ? "Aktif"
@@ -411,20 +414,20 @@ export default function SchoolCSST({ showBack = false, backTo }: Props) {
                             <div className="mt-3 flex items-center gap-3 rounded-lg border bg-background/60 p-2 text-xs text-muted-foreground">
                               {(book.image_url ||
                                 row.class_section_subject_teacher_book_image_url_snapshot) && (
-                                <img
-                                  src={
-                                    book.image_url ??
-                                    row.class_section_subject_teacher_book_image_url_snapshot ??
-                                    ""
-                                  }
-                                  alt={
-                                    book.title ??
-                                    row.class_section_subject_teacher_book_title_snapshot ??
-                                    "Book cover"
-                                  }
-                                  className="h-14 w-10 rounded-md border object-cover"
-                                />
-                              )}
+                                  <img
+                                    src={
+                                      book.image_url ??
+                                      row.class_section_subject_teacher_book_image_url_snapshot ??
+                                      ""
+                                    }
+                                    alt={
+                                      book.title ??
+                                      row.class_section_subject_teacher_book_title_snapshot ??
+                                      "Book cover"
+                                    }
+                                    className="h-14 w-10 rounded-md border object-cover"
+                                  />
+                                )}
                               <div className="space-y-1">
                                 <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
                                   Buku yang digunakan

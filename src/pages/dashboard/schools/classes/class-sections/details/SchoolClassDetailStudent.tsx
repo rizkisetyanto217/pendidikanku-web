@@ -87,20 +87,20 @@ type ApiNotesResp =
 const dateLong = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        weekday: "long",
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      })
+      weekday: "long",
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    })
     : "";
 
 const shortDate = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
     : "";
 
 /* ========= Semester helpers ========= */
@@ -251,7 +251,7 @@ async function fetchStudent(studentId: string): Promise<ApiStudent | null> {
     try {
       const r = await axios.get<ApiOneStudent>(url);
       if (r.data?.data) return r.data.data;
-    } catch {}
+    } catch { }
   }
   return null;
 }
@@ -268,7 +268,7 @@ async function fetchStudentGrades(studentId: string): Promise<ApiGrade[]> {
       const d: any = r.data?.data;
       if (Array.isArray(d)) return d;
       if (d?.items && Array.isArray(d.items)) return d.items;
-    } catch {}
+    } catch { }
   }
   return [];
 }
@@ -287,7 +287,7 @@ async function fetchStudentAttendance(
       const d: any = r.data?.data;
       if (Array.isArray(d)) return d;
       if (d?.items && Array.isArray(d.items)) return d.items;
-    } catch {}
+    } catch { }
   }
   return [];
 }
@@ -304,7 +304,7 @@ async function fetchStudentNotes(studentId: string): Promise<ApiStudentNote[]> {
       const d: any = r.data?.data;
       if (Array.isArray(d)) return d;
       if (d?.items && Array.isArray(d.items)) return d.items;
-    } catch {}
+    } catch { }
   }
   return [];
 }
@@ -336,7 +336,7 @@ function downloadCsv(filename: string, csv: string) {
 }
 
 /* ========= Page ========= */
-export default function SchoolClassesDetailStudent() {
+export default function SchoolClassDetailStudent() {
   const { id: studentId = "" } = useParams<{ id: string }>();
   const nav = useNavigate();
 
@@ -430,8 +430,8 @@ export default function SchoolClassesDetailStudent() {
     const avg =
       countGrades > 0
         ? Math.round(
-            (grades.reduce((s, g) => s + (g.score ?? 0), 0) / countGrades) * 10
-          ) / 10
+          (grades.reduce((s, g) => s + (g.score ?? 0), 0) / countGrades) * 10
+        ) / 10
         : 0;
     const totalAttend = attends.length;
     let h = 0,

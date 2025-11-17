@@ -1,4 +1,4 @@
-// src/pages/dashboard/school/classes/class-list/section/SchoolClassSection.tsx
+// src/pages/dashboard/school/classes/class-list/section/SchoolSection.tsx
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -537,7 +537,7 @@ export default function SchoolClassSection({
                 key={section.class_section_id}
                 section={section}
                 onOpenDetail={() =>
-                  navigate(`section/${section.class_section_id}/csst`)
+                  navigate(`${section.class_section_id}`)
                 }
               />
             ))}

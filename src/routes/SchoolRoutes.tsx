@@ -11,7 +11,7 @@ import SchoolTeacher from "@/pages/dashboard/schools/profiles/teachers/SchoolTea
 import SchoolDetailTeacher from "@/pages/dashboard/schools/profiles/teachers/details/SchoolDetailTeacher";
 import SchoolMenuGrids from "@/pages/dashboard/schools/menus/SchoolMenuGrids";
 
-import SchoolSectionDetail from "@/pages/dashboard/schools/classes/class-sections/section/SchoolClassesSectionDetail";
+import SchoolSectionDetail from "@/pages/dashboard/schools/classes/class-sections/details/SchoolClassSectionDetail";
 
 import SchoolAcademic from "@/pages/dashboard/schools/academics/academics/SchoolAcademic";
 import SchoolDetailAcademic from "@/pages/dashboard/schools/academics/academics/SchoolAcademicDetail";
@@ -33,13 +33,15 @@ import SchoolAcademicManage from "@/pages/dashboard/schools/academics/academics/
 import SchoolCampaign from "@/pages/dashboard/schools/campaign/SchoolCampaign";
 import SchoolClassParent from "@/pages/dashboard/schools/classes/class-parents/SchoolClassParent";
 import SchoolClass from "@/pages/dashboard/schools/classes/classes/SchoolClass";
-import SchoolClassSection from "@/pages/dashboard/schools/classes/class-sections/SchoolClassSections";
+import SchoolClassesSection from "@/pages/dashboard/schools/classes/class-sections/SchoolClassSections";
 import SchoolCSST from "@/pages/dashboard/schools/classes/class-section-subject-teachers/SchoolCSST";
 import SchoolCampaignDetail from "@/pages/dashboard/schools/campaign/SchoolCampaignDetail";
 import Setting from "@/pages/dashboard/components/page/Setting";
 import Help from "@/pages/dashboard/components/page/Help";
 import SchoolClassParentDetail from "@/pages/dashboard/schools/classes/class-parents/details/SchoolClassParentDetail";
 import SchoolClassDetail from "@/pages/dashboard/schools/classes/classes/details/SchoolClassDetail";
+import SchoolClassSectionDetail from "@/pages/dashboard/schools/classes/class-sections/details/SchoolClassSectionDetail";
+import SchoolCSSTDetail from "@/pages/dashboard/schools/classes/class-section-subject-teachers/details/SchoolCSSTDetail";
 
 export const SchoolRoutes = (
   <Route path="sekolah" element={<DashboardLayout />}>
@@ -85,8 +87,13 @@ export const SchoolRoutes = (
       />
       <Route path="daftar-kelas" element={<SchoolClass />} />
       <Route path="daftar-kelas/:classId" element={<SchoolClassDetail />} />
-      <Route path="semua-kelas" element={<SchoolClassSection />} />
+      <Route path="semua-kelas" element={<SchoolClassesSection />} />
+      <Route
+        path="semua-kelas/:classSectionId"
+        element={<SchoolClassSectionDetail />}
+      />
       <Route path="pelajaran" element={<SchoolCSST />} />
+      <Route path="pelajaran/:csstId" element={<SchoolCSSTDetail />} />
     </Route>
 
     <Route path="keuangan">
