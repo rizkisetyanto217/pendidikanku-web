@@ -4,15 +4,15 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
-  CalendarDays,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+
+/* ✅ Import untuk breadcrumb header */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-
-/* Tambahan untuk breadcrumb sistem dashboard */
-import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 import CalendarView from "@/pages/dashboard/components/calender/CalenderView";
 import ScheduleList from "@/pages/dashboard/components/calender/ScheduleList";
@@ -77,8 +77,8 @@ function seedMonth(y: number, m: number): ScheduleRow[] {
         type === "exam"
           ? `Ujian materi ${title.toLowerCase()} — persiapkan alat tulis.`
           : type === "event"
-          ? `Acara sekolah: ${title} — ${desc}`
-          : desc,
+            ? `Acara sekolah: ${title} — ${desc}`
+            : desc,
     });
   };
 
@@ -124,8 +124,27 @@ const scheduleApi = {
   },
 };
 
-export default function StudentScheduleAgenda() {
+/* =========================================================
+   Page — sama layout & interaksi dengan Academic
+========================================================= */
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
+export default function StudentScheduleAgenda({ showBack = false, backTo }: Props) {
   const navigate = useNavigate();
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
+
+  /* ✅ Breadcrumb */
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Agenda",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Jadwal" },
+        { label: "Agenda" },
+      ],
+      showBack,
+    });
+  }, [setHeader, showBack]);
 
   const [month, setMonth] = useState(toMonthStr());
   const [selectedDay, setSelectedDay] = useState<string | null>(() =>
@@ -142,20 +161,6 @@ export default function StudentScheduleAgenda() {
   const gotoPrev = () => setMonth(toMonthStr(new Date(y, m - 2, 1)));
   const gotoNext = () => setMonth(toMonthStr(new Date(y, m, 1)));
 
-  /* Atur breadcrumb dan title seperti SchoolAcademic */
-  const { setHeader } = useDashboardHeader();
-
-  useEffect(() => {
-    setHeader({
-      title: "Jadwal",
-      breadcrumbs: [
-        { label: "Dashboard", href: "dashboard" },
-        { label: "Jadwal" },
-      ],
-      actions: null,
-    });
-  }, [setHeader]);
-
   useEffect(() => {
     const today = new Date();
     if (toMonthStr(today) === month) setSelectedDay(dateKeyFrom(today));
@@ -166,16 +171,20 @@ export default function StudentScheduleAgenda() {
     <div className="w-full bg-background text-foreground">
       <div className="mx-auto flex flex-col gap-4">
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft size={20} />
-          </Button>
-          <div className="h-10 w-10 grid place-items-center rounded-xl bg-primary/10 text-primary">
-            <CalendarDays size={18} />
-          </div>
+        <div className="md:flex hidden gap-3 items-center">
+          {showBack && (
+            <Button
+              onClick={handleBack}
+              variant="ghost"
+              size="icon"
+              className="cursor-pointer self-start"
+            >
+              <ArrowLeft size={20} />
+            </Button>
+          )}
           <div>
-            <div className="font-semibold text-base">Jadwal Saya</div>
-            <p className="text-sm text-muted-foreground">
+            <div className="font-semibold text-base md:text-xl">Jadwal</div>
+            <p className="md:flex text-sm text-muted-foreground">
               Lihat aktivitas belajar per bulan atau daftar
             </p>
           </div>
@@ -236,5 +245,6 @@ export default function StudentScheduleAgenda() {
         </Tabs>
       </div>
     </div>
+
   );
 }

@@ -172,9 +172,31 @@ const TAB_ITEMS: SegmentedTabItem[] = [
   },
 ];
 
-export default function TeacherScheduleAgenda() {
+/* ===================== PAGE ===================== */
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
+
+export default function TeacherScheduleAgenda({
+  showBack = false,
+  backTo
+}: Props) {
   const navigate = useNavigate();
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
   const qc = useQueryClient();
+
+  /* Atur breadcrumb dan title seperti SchoolAcademic */
+  const { setHeader } = useDashboardHeader();
+
+  useEffect(() => {
+    setHeader({
+      title: "Agenda Mengajar",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Jadwal" },
+        { label: "Agenda" },
+      ],
+      showBack,
+    });
+  }, [setHeader, showBack]);
 
   const [month, setMonth] = useState(toMonthStr());
   const [selectedDay, setSelectedDay] = useState<string | null>(() =>
@@ -183,20 +205,6 @@ export default function TeacherScheduleAgenda() {
   const LOCAL_KEY = "teacherScheduleTab";
   const [tab, setTab] = useState<"calendar" | "list">("calendar");
   const [editing, setEditing] = useState<ScheduleRow | null>(null);
-
-  /* Atur breadcrumb dan title seperti SchoolAcademic */
-  const { setHeader } = useDashboardHeader();
-
-  useEffect(() => {
-    setHeader({
-      title: "Jadwal",
-      breadcrumbs: [
-        { label: "Dashboard", href: "dashboard" },
-        { label: "Jadwal" },
-      ],
-      actions: null,
-    });
-  }, [setHeader]);
 
   // 🔔 signal untuk memicu re-scroll di List
   const [scrollToTodaySig, setScrollToTodaySig] = useState(0);
@@ -267,15 +275,19 @@ export default function TeacherScheduleAgenda() {
     <div className="w-full bg-background text-foreground">
       <div className="mx-auto flex flex-col gap-4">
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft size={20} />
-          </Button>
-          <div className="h-10 w-10 grid place-items-center rounded-xl bg-primary/10 text-primary">
-            <CalendarDays size={18} />
-          </div>
+        <div className="md:flex hidden gap-3 items-center">
+          {showBack && (
+            <Button
+              onClick={handleBack}
+              variant="ghost"
+              size="icon"
+              className="cursor-pointer self-start"
+            >
+              <ArrowLeft size={20} />
+            </Button>
+          )}
           <div>
-            <div className="font-semibold text-base">Jadwal Mengajar</div>
+            <div className="font-semibold text-lg md:text-xl">Agenda Mengajar</div>
             <p className="text-sm text-muted-foreground">
               Kelola aktivitas mengajar per bulan atau dalam bentuk daftar
             </p>

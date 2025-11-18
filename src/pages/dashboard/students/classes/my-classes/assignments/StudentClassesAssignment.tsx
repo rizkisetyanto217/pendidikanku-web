@@ -313,7 +313,7 @@ const StudentClassesAssignment: React.FC<Props> = ({ showBack = false, backTo })
 
           {/* Search + Segmented Tabs */}
 
-          <CardContent className=" flex flex-col gap-3">
+          <CardContent className="p-4 md:p-5 flex flex-col gap-3">
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}

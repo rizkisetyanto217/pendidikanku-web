@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, CalendarDays, Clock, MapPin, Users } from "lucide-react";
 
@@ -11,6 +11,7 @@ import type {
   RoutineItem,
   RoutineDay,
 } from "@/pages/dashboard/teachers/schedules/routines/TeacherScheduleRoutine";
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 const weekdayLong = [
   "Minggu",
@@ -57,6 +58,20 @@ export default function TeacherScheduleRoutineDetail() {
   const params = useParams<{ routineId: string }>();
   const location = useLocation();
 
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Detail Jadwal Rutin",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Jadwal" },
+        { label: "Rutin", href: "jadwal/rutin" },
+        { label: "Detail" },
+      ],
+      showBack: true,
+    });
+  }, [setHeader]);
+
   const routine = location.state?.routine as RoutineItem | undefined;
 
   const nextOccurrences = useMemo(
@@ -70,7 +85,10 @@ export default function TeacherScheduleRoutineDetail() {
       <div className="w-full bg-background text-foreground">
         <div className="mx-auto flex flex-col gap-4">
           <div className="flex items-center gap-3 mt-2">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(-1)}>
               <ArrowLeft size={20} />
             </Button>
             <div>
@@ -112,15 +130,15 @@ export default function TeacherScheduleRoutineDetail() {
     <div className="w-full bg-background text-foreground">
       <div className="mx-auto flex flex-col gap-4">
         {/* Header */}
-        <div className="flex items-center gap-3 mt-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+        <div className="md:flex hidden items-center gap-3 mt-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(-1)}>
             <ArrowLeft size={20} />
           </Button>
-          <div className="h-10 w-10 grid place-items-center rounded-xl bg-primary/10 text-primary">
-            <CalendarDays size={18} />
-          </div>
           <div>
-            <div className="font-semibold text-base">Detail Jadwal Rutin</div>
+            <div className="font-semibold text-lg md:text-xl">Detail Jadwal Rutin</div>
             <p className="text-sm text-muted-foreground">
               {routine.title || "Tanpa judul"} • {dayLabel} {routine.time}
             </p>

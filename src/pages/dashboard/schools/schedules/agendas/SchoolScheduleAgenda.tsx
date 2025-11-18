@@ -173,8 +173,9 @@ export default function SchoolScheduleAgenda({
         { label: "Jadwal" },
         { label: "Agenda" },
       ],
+      showBack,
     });
-  }, [setHeader]);
+  }, [setHeader, showBack]);
 
   const [month, setMonth] = useState(toMonthStr());
   const [selectedDay, setSelectedDay] = useState<string | null>(() =>

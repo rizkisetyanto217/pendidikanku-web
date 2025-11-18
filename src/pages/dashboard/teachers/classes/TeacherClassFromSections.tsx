@@ -370,8 +370,14 @@ function SectionCard({ s }: { s: SectionRow }) {
 /* ==========================================================
    Main Page
 ========================================================== */
-export default function TeacherClassFromSections() {
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
+
+export default function TeacherClassFromSections({
+  showBack = false,
+  backTo
+}: Props) {
   const navigate = useNavigate();
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
   const { data: sections = [], isLoading, isError, error } = useSections();
   const f = useFilters(sections);
 
@@ -385,9 +391,9 @@ export default function TeacherClassFromSections() {
         { label: "Dashboard", href: "dashboard" },
         { label: "Wali Kelas" },
       ],
-      actions: null,
+      showBack,
     });
-  }, [setHeader]);
+  }, [setHeader, showBack]);
 
   if (isLoading) {
     return (
@@ -414,7 +420,9 @@ export default function TeacherClassFromSections() {
             {(error as any)?.message ??
               "Periksa koneksi atau coba beberapa saat lagi."}
           </div>
-          <Button variant="outline" onClick={() => navigate(-1)}>
+          <Button
+            variant="outline"
+            onClick={() => navigate(-1)}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Kembali
           </Button>
@@ -425,13 +433,20 @@ export default function TeacherClassFromSections() {
 
   return (
     <div className="w-full bg-background text-foreground">
-      <main className="mx-auto max-w-5xl space-y-6 px-3 pb-10 pt-4 md:px-4">
+      <main className="mx-auto space-y-6 pb-10">
         {/* Header Section */}
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-xl font-semibold">Kelas yang Saya Ajar</h1>
+        <div className="md:flex hidden gap-3 items-center">
+          {showBack && (
+            <Button
+              onClick={handleBack}
+              variant="ghost"
+              size="icon"
+              className="cursor-pointer self-start"
+            >
+              <ArrowLeft size={20} />
+            </Button>
+          )}
+          <h1 className="text-xl font-semibold md:text-xl">Kelas yang Saya Ajar</h1>
         </div>
 
         {/* Filters */}

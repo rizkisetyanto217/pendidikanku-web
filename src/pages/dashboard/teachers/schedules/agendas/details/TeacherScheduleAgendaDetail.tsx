@@ -1,7 +1,7 @@
 // src/pages/sekolahislamku/teacher/TeacherScheduleAgendaDetail.tsx
 import { useEffect, useMemo } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, CalendarDays, Clock, MapPin, Users } from "lucide-react";
+import { ArrowLeft, Clock, MapPin, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,13 +29,13 @@ export default function TeacherScheduleAgendaDetail() {
 
     useEffect(() => {
         setHeader({
-            title: "Detail Jadwal",
+            title: "Detail Agenda Mengajar",
             breadcrumbs: [
                 { label: "Dashboard", href: "dashboard" },
                 { label: "Jadwal", href: "/sekolahislamku/teacher/schedule/agenda" },
                 { label: "Detail" },
             ],
-            actions: null,
+            showBack: true,
         });
     }, [setHeader]);
 
@@ -108,16 +108,16 @@ export default function TeacherScheduleAgendaDetail() {
         <div className="w-full bg-background text-foreground">
             <div className="mx-auto flex flex-col gap-4">
                 {/* Header */}
-                <div className="flex items-center gap-3 mt-2">
-                    <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+                <div className="md:flex hidden items-center gap-3 mt-2">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => navigate(-1)}>
                         <ArrowLeft size={20} />
                     </Button>
-                    <div className="h-10 w-10 grid place-items-center rounded-xl bg-primary/10 text-primary">
-                        <CalendarDays size={18} />
-                    </div>
                     <div>
-                        <div className="font-semibold text-base">
-                            Detail Jadwal Mengajar
+                        <div className="font-semibold text-lg md:text-xl">
+                            Detail Agenda Mengajar
                         </div>
                         <p className="text-sm text-muted-foreground">
                             {schedule.title || "Tanpa judul"}

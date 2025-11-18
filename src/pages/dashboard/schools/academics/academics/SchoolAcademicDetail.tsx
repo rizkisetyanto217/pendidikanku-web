@@ -116,10 +116,10 @@ type TermListResp = {
 const dateShort = (iso?: string | null) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
     : "-";
 
 function deliveryModeLabel(mode: string) {
@@ -280,7 +280,7 @@ export default function SchoolAcademicDetail() {
                 onClick={() => navigate(-1)}
                 className="gap-1.5"
               >
-                <ArrowLeft size={18} />
+                <ArrowLeft size={20} />
               </Button>
               <h1 className="font-semibold text-lg md:text-xl">Detail akademik</h1>
             </div>

@@ -240,12 +240,14 @@ function ActionsMenu({
 /* ===================== PAGE ===================== */
 type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
-export default function SchoolRoom({ showBack = false, backTo }: Props) {
+export default function SchoolRoom({
+  showBack = false,
+  backTo
+}: Props) {
   const { schoolId } = useParams<{ schoolId?: string }>();
   const navigate = useNavigate();
-  const qc = useQueryClient();
-
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
+  const qc = useQueryClient();
 
   /* ✅ Breadcrumb */
   const { setHeader } = useDashboardHeader();

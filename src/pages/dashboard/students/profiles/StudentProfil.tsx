@@ -61,35 +61,48 @@ const dummyStudent = {
   subjects: ["Matematika", "Fisika", "Kimia", "Tahfidz", "Bahasa Arab"],
 };
 
-export default function StudentProfil() {
+/* =========================================================
+   Page — sama layout & interaksi dengan Academic
+========================================================= */
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
+
+export default function StudentProfil({
+  showBack = false,
+  backTo
+}: Props) {
   const navigate = useNavigate();
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
   const [avatarPreview] = useState(dummyStudent.avatar);
 
   /* Atur breadcrumb dan title seperti SchoolAcademic */
   const { setHeader } = useDashboardHeader();
-
   useEffect(() => {
     setHeader({
-      title: "Profil",
+      title: "Profil Murid",
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Profil" },
       ],
-      actions: null,
+      showBack,
     });
-  }, [setHeader]);
+  }, [setHeader, showBack]);
 
   return (
     <div className="w-full bg-background text-foreground">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="mx-auto h-14 flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Kembali
-          </Button>
-          <Separator orientation="vertical" className="h-5" />
-          <h1 className="text-base md:text-lg font-semibold">Profil Siswa</h1>
+        <div className="md:flex hidden gap-3 items-center">
+          {showBack && (
+            <Button
+              onClick={handleBack}
+              variant="ghost"
+              size="icon"
+              className="cursor-pointer self-start"
+            >
+              <ArrowLeft size={20} />
+            </Button>
+          )}
+          <h1 className="md:text-xl text-lg font-semibold mb-6">Profil Murid</h1>
         </div>
       </header>
 

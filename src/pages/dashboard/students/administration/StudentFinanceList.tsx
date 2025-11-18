@@ -1,13 +1,14 @@
 // src/pages/sekolahislamku/parent/StudentListFinance.tsx
-import { useMemo } from "react";
-import { useLocation, Link } from "react-router-dom";
+import { useEffect, useMemo } from "react";
+import { useLocation, Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarDays, Receipt, ArrowLeft } from "lucide-react";
+import { CalendarDays, ArrowLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* ---------------- Types ---------------- */
 type BillItem = {
@@ -72,15 +73,38 @@ const formatIDR = (n: number) =>
 const dateLong = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    })
     : "-";
 
-/* ---------------- Component ---------------- */
-export default function StudentListFinance() {
+/* =========================================================
+   Page — sama layout & interaksi dengan Academic
+========================================================= */
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
+
+export default function StudentListFinance({
+  showBack = false,
+  backTo
+}: Props) {
+  const navigate = useNavigate();
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
+
+  /* ✅ Breadcrumb */
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Keuangan List",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Administrasi" },
+        { label: "Keuangan List" },
+      ],
+      showBack,
+    });
+  }, [setHeader, showBack]);
   const { state } = useLocation() as { state?: LocationState };
 
   const { data } = useQuery({
@@ -120,27 +144,29 @@ export default function StudentListFinance() {
   return (
     <div className="w-full bg-background text-foreground">
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-        <div className="mx-auto max-w-6xl px-4 h-14 flex items-center gap-3">
-          <Link to=".." relative="path">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Kembali
+      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="md:flex hidden gap-3 items-center">
+          {showBack && (
+            <Button
+              onClick={handleBack}
+              variant="ghost"
+              size="icon"
+              className="cursor-pointer self-start"
+            >
+              <ArrowLeft size={20} />
             </Button>
-          </Link>
-          <Separator orientation="vertical" className="h-5" />
-          <h1 className="text-base md:text-lg font-semibold tracking-tight">
-            {state?.parentName ?? "Daftar Tagihan"}
+          )}
+          <h1 className="text-base md:text-xl text-lg font-semibold tracking-tight">
+            Daftar Tagihan
           </h1>
         </div>
       </header>
 
-      <main className="w-full px-4 md:px-6 py-4 md:py-8">
-        <div className="mx-auto max-w-6xl">
+      <main className="w-full py-4 md:py-8">
+        <div className="mx-auto">
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base md:text-lg flex items-center gap-2">
-                <Receipt className="h-4 w-4" />
                 Semua Tagihan
               </CardTitle>
             </CardHeader>

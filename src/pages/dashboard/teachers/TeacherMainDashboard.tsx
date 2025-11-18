@@ -584,9 +584,9 @@ function MyClassesCard({
                 variant="outline"
                 size="sm"
                 onClick={() =>
-                  (window.location.href = c.slug
-                    ? `/teacher/classes/${c.slug}`
-                    : `/teacher/classes/${c.csstId}`)
+                (window.location.href = c.slug
+                  ? `/teacher/classes/${c.slug}`
+                  : `/teacher/classes/${c.csstId}`)
                 }
               >
                 Detail <ArrowRight className="ml-1 h-4 w-4" />
@@ -642,9 +642,9 @@ function AnnouncementsCard({ items }: { items: AnnouncementUI[] }) {
                   variant="ghost"
                   size="icon"
                   onClick={() =>
-                    (window.location.href = a.slug
-                      ? `/announcements/${a.slug}`
-                      : `/announcements/${a.id}`)
+                  (window.location.href = a.slug
+                    ? `/announcements/${a.slug}`
+                    : `/announcements/${a.id}`)
                   }
                 >
                   <ExternalLink className="h-4 w-4" />
@@ -769,13 +769,12 @@ const TeacherMainDashboard: React.FC = () => {
   }
 
   const t = data.teacher;
-  const nameFull = `${t.titlePrefix ? t.titlePrefix + " " : ""}${t.name}${
-    t.titleSuffix ? ", " + t.titleSuffix : ""
-  }`;
+  const nameFull = `${t.titlePrefix ? t.titlePrefix + " " : ""}${t.name}${t.titleSuffix ? ", " + t.titleSuffix : ""
+    }`;
 
   return (
     <div className="w-full bg-background text-foreground">
-      <main className="max-w-screen-2xl mx-auto py-6 px-4 space-y-6">
+      <main className="max-w-screen-2xl mx-auto py-6 space-y-6">
         {/* Header */}
         <Card className="shadow-sm">
           <CardContent className="p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">

@@ -1,6 +1,6 @@
 // src/pages/sekolahislamku/teachers/csst/TeacherCSST.tsx
 import { useState, useMemo, useDeferredValue, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   CalendarDays,
@@ -14,6 +14,7 @@ import {
   LayoutList,
   Filter,
   AlertTriangle,
+  ArrowLeft,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -217,7 +218,28 @@ function useTeacherSubjects() {
 /* =====================
    Main Component
 ===================== */
-export default function TeacherCSST() {
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
+
+export default function TeacherCSST({
+  showBack = false,
+  backTo
+}: Props) {
+  const navigate = useNavigate();
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
+
+  /* Atur breadcrumb dan title seperti SchoolAcademic */
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Guru Mapel",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Guru Mapel" },
+      ],
+      showBack,
+    });
+  }, [setHeader, showBack]);
+
   const {
     data: subjects = [],
     isLoading,
@@ -231,21 +253,6 @@ export default function TeacherCSST() {
   const [level, setLevel] = useState("all");
   const [term, setTerm] = useState("all");
   const [sortBy, setSortBy] = useState<"name" | "students">("name");
-
-  /* Atur breadcrumb dan title seperti SchoolAcademic */
-  const { setHeader } = useDashboardHeader();
-
-  useEffect(() => {
-    setHeader({
-      title: "Guru Mapel",
-      breadcrumbs: [
-        { label: "Dashboard", href: "dashboard" },
-        { label: "Guru Mapel" },
-      ],
-      actions: null,
-    });
-  }, [setHeader]);
-
   const deferredSearch = useDeferredValue(search);
 
   // Karena day/level/term belum ada data real → tetap pakai opsi standar
@@ -303,17 +310,28 @@ export default function TeacherCSST() {
     <div className="min-h-screen space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-        <h1 className="text-2xl font-bold text-primary">Mata Pelajaran Saya</h1>
-
-        <div className="flex items-center gap-2 border rounded-xl px-4 py-2 bg-background shadow-sm w-full sm:w-auto">
-          <Search size={18} className="text-primary" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cari nama mapel..."
-            className="bg-transparent outline-none text-sm w-full"
-          />
+        <div className="md:flex hidden gap-3 items-center">
+          {showBack && (
+            <Button
+              onClick={handleBack}
+              variant="ghost"
+              size="icon"
+              className="cursor-pointer self-start"
+            >
+              <ArrowLeft size={20} />
+            </Button>
+          )}
+          <h1 className="md:text-xl text-lg font-semibold">Mata Pelajaran Saya</h1>
         </div>
+      </div>
+      <div className="flex items-center gap-2 border rounded-xl px-4 py-2 bg-background shadow-sm w-full sm:w-auto">
+        <Search size={18} className="text-primary" />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Cari nama mapel..."
+          className="bg-transparent outline-none text-sm w-full"
+        />
       </div>
 
       {/* Filter Bar */}
@@ -383,8 +401,8 @@ export default function TeacherCSST() {
       {/* Cards */}
       <div
         className={`grid gap-6 ${viewMode === "simple"
-            ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
-            : "grid-cols-1 lg:grid-cols-2"
+          ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
+          : "grid-cols-1 lg:grid-cols-2"
           }`}
       >
         {filtered.map((s) => (

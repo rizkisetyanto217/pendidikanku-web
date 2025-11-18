@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
-  CalendarDays,
   ArrowLeft,
   Plus,
   Edit,
@@ -35,6 +34,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import EditScheduleDialog from "@/pages/dashboard/components/calender/components/EditSchedule";
 import type { ScheduleRow } from "@/pages/dashboard/components/calender/types/types";
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* =========================
    Types untuk Jadwal Rutin
@@ -573,9 +573,29 @@ function OnceList({
 /* =========================
    Halaman Utama (Rutin & Sekali saja)
 ========================= */
-export default function TeacherScheduleRoutine() {
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
+
+export default function TeacherScheduleRoutine({
+  showBack = false,
+  backTo
+}: Props) {
   const navigate = useNavigate();
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
   const qc = useQueryClient();
+
+  /* ✅ Breadcrumb */
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Jadwal Rutin",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Jadwal" },
+        { label: "Rutin" },
+      ],
+      showBack,
+    });
+  }, [setHeader, showBack]);
 
   const LOCAL_KEY = "teacherRoutineTab";
   const [tab, setTab] = useState<"routine" | "once">("routine");
@@ -656,15 +676,19 @@ export default function TeacherScheduleRoutine() {
     <div className="w-full bg-background text-foreground">
       <div className="mx-auto flex flex-col gap-4">
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft size={20} />
-          </Button>
-          <div className="h-10 w-10 grid place-items-center rounded-xl bg-primary/10 text-primary">
-            <CalendarDays size={18} />
-          </div>
+        <div className="md:flex hidden gap-3 items-center">
+          {showBack && (
+            <Button
+              onClick={handleBack}
+              variant="ghost"
+              size="icon"
+              className="cursor-pointer self-start"
+            >
+              <ArrowLeft size={20} />
+            </Button>
+          )}
           <div>
-            <div className="font-semibold text-base">Jadwal Mengajar</div>
+            <div className="font-semibold text-lg md:text-xl">Jadwal Rutin</div>
             <p className="text-sm text-muted-foreground">
               Kelola jadwal rutin mingguan dan kegiatan sekali
             </p>

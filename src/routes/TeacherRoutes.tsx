@@ -94,14 +94,17 @@ export const TeacherRoutes = (
     {/* Menu Utama Guru */}
     <Route path="menu-utama">
       <Route index element={<TeacherMenuGrids />} />
-      <Route path="kelas">
-        <Route index element={<TeacherClass />} />
+      <Route path="wali-kelas">
+        <Route index element={<TeacherClass showBack />} />
         <Route path=":id" element={<TeacherDetailClass />} />
       </Route>
       <Route path="guru-mapel">
-        <Route index element={<TeacherSubjects />} />
+        <Route index element={<TeacherSubjects showBack />} />
       </Route>
-      <Route path="jadwal" element={<TeacherScheduleAgenda />} />
+      <Route path="agenda" element={<TeacherScheduleAgenda showBack />} />
+      <Route path="agenda/:id" element={<TeacherScheduleAgendaDetail />} />
+      <Route path="rutin" element={<TeacherScheduleRoutine showBack />} />
+      <Route path="rutin/:routineId" element={<TeacherScheduleRoutineDetail />} />
       <Route path="profil-guru" element={<TeacherProfil />} />
       {/* <Route path="pengaturan" element={<TeacherSettings />} /> */}
       <Route path="tugas" element={<TeacherAssignment />} />

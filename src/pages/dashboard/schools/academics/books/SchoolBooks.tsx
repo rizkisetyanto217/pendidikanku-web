@@ -15,7 +15,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 
-/* ✅ Import untuk breadcrumb header */
+/* Import untuk breadcrumb header */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* shadcn/ui */
@@ -347,7 +347,10 @@ function BookModal({
 ========================================================= */
 type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
-export default function SchoolBooks({ showBack = false, backTo }: Props) {
+export default function SchoolBooks({
+  showBack = false,
+  backTo
+}: Props) {
   const navigate = useNavigate();
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 

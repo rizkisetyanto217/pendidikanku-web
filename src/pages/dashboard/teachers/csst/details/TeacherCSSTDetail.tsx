@@ -17,9 +17,7 @@ import {
   BookOpen,
   ChevronRight,
   ArrowLeft,
-  CheckCircle2,
   ClipboardList,
-  GraduationCap,
   UserSquare2,
 } from "lucide-react";
 
@@ -40,50 +38,54 @@ type ApiTeacherSnapshot = {
   whatsapp_url?: string | null;
 };
 
-type ApiBookSnapshot = {
-  id?: string | null;
-  slug?: string | null;
-  title?: string | null;
-  author?: string | null;
-  image_url?: string | null;
-};
-
-type ApiSubjectSnapshot = {
-  id?: string | null;
-  url?: string | null;
-  code?: string | null;
+type ApiRoomSnapshot = {
   name?: string | null;
   slug?: string | null;
-};
-
-type ApiClassSubjectBookSnapshot = {
-  book?: ApiBookSnapshot | null;
-  subject?: ApiSubjectSnapshot | null;
+  join_url?: string | null;
+  platform?: string | null;
+  is_virtual?: boolean | null;
 };
 
 type ApiCSSTItem = {
   class_section_subject_teacher_id: string;
   class_section_subject_teacher_school_id: string;
   class_section_subject_teacher_slug: string;
+
   class_section_subject_teacher_total_attendance: number;
   class_section_subject_teacher_enrolled_count: number;
+
+  class_section_subject_teacher_total_assessments: number;
+  class_section_subject_teacher_total_assessments_graded: number;
+  class_section_subject_teacher_total_assessments_ungraded: number;
+  class_section_subject_teacher_total_students_passed: number;
+
   class_section_subject_teacher_delivery_mode: DeliveryMode;
+
   class_section_subject_teacher_class_section_id: string;
   class_section_subject_teacher_class_section_slug_snapshot: string;
   class_section_subject_teacher_class_section_name_snapshot: string;
   class_section_subject_teacher_class_section_code_snapshot: string;
+
+  class_section_subject_teacher_class_room_id: string | null;
+  class_section_subject_teacher_class_room_slug_snapshot: string | null;
+  class_section_subject_teacher_class_room_snapshot?: ApiRoomSnapshot | null;
+  class_section_subject_teacher_class_room_name_snapshot?: string | null;
+  class_section_subject_teacher_class_room_slug_snapshot_gen?: string | null;
+
   class_section_subject_teacher_school_teacher_id: string;
   class_section_subject_teacher_school_teacher_snapshot?: ApiTeacherSnapshot | null;
   class_section_subject_teacher_school_teacher_name_snapshot?: string | null;
-  class_section_subject_teacher_class_subject_book_id: string | null;
-  class_section_subject_teacher_class_subject_book_snapshot?: ApiClassSubjectBookSnapshot | null;
-  class_section_subject_teacher_book_title_snapshot?: string | null;
-  class_section_subject_teacher_book_author_snapshot?: string | null;
-  class_section_subject_teacher_book_slug_snapshot?: string | null;
-  class_section_subject_teacher_book_image_url_snapshot?: string | null;
+
+  class_section_subject_teacher_total_books: number;
+
+  class_section_subject_teacher_class_subject_id: string | null;
+  class_section_subject_teacher_subject_id_snapshot?: string | null;
   class_section_subject_teacher_subject_name_snapshot?: string | null;
   class_section_subject_teacher_subject_code_snapshot?: string | null;
   class_section_subject_teacher_subject_slug_snapshot?: string | null;
+
+  class_section_subject_teacher_min_passing_score?: number | null;
+
   class_section_subject_teacher_is_active: boolean;
   class_section_subject_teacher_created_at: string;
   class_section_subject_teacher_updated_at: string;
@@ -114,21 +116,38 @@ type SectionView = {
   sectionCode: string;
 };
 
+type RoomView = {
+  roomId?: string | null;
+  roomName?: string | null;
+  roomSlug?: string | null;
+  joinUrl?: string | null;
+  platform?: string | null;
+  isVirtual?: boolean | null;
+};
+
 type CsstView = {
   id: string;
   slug: string;
   subjectName: string;
   subjectCode?: string | null;
   subjectSlug?: string | null;
+
   teacherName: string;
   teacherTitle?: string;
+
   deliveryMode: DeliveryMode;
+  isActive: boolean;
+
   enrolledCount: number;
   totalAttendance: number;
-  isActive: boolean;
-  bookTitle?: string | null;
-  bookAuthor?: string | null;
-  bookImageUrl?: string | null;
+
+  totalAssessments: number;
+  totalAssessmentsGraded: number;
+  totalAssessmentsUngraded: number;
+  totalStudentsPassed: number;
+  minPassingScore?: number | null;
+
+  totalBooks: number;
 };
 
 /* ========== Utils kecil ========== */
@@ -169,7 +188,7 @@ const TeacherCSSTDetail: React.FC = () => {
   const navigate = useNavigate();
   const { setHeader } = useDashboardHeader();
 
-  /* ===== Query detail CSST (pakai API yang kamu kasih) ===== */
+  /* ===== Query detail CSST (pakai API terbaru) ===== */
   const csstQ = useQuery<ApiCSSTItem | undefined, AxiosError>({
     queryKey: ["teacher-csst-detail", csstId, teacherId],
     enabled: !!csstId,
@@ -205,6 +224,29 @@ const TeacherCSSTDetail: React.FC = () => {
     };
   }, [csstQ.data]);
 
+  const roomView: RoomView | null = useMemo(() => {
+    const it = csstQ.data;
+    if (!it) return null;
+
+    const room = it.class_section_subject_teacher_class_room_snapshot;
+
+    return {
+      roomId: it.class_section_subject_teacher_class_room_id,
+      roomName:
+        it.class_section_subject_teacher_class_room_name_snapshot ||
+        room?.name ||
+        null,
+      roomSlug:
+        it.class_section_subject_teacher_class_room_slug_snapshot_gen ||
+        it.class_section_subject_teacher_class_room_slug_snapshot ||
+        room?.slug ||
+        null,
+      joinUrl: room?.join_url || null,
+      platform: room?.platform || null,
+      isVirtual: room?.is_virtual ?? null,
+    };
+  }, [csstQ.data]);
+
   const csstView: CsstView | null = useMemo(() => {
     const it = csstQ.data;
     if (!it) return null;
@@ -224,39 +266,15 @@ const TeacherCSSTDetail: React.FC = () => {
     const teacherTitle =
       teacherTitleParts.length > 0 ? teacherTitleParts.join(" ") : undefined;
 
-    const csBook = it.class_section_subject_teacher_class_subject_book_snapshot;
-    const subj = csBook?.subject;
-    const book = csBook?.book;
-
     const subjectName =
       it.class_section_subject_teacher_subject_name_snapshot ||
-      subj?.name ||
       "Mata pelajaran tanpa nama";
 
     const subjectCode =
-      it.class_section_subject_teacher_subject_code_snapshot ||
-      subj?.code ||
-      null;
+      it.class_section_subject_teacher_subject_code_snapshot || null;
 
     const subjectSlug =
-      it.class_section_subject_teacher_subject_slug_snapshot ||
-      subj?.slug ||
-      null;
-
-    const bookTitle =
-      it.class_section_subject_teacher_book_title_snapshot ||
-      book?.title ||
-      null;
-
-    const bookAuthor =
-      it.class_section_subject_teacher_book_author_snapshot ||
-      book?.author ||
-      null;
-
-    const bookImageUrl =
-      it.class_section_subject_teacher_book_image_url_snapshot ||
-      book?.image_url ||
-      null;
+      it.class_section_subject_teacher_subject_slug_snapshot || null;
 
     return {
       id: it.class_section_subject_teacher_id,
@@ -267,12 +285,18 @@ const TeacherCSSTDetail: React.FC = () => {
       teacherName,
       teacherTitle,
       deliveryMode: it.class_section_subject_teacher_delivery_mode,
+      isActive: it.class_section_subject_teacher_is_active,
       enrolledCount: it.class_section_subject_teacher_enrolled_count,
       totalAttendance: it.class_section_subject_teacher_total_attendance,
-      isActive: it.class_section_subject_teacher_is_active,
-      bookTitle,
-      bookAuthor,
-      bookImageUrl,
+      totalAssessments: it.class_section_subject_teacher_total_assessments,
+      totalAssessmentsGraded:
+        it.class_section_subject_teacher_total_assessments_graded,
+      totalAssessmentsUngraded:
+        it.class_section_subject_teacher_total_assessments_ungraded,
+      totalStudentsPassed:
+        it.class_section_subject_teacher_total_students_passed,
+      minPassingScore: it.class_section_subject_teacher_min_passing_score,
+      totalBooks: it.class_section_subject_teacher_total_books,
     };
   }, [csstQ.data]);
 
@@ -319,6 +343,12 @@ const TeacherCSSTDetail: React.FC = () => {
 
   const totalStudents = csstView.enrolledCount ?? 0;
   const totalMeetings = csstView.totalAttendance ?? 0;
+
+  const totalAssessments = csstView.totalAssessments ?? 0;
+  const graded = csstView.totalAssessmentsGraded ?? 0;
+  const ungraded = csstView.totalAssessmentsUngraded ?? 0;
+  const totalPassed = csstView.totalStudentsPassed ?? 0;
+  const kkm = csstView.minPassingScore ?? undefined;
 
   return (
     <div className="w-full bg-background text-foreground">
@@ -398,6 +428,7 @@ const TeacherCSSTDetail: React.FC = () => {
             </CardHeader>
             <Separator />
             <CardContent className="grid gap-3 md:grid-cols-3">
+              {/* Siswa */}
               <div className="rounded-xl border bg-muted/40 px-4 py-3">
                 <p className="text-xs text-muted-foreground">Siswa Terdaftar</p>
                 <p className="mt-1 text-xl font-semibold tabular-nums">
@@ -408,6 +439,7 @@ const TeacherCSSTDetail: React.FC = () => {
                 </p>
               </div>
 
+              {/* Pertemuan */}
               <div className="rounded-xl border bg-muted/40 px-4 py-3">
                 <p className="text-xs text-muted-foreground">Total Pertemuan</p>
                 <p className="mt-1 text-xl font-semibold tabular-nums">
@@ -418,17 +450,22 @@ const TeacherCSSTDetail: React.FC = () => {
                 </p>
               </div>
 
+              {/* Penilaian */}
               <div className="rounded-xl border bg-muted/40 px-4 py-3">
-                <p className="text-xs text-muted-foreground">Mode & Status</p>
-                <div className="mt-1 flex flex-col gap-1 text-sm">
-                  <span>{formatDeliveryMode(csstView.deliveryMode)}</span>
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <CheckCircle2 className="h-3 w-3" />
-                    {csstView.isActive
-                      ? "Mapel sedang berjalan"
-                      : "Mapel nonaktif / arsip"}
-                  </span>
-                </div>
+                <p className="text-xs text-muted-foreground">Penilaian</p>
+                <p className="mt-1 text-xl font-semibold tabular-nums">
+                  {totalAssessments}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {graded} sudah dinilai • {ungraded} belum dinilai
+                  {kkm != null && (
+                    <>
+                      {" "}
+                      • KKM <span className="font-semibold">{kkm}</span>
+                      {totalPassed > 0 && ` • ${totalPassed} lulus`}
+                    </>
+                  )}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -443,26 +480,12 @@ const TeacherCSSTDetail: React.FC = () => {
             </CardHeader>
             <Separator />
             <CardContent className="p-4">
-              {csstView.bookTitle ? (
-                <div className="flex items-center gap-3 rounded-xl border bg-muted/40 p-3 text-sm">
-                  {csstView.bookImageUrl && (
-                    <img
-                      src={csstView.bookImageUrl}
-                      alt={csstView.bookTitle}
-                      className="h-16 w-12 rounded-md border object-cover"
-                    />
-                  )}
-                  <div className="space-y-1">
-                    <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                      Buku utama
-                    </div>
-                    <div className="text-sm font-semibold">
-                      {csstView.bookTitle}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      Penulis: {csstView.bookAuthor ?? "-"}
-                    </div>
-                  </div>
+              {csstView.totalBooks > 0 ? (
+                <div className="text-sm text-muted-foreground">
+                  Ada{" "}
+                  <span className="font-semibold">{csstView.totalBooks}</span>{" "}
+                  buku yang terhubung dengan mapel ini. Detail daftar buku bisa
+                  ditampilkan di halaman materi / buku mapel.
                 </div>
               ) : (
                 <div className="text-sm text-muted-foreground">
@@ -471,6 +494,50 @@ const TeacherCSSTDetail: React.FC = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Ruang / Platform Kelas */}
+          {roomView && (roomView.roomName || roomView.joinUrl) && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4" />
+                  Ruang Kelas / Platform
+                </CardTitle>
+              </CardHeader>
+              <Separator />
+              <CardContent className="p-4 text-sm">
+                <div className="space-y-1">
+                  <div className="font-medium">
+                    {roomView.roomName ?? "Ruang tanpa nama"}
+                  </div>
+                  {roomView.platform && (
+                    <div className="text-xs text-muted-foreground">
+                      Platform: {roomView.platform}
+                      {roomView.isVirtual ? " (virtual)" : ""}
+                    </div>
+                  )}
+                  {roomView.joinUrl && (
+                    <div className="mt-1">
+                      <a
+                        href={roomView.joinUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs font-medium underline underline-offset-2"
+                      >
+                        Buka link pertemuan
+                      </a>
+                    </div>
+                  )}
+                  {roomView.roomSlug && (
+                    <div className="text-xs text-muted-foreground">
+                      Slug ruang:{" "}
+                      <span className="font-mono">{roomView.roomSlug}</span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Quick links */}
           <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
@@ -519,13 +586,15 @@ const TeacherCSSTDetail: React.FC = () => {
                     <BookOpen className="h-4 w-4" />
                     <span>Materi</span>
                   </div>
-                  <div className="text-xl font-semibold">-</div>
+                  <div className="text-xl font-semibold">
+                    {csstView.totalBooks}
+                  </div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </CardContent>
             </Card>
 
-            {/* Tugas */}
+            {/* Tugas & Ujian (bisa di-split nanti kalau datanya beda) */}
             <Card
               className="cursor-pointer transition hover:shadow-md"
               onClick={() => navigate("tugas")}
@@ -534,26 +603,11 @@ const TeacherCSSTDetail: React.FC = () => {
                 <div className="space-y-1">
                   <div className="text-sm text-muted-foreground flex items-center gap-2">
                     <ClipboardList className="h-4 w-4" />
-                    <span>Tugas</span>
+                    <span>Tugas & Ujian</span>
                   </div>
-                  <div className="text-xl font-semibold">-</div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </CardContent>
-            </Card>
-
-            {/* Ujian */}
-            <Card
-              className="cursor-pointer transition hover:shadow-md"
-              onClick={() => navigate("ujian")}
-            >
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="space-y-1">
-                  <div className="text-sm text-muted-foreground flex items-center gap-2">
-                    <GraduationCap className="h-4 w-4" />
-                    <span>Ujian</span>
+                  <div className="text-xl font-semibold">
+                    {totalAssessments}
                   </div>
-                  <div className="text-xl font-semibold">-</div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </CardContent>

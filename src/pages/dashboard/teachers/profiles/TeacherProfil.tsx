@@ -8,6 +8,7 @@ import {
   MapPin,
   GraduationCap,
   Calendar,
+  ArrowLeft,
 } from "lucide-react";
 
 /* Tambahan untuk breadcrumb sistem dashboard */
@@ -22,13 +23,35 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { useNavigate } from "react-router-dom";
 
 /* ================= Date/Time Utils ================ */
 
 /* ==========================================
    MAIN COMPONENT
 ========================================== */
-export default function TeacherProfil() {
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
+
+export default function TeacherProfil({
+  showBack = false,
+  backTo
+}: Props) {
+  const navigate = useNavigate();
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
+
+  /* ✅ Breadcrumb */
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Profil Guru",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Guru" },
+      ],
+      showBack,
+    });
+  }, [setHeader, showBack]);
+
   const [loading, setLoading] = useState(false);
   const [teacher, setTeacher] = useState<any>(null);
   const [form, setForm] = useState<any>({
@@ -67,20 +90,6 @@ export default function TeacherProfil() {
         .toUpperCase()
       : "U";
 
-  /* Atur breadcrumb dan title seperti SchoolAcademic */
-  const { setHeader } = useDashboardHeader();
-
-  useEffect(() => {
-    setHeader({
-      title: "Profil",
-      breadcrumbs: [
-        { label: "Dashboard", href: "dashboard" },
-        { label: "Profil" },
-      ],
-      actions: null,
-    });
-  }, [setHeader]);
-
   /* ================= FETCH DATA ================= */
   const fetchTeacherData = async () => {
     try {
@@ -113,6 +122,20 @@ export default function TeacherProfil() {
   };
 
   /* ================= UI - FORM CREATE ================= */
+  {/* ✅ Header Back seperti SchoolClassSection */ }
+  <div className="md:flex hidden gap-3 items-center">
+    {showBack && (
+      <Button
+        onClick={handleBack}
+        variant="ghost"
+        size="icon"
+        className="cursor-pointer self-start"
+      >
+        <ArrowLeft size={20} />
+      </Button>
+    )}
+    <h1 className="font-semibold text-lg md:text-xl">Profil Guru</h1>
+  </div>
   const renderCreateForm = () => (
     <div className="flex-1 flex flex-col space-y-6 min-w-0">
       <Card>

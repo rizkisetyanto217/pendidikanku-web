@@ -1,5 +1,5 @@
 // src/pages/student/StudentEnrollmentPage.tsx
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,
   Users,
@@ -7,7 +7,11 @@ import {
   MapPin,
   Search,
   CheckCircle2,
+  ArrowLeft,
 } from "lucide-react";
+
+/* Import untuk breadcrumb header */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { CardContent } from "@/components/ui/card";
@@ -23,6 +27,7 @@ import {
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { useNavigate } from "react-router-dom";
 
 /* ============================================
    Types
@@ -124,8 +129,26 @@ function SeatsBadge({ seatsLeft }: { seatsLeft?: number }) {
 /* ============================================
    Page Component
 ============================================ */
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
-export default function StudentAdministrationEnrollment() {
+export default function StudentAdministrationEnrollment({ showBack = false, backTo }: Props) {
+  const navigate = useNavigate();
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
+
+  /* ✅ Breadcrumb */
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Pendaftaran",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Administrasi" },
+        { label: "Pendaftaran Kelas" },
+      ],
+      showBack,
+    });
+  }, [setHeader, showBack]);
+
   const [search, setSearch] = useState("");
   const [levelFilter, setLevelFilter] = useState<string>("all");
   const [items, setItems] = useState<OpenClassItem[]>(DEMO_OPEN_CLASSES);
@@ -170,14 +193,26 @@ export default function StudentAdministrationEnrollment() {
   return (
     <div className="flex flex-col gap-4">
       {/* Page header */}
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Pendaftaran Kelas
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Lihat semua kelas yang sedang dibuka dan daftar langsung dari halaman
-          ini.
-        </p>
+      <div className="md:flex hidden gap-3 items-center">
+        {showBack && (
+          <Button
+            onClick={handleBack}
+            variant="ghost"
+            size="icon"
+            className="cursor-pointer self-start"
+          >
+            <ArrowLeft size={20} />
+          </Button>
+        )}
+        <div>
+          <h1 className="text-xl font-semibold md:text-xl">
+            Pendaftaran Kelas
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Lihat semua kelas yang sedang dibuka dan daftar langsung dari halaman
+            ini.
+          </p>
+        </div>
       </div>
 
       <Separator />
@@ -229,7 +264,7 @@ export default function StudentAdministrationEnrollment() {
             filtered.map((item) => (
               <Card
                 key={item.id}
-                className="border-muted bg-background/70 hover:bg-accent/40 transition-colors"
+                className=" bg-background/70 hover:bg-accent/40 transition-colors"
               >
                 <CardHeader className="flex flex-row items-start justify-between gap-3 pb-3">
                   <div className="space-y-1">

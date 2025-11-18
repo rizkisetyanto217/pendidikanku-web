@@ -207,22 +207,20 @@ export default function StudentMyClass({
           </div>
 
           {/* Search */}
-          <Card>
-            <CardContent className="p-4 md:p-5">
-              <div className="relative w-full md:w-96">
-                <Search
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 opacity-60"
-                />
-                <Input
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  placeholder="Cari kelas / wali kelas / ruangan…"
-                  className="pl-9"
-                />
-              </div>
-            </CardContent>
-          </Card>
+          <CardContent className=" md:p-5">
+            <div className="relative w-full md:w-96">
+              <Search
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 opacity-60"
+              />
+              <Input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Cari kelas / wali kelas / ruangan…"
+                className="pl-9"
+              />
+            </div>
+          </CardContent>
 
           {/* ===== Highlight: kelas yang aktif hari ini ===== */}
           {todayActive.length > 0 && (

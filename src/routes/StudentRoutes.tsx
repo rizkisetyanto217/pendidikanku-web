@@ -129,7 +129,8 @@ export const StudentRoutes = (
       <Route path="keuangan" element={<StudentFinance />} />
 
       {/* Jadwal utama (khusus tampilan kelas saya / tab jadwal) */}
-      <Route path="jadwal" element={<StudentAllSchedule />} />
+      <Route path="jadwal" element={<StudentAllSchedule showBack />} />
+      <Route path="rutin" element={<StudentScheduleRoutine showBack />} />
 
       {/* Halaman tugas */}
       <Route path="tugas" element={<StudentClassesAssignment showBack />} />

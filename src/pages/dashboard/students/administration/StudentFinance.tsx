@@ -75,10 +75,34 @@ async function fetchBillDetail(billId: string): Promise<BillDetail> {
   };
 }
 
-export default function StudentFinance() {
+/* =========================================================
+   Page — sama layout & interaksi dengan Academic
+========================================================= */
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
+
+export default function StudentFinance({
+  showBack = false,
+  backTo
+}: Props) {
+  const navigate = useNavigate();
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
+
+  /* ✅ Breadcrumb */
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Keuangan",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Administrasi" },
+        { label: "Keuangan" },
+      ],
+      showBack,
+    });
+  }, [setHeader, showBack]);
+
   const { billId: billIdParam } = useParams();
   const billId = billIdParam || "default";
-  const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState<"today" | "history">("today");
 
@@ -87,20 +111,6 @@ export default function StudentFinance() {
     queryFn: () => fetchBillDetail(billId),
     staleTime: 60_000,
   });
-
-  /* Atur breadcrumb dan title seperti SchoolAcademic */
-  const { setHeader } = useDashboardHeader();
-
-  useEffect(() => {
-    setHeader({
-      title: "Pembayaran",
-      breadcrumbs: [
-        { label: "Dashboard", href: "dashboard" },
-        { label: "Pembayaran" },
-      ],
-      actions: null,
-    });
-  }, [setHeader]);
 
   const paidList: BillDetail[] = [
     {
@@ -129,18 +139,18 @@ export default function StudentFinance() {
       <main className="mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-9 w-9"
-              onClick={() => navigate(-1)}
-              title="Kembali"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-
-            <h1 className="text-lg font-semibold">Pembayaran</h1>
+          <div className="md:flex hidden gap-3 items-center">
+            {showBack && (
+              <Button
+                onClick={handleBack}
+                variant="ghost"
+                size="icon"
+                className="cursor-pointer self-start"
+              >
+                <ArrowLeft size={20} />
+              </Button>
+            )}
+            <h1 className="text-lg font-semibold md:text-xl">Keuangan</h1>
           </div>
         </div>
 

@@ -1,5 +1,5 @@
 // src/pages/student/StudentReEnrollmentPage.tsx
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CalendarClock,
   RefreshCcw,
@@ -8,7 +8,11 @@ import {
   CheckCircle2,
   CreditCard,
   ChevronRight,
+  ArrowLeft,
 } from "lucide-react";
+
+/* Import untuk breadcrumb header */
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { CardContent } from "@/components/ui/card";
@@ -23,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useNavigate } from "react-router-dom";
 
 /* ============================================
    Types
@@ -159,8 +164,29 @@ function statusLabel(status: ReEnrollmentStatus) {
 /* ============================================
    Page Component
 ============================================ */
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
-export default function StudentAdministrationReEnrollment() {
+export default function StudentAdministrationReEnrollment({
+  showBack = false,
+  backTo
+}: Props) {
+  const navigate = useNavigate();
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
+
+  /* ✅ Breadcrumb */
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Daftar Ulang",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Administrasi" },
+        { label: "Daftar Ulang" },
+      ],
+      showBack,
+    });
+  }, [setHeader, showBack]);
+
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [items] = useState<ReEnrollmentItem[]>(DEMO_REENROLL_ITEMS);
 
@@ -186,14 +212,25 @@ export default function StudentAdministrationReEnrollment() {
   return (
     <div className="flex flex-col gap-4">
       {/* Page header */}
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Daftar Ulang</h1>
-        <p className="text-sm text-muted-foreground">
-          Lihat kelas yang naik jenjang dan selesaikan biaya daftar ulang & SPP
-          untuk tahun ajaran berikutnya.
-        </p>
+      <div className="md:flex hidden gap-3 items-center">
+        {showBack && (
+          <Button
+            onClick={handleBack}
+            variant="ghost"
+            size="icon"
+            className="cursor-pointer self-start"
+          >
+            <ArrowLeft size={20} />
+          </Button>
+        )}
+        <div>
+          <h1 className="md:text-xl font-semibold teks-lg">Daftar Ulang</h1>
+          <p className="text-sm text-muted-foreground">
+            Lihat kelas yang naik jenjang dan selesaikan biaya daftar ulang & SPP
+            untuk tahun ajaran berikutnya.
+          </p>
+        </div>
       </div>
-
       {/* Summary */}
       <Card className="border-amber-200 bg-amber-50/80 dark:bg-amber-950/20">
         <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">

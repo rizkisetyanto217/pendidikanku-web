@@ -16,8 +16,11 @@ import CMainMenuGridCard, {
   type CMenuItem,
 } from "@/pages/dashboard/components/card/CMainMenuGridCard";
 
-/* ================= Component ================= */
+/* ===================== PAGE ===================== */
+
+
 export default function TeacherMenuGrids() {
+
 
   /* Atur breadcrumb dan title seperti SchoolAcademic */
   const { setHeader } = useDashboardHeader();
@@ -82,7 +85,7 @@ export default function TeacherMenuGrids() {
       {
         key: "jadwal",
         label: "Jadwal",
-        to: "jadwal",
+        to: "agenda",
         icon: <CalendarDays className="w-5 h-5" />,
       },
 
