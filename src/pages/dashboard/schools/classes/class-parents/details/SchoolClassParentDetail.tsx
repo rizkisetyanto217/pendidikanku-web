@@ -479,7 +479,7 @@ const SchoolClassParentDetail: React.FC = () => {
             : "Data level tidak ditemukan atau belum ada kelas.";
 
         return (
-            <div className="p-6 space-y-3">
+            <div className="flex flex-col items-center justify-center min-h-screen p-6 space-y-3 text-center">
                 <div className="text-destructive text-sm">
                     Gagal memuat detail level.
                 </div>

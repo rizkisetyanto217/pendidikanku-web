@@ -330,7 +330,7 @@ const SchoolClassSectionDetail: React.FC = () => {
   if (csstError || !sectionView) {
     const msg = csstError ?? "Data rombel atau daftar CSST tidak ditemukan.";
     return (
-      <div className="p-6 space-y-3">
+      <div className="flex flex-col items-center justify-center min-h-screen p-6 space-y-3 text-center">
         <div className="text-destructive text-sm">
           Gagal memuat detail rombel.
         </div>

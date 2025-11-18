@@ -343,12 +343,11 @@ const TeacherCSSTDetail: React.FC = () => {
 
   const totalStudents = csstView.enrolledCount ?? 0;
   const totalMeetings = csstView.totalAttendance ?? 0;
+  const totalAttendance = csstView.totalAttendance ?? 0;
+  const totalBooks = csstView.totalBooks ?? 0;
 
-  const totalAssessments = csstView.totalAssessments ?? 0;
-  const graded = csstView.totalAssessmentsGraded ?? 0;
-  const ungraded = csstView.totalAssessmentsUngraded ?? 0;
-  const totalPassed = csstView.totalStudentsPassed ?? 0;
-  const kkm = csstView.minPassingScore ?? undefined;
+  const totalAssessmentsGraded = csstView.totalAssessmentsGraded ?? 0;
+  const totalAssessmentsUngraded = csstView.totalAssessmentsUngraded ?? 0;
 
   return (
     <div className="w-full bg-background text-foreground">
@@ -419,81 +418,150 @@ const TeacherCSSTDetail: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Ringkasan angka */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">
-                Ringkasan Mapel di Rombel Ini
-              </CardTitle>
-            </CardHeader>
-            <Separator />
-            <CardContent className="grid gap-3 md:grid-cols-3">
-              {/* Siswa */}
-              <div className="rounded-xl border bg-muted/40 px-4 py-3">
-                <p className="text-xs text-muted-foreground">Siswa Terdaftar</p>
-                <p className="mt-1 text-xl font-semibold tabular-nums">
-                  {totalStudents}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  jumlah siswa yang memilih mapel ini
-                </p>
-              </div>
-
-              {/* Pertemuan */}
-              <div className="rounded-xl border bg-muted/40 px-4 py-3">
-                <p className="text-xs text-muted-foreground">Total Pertemuan</p>
-                <p className="mt-1 text-xl font-semibold tabular-nums">
-                  {totalMeetings}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  akumulasi sesi kehadiran yang tercatat
-                </p>
-              </div>
-
-              {/* Penilaian */}
-              <div className="rounded-xl border bg-muted/40 px-4 py-3">
-                <p className="text-xs text-muted-foreground">Penilaian</p>
-                <p className="mt-1 text-xl font-semibold tabular-nums">
-                  {totalAssessments}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {graded} sudah dinilai • {ungraded} belum dinilai
-                  {kkm != null && (
-                    <>
-                      {" "}
-                      • KKM <span className="font-semibold">{kkm}</span>
-                      {totalPassed > 0 && ` • ${totalPassed} lulus`}
-                    </>
-                  )}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Buku yang digunakan */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <BookOpen className="h-4 w-4" />
-                Buku & Materi
-              </CardTitle>
-            </CardHeader>
-            <Separator />
-            <CardContent className="p-4">
-              {csstView.totalBooks > 0 ? (
-                <div className="text-sm text-muted-foreground">
-                  Ada{" "}
-                  <span className="font-semibold">{csstView.totalBooks}</span>{" "}
-                  buku yang terhubung dengan mapel ini. Detail daftar buku bisa
-                  ditampilkan di halaman materi / buku mapel.
+          {/* Quick links */}
+          <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {/* Peserta */}
+            <Card
+              className="cursor-pointer transition hover:shadow-md"
+              onClick={() => navigate("peserta")}
+            >
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    <span>Peserta</span>
+                  </div>
+                  <div className="text-xl font-semibold">{totalStudents}</div>
                 </div>
-              ) : (
-                <div className="text-sm text-muted-foreground">
-                  Belum ada buku yang terhubung dengan mapel ini.
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </CardContent>
+            </Card>
+
+            {/* Peserta */}
+            <Card
+              className="cursor-pointer transition hover:shadow-md"
+              onClick={() => navigate("peserta")}
+            >
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    <span>Target Pertemuan</span>
+                  </div>
+                  <div className="text-xl font-semibold"> {totalMeetings}</div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </CardContent>
+            </Card>
+
+            {/* Rekap Kehadiran */}
+            <Card
+              className="cursor-pointer transition hover:shadow-md"
+              onClick={() => navigate("kehadiran")}
+            >
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4" />
+                    <span>Jumlah Kehadiran</span>
+                  </div>
+                  <div className="text-xl font-semibold">{totalAttendance}</div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </CardContent>
+            </Card>
+
+            {/* Materi */}
+            <Card
+              className="cursor-pointer transition hover:shadow-md"
+              onClick={() => navigate("materi")}
+            >
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <BookOpen className="h-4 w-4" />
+                    <span>Materi</span>
+                  </div>
+                  <div className="text-xl font-semibold">
+                    {csstView.totalBooks}
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </CardContent>
+            </Card>
+
+            {/* Latihan */}
+            <Card
+              className="cursor-pointer transition hover:shadow-md"
+              onClick={() => navigate("tugas")}
+            >
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <ClipboardList className="h-4 w-4" />
+                    <span>Latihan</span>
+                  </div>
+                  <div className="text-xl font-semibold">
+                    {totalAssessmentsUngraded}
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </CardContent>
+            </Card>
+
+            {/* Ujian */}
+            <Card
+              className="cursor-pointer transition hover:shadow-md"
+              onClick={() => navigate("tugas")}
+            >
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <ClipboardList className="h-4 w-4" />
+                    <span>Ujian</span>
+                  </div>
+                  <div className="text-xl font-semibold">
+                    {totalAssessmentsGraded}
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </CardContent>
+            </Card>
+
+            {/* Buku*/}
+            <Card
+              className="cursor-pointer transition hover:shadow-md"
+              onClick={() => navigate("tugas")}
+            >
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <ClipboardList className="h-4 w-4" />
+                    <span>Buku</span>
+                  </div>
+                  <div className="text-xl font-semibold">{totalBooks}</div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </CardContent>
+            </Card>
+
+            {/* Profil Mapel */}
+            <Card
+              className="cursor-pointer transition hover:shadow-md"
+              onClick={() => navigate("profil")}
+            >
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <UserSquare2 className="h-4 w-4" />
+                    <span>Profil Mapel</span>
+                  </div>
+                  <div className="text-xl font-semibold">Detail</div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Ruang / Platform Kelas */}
           {roomView && (roomView.roomName || roomView.joinUrl) && (
@@ -538,98 +606,6 @@ const TeacherCSSTDetail: React.FC = () => {
               </CardContent>
             </Card>
           )}
-
-          {/* Quick links */}
-          <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {/* Peserta */}
-            <Card
-              className="cursor-pointer transition hover:shadow-md"
-              onClick={() => navigate("peserta")}
-            >
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="space-y-1">
-                  <div className="text-sm text-muted-foreground flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    <span>Peserta</span>
-                  </div>
-                  <div className="text-xl font-semibold">{totalStudents}</div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </CardContent>
-            </Card>
-
-            {/* Rekap Kehadiran */}
-            <Card
-              className="cursor-pointer transition hover:shadow-md"
-              onClick={() => navigate("kehadiran")}
-            >
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="space-y-1">
-                  <div className="text-sm text-muted-foreground flex items-center gap-2">
-                    <CalendarDays className="h-4 w-4" />
-                    <span>Rekap Kehadiran</span>
-                  </div>
-                  <div className="text-xl font-semibold">{totalMeetings}</div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </CardContent>
-            </Card>
-
-            {/* Materi */}
-            <Card
-              className="cursor-pointer transition hover:shadow-md"
-              onClick={() => navigate("materi")}
-            >
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="space-y-1">
-                  <div className="text-sm text-muted-foreground flex items-center gap-2">
-                    <BookOpen className="h-4 w-4" />
-                    <span>Materi</span>
-                  </div>
-                  <div className="text-xl font-semibold">
-                    {csstView.totalBooks}
-                  </div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </CardContent>
-            </Card>
-
-            {/* Tugas & Ujian (bisa di-split nanti kalau datanya beda) */}
-            <Card
-              className="cursor-pointer transition hover:shadow-md"
-              onClick={() => navigate("tugas")}
-            >
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="space-y-1">
-                  <div className="text-sm text-muted-foreground flex items-center gap-2">
-                    <ClipboardList className="h-4 w-4" />
-                    <span>Tugas & Ujian</span>
-                  </div>
-                  <div className="text-xl font-semibold">
-                    {totalAssessments}
-                  </div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </CardContent>
-            </Card>
-
-            {/* Profil Mapel */}
-            <Card
-              className="cursor-pointer transition hover:shadow-md"
-              onClick={() => navigate("profil")}
-            >
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="space-y-1">
-                  <div className="text-sm text-muted-foreground flex items-center gap-2">
-                    <UserSquare2 className="h-4 w-4" />
-                    <span>Profil Mapel</span>
-                  </div>
-                  <div className="text-xl font-semibold">Detail</div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </CardContent>
-            </Card>
-          </div>
         </div>
       </main>
     </div>

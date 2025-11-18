@@ -81,17 +81,11 @@ export const SchoolRoutes = (
         element={<SchoolSectionDetail />}
       />
       <Route path="level" element={<SchoolClassParent />} />
-      <Route
-        path="level/:classParentId"
-        element={<SchoolClassParentDetail />}
-      />
+      <Route path="level/:classParentId" element={<SchoolClassParentDetail />} />
       <Route path="daftar-kelas" element={<SchoolClass />} />
       <Route path="daftar-kelas/:classId" element={<SchoolClassDetail />} />
       <Route path="semua-kelas" element={<SchoolClassesSection />} />
-      <Route
-        path="semua-kelas/:classSectionId"
-        element={<SchoolClassSectionDetail />}
-      />
+      <Route path="semua-kelas/:classSectionId" element={<SchoolClassSectionDetail />} />
       <Route path="pelajaran" element={<SchoolCSST />} />
       <Route path="pelajaran/:csstId" element={<SchoolCSSTDetail />} />
     </Route>
