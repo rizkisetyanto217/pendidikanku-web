@@ -399,9 +399,9 @@ const SchoolCampaign: React.FC<Props> = ({
         { label: "Dukungan" },
         { label: "Donasi" },
       ],
-      actions: null, // bisa isi tombol kalau perlu
+      showBack,
     });
-  }, [setHeader]);
+  }, [setHeader, showBack]);
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: QK.CAMPAIGNS(schoolId || "default"),
@@ -453,7 +453,17 @@ const SchoolCampaign: React.FC<Props> = ({
     <div className="w-full bg-background text-foreground">
       <main className="max-w-screen-2xl mx-auto space-y-6">
         {/* Header */}
-        <div>
+        <div className="md:flex hidden gap-3 items-center">
+          {showBack && (
+            <Button
+              onClick={handleBack}
+              variant="ghost"
+              size="icon"
+              className="cursor-pointer self-start"
+            >
+              <ArrowLeft size={20} />
+            </Button>
+          )}
           <h1 className="font-semibold text-lg md:text-xl">Donasi</h1>
         </div>
         <Card className="shadow-sm">

@@ -2,11 +2,10 @@
 import { useMemo, useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { Plus, Info, Loader2 } from "lucide-react";
+import { Info, Loader2 } from "lucide-react";
 import axios from "@/lib/axios";
 
 /* shadcn/ui */
-import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Select } from "@/components/ui/select";
@@ -264,68 +263,57 @@ const SchoolClassParent: React.FC = () => {
   };
 
   return (
-    <div className="h-full w-full overflow-x-hidden bg-background text-foreground">
+    <div className="w-full overflow-x-hidden bg-background text-foreground">
       <main className="w-full">
-        <div className="mx-auto flex-col gap-6">
+        <div className="mx-auto flex flex-col gap-4 lg:gap-6">
           {/* Header sederhana */}
           <div className="md:flex hidden gap-3 items-center">
             <h1 className="font-semibold text-lg md:text-xl">Level</h1>
           </div>
 
           {/* Daftar Tingkat */}
+          <DataTable<Row>
+            onAdd={() => setOpenTambahLevel(true)}
+            addLabel="Tambah"
+            controlsPlacement="above"
+            defaultQuery={q}
+            onQueryChange={handleQueryChange}
+            filterer={() => true}
+            searchByKeys={["name", "slug", "level"]}
+            searchPlaceholder="Cari nama/slug/level…"
+            statsSlot={statsSlot}
+            loading={levelsQ.isLoading}
+            error={
+              levelsQ.isError
+                ? (levelsQ.error as any)?.message ?? "Error"
+                : null
+            }
+            columns={columns}
+            rows={pagedRows}
+            getRowId={(r) => r.id}
+            defaultAlign="left"
+            stickyHeader
+            zebra
+            viewModes={["table", "card"] as ViewMode[]}
+            defaultView="table"
+            storageKey={`class-parents:${schoolId}`}
+            onRowClick={(r) => navigate(`${r.id}`)}
+            pageSize={perPage}
+            pageSizeOptions={[10, 20, 50, 100, 200]}
+          />
 
-          <CardHeader className="py-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2"></CardTitle>
-              <Button size="sm" onClick={() => setOpenTambahLevel(true)}>
-                <Plus size={16} className="mr-2" /> Tambah Tingkat
-              </Button>
+          {/* Footer pagination */}
+          <div className="mt-2 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
+            <div className="order-1 sm:order-2 flex items-center gap-2">
+              <Select
+                value={String(perPage)}
+                onValueChange={(v) => {
+                  setPerPage(Number(v));
+                  setPage(1);
+                }}
+              ></Select>
             </div>
-          </CardHeader>
-          <CardContent className="pb-4">
-            <DataTable<Row>
-              onAdd={() => setOpenTambahLevel(true)}
-              addLabel="Tambah Tingkat"
-              controlsPlacement="above"
-              defaultQuery={q}
-              onQueryChange={handleQueryChange}
-              filterer={() => true}
-              searchByKeys={["name", "slug", "level"]}
-              searchPlaceholder="Cari nama/slug/level…"
-              statsSlot={statsSlot}
-              loading={levelsQ.isLoading}
-              error={
-                levelsQ.isError
-                  ? (levelsQ.error as any)?.message ?? "Error"
-                  : null
-              }
-              columns={columns}
-              rows={pagedRows}
-              getRowId={(r) => r.id}
-              defaultAlign="left"
-              stickyHeader
-              zebra
-              viewModes={["table", "card"] as ViewMode[]}
-              defaultView="table"
-              storageKey={`class-parents:${schoolId}`}
-              onRowClick={(r) => navigate(`${r.id}`)}
-              pageSize={perPage}
-              pageSizeOptions={[10, 20, 50, 100, 200]}
-            />
-
-            {/* Footer pagination */}
-            <div className="mt-2 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
-              <div className="order-1 sm:order-2 flex items-center gap-2">
-                <Select
-                  value={String(perPage)}
-                  onValueChange={(v) => {
-                    setPerPage(Number(v));
-                    setPage(1);
-                  }}
-                ></Select>
-              </div>
-            </div>
-          </CardContent>
+          </div>
         </div>
       </main>
 

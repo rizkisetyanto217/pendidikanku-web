@@ -195,19 +195,28 @@ const SchoolClassSectionDetail: React.FC = () => {
   const items: ApiCSST[] = csstQ.data?.data ?? [];
 
   /* ===== Ambil info rombel dari snapshot baris pertama ===== */
-  const sectionView: SectionView | null = useMemo(() => {
-    if (!items.length) return null;
-    const first = items[0];
+  const safeSectionId = classSectionId ?? "";
+
+  const sectionView: SectionView = useMemo(() => {
+    if (items.length > 0) {
+      const first = items[0];
+      return {
+        sectionId: first.class_section_subject_teacher_class_section_id,
+        sectionName: first.class_section_subject_teacher_class_section_name_snapshot,
+        sectionSlug: first.class_section_subject_teacher_class_section_slug_snapshot,
+        sectionCode: first.class_section_subject_teacher_class_section_code_snapshot,
+      };
+    }
+
+    // Fallback jika tidak ada CSST
     return {
-      sectionId: first.class_section_subject_teacher_class_section_id,
-      sectionName:
-        first.class_section_subject_teacher_class_section_name_snapshot,
-      sectionSlug:
-        first.class_section_subject_teacher_class_section_slug_snapshot,
-      sectionCode:
-        first.class_section_subject_teacher_class_section_code_snapshot,
+      sectionId: safeSectionId,
+      sectionName: "Detail Rombel",
+      sectionSlug: safeSectionId,
+      sectionCode: "-",
     };
-  }, [items]);
+  }, [items, safeSectionId]);
+
 
   /* ===== Set header top bar dashboard ===== */
   useEffect(() => {
@@ -219,7 +228,7 @@ const SchoolClassSectionDetail: React.FC = () => {
         { label: "Kelas" },
         {
           label: "Data Kelas",
-          href: `/${schoolId}/sekolah/kelas`,
+          href: `/${schoolId}/sekolah/kelas/semua-kelas `,
         },
         { label: "Detail Rombel" },
       ],
@@ -327,7 +336,7 @@ const SchoolClassSectionDetail: React.FC = () => {
     );
   }
 
-  if (csstError || !sectionView) {
+  if (csstError) {
     const msg = csstError ?? "Data rombel atau daftar CSST tidak ditemukan.";
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-6 space-y-3 text-center">
@@ -337,7 +346,7 @@ const SchoolClassSectionDetail: React.FC = () => {
         <div className="text-xs text-muted-foreground break-all">{msg}</div>
         <Button
           variant="outline"
-          onClick={() => navigate(`/${schoolId}/sekolah/kelas`)}
+          onClick={() => navigate(`/${schoolId}/sekolah/kelas/semua-kelas `)}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Kembali ke daftar kelas
@@ -358,7 +367,7 @@ const SchoolClassSectionDetail: React.FC = () => {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <h1 className="text-lg font-semibold">
-              Rombel: {sectionView.sectionName}
+              {sectionView.sectionName}
             </h1>
           </div>
 

@@ -21,7 +21,8 @@ import {
 } from "@/components/ui/select";
 
 /* icons */
-import { Copy, Save, Globe2, Link as LinkIcon } from "lucide-react";
+import { Copy, Save, Globe2, Link as LinkIcon, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 /* utils */
 const fmtIDR = (n: number) =>
@@ -93,7 +94,15 @@ function Row({
 /* =====================================================================
  * Main Page Component
  * ===================================================================== */
-export default function SchoolRegistrationsSetting() {
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
+
+export default function SchoolRegistrationsSetting({
+  showBack = false,
+  backTo
+}: Props) {
+  const navigate = useNavigate();
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
+
   /* ✅ Tambah breadcrumb seperti SchoolAcademic */
   const { setHeader } = useDashboardHeader();
   useEffect(() => {
@@ -104,8 +113,9 @@ export default function SchoolRegistrationsSetting() {
         { label: "Pendaftaran" },
         { label: "Pengaturan" },
       ],
+      showBack,
     });
-  }, [setHeader]);
+  }, [setHeader, showBack]);
 
   const activeTerm = useMemo(() => TERMS.find((t) => t.active) || TERMS[0], []);
   const [termId, setTermId] = useState<string>(activeTerm.id);
@@ -143,17 +153,28 @@ export default function SchoolRegistrationsSetting() {
   return (
     <div className="mx-auto w-full">
       {/* Header Page */}
-      <header className="mb-4 flex items-center gap-3">
+      {/* Header Back seperti SchoolAcademic */}
+      <div className="md:flex hidden gap-3 items-center">
+        {showBack && (
+          <Button
+            onClick={handleBack}
+            variant="ghost"
+            size="icon"
+            className="cursor-pointer self-start"
+          >
+            <ArrowLeft size={20} />
+          </Button>
+        )}
         <div>
-          <h1 className="text-xl font-semibold leading-tight md:text-2xl">
-            PMB — Pengaturan
+          <h1 className="text-lg font-semibold md:text-xl">
+            PMB - Pengaturan
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="mt-1 text-xs text-muted-foreground md:text-sm mb-4">
             Kelola preferensi PMB: biaya default, format kode, kanal pembayaran,
-            dan tautan publik.
+            dan tautan publik
           </p>
         </div>
-      </header>
+      </div>
 
       {/* ===== Konteks Periode ===== */}
       <Card className="mb-4">

@@ -155,18 +155,33 @@ const SchoolClassDetail: React.FC = () => {
     const sections: ApiClassSection[] = sectionsQ.data?.data ?? [];
 
     /* ===== Ambil info kelas dari snapshot baris pertama ===== */
-    const classView: ClassView | null = useMemo(() => {
-        if (!sections.length || !classId) return null;
-        const first = sections[0];
+    const safeClassId = classId ?? "";
+
+    const classView: ClassView = useMemo(() => {
+        if (sections.length > 0) {
+            const first = sections[0];
+            return {
+                classId: safeClassId,
+                className: first.class_section_class_name_snapshot || "Tanpa Nama",
+                classSlug: first.class_section_class_slug_snapshot || "-",
+                parentName: first.class_section_class_parent_name_snapshot || "-",
+                parentSlug: first.class_section_class_parent_slug_snapshot || "-",
+                parentLevel: first.class_section_class_parent_level_snapshot ?? 0,
+            };
+        }
+
+        // Fallback jika tidak ada section sama sekali
         return {
-            classId,
-            className: first.class_section_class_name_snapshot,
-            classSlug: first.class_section_class_slug_snapshot,
-            parentName: first.class_section_class_parent_name_snapshot,
-            parentSlug: first.class_section_class_parent_slug_snapshot,
-            parentLevel: first.class_section_class_parent_level_snapshot,
+            classId: safeClassId,
+            className: "Detail Kelas",
+            classSlug: safeClassId || "-",
+            parentName: "-",
+            parentSlug: "-",
+            parentLevel: 0,
         };
-    }, [sections, classId]);
+    }, [sections, safeClassId]);
+
+
 
     /* ===== Set header top bar ===== */
     useEffect(() => {
@@ -178,7 +193,7 @@ const SchoolClassDetail: React.FC = () => {
                 { label: "Kelas" },
                 {
                     label: "Data Kelas",
-                    href: `/${schoolId}/sekolah/kelas`,
+                    href: `/${schoolId}/sekolah/kelas/daftar-kelas `,
                 },
                 { label: classView.className },
             ],
@@ -354,7 +369,7 @@ const SchoolClassDetail: React.FC = () => {
         );
     }
 
-    if (sectionsError || !classView) {
+    if (sectionsError) {
         const msg = sectionsError ?? "Data kelas tidak ditemukan.";
 
         return (
@@ -365,7 +380,7 @@ const SchoolClassDetail: React.FC = () => {
                 <div className="text-xs text-muted-foreground break-all">{msg}</div>
                 <Button
                     variant="outline"
-                    onClick={() => navigate(`/${schoolId}/sekolah/kelas`)}
+                    onClick={() => navigate(`/${schoolId}/sekolah/kelas/daftar-kelas `)}
                 >
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Kembali ke daftar kelas
@@ -384,7 +399,7 @@ const SchoolClassDetail: React.FC = () => {
                     <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => navigate(`/${schoolId}/sekolah/kelas`)}
+                        onClick={() => navigate(`/${schoolId}/sekolah/kelas/daftar-kelas `)}
                     >
                         <ArrowLeft className="h-4 w-4" />
                     </Button>

@@ -32,6 +32,8 @@ import {
   DataTable as CDataTable,
   type ColumnDef,
 } from "@/components/costum/table/CDataTable";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
 /* ===== Utils ===== */
 const fmtIDR = (n: number) =>
@@ -135,22 +137,6 @@ const STUDENTS: StudentReg[] = [
   },
 ];
 
-/* ===== Page Header ===== */
-function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
-  return (
-    <div className="mb-4 flex items-center gap-3">
-      <div>
-        <h1 className="text-xl font-semibold leading-tight md:text-2xl">
-          {title}
-        </h1>
-        {subtitle && (
-          <p className="text-sm text-muted-foreground">{subtitle}</p>
-        )}
-      </div>
-    </div>
-  );
-}
-
 /* ===== Dialog Tambah Manual Pendaftar (dummy) ===== */
 function AddStudentDialog() {
   const [name, setName] = useState("Nama Calon Murid");
@@ -225,7 +211,15 @@ function AddStudentDialog() {
 }
 
 /* ===== Komponen Halaman ===== */
-export default function SchoolRegistrationsListStudent() {
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
+
+export default function SchoolRegistrationsListStudent({
+  showBack = false,
+  backTo
+}: Props) {
+  const navigate = useNavigate();
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
+
   /* ✅ Tambah breadcrumb seperti SchoolAcademic */
   const { setHeader } = useDashboardHeader();
   useEffect(() => {
@@ -236,8 +230,9 @@ export default function SchoolRegistrationsListStudent() {
         { label: "Pendaftaran" },
         { label: "Murid" },
       ],
+      showBack,
     });
-  }, [setHeader]);
+  }, [setHeader, showBack]);
 
   const [termId, setTermId] = useState<string>(
     TERMS.find((t) => t.academic_term_is_active)?.academic_term_id ||
@@ -316,10 +311,27 @@ export default function SchoolRegistrationsListStudent() {
 
   return (
     <div className="w-full">
-      <PageHeader
-        title="PMB — Daftar Pendaftar"
-        subtitle="Pantau pendaftar per-periode, status seleksi, dan pembayaran."
-      />
+      {/* Header Back seperti SchoolAcademic */}
+      <div className="md:flex hidden gap-3 items-center">
+        {showBack && (
+          <Button
+            onClick={handleBack}
+            variant="ghost"
+            size="icon"
+            className="cursor-pointer self-start"
+          >
+            <ArrowLeft size={20} />
+          </Button>
+        )}
+        <div>
+          <h1 className="text-lg font-semibold md:text-xl">
+            PMB - Daftar Pendaftar
+          </h1>
+          <p className="mt-1 text-xs text-muted-foreground md:text-sm mb-4">
+            Pantau pendaftar per-periode, status seleksi, dan pembayaran
+          </p>
+        </div>
+      </div>
 
       {/* Picker Periode */}
       <Card className="mb-4">

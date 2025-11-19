@@ -212,21 +212,32 @@ const SchoolClassParentDetail: React.FC = () => {
 
     const classes: ClassItem[] = classesQ.data?.data ?? [];
 
-    const parent: ParentView | null = useMemo(() => {
-        if (!classes.length || !classParentId) return null;
-        const first = classes[0];
+    const safeParentId = classParentId ?? "";
 
+    const parent: ParentView = useMemo(() => {
+        if (classes.length > 0) {
+            const first = classes[0];
+            return {
+                class_parent_id: first.class_class_parent_id || safeParentId,
+                class_parent_name: first.class_class_parent_name_snapshot,
+                class_parent_slug: first.class_class_parent_slug_snapshot,
+                class_parent_level: first.class_class_parent_level_snapshot,
+                class_parent_is_active: first.class_parents?.class_parent_is_active ?? true,
+                class_parent_total_classes: classesQ.data?.pagination?.total ?? classes.length,
+            };
+        }
+
+        // Fallback jika level belum punya kelas sama sekali
         return {
-            class_parent_id: first.class_class_parent_id || classParentId,
-            class_parent_name: first.class_class_parent_name_snapshot,
-            class_parent_slug: first.class_class_parent_slug_snapshot,
-            class_parent_level: first.class_class_parent_level_snapshot,
-            class_parent_is_active:
-                first.class_parents?.class_parent_is_active ?? true,
-            class_parent_total_classes:
-                classesQ.data?.pagination?.total ?? classes.length,
+            class_parent_id: safeParentId,
+            class_parent_name: "Detail Level",
+            class_parent_slug: safeParentId,
+            class_parent_level: null,
+            class_parent_is_active: true,
+            class_parent_total_classes: 0,
         };
-    }, [classes, classesQ.data?.pagination, classParentId]);
+    }, [classes, classesQ.data?.pagination, safeParentId]);
+
 
     // Log error sekali lewat effect
     useEffect(() => {
@@ -248,7 +259,7 @@ const SchoolClassParentDetail: React.FC = () => {
                 { label: "Kelas" },
                 {
                     label: "Level",
-                    href: `/${schoolId}/sekolah/kelas/tingkat`,
+                    href: `/${schoolId}/sekolah/kelas/level`,
                 },
                 { label: parent.class_parent_name },
             ],
@@ -473,7 +484,7 @@ const SchoolClassParentDetail: React.FC = () => {
         );
     }
 
-    if (classesQ.isError || !parent) {
+    if (classesQ.isError) {
         const msg = classesQ.isError
             ? extractErrorMessage(classesQ.error)
             : "Data level tidak ditemukan atau belum ada kelas.";
@@ -486,7 +497,7 @@ const SchoolClassParentDetail: React.FC = () => {
                 <div className="text-xs text-muted-foreground break-all">{msg}</div>
                 <Button
                     variant="outline"
-                    onClick={() => navigate(`/${schoolId}/sekolah/kelas/tingkat`)}
+                    onClick={() => navigate(`/${schoolId}/sekolah/kelas/level`)}
                 >
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Kembali ke daftar level
@@ -496,7 +507,6 @@ const SchoolClassParentDetail: React.FC = () => {
     }
 
     /* ========== Render utama ========== */
-
     return (
         <div className="space-y-4">
             {/* Header lokal halaman */}
@@ -505,7 +515,7 @@ const SchoolClassParentDetail: React.FC = () => {
                     <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => navigate(`/${schoolId}/sekolah/kelas/tingkat`)}
+                        onClick={() => navigate(`/${schoolId}/sekolah/kelas/level`)}
                     >
                         <ArrowLeft className="h-4 w-4" />
                     </Button>

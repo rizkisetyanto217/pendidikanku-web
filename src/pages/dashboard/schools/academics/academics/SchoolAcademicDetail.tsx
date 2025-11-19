@@ -271,7 +271,7 @@ export default function SchoolAcademicDetail() {
       </AlertDialog>
 
       <main className="w-full">
-        <div className="mx-auto flex max-w-6xl flex-col gap-6 py-4">
+        <div className="mx-auto flex flex-col gap-6">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="md:flex hidden items-center gap-3">

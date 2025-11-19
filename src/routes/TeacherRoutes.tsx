@@ -26,13 +26,17 @@ import TeacherDetailClassStudent from "@/pages/dashboard/teachers/csst/menus/stu
 import TeacherDetailBook from "@/pages/dashboard/teachers/csst/menus/books/TeacherCSSTBookDetail";
 import TeacherClassAttendance from "@/pages/dashboard/teachers/csst/menus/attendances/TeacherCSSTStudentAttandence";
 import TeacherAssignment from "@/pages/dashboard/teachers/csst/menus/assignments/TeacherCSSTAssignment";
-import TeacherDetailAssignement from "@/pages/dashboard/teachers/csst/menus/assignments/TeacherCSSTDetailAssignment";
+
 import TeacherClassDetail from "@/pages/dashboard/teachers/classes/Details/TeacherClassesDetail";
 import TeacherScheduleRoutine from "@/pages/dashboard/teachers/schedules/routines/TeacherScheduleRoutine";
 import TeacherScheduleAgenda from "@/pages/dashboard/teachers/schedules/agendas/TeacherScheduleAgenda";
-import TeacherQuizBuilder from "@/pages/dashboard/teachers/quiz/SchoolQuiz";
+import TeacherQuizBuilder from "@/pages/dashboard/teachers/quiz/TeacherQuizBuilder";
 import TeacherScheduleRoutineDetail from "@/pages/dashboard/teachers/schedules/routines/details/TeacherScheduleRoutineDetail";
 import TeacherScheduleAgendaDetail from "@/pages/dashboard/teachers/schedules/agendas/details/TeacherScheduleAgendaDetail";
+import TeacherCSSTAssessmentDetail from "@/pages/dashboard/teachers/csst/menus/assignments/details/TeacherCSSTAssessmentDetail";
+import QuizBuilder from "@/pages/dashboard/teachers/quiz/TeacherQuizBuilder";
+import TeacherCSSTAssessmentCreate from "@/pages/dashboard/teachers/csst/menus/assignments/details/TeacherCSSTAssessmentCreate";
+import TeacherCSSTDetail from "@/pages/dashboard/teachers/classes/Details/TeacherClassesDetail";
 
 export const TeacherRoutes = (
   <Route path="guru" element={<DashboardLayout />}>
@@ -63,21 +67,37 @@ export const TeacherRoutes = (
     {/* Guru Mapel */}
     <Route path="guru-mapel">
       <Route index element={<TeacherSubjects />} />
-      <Route path=":csstId" element={<TeacherDetailClass />} />
-      <Route path=":id/absensi-hari-ini" element={<TeacherClassAttendance />} />
-      <Route path=":id/quiz" element={<TeacherDetailClassQuiz />} />
-      <Route path=":id/murid" element={<TeacherClassStudentsList />} />
-      <Route path=":id/murid/:id" element={<TeacherDetailClassStudent />} />
-      <Route path=":id/tugas" element={<TeacherAssignment />} />
-      <Route path=":id/tugas/detail" element={<TeacherDetailAssignement />} />
+
+      {/* Detail 1 mapel (CSST) */}
+      <Route path=":csstId" element={<TeacherCSSTDetail />} />
+
+      {/* Turunan dari CSST yang sama */}
       <Route
-        path=":id/semua-kehadiran"
+        path=":csstId/absensi-hari-ini"
+        element={<TeacherClassAttendance />}
+      />
+      <Route path=":csstId/quiz" element={<TeacherDetailClassQuiz />} />
+      <Route path=":csstId/murid" element={<TeacherClassStudentsList />} />
+      <Route path=":csstId/murid/:id" element={<TeacherDetailClassStudent />} />
+      <Route path=":csstId/tugas" element={<TeacherAssignment />} />
+      <Route
+        path=":csstId/tugas/:assessmentId"
+        element={<TeacherCSSTAssessmentDetail />}
+      />
+      <Route
+        path=":csstId/tugas/:assessmentId/:quizId"
+        element={<QuizBuilder />}
+      />
+      <Route path=":csstId/tugas/new" element={<TeacherCSSTAssessmentCreate />} />
+
+      <Route
+        path=":csstId/semua-kehadiran"
         element={<TeacherClassStudentAttendanceList />}
       />
-      <Route path=":id/materi" element={<TeacherMaterialList />} />
-      <Route path=":id/ujian" element={<TeacherExamList />} />
-      <Route path=":id/buku" element={<TeacherBookList />} />
-      <Route path=":id/buku/:bookId" element={<TeacherDetailBook />} />
+      <Route path=":csstId/materi" element={<TeacherMaterialList />} />
+      <Route path=":csstId/ujian" element={<TeacherExamList />} />
+      <Route path=":csstId/buku" element={<TeacherBookList />} />
+      <Route path=":csstId/buku/:bookId" element={<TeacherDetailBook />} />
     </Route>
 
     {/* === Jadwal Sekolah === */}

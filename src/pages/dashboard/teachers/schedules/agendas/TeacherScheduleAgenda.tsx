@@ -35,9 +35,11 @@ import {
 // ===== Dummy API (sementara tetap di file halaman) =====
 const scheduleStore = new Map<string, ScheduleRow[]>();
 const delay = (ms = 350) => new Promise((r) => setTimeout(r, ms));
+
 function uid() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
+
 function seedMonth(y: number, m: number): ScheduleRow[] {
   const rooms = ["Aula 1", "Aula Utama", "Ruang 3B", "Ruang 4C", "Ruang 5A"];
   const teachers = [
@@ -58,6 +60,7 @@ function seedMonth(y: number, m: number): ScheduleRow[] {
   ] as const;
 
   const rows: ScheduleRow[] = [];
+
   const push = (
     d: number,
     time: string,
@@ -68,6 +71,7 @@ function seedMonth(y: number, m: number): ScheduleRow[] {
     const teacher = teachers[idx % teachers.length];
     const room = rooms[idx % rooms.length];
     const cls = classes[idx % classes.length];
+
     rows.push({
       id: uid(),
       title: type === "class" ? `${title} Kelas ${cls}` : `${title} ${type}`,
@@ -177,15 +181,15 @@ type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
 export default function TeacherScheduleAgenda({
   showBack = false,
-  backTo
+  backTo,
 }: Props) {
   const navigate = useNavigate();
-  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
   const qc = useQueryClient();
+
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
   /* Atur breadcrumb dan title seperti SchoolAcademic */
   const { setHeader } = useDashboardHeader();
-
   useEffect(() => {
     setHeader({
       title: "Agenda Mengajar",
@@ -202,6 +206,7 @@ export default function TeacherScheduleAgenda({
   const [selectedDay, setSelectedDay] = useState<string | null>(() =>
     dateKeyFrom(new Date())
   );
+
   const LOCAL_KEY = "teacherScheduleTab";
   const [tab, setTab] = useState<"calendar" | "list">("calendar");
   const [editing, setEditing] = useState<ScheduleRow | null>(null);
@@ -209,48 +214,63 @@ export default function TeacherScheduleAgenda({
   // 🔔 signal untuk memicu re-scroll di List
   const [scrollToTodaySig, setScrollToTodaySig] = useState(0);
 
+  // Restore tab dari localStorage
   useEffect(() => {
     const saved = (localStorage.getItem(LOCAL_KEY) || "") as
       | "calendar"
       | "list";
-    if (saved === "calendar" || saved === "list") setTab(saved);
+    if (saved === "calendar" || saved === "list") {
+      setTab(saved);
+    }
   }, []);
+
+  // Simpan tab ke localStorage
   useEffect(() => {
     localStorage.setItem(LOCAL_KEY, tab);
   }, [tab]);
 
+  // Query jadwal per bulan
   const schedulesQ = useQuery({
     queryKey: ["teacher-schedules", month],
     queryFn: () => scheduleApi.list(month),
   });
 
+  // Mutations
   const createMut = useMutation({
     mutationFn: (payload: Omit<ScheduleRow, "id">) =>
       scheduleApi.create(month, payload),
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: ["teacher-schedules", month] }),
   });
+
   const updateMut = useMutation({
     mutationFn: (payload: ScheduleRow) => scheduleApi.update(month, payload),
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: ["teacher-schedules", month] }),
   });
+
   const deleteMut = useMutation({
     mutationFn: (id: string) => scheduleApi.remove(month, id),
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: ["teacher-schedules", month] }),
   });
 
+  // Navigasi bulan
   const [y, m] = month.split("-").map(Number);
   const gotoPrev = () => setMonth(toMonthStr(new Date(y, m - 2, 1)));
   const gotoNext = () => setMonth(toMonthStr(new Date(y, m, 1)));
 
+  // Set selectedDay kalau bulan sama dengan hari ini
   useEffect(() => {
     const today = new Date();
-    if (toMonthStr(today) === month) setSelectedDay(dateKeyFrom(today));
-    else setSelectedDay(null);
+    if (toMonthStr(today) === month) {
+      setSelectedDay(dateKeyFrom(today));
+    } else {
+      setSelectedDay(null);
+    }
   }, [month]);
 
+  // Tambah baru
   const onAddNew = (baseDate?: string) =>
     setEditing({
       id: "",
@@ -271,11 +291,19 @@ export default function TeacherScheduleAgenda({
     });
   };
 
+  // Helper untuk tombol "Hari ini"
+  const goToToday = () => {
+    const now = new Date();
+    setMonth(toMonthStr(now));
+    setSelectedDay(dateKeyFrom(now));
+    setScrollToTodaySig(Date.now());
+  };
+
   return (
     <div className="w-full bg-background text-foreground">
       <div className="mx-auto flex flex-col gap-4">
-        {/* Header */}
-        <div className="md:flex hidden gap-3 items-center">
+        {/* Header: Desktop (>= md) - lengkap */}
+        <div className="hidden md:flex gap-3 items-center">
           {showBack && (
             <Button
               onClick={handleBack}
@@ -286,12 +314,16 @@ export default function TeacherScheduleAgenda({
               <ArrowLeft size={20} />
             </Button>
           )}
+
           <div>
-            <div className="font-semibold text-lg md:text-xl">Agenda Mengajar</div>
+            <div className="font-semibold text-lg md:text-xl">
+              Agenda Mengajar
+            </div>
             <p className="text-sm text-muted-foreground">
               Kelola aktivitas mengajar per bulan atau dalam bentuk daftar
             </p>
           </div>
+
           <div className="ml-auto flex items-center gap-2">
             <Button variant="outline" size="icon" onClick={gotoPrev}>
               <ChevronLeft size={16} />
@@ -303,14 +335,36 @@ export default function TeacherScheduleAgenda({
             <Button
               variant="secondary"
               size="sm"
-              onClick={() => {
-                const now = new Date();
-                setMonth(toMonthStr(now));
-                setSelectedDay(dateKeyFrom(now));
-                setScrollToTodaySig(Date.now());
-              }}
+              onClick={goToToday}
               className="ml-1"
             >
+              Hari ini
+            </Button>
+          </div>
+        </div>
+
+        {/* Header: Mobile (< md) - hanya navigasi bulan (tanpa title/desc) */}
+        <div className="flex md:hidden items-center gap-2">
+          {showBack && (
+            <Button
+              onClick={handleBack}
+              variant="ghost"
+              size="icon"
+              className="cursor-pointer"
+            >
+              <ArrowLeft size={18} />
+            </Button>
+          )}
+
+          <div className="ml-auto flex items-center gap-2">
+            <Button variant="outline" size="icon" onClick={gotoPrev}>
+              <ChevronLeft size={16} />
+            </Button>
+            <span className="font-medium text-xs">{monthLabel(month)}</span>
+            <Button variant="outline" size="icon" onClick={gotoNext}>
+              <ChevronRight size={16} />
+            </Button>
+            <Button variant="secondary" size="sm" onClick={goToToday}>
               Hari ini
             </Button>
           </div>

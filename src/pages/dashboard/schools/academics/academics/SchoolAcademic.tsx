@@ -109,10 +109,10 @@ const TERMS_QKEY = (schoolId?: string) =>
 const dateShort = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
     : "-";
 
 function normalizeAcademicYear(input: string) {
@@ -235,15 +235,15 @@ function useUpdateTerm(schoolId?: string) {
           previous.map((t) =>
             t.id === id
               ? {
-                  ...t,
-                  academic_year: normalizeAcademicYear(payload.academic_year),
-                  name: payload.name,
-                  start_date: toZDate(payload.start_date),
-                  end_date: toZDate(payload.end_date),
-                  angkatan: Number(payload.angkatan),
-                  is_active: Boolean(payload.is_active),
-                  slug: payload.slug ?? t.slug,
-                }
+                ...t,
+                academic_year: normalizeAcademicYear(payload.academic_year),
+                name: payload.name,
+                start_date: toZDate(payload.start_date),
+                end_date: toZDate(payload.end_date),
+                angkatan: Number(payload.angkatan),
+                is_active: Boolean(payload.is_active),
+                slug: payload.slug ?? t.slug,
+              }
               : t
           )
         );
@@ -683,7 +683,7 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
   );
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden bg-background text-foreground">
+    <div className="w-full overflow-x-hidden bg-background text-foreground">
       <main className="w-full">
         <div className="mx-auto flex flex-col gap-4 lg:gap-6">
           {/* ✅ Header seperti di SchoolProfile */}
@@ -776,18 +776,18 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
         initial={
           modal?.editing
             ? {
-                academic_year: modal.editing.academic_year,
-                name: modal.editing.name,
-                start_date: modal.editing.start_date
-                  ? modal.editing.start_date.slice(0, 10)
-                  : "",
-                end_date: modal.editing.end_date
-                  ? modal.editing.end_date.slice(0, 10)
-                  : "",
-                angkatan: modal.editing.angkatan,
-                is_active: modal.editing.is_active,
-                slug: modal.editing.slug,
-              }
+              academic_year: modal.editing.academic_year,
+              name: modal.editing.name,
+              start_date: modal.editing.start_date
+                ? modal.editing.start_date.slice(0, 10)
+                : "",
+              end_date: modal.editing.end_date
+                ? modal.editing.end_date.slice(0, 10)
+                : "",
+              angkatan: modal.editing.angkatan,
+              is_active: modal.editing.is_active,
+              slug: modal.editing.slug,
+            }
             : undefined
         }
         loading={createTerm.isPending || updateTerm.isPending}

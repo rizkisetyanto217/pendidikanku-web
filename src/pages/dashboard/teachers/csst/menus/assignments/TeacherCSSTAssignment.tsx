@@ -1,29 +1,17 @@
-// src/pages/sekolahislamku/teacher/TeacherGrading.tsx
-import { useMemo, useState, useCallback, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Link, useParams } from "react-router-dom";
-import {
-  Filter,
-  Search,
-  CheckCircle2,
-  Download,
-  Plus,
-  CalendarDays,
-  Users,
-  ClipboardList,
-  BookOpen,
-  Clock,
-  TrendingUp,
-  FileText,
-  Eye,
-} from "lucide-react";
+// src/pages/sekolahislamku/teacher/TeacherAssessments.tsx
 
-// shadcn/ui
+import { useMemo, useState } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import axios from "@/lib/axios";
+
+/* shadcn/ui */
+import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableHeader,
@@ -33,957 +21,874 @@ import {
   TableCell,
 } from "@/components/ui/table";
 
-/* Tambahan untuk breadcrumb sistem dashboard */
-import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+/* segmented tabs custom */
+import {
+  CSegmentedTabs,
+  type SegmentedTabItem,
+} from "@/components/costum/common/CSegmentedTabs";
 
-import CTeacherModalExportResult from "./components/CTeacherModalExportResult";
-import CTeacherModalGrading from "./components/CTeacherModalGrading";
-import { CSegmentedTabs } from "@/components/costum/common/CSegmentedTabs";
+/* icons */
+import {
+  ArrowLeft,
+  CalendarDays,
+  Clock,
+  ListChecks,
+  FileText,
+  Timer,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
 
-/* ================= Types ================ */
-type Assignment = {
+/* =======================
+   Types — sesuai JSON
+======================= */
+
+type AssessmentSubmissionMode = "date" | "session" | string;
+type AssessmentKind =
+  | "quiz"
+  | "assignment_upload"
+  | "offline"
+  | "survey"
+  | string;
+
+type AssessmentTypeSnapshot = {
   id: string;
-  title: string;
-  className: string;
-  dueDate: string;
-  submitted: number;
-  graded: number;
-  total: number;
+  key: string;
+  name: string;
+  is_graded: boolean;
+  show_correct_after_submit?: boolean;
 };
 
-type Submission = {
-  id: string;
-  studentName: string;
-  status: "submitted" | "graded" | "missing";
-  score?: number;
-  submittedAt?: string;
+type AssessmentCSSTSnapshot = {
+  name?: string;
+  source?: string;
+  section_id?: string;
+  teacher_id?: string;
+  captured_at?: string;
 };
 
-type GradingPayload = {
-  gregorianDate: string;
-  hijriDate: string;
-  classes: string[];
-  summary: {
-    assignments: number;
-    toGrade: number;
-    graded: number;
-    average: number;
-  };
-  assignments: Assignment[];
-  submissionsByAssignment: Record<string, Submission[]>;
+type AssessmentSessionSnapshot = {
+  session_id?: string;
+  title?: string;
+  date?: string;
+  starts_at?: string;
+  captured_at?: string;
 };
 
-/* ============ Fake API (ganti ke axios bila siap) ============ */
-const atLocalNoon = (d: Date) => {
-  const x = new Date(d);
-  x.setHours(12, 0, 0, 0);
-  return x;
+export type AssessmentItem = {
+  assessment_id: string;
+  assessment_school_id: string;
+  assessment_class_section_subject_teacher_id: string;
+  assessment_type_id: string | null;
+  assessment_slug: string | null;
+  assessment_title: string;
+  assessment_description: string | null;
+  assessment_start_at: string | null;
+  assessment_due_at: string | null;
+  assessment_kind: AssessmentKind;
+  assessment_duration_minutes: number | null;
+  assessment_total_attempts_allowed: number | null;
+  assessment_max_score: number | null;
+  assessment_quiz_total: number | null;
+  assessment_is_published: boolean;
+  assessment_allow_submission: boolean;
+  assessment_submissions_total: number;
+  assessment_submissions_graded_total: number;
+  assessment_type_is_graded_snapshot: boolean;
+  assessment_created_by_teacher_id: string;
+  assessment_submission_mode: AssessmentSubmissionMode;
+  assessment_csst_snapshot?: AssessmentCSSTSnapshot | null;
+  assessment_announce_session_snapshot?: AssessmentSessionSnapshot | null;
+  assessment_collect_session_snapshot?: AssessmentSessionSnapshot | null;
+  assessment_type_snapshot?: AssessmentTypeSnapshot | null;
+  assessment_created_at: string;
+  assessment_updated_at: string;
 };
-const toLocalNoonISO = (d: Date) => atLocalNoon(d).toISOString();
-const hijriLong = (iso?: string) =>
-  iso
-    ? new Date(iso).toLocaleDateString("id-ID-u-ca-islamic-umalqura", {
-        weekday: "long",
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      })
-    : "-";
 
-async function fetchTeacherAssignment(): Promise<GradingPayload> {
-  const now = new Date();
-  const iso = toLocalNoonISO(now);
-  const plusDays = (n: number) =>
-    toLocalNoonISO(new Date(now.getTime() + n * 864e5));
+type AssessmentListResponse = {
+  success: boolean;
+  message: string;
+  data: AssessmentItem[];
+};
 
-  const assignments: Assignment[] = [
-    {
-      id: "a1",
-      title: "Evaluasi Wudhu",
-      className: "TPA A",
-      dueDate: plusDays(1),
-      submitted: 18,
-      graded: 10,
-      total: 22,
-    },
-    {
-      id: "a2",
-      title: "Setoran Hafalan An-Naba 1–10",
-      className: "TPA B",
-      dueDate: plusDays(2),
-      submitted: 12,
-      graded: 7,
-      total: 20,
-    },
-    {
-      id: "a3",
-      title: "Latihan Makhraj (ba-ta-tha)",
-      className: "TPA A",
-      dueDate: plusDays(3),
-      submitted: 5,
-      graded: 0,
-      total: 22,
-    },
-  ];
+/* =======================
+   Utils kecil
+======================= */
 
-  const submissionsA1: Submission[] = [
-    {
-      id: "s1",
-      studentName: "Ahmad",
-      status: "graded",
-      score: 88,
-      submittedAt: iso,
-    },
-    {
-      id: "s2",
-      studentName: "Fatimah",
-      status: "graded",
-      score: 92,
-      submittedAt: iso,
-    },
-    { id: "s3", studentName: "Hasan", status: "submitted", submittedAt: iso },
-    { id: "s4", studentName: "Aisyah", status: "submitted", submittedAt: iso },
-    { id: "s5", studentName: "Umar", status: "missing" },
-  ];
-  const submissionsA2: Submission[] = [
-    {
-      id: "b1",
-      studentName: "Bilal",
-      status: "graded",
-      score: 80,
-      submittedAt: iso,
-    },
-    { id: "b2", studentName: "Huda", status: "submitted", submittedAt: iso },
-  ];
-
-  return {
-    gregorianDate: iso,
-    hijriDate: hijriLong(iso),
-    classes: ["TPA A", "TPA B"],
-    summary: {
-      assignments: assignments.length,
-      toGrade: assignments.reduce(
-        (n, a) => n + Math.max(0, a.submitted - a.graded),
-        0
-      ),
-      graded: assignments.reduce((n, a) => n + a.graded, 0),
-      average: 84,
-    },
-    assignments,
-    submissionsByAssignment: { a1: submissionsA1, a2: submissionsA2, a3: [] },
-  };
+function formatDateTime(dt?: string | null) {
+  if (!dt) return "-";
+  const d = new Date(dt);
+  return d.toLocaleString("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
-/* ================= Helpers ================ */
-const dateLong = (iso?: string) =>
-  iso
-    ? new Date(iso).toLocaleDateString("id-ID", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    : "-";
+function formatDateOnly(dt?: string | null) {
+  if (!dt) return "-";
+  const d = new Date(dt);
+  return d.toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
 
-const dateShort = (iso?: string) =>
-  iso
-    ? new Date(iso).toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "short",
-      })
-    : "-";
+/* =======================
+   Filter tabs
+======================= */
 
-const pct = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 100) : 0);
+type ModeFilter = "all" | "class_announce" | "general";
 
-/* =============== kecil-kecil UI =============== */
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-  subtitle,
-  trend,
-}: {
-  icon: any;
-  label: string;
-  value: number | string;
-  subtitle?: string;
-  trend?: "up" | "down" | "neutral";
-}) {
-  const trendColor =
-    trend === "up"
-      ? "text-green-600"
-      : trend === "down"
-      ? "text-red-600"
-      : "text-muted-foreground";
+const MODE_TABS: SegmentedTabItem[] = [
+  {
+    value: "all",
+    label: "Semua",
+  },
+  {
+    value: "class_announce",
+    label: "Class announce",
+  },
+  {
+    value: "general",
+    label: "Tugas umum",
+  },
+];
+
+/* =======================
+   Page Component
+======================= */
+
+export default function TeacherCSSTAssignment() {
+  const { csstId } = useParams<{ csstId: string }>();
+  const navigate = useNavigate();
+
+  const [search, setSearch] = useState("");
+  const [modeFilter, setModeFilter] = useState<ModeFilter>("all");
+
+  const { data, isLoading, isError, error, refetch, isFetching } =
+    useQuery<AssessmentListResponse>({
+      queryKey: ["teacher-assessments", csstId],
+      enabled: !!csstId,
+      queryFn: async () => {
+        const res = await axios.get("/api/u/assessments/list", {
+          params: {
+            csst_id: csstId,
+            is_graded: false,
+          },
+        });
+        return res.data;
+      },
+    });
+
+  const assessments = data?.data ?? [];
+
+  const csstName =
+    assessments[0]?.assessment_csst_snapshot?.name ?? "Kelas / Mapel";
+
+  // 1) Filter berdasarkan mode (class announce vs tugas umum)
+  const filteredByMode = useMemo(() => {
+    if (modeFilter === "class_announce") {
+      // Diambil yang pakai mode session (terkait announce/collect session)
+      return assessments.filter(
+        (a) => a.assessment_submission_mode === "session"
+      );
+    }
+    if (modeFilter === "general") {
+      // Tugas umum: non-session (mode date atau lainnya)
+      return assessments.filter(
+        (a) => a.assessment_submission_mode !== "session"
+      );
+    }
+    return assessments;
+  }, [assessments, modeFilter]);
+
+  // 2) Filter search
+  const filteredAssessments = useMemo(() => {
+    if (!search.trim()) return filteredByMode;
+    const q = search.toLowerCase();
+    return filteredByMode.filter((a) => {
+      return (
+        a.assessment_title.toLowerCase().includes(q) ||
+        (a.assessment_slug ?? "").toLowerCase().includes(q) ||
+        (a.assessment_description ?? "").toLowerCase().includes(q)
+      );
+    });
+  }, [filteredByMode, search]);
+
+  const errorMessage = isError
+    ? (error as any)?.response?.data?.message ||
+    (error as Error).message ||
+    "Gagal memuat data."
+    : null;
+
+  const totalClassAnnounce = assessments.filter(
+    (a) => a.assessment_submission_mode === "session"
+  ).length;
+  const totalGeneral = assessments.filter(
+    (a) => a.assessment_submission_mode !== "session"
+  ).length;
+
   return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Icon className="h-4 w-4 text-primary" />
+    <div className="space-y-4">
+      {/* Top bar */}
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full"
+            onClick={() => navigate(-1)}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-lg font-semibold leading-tight">
+              Penilaian untuk {csstName}
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              Daftar latihan, kuis, dan penilaian lain yang terhubung ke kelas
+              ini.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            disabled={isFetching}
+          >
+            {isFetching ? (
+              <>
+                <Clock className="mr-2 h-3 w-3 animate-spin" />
+                Memuat…
+              </>
+            ) : (
+              <>
+                <Clock className="mr-2 h-3 w-3" />
+                Refresh
+              </>
+            )}
+          </Button>
+
+          <Button size="sm" asChild>
+            <Link to={`new`}>
+              <ListChecks className="mr-2 h-4 w-4" />
+              Buat Penilaian
+            </Link>
+          </Button>
+        </div>
+      </div>
+
+      {/* Search + Filter tabs */}
+      <Card>
+        <CardContent className="pt-4 space-y-4">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex-1">
+              <label className="text-xs font-medium text-muted-foreground">
+                Cari penilaian
+              </label>
+              <Input
+                placeholder="Cari berdasarkan judul, slug, atau deskripsi…"
+                className="mt-1"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
             </div>
-            <div>
-              <div className="text-xs text-muted-foreground font-medium">
-                {label}
+
+            <div className="flex flex-col gap-2 text-xs text-muted-foreground md:items-end">
+              <div className="flex items-center gap-1">
+                <Timer className="h-3 w-3" />
+                <span>Mode: date / session</span>
               </div>
-              <div className="text-xl font-bold">{value}</div>
-              {subtitle && (
-                <div className="text-xs text-muted-foreground">{subtitle}</div>
-              )}
+              <div className="flex items-center gap-1">
+                <FileText className="h-3 w-3" />
+                <span>Jenis: quiz / latihan dll.</span>
+              </div>
             </div>
           </div>
-          <TrendingUp className={`h-4 w-4 ${trendColor}`} />
+
+          {/* Filter segmented tabs */}
+          <div className="flex flex-col gap-2">
+            <CSegmentedTabs
+              value={modeFilter}
+              onValueChange={(v) => setModeFilter(v as ModeFilter)}
+              tabs={MODE_TABS}
+            />
+            <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground">
+              <span>
+                Class announce:{" "}
+                <span className="font-semibold">{totalClassAnnounce}</span>
+              </span>
+              <span>
+                Tugas umum:{" "}
+                <span className="font-semibold">{totalGeneral}</span>
+              </span>
+              <span>
+                Total:{" "}
+                <span className="font-semibold">{assessments.length}</span>
+              </span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* List */}
+      {isLoading ? (
+        <LoadingSkeletonList />
+      ) : errorMessage ? (
+        <Card className="border-destructive/40 bg-destructive/5">
+          <CardContent className="flex items-start gap-3 py-4">
+            <AlertCircle className="mt-0.5 h-4 w-4 text-destructive" />
+            <div>
+              <p className="text-sm font-medium text-destructive">
+                Gagal memuat penilaian
+              </p>
+              <p className="text-xs text-destructive/80">{errorMessage}</p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : filteredAssessments.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center text-sm text-muted-foreground">
+            {assessments.length === 0 ? (
+              <>
+                Belum ada penilaian untuk kelas ini.
+                <br />
+                <span className="text-xs">
+                  Klik <span className="font-medium">“Buat Penilaian”</span>{" "}
+                  untuk membuat yang pertama.
+                </span>
+              </>
+            ) : (
+              <>Penilaian tidak ditemukan. Coba ubah kata kunci atau filter.</>
+            )}
+          </CardContent>
+        </Card>
+      ) : modeFilter === "class_announce" ? (
+        // 🔹 View khusus Class announce → pakai table supaya rapih
+        <ClassAnnounceTable
+          assessments={filteredAssessments}
+          csstId={csstId ?? ""}
+        />
+      ) : (
+        // 🔹 View default & tugas umum → tetap pakai card
+        <div className="space-y-3">
+          {filteredAssessments.map((assessment) => (
+            <AssessmentCard
+              key={assessment.assessment_id}
+              csstId={csstId ?? ""}
+              assessment={assessment}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* =======================
+   Table view — Class announce
+======================= */
+
+function ClassAnnounceTable({
+  assessments,
+  csstId,
+}: {
+  assessments: AssessmentItem[];
+  csstId: string;
+}) {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-semibold">
+          Class announce (berbasis sesi pertemuan)
+        </CardTitle>
+        <p className="text-xs text-muted-foreground">
+          Ditampilkan dalam bentuk tabel agar jadwal announce & collect tiap
+          pertemuan terlihat lebih rapih.
+        </p>
+      </CardHeader>
+      <CardContent className="pt-2">
+        <div className="w-full overflow-x-auto">
+          <Table className="min-w-[720px] text-xs">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[220px]">Penilaian</TableHead>
+                <TableHead>Announce session</TableHead>
+                <TableHead>Collect session</TableHead>
+                <TableHead className="text-center">Durasi</TableHead>
+                <TableHead className="text-center">Soal</TableHead>
+                <TableHead className="text-center">Submit / Dinilai</TableHead>
+                <TableHead className="text-right">Aksi</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {assessments.map((a) => {
+                const announce = a.assessment_announce_session_snapshot;
+                const collect = a.assessment_collect_session_snapshot;
+
+                return (
+                  <TableRow key={a.assessment_id}>
+                    {/* Penilaian */}
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-[13px] font-medium">
+                            {a.assessment_title}
+                          </span>
+                          <Badge variant="secondary" className="text-[10px]">
+                            {a.assessment_type_snapshot?.name ?? "Penilaian"}
+                          </Badge>
+                          {a.assessment_kind === "quiz" && (
+                            <Badge variant="outline" className="text-[10px]">
+                              Quiz
+                            </Badge>
+                          )}
+                          {a.assessment_is_published ? (
+                            <Badge
+                              variant="outline"
+                              className="border-emerald-500/50 bg-emerald-500/5 text-emerald-600 dark:text-emerald-300 text-[10px]"
+                            >
+                              Dipublikasikan
+                            </Badge>
+                          ) : (
+                            <Badge
+                              variant="outline"
+                              className="border-muted-foreground/40 text-muted-foreground text-[10px]"
+                            >
+                              Draft
+                            </Badge>
+                          )}
+                        </div>
+                        {a.assessment_slug && (
+                          <p className="text-[11px] font-mono text-muted-foreground">
+                            slug: {a.assessment_slug}
+                          </p>
+                        )}
+                        {a.assessment_description && (
+                          <p className="text-[11px] text-muted-foreground line-clamp-2">
+                            {a.assessment_description}
+                          </p>
+                        )}
+                      </div>
+                    </TableCell>
+
+                    {/* Announce */}
+                    <TableCell>
+                      {announce?.title ? (
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1.5">
+                            <CalendarDays className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-[11px] font-medium">
+                              {announce.title}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground">
+                            {formatDateOnly(announce.date)} ·{" "}
+                            {formatDateTime(announce.starts_at)}
+                          </p>
+                        </div>
+                      ) : (
+                        <span className="text-[11px] text-muted-foreground">
+                          -
+                        </span>
+                      )}
+                    </TableCell>
+
+                    {/* Collect */}
+                    <TableCell>
+                      {collect?.title ? (
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1.5">
+                            <CalendarDays className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-[11px] font-medium">
+                              {collect.title}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground">
+                            {formatDateOnly(collect.date)} ·{" "}
+                            {formatDateTime(collect.starts_at)}
+                          </p>
+                        </div>
+                      ) : (
+                        <span className="text-[11px] text-muted-foreground">
+                          -
+                        </span>
+                      )}
+                    </TableCell>
+
+                    {/* Durasi */}
+                    <TableCell className="text-center align-top">
+                      <span className="text-[11px] font-medium">
+                        {a.assessment_duration_minutes
+                          ? `${a.assessment_duration_minutes} menit`
+                          : "-"}
+                      </span>
+                    </TableCell>
+
+                    {/* Soal */}
+                    <TableCell className="text-center align-top">
+                      <span className="text-[11px] font-medium">
+                        {a.assessment_quiz_total ?? "-"}
+                      </span>
+                    </TableCell>
+
+                    {/* Submit / graded */}
+                    <TableCell className="text-center align-top">
+                      <div className="flex flex-col items-center gap-0.5 text-[11px]">
+                        <span>
+                          Submit:{" "}
+                          <span className="font-semibold">
+                            {a.assessment_submissions_total ?? 0}
+                          </span>
+                        </span>
+                        <span>
+                          Dinilai:{" "}
+                          <span className="font-semibold">
+                            {a.assessment_submissions_graded_total ?? 0}
+                          </span>
+                        </span>
+                      </div>
+                    </TableCell>
+
+                    {/* Actions */}
+                    <TableCell className="text-right align-top">
+                      <div className="flex justify-end gap-1.5">
+                        <Button
+                          variant="outline"
+                          asChild
+                          className="h-7 px-2 text-[11px]"
+                        >
+                          <Link
+                            to={`/sekolahislamku/teacher/csst/${csstId}/assessments/${a.assessment_id}`}
+                          >
+                            <FileText className="mr-1 h-3 w-3" />
+                            Detail
+                          </Link>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          asChild
+                          className="h-7 px-2 text-[11px]"
+                        >
+                          <Link
+                            to={`/sekolahislamku/teacher/csst/${csstId}/assessments/${a.assessment_id}/submissions`}
+                          >
+                            <ListChecks className="mr-1 h-3 w-3" />
+                            Pengumpulan
+                          </Link>
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         </div>
       </CardContent>
     </Card>
   );
 }
 
-function FilterChip({
-  label,
-  active,
-  onClick,
-  count,
+/* =======================
+   Card per assessment
+======================= */
+
+function AssessmentCard({
+  assessment,
 }: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-  count?: number;
+  assessment: AssessmentItem;
+  csstId: string;
 }) {
+  const typeName =
+    assessment.assessment_type_snapshot?.name ??
+    (assessment.assessment_kind === "quiz" ? "Quiz" : "Penilaian");
+
+  const isSessionMode = assessment.assessment_submission_mode === "session";
+
+  const announce = assessment.assessment_announce_session_snapshot;
+  const collect = assessment.assessment_collect_session_snapshot;
+
+  const submissionsTotal = assessment.assessment_submissions_total ?? 0;
+  const gradedTotal = assessment.assessment_submissions_graded_total ?? 0;
+
   return (
-    <Button
-      type="button"
-      onClick={onClick}
-      variant={active ? "default" : "outline"}
-      className="h-9 gap-2"
-    >
-      {label}
-      {typeof count === "number" && (
-        <span
-          className={`text-xs rounded-full px-2 py-0.5 ${
-            active ? "bg-background" : "bg-muted"
-          }`}
-        >
-          {count}
-        </span>
-      )}
-    </Button>
+    <Card className="border-border/70">
+      <CardHeader className="pb-3">
+        <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+          <div className="space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <CardTitle className="text-base font-semibold leading-tight">
+                {assessment.assessment_title}
+              </CardTitle>
+              <Badge variant="secondary" className="text-[11px]">
+                {typeName}
+              </Badge>
+              {assessment.assessment_kind === "quiz" && (
+                <Badge variant="outline" className="text-[11px]">
+                  Quiz
+                </Badge>
+              )}
+              {isSessionMode ? (
+                <Badge className="text-[11px]">Mode: Sesi</Badge>
+              ) : (
+                <Badge variant="outline" className="text-[11px]">
+                  Mode: Batas Waktu
+                </Badge>
+              )}
+            </div>
+
+            {assessment.assessment_slug && (
+              <p className="text-xs font-mono text-muted-foreground">
+                slug: {assessment.assessment_slug}
+              </p>
+            )}
+
+            {assessment.assessment_description && (
+              <p className="text-xs text-muted-foreground line-clamp-2">
+                {assessment.assessment_description}
+              </p>
+            )}
+          </div>
+
+          <div className="flex flex-col items-start gap-2 text-xs md:items-end">
+            <div className="flex flex-wrap items-center gap-2">
+              {assessment.assessment_is_published ? (
+                <Badge
+                  variant="outline"
+                  className="border-emerald-500/50 bg-emerald-500/5 text-emerald-600 dark:text-emerald-300"
+                >
+                  <CheckCircle2 className="mr-1 h-3 w-3" />
+                  Dipublikasikan
+                </Badge>
+              ) : (
+                <Badge
+                  variant="outline"
+                  className="border-muted-foreground/40 text-muted-foreground"
+                >
+                  Draft
+                </Badge>
+              )}
+
+              {assessment.assessment_allow_submission ? (
+                <Badge variant="outline" className="text-[11px]">
+                  Pengumpulan dibuka
+                </Badge>
+              ) : (
+                <Badge
+                  variant="outline"
+                  className="border-red-400/60 bg-red-500/5 text-red-500"
+                >
+                  Pengumpulan ditutup
+                </Badge>
+              )}
+            </div>
+
+            <div className="text-right text-[11px] text-muted-foreground">
+              <div>
+                Dibuat: {formatDateTime(assessment.assessment_created_at)}
+              </div>
+              <div>
+                Diupdate: {formatDateTime(assessment.assessment_updated_at)}
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="space-y-3 pt-0">
+        <Separator className="my-2" />
+
+        {/* Jadwal / Mode info */}
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="space-y-1 text-xs">
+            <div className="flex items-center gap-1.5 font-medium text-[11px] uppercase tracking-wide text-muted-foreground">
+              <CalendarDays className="h-3 w-3" />
+              <span>Jadwal</span>
+            </div>
+
+            {!isSessionMode ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <span className="w-16 shrink-0 text-muted-foreground">
+                    Mulai
+                  </span>
+                  <span>{formatDateTime(assessment.assessment_start_at)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-16 shrink-0 text-muted-foreground">
+                    Batas
+                  </span>
+                  <span>{formatDateTime(assessment.assessment_due_at)}</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <span className="w-16 shrink-0 text-muted-foreground">
+                    Umumkan
+                  </span>
+                  <span className="flex-1">
+                    {announce?.title ? (
+                      <>
+                        {announce.title}
+                        <span className="ml-1 text-[11px] text-muted-foreground">
+                          ({formatDateOnly(announce.date)} ·{" "}
+                          {formatDateTime(announce.starts_at)})
+                        </span>
+                      </>
+                    ) : (
+                      "-"
+                    )}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-16 shrink-0 text-muted-foreground">
+                    Kumpulkan
+                  </span>
+                  <span className="flex-1">
+                    {collect?.title ? (
+                      <>
+                        {collect.title}
+                        <span className="ml-1 text-[11px] text-muted-foreground">
+                          ({formatDateOnly(collect.date)} ·{" "}
+                          {formatDateTime(collect.starts_at)})
+                        </span>
+                      </>
+                    ) : (
+                      "-"
+                    )}
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Detail angka */}
+          <div className="space-y-1 text-xs">
+            <div className="flex items-center gap-1.5 font-medium text-[11px] uppercase tracking-wide text-muted-foreground">
+              <Timer className="h-3 w-3" />
+              <span>Ringkasan</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-1.5">
+              <div className="flex flex-col">
+                <span className="text-[11px] text-muted-foreground">
+                  Jumlah soal
+                </span>
+                <span className="font-medium">
+                  {assessment.assessment_quiz_total ?? "-"} soal
+                </span>
+              </div>
+
+              <div className="flex flex-col">
+                <span className="text-[11px] text-muted-foreground">
+                  Durasi
+                </span>
+                <span className="font-medium">
+                  {assessment.assessment_duration_minutes
+                    ? `${assessment.assessment_duration_minutes} menit`
+                    : "-"}
+                </span>
+              </div>
+
+              <div className="flex flex-col">
+                <span className="text-[11px] text-muted-foreground">
+                  Percobaan
+                </span>
+                <span className="font-medium">
+                  {assessment.assessment_total_attempts_allowed ?? 1}x
+                </span>
+              </div>
+
+              <div className="flex flex-col">
+                <span className="text-[11px] text-muted-foreground">
+                  Nilai maks
+                </span>
+                <span className="font-medium">
+                  {assessment.assessment_max_score ?? 100}
+                </span>
+              </div>
+            </div>
+
+            <Separator className="my-2" />
+
+            <div className="flex flex-wrap items-center gap-3 text-[11px]">
+              <div className="flex items-center gap-1">
+                <ListChecks className="h-3 w-3" />
+                <span>
+                  Submit:{" "}
+                  <span className="font-semibold">{submissionsTotal}</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <CheckCircle2 className="h-3 w-3" />
+                <span>
+                  Sudah dinilai:{" "}
+                  <span className="font-semibold">{gradedTotal}</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer actions */}
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="text-[11px] text-muted-foreground">
+            Kelas:{" "}
+            <span className="font-medium">
+              {assessment.assessment_csst_snapshot?.name ?? "—"}
+            </span>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <Link to={`${assessment.assessment_id}`}>
+                <FileText className="mr-1.5 h-3 w-3" />
+                Lihat detail
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
-/* ================= Page ================= */
-export default function TeacherCSSTAssignment() {
-  const { data, isLoading } = useQuery({
-    queryKey: ["teacher-grading"],
-    queryFn: fetchTeacherAssignment,
-    staleTime: 60_000,
-  });
+/* =======================
+   Loading skeleton
+======================= */
 
-  // filters
-  const [q, setQ] = useState("");
-  const [status, setStatus] = useState<
-    "all" | "waiting" | "inprogress" | "done"
-  >("all");
-  const [classFilter, setClassFilter] = useState<string>("all");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [submissionSearchQ, setSubmissionSearchQ] = useState("");
-  const [mobileTab, setMobileTab] = useState<"list" | "detail">("list");
-
-  /* Atur breadcrumb dan title seperti SchoolAcademic */
-  const { setHeader } = useDashboardHeader();
-
-  useEffect(() => {
-    setHeader({
-      title: "Tugas",
-      breadcrumbs: [
-        { label: "Dashboard", href: "dashboard" },
-        { label: "Tugas" },
-      ],
-      actions: null,
-    });
-  }, [setHeader]);
-
-  // modal grading
-  const [gradingOpen, setGradingOpen] = useState(false);
-  const [gradingStudent, setGradingStudent] = useState<{
-    id: string;
-    name: string;
-    score?: number;
-  } | null>(null);
-
-  const filteredAssignments = useMemo(() => {
-    let items = data?.assignments ?? [];
-    if (classFilter !== "all")
-      items = items.filter((a) => a.className === classFilter);
-    if (status !== "all") {
-      items = items.filter((a) => {
-        const done = a.graded >= a.total;
-        const waiting = a.submitted - a.graded > 0;
-        if (status === "done") return done;
-        if (status === "waiting") return waiting;
-        if (status === "inprogress") return !done && a.graded > 0;
-        return true;
-      });
-    }
-    if (q.trim())
-      items = items.filter((a) =>
-        a.title.toLowerCase().includes(q.trim().toLowerCase())
-      );
-    return items;
-  }, [data?.assignments, classFilter, status, q]);
-
-  const selected =
-    data?.assignments.find(
-      (a) => a.id === (selectedId ?? data?.assignments[0]?.id)
-    ) ?? filteredAssignments[0];
-
-  const submissions = useMemo(() => {
-    const all = selected
-      ? data?.submissionsByAssignment[selected.id] ?? []
-      : [];
-    if (!submissionSearchQ.trim()) return all;
-    return all.filter((s) =>
-      s.studentName
-        .toLowerCase()
-        .includes(submissionSearchQ.trim().toLowerCase())
-    );
-  }, [data?.submissionsByAssignment, selected, submissionSearchQ]);
-
-  const statusCounts = useMemo(() => {
-    const assignments = data?.assignments ?? [];
-    return {
-      all: assignments.length,
-      waiting: assignments.filter((a) => a.submitted - a.graded > 0).length,
-      inprogress: assignments.filter((a) => a.graded > 0 && a.graded < a.total)
-        .length,
-      done: assignments.filter((a) => a.graded >= a.total).length,
-    };
-  }, [data?.assignments]);
-
-  const emptyAssignments = filteredAssignments.length === 0;
-
-  const openGradeModal = useCallback((s: Submission) => {
-    setGradingStudent({ id: s.id, name: s.studentName, score: s.score });
-    setGradingOpen(true);
-  }, []);
-
-  const { slug } = useParams<{ slug: string }>();
-
-  // export modal
-  const [exportOpen, setExportOpen] = useState(false);
-
+function LoadingSkeletonList() {
   return (
-    <div className="w-full bg-background text-foreground">
-      {/* Modals */}
-      <CTeacherModalGrading
-        open={gradingOpen}
-        onClose={() => setGradingOpen(false)}
-        student={gradingStudent ?? undefined}
-        assignmentTitle={
-          selected
-            ? `${selected.title}${
-                selected.className ? ` — (${selected.className})` : ""
-              }`
-            : undefined
-        }
-        onSubmit={(payload: { id: string; score: number }) => {
-          alert(`Nilai disimpan: ${payload.id} = ${payload.score}`);
-        }}
-      />
-
-      <CTeacherModalExportResult
-        open={exportOpen}
-        onClose={() => setExportOpen(false)}
-        defaultName={selected ? `rekap-${selected.title}` : "rekap-penilaian"}
-        onExport={(fd: FormData) => {
-          console.log("EXPORT PAYLOAD:", Array.from(fd.entries()));
-          setExportOpen(false);
-        }}
-      />
-
-      <main className="mx-auto">
-        <div className="lg:flex lg:items-start lg:gap-6">
-          <div className="flex-1 space-y-6">
-            {/* ---- Stats Overview ---- */}
-            <section>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard
-                  icon={BookOpen}
-                  label="Total Penilaian"
-                  value={data?.summary.assignments ?? 0}
-                  subtitle="tugas aktif"
-                  trend="neutral"
-                />
-                <StatCard
-                  icon={Clock}
-                  label="Belum Dinilai"
-                  value={data?.summary.toGrade ?? 0}
-                  subtitle="menunggu penilaian"
-                  trend="down"
-                />
-                <StatCard
-                  icon={CheckCircle2}
-                  label="Sudah Dinilai"
-                  value={data?.summary.graded ?? 0}
-                  subtitle="telah selesai"
-                  trend="up"
-                />
-                <StatCard
-                  icon={TrendingUp}
-                  label="Rata-rata Nilai"
-                  value={`${data?.summary.average ?? 0}`}
-                  subtitle="skor keseluruhan"
-                  trend="up"
-                />
-              </div>
-            </section>
-
-            {/* ---- Filters & Actions ---- */}
-            <Card>
-              <CardContent className="p-4 md:p-6 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-sm md:text-lg font-semibold flex items-center gap-2">
-                    <Filter className="h-4 w-4" /> Filter & Kelola Penilaian
-                  </h2>
-                </div>
-
-                {/* Search */}
-                <div className="flex items-center gap-3 rounded-xl border px-3 py-2.5 md:px-4 md:py-3 w-full">
-                  <Search className="h-4 w-4 text-muted-foreground" />
-                  <Input
-                    value={q}
-                    onChange={(e) => setQ(e.target.value)}
-                    placeholder="Cari tugas…"
-                    className="border-0 shadow-none focus-visible:ring-0"
-                  />
-                </div>
-
-                {/* Status chips */}
-                <div className="space-y-2">
-                  <span className="text-xs font-medium text-muted-foreground">
-                    Status
-                  </span>
-                  <div className="flex flex-wrap gap-2">
-                    <FilterChip
-                      label="Semua"
-                      active={status === "all"}
-                      onClick={() => setStatus("all")}
-                      count={statusCounts.all}
-                    />
-                    <FilterChip
-                      label="Menunggu"
-                      active={status === "waiting"}
-                      onClick={() => setStatus("waiting")}
-                      count={statusCounts.waiting}
-                    />
-                    <FilterChip
-                      label="Progres"
-                      active={status === "inprogress"}
-                      onClick={() => setStatus("inprogress")}
-                      count={statusCounts.inprogress}
-                    />
-                    <FilterChip
-                      label="Selesai"
-                      active={status === "done"}
-                      onClick={() => setStatus("done")}
-                      count={statusCounts.done}
-                    />
-                  </div>
-                </div>
-
-                {/* Kelas select (native supaya ringan) */}
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-muted-foreground">
-                    Kelas
-                  </span>
-                  <select
-                    value={classFilter}
-                    onChange={(e) => setClassFilter(e.target.value)}
-                    className="px-3 py-2 rounded-lg border text-sm bg-background flex-1"
-                  >
-                    <option value="all">Semua Kelas</option>
-                    {(data?.classes ?? []).map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* ---- Mobile Tabs (daftar/detail) ---- */}
-            {/* ---- Mobile Tabs (daftar/detail) ---- */}
-            <div className="block lg:hidden">
-              <CSegmentedTabs
-                value={mobileTab}
-                onValueChange={(val) => setMobileTab(val as "list" | "detail")}
-                tabs={[
-                  { value: "list", label: "Daftar Tugas", icon: ClipboardList },
-                  { value: "detail", label: "Detail Tugas", icon: Eye },
-                ]}
-              />
+    <div className="space-y-3">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <Card key={i}>
+          <CardHeader className="pb-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-20" />
             </div>
-
-            {/* ---- Assignment List & Detail ---- */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* ----- LIST ----- */}
-              <Card
-                className={`lg:col-span-5 ${
-                  mobileTab === "list" ? "block" : "hidden lg:block"
-                }`}
-              >
-                <CardContent className="p-4 md:p-6">
-                  <h3 className="text-base md:text-lg font-semibold mb-4 flex items-center gap-2">
-                    <ClipboardList className="h-4 w-4" /> Daftar Tugas (
-                    {filteredAssignments.length})
-                  </h3>
-
-                  {emptyAssignments ? (
-                    <div className="text-center py-10 rounded-xl border-2 border-dashed text-muted-foreground">
-                      <ClipboardList className="mx-auto mb-2 opacity-60 h-9 w-9" />
-                      <p className="text-sm">
-                        Belum ada tugas untuk filter saat ini.
-                      </p>
-                      <div className="mt-3 flex gap-2 justify-center">
-                        <Button
-                          onClick={() => alert("Buat Penilaian")}
-                          size="sm"
-                        >
-                          <Plus className="mr-1 h-4 w-4" />
-                          Buat Tugas
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => alert("Export Rekap")}
-                          size="sm"
-                        >
-                          <Download className="mr-1 h-4 w-4" />
-                          Export
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-3 max-h-[600px] overflow-y-auto">
-                      {filteredAssignments.map((a) => {
-                        const donePct = pct(a.graded, a.total);
-                        const waiting = Math.max(0, a.submitted - a.graded);
-                        const active = selected?.id === a.id;
-                        const isOverdue = new Date(a.dueDate) < new Date();
-
-                        return (
-                          <button
-                            key={a.id}
-                            onClick={() => {
-                              setSelectedId(a.id);
-                              setMobileTab("detail");
-                            }}
-                            className={`w-full text-left rounded-xl border p-3 md:p-4 transition-all hover:shadow-sm ${
-                              active
-                                ? "border-primary bg-primary/10"
-                                : "border-border bg-card"
-                            }`}
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0 flex-1">
-                                <div className="font-semibold text-[13px] md:text-base truncate">
-                                  {a.title}
-                                </div>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <Badge
-                                    variant="secondary"
-                                    className="text-[11px] md:text-xs"
-                                  >
-                                    {a.className}
-                                  </Badge>
-                                  <span
-                                    className={`text-[11px] md:text-xs flex items-center gap-1 ${
-                                      isOverdue
-                                        ? "text-red-500"
-                                        : "text-muted-foreground"
-                                    }`}
-                                  >
-                                    <CalendarDays className="h-3 w-3" />
-                                    {dateShort(a.dueDate)}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="text-right shrink-0">
-                                <div
-                                  className={`text-sm md:text-lg font-bold ${
-                                    donePct === 100
-                                      ? "text-green-600"
-                                      : "text-primary"
-                                  }`}
-                                >
-                                  {donePct}%
-                                </div>
-                                <div className="text-[11px] md:text-xs text-muted-foreground">
-                                  selesai
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="mt-2 md:mt-3">
-                              <Progress value={donePct} className="h-2" />
-                            </div>
-
-                            <div className="mt-2 md:mt-3 flex items-center justify-between text-[11px] md:text-xs">
-                              <div className="flex items-center gap-4 text-muted-foreground">
-                                <span className="flex items-center gap-1">
-                                  <Users className="h-3 w-3" />
-                                  {a.total} siswa
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <FileText className="h-3 w-3" />
-                                  {a.submitted} terkumpul
-                                </span>
-                              </div>
-                              {waiting > 0 && (
-                                <Badge
-                                  variant="destructive"
-                                  className="text-[11px] md:text-xs"
-                                >
-                                  {waiting} menunggu
-                                </Badge>
-                              )}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* ----- DETAIL ----- */}
-              <Card
-                className={`lg:col-span-7 ${
-                  mobileTab === "list" ? "hidden lg:block" : "block"
-                }`}
-              >
-                <CardContent className="p-4 md:p-6">
-                  {!selected ? (
-                    <div className="text-center py-12 rounded-xl border-2 border-dashed text-muted-foreground">
-                      <BookOpen className="mx-auto mb-3 h-10 w-10 opacity-60" />
-                      <h3 className="text-base md:text-lg font-medium mb-1">
-                        Pilih Tugas untuk Melihat Detail
-                      </h3>
-                      <p className="text-sm">
-                        Pilih tugas dari daftar untuk melihat detail penilaian
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="flex items-start justify-between gap-4 mb-4">
-                        <div className="min-w-0">
-                          <h3 className="text-lg md:text-xl font-bold truncate">
-                            {selected.title}
-                          </h3>
-                          <div className="flex items-center gap-2 md:gap-3 mt-2">
-                            <Badge variant="outline">
-                              {selected.className}
-                            </Badge>
-                            <span className="text-xs md:text-sm truncate text-muted-foreground">
-                              Batas waktu: {dateLong(selected.dueDate)}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <div className="text-xl md:text-2xl font-bold text-primary">
-                            {pct(selected.graded, selected.total)}%
-                          </div>
-                          <div className="text-xs md:text-sm text-muted-foreground">
-                            selesai dinilai
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Quick Actions (desktop) */}
-                      <div className="hidden sm:flex flex-wrap gap-2 mb-5">
-                        <Button
-                          variant="secondary"
-                          onClick={() => alert("Tandai selesai")}
-                        >
-                          Tandai Selesai
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => setExportOpen(true)}
-                        >
-                          <Download className="mr-2 h-4 w-4" />
-                          Export Hasil
-                        </Button>
-
-                        <Link
-                          to={`/${slug}/guru/penilaian/${selected.id}`}
-                          state={{
-                            assignment: selected,
-                            className: selected.className,
-                            submissions,
-                          }}
-                        >
-                          <Button variant="ghost" size="sm">
-                            <Eye className="mr-1 h-4 w-4" />
-                            Detail
-                          </Button>
-                        </Link>
-                      </div>
-
-                      {/* Submissions Search */}
-                      <div className="mb-3 max-w-full sm:max-w-sm">
-                        <div className="flex items-center gap-3 rounded-xl border px-3 py-2.5 md:px-4 md:py-3">
-                          <Search className="h-4 w-4 text-muted-foreground" />
-                          <Input
-                            value={submissionSearchQ}
-                            onChange={(e) =>
-                              setSubmissionSearchQ(e.target.value)
-                            }
-                            placeholder="Cari nama siswa..."
-                            className="border-0 shadow-none focus-visible:ring-0"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Submissions - Desktop table */}
-                      <div className="hidden md:block">
-                        <div className="overflow-x-auto rounded-xl border">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead className="w-[45%]">Siswa</TableHead>
-                                <TableHead className="text-center w-[15%]">
-                                  Status
-                                </TableHead>
-                                <TableHead className="text-center w-[15%]">
-                                  Nilai
-                                </TableHead>
-                                <TableHead className="text-right">
-                                  Aksi
-                                </TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {submissions.map((s) => (
-                                <TableRow
-                                  key={s.id}
-                                  className="odd:bg-muted/30"
-                                >
-                                  <TableCell>
-                                    <div className="font-medium">
-                                      {s.studentName}
-                                    </div>
-                                    {s.submittedAt && (
-                                      <div className="text-xs flex items-center gap-1 mt-1 text-muted-foreground">
-                                        <Clock className="h-3.5 w-3.5" />
-                                        Dikumpulkan {dateShort(s.submittedAt)}
-                                      </div>
-                                    )}
-                                  </TableCell>
-
-                                  <TableCell className="text-center">
-                                    {s.status === "graded" ? (
-                                      <Badge>Sudah Dinilai</Badge>
-                                    ) : s.status === "submitted" ? (
-                                      <Badge variant="secondary">
-                                        Terkumpul
-                                      </Badge>
-                                    ) : (
-                                      <Badge variant="destructive">Belum</Badge>
-                                    )}
-                                  </TableCell>
-
-                                  <TableCell className="text-center">
-                                    {typeof s.score === "number" ? (
-                                      <span className="font-semibold text-lg">
-                                        {s.score}
-                                      </span>
-                                    ) : (
-                                      <span className="text-muted-foreground">
-                                        -
-                                      </span>
-                                    )}
-                                  </TableCell>
-
-                                  <TableCell className="text-right">
-                                    <div className="flex justify-end gap-2">
-                                      <Button
-                                        size="sm"
-                                        variant={
-                                          s.status === "submitted"
-                                            ? "default"
-                                            : "outline"
-                                        }
-                                        onClick={() => openGradeModal(s)}
-                                      >
-                                        {s.status === "graded"
-                                          ? "Edit Nilai"
-                                          : "Beri Nilai"}
-                                      </Button>
-
-                                      <Link
-                                        to={`/${slug}/guru/penilaian/${s.id}`}
-                                        state={{
-                                          assignment: selected,
-                                          className: selected.className,
-                                          submissions,
-                                        }}
-                                      >
-                                        <Button size="sm" variant="ghost">
-                                          <Eye className="mr-1 h-4 w-4" />
-                                          Detail
-                                        </Button>
-                                      </Link>
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-
-                              {submissions.length === 0 && (
-                                <TableRow>
-                                  <TableCell
-                                    colSpan={4}
-                                    className="py-8 text-center text-muted-foreground"
-                                  >
-                                    <Users className="mx-auto mb-2 h-6 w-6 opacity-60" />
-                                    Belum ada data pengumpulan.
-                                  </TableCell>
-                                </TableRow>
-                              )}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      </div>
-
-                      {/* Submissions - Mobile cards */}
-                      <div className="md:hidden space-y-2">
-                        {submissions.length === 0 && (
-                          <div className="text-center py-8 rounded-xl border text-muted-foreground">
-                            Belum ada data pengumpulan.
-                          </div>
-                        )}
-
-                        {submissions.map((s) => (
-                          <div
-                            key={s.id}
-                            className="rounded-xl border p-3 bg-card"
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <div className="font-medium truncate">
-                                  {s.studentName}
-                                </div>
-                                <div className="text-xs mt-0.5 flex items-center gap-1 text-muted-foreground">
-                                  {s.submittedAt ? (
-                                    <>
-                                      <Clock className="h-3 w-3" />
-                                      Dikumpulkan {dateShort(s.submittedAt)}
-                                    </>
-                                  ) : (
-                                    "Belum mengumpulkan"
-                                  )}
-                                </div>
-                              </div>
-                              <Badge
-                                variant={
-                                  s.status === "graded"
-                                    ? "default"
-                                    : s.status === "submitted"
-                                    ? "secondary"
-                                    : "destructive"
-                                }
-                              >
-                                {s.status === "graded"
-                                  ? "Dinilai"
-                                  : s.status === "submitted"
-                                  ? "Terkumpul"
-                                  : "Missing"}
-                              </Badge>
-                            </div>
-
-                            <div className="mt-2 flex items-center justify-between">
-                              <div className="text-sm">
-                                Nilai:{" "}
-                                {typeof s.score === "number" ? (
-                                  <span className="font-semibold">
-                                    {s.score}
-                                  </span>
-                                ) : (
-                                  <span className="text-muted-foreground">
-                                    -
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex gap-2">
-                                <Button
-                                  size="sm"
-                                  variant={
-                                    s.status === "submitted"
-                                      ? "default"
-                                      : "outline"
-                                  }
-                                  onClick={() => openGradeModal(s)}
-                                >
-                                  {s.status === "graded" ? "Edit" : "Nilai"}
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() =>
-                                    alert(`Detail ${s.studentName}`)
-                                  }
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Sticky quick actions (mobile) */}
-                      <div className="sm:hidden sticky bottom-3 z-20">
-                        <div className="mt-3 rounded-xl shadow-md flex gap-2 p-2 bg-card/95 border backdrop-blur">
-                          <Button
-                            className="flex-1"
-                            onClick={() => alert("Mulai menilai")}
-                          >
-                            Mulai
-                          </Button>
-                          <Button
-                            variant="secondary"
-                            className="flex-1"
-                            onClick={() => alert("Tandai selesai")}
-                          >
-                            Selesai
-                          </Button>
-                          <Button
-                            variant="outline"
-                            className="flex-1"
-                            onClick={() => setExportOpen(true)}
-                          >
-                            Export
-                          </Button>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
+            <Skeleton className="h-3 w-64" />
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Skeleton className="h-3 w-full" />
+            <Skeleton className="h-3 w-3/4" />
+            <div className="flex justify-between">
+              <Skeleton className="h-8 w-24" />
+              <Skeleton className="h-8 w-32" />
             </div>
-
-            {isLoading && (
-              <Card>
-                <CardContent className="p-6 text-center text-muted-foreground">
-                  <div className="animate-pulse">Memuat data penilaian...</div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </div>
-      </main>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }

@@ -128,35 +128,35 @@ export default function SchoolBookDetail() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <main className="w-full px-4 py-4 md:px-6 md:py-8">
+      <main className="w-full">
         <div className="max-w-screen-2xl mx-auto flex flex-col gap-6">
           {/* Header */}
           <div className="flex items-center gap-3">
             <div className="md:flex hidden gap-3 items-center">
-            <Button
-              variant="ghost"
-              onClick={() => navigate(-1)}
-              className="hidden md:inline-flex items-center gap-1.5"
-            >
-              <ArrowLeft size={20} />
-            </Button>
-            <h1 className="font-semibold text-lg md:text-xl">Detail Buku</h1>
-            <div className="min-w-0">
-              {isLoading ? (
-                <>
-                  <Skeleton className="h-6 w-56" />
-                  <Skeleton className="h-4 w-32 mt-2" />
-                </>
-              ) : (
-                <>
-                  {/* <h1 className="text-lg md:text-xl font-semibold truncate">
+              <Button
+                variant="ghost"
+                onClick={() => navigate(-1)}
+                className="hidden md:inline-flex items-center gap-1.5"
+              >
+                <ArrowLeft size={20} />
+              </Button>
+              <h1 className="font-semibold text-lg md:text-xl">Detail Buku</h1>
+              <div className="min-w-0">
+                {isLoading ? (
+                  <>
+                    <Skeleton className="h-6 w-56" />
+                    <Skeleton className="h-4 w-32 mt-2" />
+                  </>
+                ) : (
+                  <>
+                    {/* <h1 className="text-lg md:text-xl font-semibold truncate">
                     {book?.books_title ?? "Buku tidak ditemukan"}
                   </h1>
                   <p className="text-sm text-muted-foreground">
                     {book?.books_author ?? "—"}
                   </p> */}
-                </>
-              )}
+                  </>
+                )}
               </div>
             </div>
           </div>

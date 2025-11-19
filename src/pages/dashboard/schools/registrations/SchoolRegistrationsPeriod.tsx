@@ -41,6 +41,7 @@ import {
   RefreshCw,
   MoreHorizontal,
   Eye,
+  ArrowLeft,
 } from "lucide-react";
 
 /* === DataTable (custom) — samakan dengan Academic Terms === */
@@ -48,6 +49,7 @@ import {
   DataTable as CDataTable,
   type ColumnDef,
 } from "@/components/costum/table/CDataTable";
+import { useNavigate } from "react-router-dom";
 
 /* utils */
 const fmtIDR = (n: number) =>
@@ -187,20 +189,20 @@ const GB_HEADERS: GeneralBilling[] = [
 /* =====================================================================
  * Page container
  * ===================================================================== */
-function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
-  return (
-    <div className="mb-4 flex items-center gap-3">
-      <div>
-        <h1 className="text-xl font-semibold leading-tight md:text-2xl">
-          {title}
-        </h1>
-        {subtitle && (
-          <p className="text-sm text-muted-foreground">{subtitle}</p>
-        )}
-      </div>
-    </div>
-  );
-}
+// function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+//   return (
+//     <div className="mb-4 flex items-center gap-3">
+//       <div>
+//         <h1 className="text-xl font-semibold leading-tight md:text-2xl">
+//           {title}
+//         </h1>
+//         {subtitle && (
+//           <p className="text-sm text-muted-foreground">{subtitle}</p>
+//         )}
+//       </div>
+//     </div>
+//   );
+// }
 
 /* ===== Actions menu (samakan pattern dengan Academic Terms) ===== */
 function ActionsMenu({
@@ -247,7 +249,14 @@ function ActionsMenu({
 /* =====================================================================
  * SECTION: Periode Pendaftaran — Single Page (tanpa Tabs)
  * ===================================================================== */
-export default function SchoolRegistrationsPeriod() {
+type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
+
+export default function SchoolRegistrationsPeriod({
+  showBack = false,
+  backTo
+}: Props) {
+  const navigate = useNavigate();
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
   /* ✅ Tambah breadcrumb seperti SchoolAcademic */
   const { setHeader } = useDashboardHeader();
@@ -259,8 +268,9 @@ export default function SchoolRegistrationsPeriod() {
         { label: "Pendaftaran" },
         { label: "Periode" },
       ],
+      showBack,
     });
-  }, [setHeader]);
+  }, [setHeader, showBack]);
 
   // default: periode aktif
   const [termId, setTermId] = useState<string>(
@@ -463,10 +473,27 @@ export default function SchoolRegistrationsPeriod() {
 
   return (
     <div className="w-full">
-      <PageHeader
-        title="PMB — Periode Pendaftaran"
-        subtitle="Atur jadwal pendaftaran per-periode, jendela per kelas, dan header biaya pendaftaran."
-      />
+      {/* Header Back seperti SchoolAcademic */}
+      <div className="md:flex hidden gap-3 items-center">
+        {showBack && (
+          <Button
+            onClick={handleBack}
+            variant="ghost"
+            size="icon"
+            className="cursor-pointer self-start"
+          >
+            <ArrowLeft size={20} />
+          </Button>
+        )}
+        <div>
+          <h1 className="text-lg font-semibold md:text-xl">
+            PMB - Periode Pendaftaran
+          </h1>
+          <p className="mt-1 text-xs text-muted-foreground md:text-sm mb-4">
+            Atur jadwal pendaftaran per-periode, jendela per kelas, dan header biaya pendaftaran
+          </p>
+        </div>
+      </div>
 
       {/* Picker Periode Akademik */}
       <Card className="mb-4">

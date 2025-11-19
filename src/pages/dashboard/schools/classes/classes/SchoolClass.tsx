@@ -2,11 +2,10 @@
 import { useMemo, useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useParams, useNavigate } from "react-router-dom";
-import { Plus, Info, Loader2 } from "lucide-react";
+import { Info, Loader2 } from "lucide-react";
 import axios from "@/lib/axios";
 
 /* shadcn/ui */
-import { CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +23,7 @@ import {
   type ColumnDef,
   type ViewMode,
 } from "@/components/costum/table/CDataTable";
+import { Select } from "@/components/ui/select";
 
 /* ================= Types ================= */
 export type ClassStatus = "active" | "inactive";
@@ -123,11 +123,11 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
   const { setHeader } = useDashboardHeader();
   useEffect(() => {
     setHeader({
-      title: "Data Kelas",
+      title: "Daftar Kelas",
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Kelas" },
-        { label: "Data Kelas" },
+        { label: "Daftar Kelas" },
       ],
       actions: null,
     });
@@ -140,7 +140,9 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
   const levelId = sp.get("level_id") ?? ""; // tetap didukung via query, tapi tanpa UI panel
 
   const [page, setPage] = useState(() => Number(sp.get("page") ?? 1) || 1);
-  const [perPage] = useState(() => Number(sp.get("per") ?? 20) || 20);
+  const [perPage, setPerPage] = useState(
+    () => Number(sp.get("per") ?? 20) || 20
+  );
   useEffect(() => {
     const copy = new URLSearchParams(sp);
     copy.set("page", String(page));
@@ -363,9 +365,9 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
 
   /* ===== Layout ===== */
   return (
-    <div className="h-full w-full overflow-x-hidden bg-background text-foreground">
+    <div className="w-full overflow-x-hidden bg-background text-foreground">
       <main className="w-full">
-        <div className="mx-auto flex-col gap-6">
+        <div className="mx-auto flex flex-col gap-4 lg:gap-6">
           {/* Header */}
           <div className="md:flex hidden gap-3 items-center">
             {showBack && (
@@ -391,53 +393,50 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
                 </svg>
               </Button>
             )}
-            <h1 className="font-semibold text-lg md:text-xl">Data Kelas</h1>
+            <h1 className="font-semibold text-lg md:text-xl">Daftar Kelas</h1>
           </div>
 
-          {/* Daftar Kelas */}
+          <DataTable<MiddleClassRow>
+            onAdd={() => setOpenTambah(true)}
+            addLabel="Tambah"
+            controlsPlacement="above"
+            defaultQuery={q}
+            onQueryChange={handleQueryChange}
+            filterer={() => true}
+            searchByKeys={["name", "slug", "parentName", "term"]}
+            searchPlaceholder="Cari nama/slug/tingkat/periode…"
+            statsSlot={statsSlot}
+            loading={classesQ.isLoading}
+            error={
+              classesQ.isError
+                ? (classesQ.error as any)?.message ?? "Error"
+                : null
+            }
+            columns={columns}
+            rows={pagedRows}
+            getRowId={(r) => r.id}
+            stickyHeader
+            zebra
+            viewModes={["table", "card"] as ViewMode[]}
+            defaultView="table"
+            storageKey={`classes:${schoolId}`}
+            onRowClick={(r) => navigate(`${r.id}`)}
+            pageSize={perPage}
+            pageSizeOptions={[10, 20, 50, 100, 200]}
+          />
 
-          <CardHeader className="py-3 px-4 md:px-5">
-            <div className="flex items-center justify-between">
-              <Button
-                className="sm:hidden"
-                size="sm"
-                onClick={() => setOpenTambah(true)}
-              >
-                <Plus size={16} className="mr-2" /> Tambah
-              </Button>
+          {/* Footer pagination */}
+          <div className="mt-2 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
+            <div className="order-1 sm:order-2 flex items-center gap-2">
+              <Select
+                value={String(perPage)}
+                onValueChange={(v) => {
+                  setPerPage(Number(v));
+                  setPage(1);
+                }}
+              ></Select>
             </div>
-          </CardHeader>
-
-          <CardContent className="px-4 md:px-5 pb-4">
-            <DataTable<MiddleClassRow>
-              onAdd={() => setOpenTambah(true)}
-              addLabel="Tambah"
-              controlsPlacement="above"
-              defaultQuery={q}
-              onQueryChange={handleQueryChange}
-              filterer={() => true}
-              searchByKeys={["name", "slug", "parentName", "term"]}
-              searchPlaceholder="Cari nama/slug/tingkat/periode…"
-              statsSlot={statsSlot}
-              loading={classesQ.isLoading}
-              error={
-                classesQ.isError
-                  ? (classesQ.error as any)?.message ?? "Error"
-                  : null
-              }
-              columns={columns}
-              rows={pagedRows}
-              getRowId={(r) => r.id}
-              stickyHeader
-              zebra
-              viewModes={["table", "card"] as ViewMode[]}
-              defaultView="table"
-              storageKey={`classes:${schoolId}`}
-              onRowClick={(r) => navigate(`${r.id}`)}
-              pageSize={perPage}
-              pageSizeOptions={[10, 20, 50, 100, 200]}
-            />
-          </CardContent>
+          </div>
         </div>
       </main>
 

@@ -577,11 +577,12 @@ type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
 export default function TeacherScheduleRoutine({
   showBack = false,
-  backTo
+  backTo,
 }: Props) {
   const navigate = useNavigate();
-  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
   const qc = useQueryClient();
+
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
   /* ✅ Breadcrumb */
   const { setHeader } = useDashboardHeader();
@@ -608,6 +609,7 @@ export default function TeacherScheduleRoutine({
     const saved = (localStorage.getItem(LOCAL_KEY) || "") as "routine" | "once";
     if (["routine", "once"].includes(saved)) setTab(saved);
   }, []);
+
   useEffect(() => {
     localStorage.setItem(LOCAL_KEY, tab);
   }, [tab]);
@@ -617,15 +619,18 @@ export default function TeacherScheduleRoutine({
     queryKey: ["teacher-routines"],
     queryFn: () => routineApi.list(),
   });
+
   const routineCreate = useMutation({
     mutationFn: (payload: Omit<RoutineItem, "id">) =>
       routineApi.create(payload),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["teacher-routines"] }),
   });
+
   const routineUpdate = useMutation({
     mutationFn: (payload: RoutineItem) => routineApi.update(payload),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["teacher-routines"] }),
   });
+
   const routineDelete = useMutation({
     mutationFn: (id: string) => routineApi.remove(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["teacher-routines"] }),
@@ -636,14 +641,17 @@ export default function TeacherScheduleRoutine({
     queryKey: ["teacher-once"],
     queryFn: () => onceApi.list(),
   });
+
   const onceCreate = useMutation({
     mutationFn: (payload: Omit<ScheduleRow, "id">) => onceApi.create(payload),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["teacher-once"] }),
   });
+
   const onceUpdate = useMutation({
     mutationFn: (payload: ScheduleRow) => onceApi.update(payload),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["teacher-once"] }),
   });
+
   const onceDelete = useMutation({
     mutationFn: (id: string) => onceApi.remove(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["teacher-once"] }),
@@ -675,8 +683,8 @@ export default function TeacherScheduleRoutine({
   return (
     <div className="w-full bg-background text-foreground">
       <div className="mx-auto flex flex-col gap-4">
-        {/* Header */}
-        <div className="md:flex hidden gap-3 items-center">
+        {/* Header: Desktop (>= md) - lengkap */}
+        <div className="hidden md:flex gap-3 items-center">
           {showBack && (
             <Button
               onClick={handleBack}
@@ -693,6 +701,21 @@ export default function TeacherScheduleRoutine({
               Kelola jadwal rutin mingguan dan kegiatan sekali
             </p>
           </div>
+        </div>
+
+        {/* Header: Mobile (< md) - title pendek saja */}
+        <div className="flex md:hidden items-center gap-2">
+          {showBack && (
+            <Button
+              onClick={handleBack}
+              variant="ghost"
+              size="icon"
+              className="cursor-pointer"
+            >
+              <ArrowLeft size={18} />
+            </Button>
+          )}
+          <span className="font-semibold text-base">Jadwal Rutin</span>
         </div>
 
         {/* Tabs (2 saja) */}

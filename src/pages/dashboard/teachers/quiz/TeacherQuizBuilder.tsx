@@ -2,6 +2,10 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
+/* react-query + axios */
+import { useQuery } from "@tanstack/react-query";
+import axios from "@/lib/axios";
+
 /* shadcn/ui */
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,7 +35,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 /* icons */
 import {
   ArrowLeft,
-  Eye,
   Plus,
   Save,
   Settings2,
@@ -49,6 +52,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 /* =========================
    Types & Helpers
@@ -109,6 +113,27 @@ type QuizDoc = {
   updatedAt: string; // ISO
 };
 
+/* ====== Types dari API quiz-questions ====== */
+type QuizQuestionFromApi = {
+  quiz_question_id: string;
+  quiz_question_quiz_id: string;
+  quiz_question_school_id: string;
+  quiz_question_type: string; // "single" dll, sekarang pakai single choice
+  quiz_question_text: string;
+  quiz_question_points: number;
+  quiz_question_answers: Record<string, string>; // { A,B,C,D,... }
+  quiz_question_correct: string; // "A" | "B" | ...
+  quiz_question_explanation: string;
+  quiz_question_created_at: string;
+  quiz_question_updated_at: string;
+};
+
+type QuizQuestionListResponse = {
+  success: boolean;
+  message: string;
+  data: QuizQuestionFromApi[];
+};
+
 const uid = () =>
   `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 
@@ -160,26 +185,54 @@ const defaultQuestion = (t: QuestionType = "short_text"): Question => {
   return base;
 };
 
+/* mapping dari API → Question builder */
+function mapApiQuestionToQuestion(q: QuizQuestionFromApi): Question {
+  // sort key A,B,C,D,...
+  const keys = Object.keys(q.quiz_question_answers).sort();
+  const options: Option[] = keys.map((k) => ({
+    id: `${q.quiz_question_id}-${k}`,
+    text: q.quiz_question_answers[k],
+    correct: k.toUpperCase() === q.quiz_question_correct.toUpperCase(),
+  }));
+
+  return {
+    id: q.quiz_question_id,
+    title: q.quiz_question_text,
+    description: q.quiz_question_explanation,
+    type: "multiple_choice",
+    required: true, // API belum punya flag required, anggap wajib
+    points: q.quiz_question_points ?? 1,
+    options,
+  };
+}
+
 /* =========================
    Page Component
 ========================= */
-export default function TeacherQuizBuilder() {
-  const { id: classId = "" } = useParams<{ id: string }>();
+export default function QuizBuilder() {
+  // Di sini param :id kita pakai sebagai quiz_id
+  const { quizId = "" } = useParams<{
+    csstId: string;
+    assessmentId: string;
+    quizId: string;
+  }>();
   const navigate = useNavigate();
   const endRef = useRef<HTMLDivElement | null>(null);
 
-  // Build new or load from storage (per class)
+  // Build new or load from storage (per quiz)
   const initialDoc: QuizDoc = useMemo(() => {
-    const stored = localStorage.getItem(LOCAL_KEY(classId || "global"));
+    const stored = localStorage.getItem(LOCAL_KEY(quizId || "global"));
     if (stored) {
       try {
         const parsed = JSON.parse(stored) as QuizDoc;
         return parsed;
-      } catch {}
+      } catch {
+        // ignore
+      }
     }
     return {
-      id: uid(),
-      classId,
+      id: quizId || uid(),
+      classId: undefined,
       title: "Kuis Baru",
       description: "",
       settings: {
@@ -194,23 +247,45 @@ export default function TeacherQuizBuilder() {
         requireLogin: true,
         preventBackNavigation: false,
       },
-      questions: [
-        defaultQuestion("multiple_choice"),
-        defaultQuestion("short_text"),
-      ],
+      questions: [], // akan diisi dari API quiz-questions
       status: "draft",
       updatedAt: new Date().toISOString(),
     };
-  }, [classId]);
+  }, [quizId]);
 
   const [doc, setDoc] = useState<QuizDoc>(initialDoc);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [tab, setTab] = useState<"design" | "preview">("design");
 
+  /* ====== Fetch quiz questions dari API ====== */
+  const { data, isLoading, isError, error } =
+    useQuery<QuizQuestionListResponse>({
+      queryKey: ["quiz-questions", quizId],
+      enabled: !!quizId,
+      queryFn: async () => {
+        const res = await axios.get("/api/u/quiz-questions/list", {
+          params: { quiz_id: quizId },
+        });
+        return res.data;
+      },
+    });
+
+  // ketika data API datang → sync ke doc.questions
+  useEffect(() => {
+    if (!data) return;
+    const mapped = data.data.map(mapApiQuestionToQuestion);
+
+    setDoc((d) => ({
+      ...d,
+      questions: mapped,
+      updatedAt: new Date().toISOString(),
+    }));
+  }, [data]);
+
   // autosave
   useEffect(() => {
-    localStorage.setItem(LOCAL_KEY(classId || "global"), JSON.stringify(doc));
-  }, [doc, classId]);
+    localStorage.setItem(LOCAL_KEY(quizId || "global"), JSON.stringify(doc));
+  }, [doc, quizId]);
 
   // scroll ke bawah tiap kali jumlah pertanyaan berubah
   useEffect(() => {
@@ -223,6 +298,12 @@ export default function TeacherQuizBuilder() {
     () => doc.questions.reduce((s, q) => s + (q.points || 0), 0),
     [doc.questions]
   );
+
+  const apiErrorMessage = isError
+    ? (error as any)?.response?.data?.message ||
+    (error as Error).message ||
+    "Gagal memuat soal kuis."
+    : null;
 
   /* ========== Question operations ========== */
   const addQuestion = (t: QuestionType) =>
@@ -282,15 +363,15 @@ export default function TeacherQuizBuilder() {
       questions: d.questions.map((q) =>
         q.id === qid
           ? {
-              ...q,
-              options: [
-                ...(q.options || []),
-                {
-                  id: uid(),
-                  text: `Opsi ${((q.options || []).length ?? 0) + 1}`,
-                },
-              ],
-            }
+            ...q,
+            options: [
+              ...(q.options || []),
+              {
+                id: uid(),
+                text: `Opsi ${((q.options || []).length ?? 0) + 1}`,
+              },
+            ],
+          }
           : q
       ),
       updatedAt: new Date().toISOString(),
@@ -302,11 +383,11 @@ export default function TeacherQuizBuilder() {
       questions: d.questions.map((q) =>
         q.id === qid
           ? {
-              ...q,
-              options: (q.options || []).map((o) =>
-                o.id === oid ? { ...o, ...patch } : o
-              ),
-            }
+            ...q,
+            options: (q.options || []).map((o) =>
+              o.id === oid ? { ...o, ...patch } : o
+            ),
+          }
           : q
       ),
       updatedAt: new Date().toISOString(),
@@ -329,12 +410,12 @@ export default function TeacherQuizBuilder() {
       questions: d.questions.map((q) =>
         q.id === qid
           ? {
-              ...q,
-              options: (q.options || []).map((o) => ({
-                ...o,
-                correct: o.id === oid,
-              })),
-            }
+            ...q,
+            options: (q.options || []).map((o) => ({
+              ...o,
+              correct: o.id === oid,
+            })),
+          }
           : q
       ),
       updatedAt: new Date().toISOString(),
@@ -377,54 +458,50 @@ export default function TeacherQuizBuilder() {
   };
 
   const publish = () => {
-    // contoh payload API
+    // Payload disesuaikan dengan struktur quiz-questions API
+    const questionsPayload = doc.questions
+      // sekarang backend masih pakai tipe pilihan ganda single-correct
+      .filter((q) => q.type === "multiple_choice")
+      .map((q) => {
+        const answers: Record<string, string> = {};
+        (q.options || []).forEach((opt, idx) => {
+          const key = String.fromCharCode(65 + idx); // A,B,C,D,...
+          answers[key] = opt.text;
+        });
+
+        const correctIndex =
+          (q.options || []).findIndex((o) => o.correct) >= 0
+            ? (q.options || []).findIndex((o) => o.correct)
+            : 0;
+        const correctLetter = String.fromCharCode(65 + correctIndex);
+
+        return {
+          // kalau mau bedain baru vs existing, bisa pakai id lokal (local-xxx)
+          quiz_question_id: q.id.startsWith("local-") ? undefined : q.id,
+          quiz_question_quiz_id: quizId || doc.id,
+          quiz_question_type: "single",
+          quiz_question_text: q.title,
+          quiz_question_points: q.points || 1,
+          quiz_question_answers: answers,
+          quiz_question_correct: correctLetter,
+          quiz_question_explanation: q.description ?? "",
+        };
+      });
+
     const payload = {
-      quiz_id: doc.id,
-      class_id: doc.classId,
-      title: doc.title,
-      description: doc.description,
-      settings: doc.settings,
-      questions: doc.questions.map((q, idx) => ({
-        order: idx + 1,
-        question_id: q.id,
-        type: q.type,
-        title: q.title,
-        description: q.description,
-        required: q.required,
-        points: q.points,
-        options:
-          q.type === "multiple_choice" ||
-          q.type === "checkboxes" ||
-          q.type === "dropdown"
-            ? (q.options || []).map((o) => ({
-                id: o.id,
-                text: o.text,
-                correct: !!o.correct,
-              }))
-            : undefined,
-        answer_key_text:
-          q.type === "short_text" || q.type === "paragraph"
-            ? q.answerKeyText || ""
-            : undefined,
-        scale:
-          q.type === "scale"
-            ? {
-                min: q.scaleMin ?? 1,
-                max: q.scaleMax ?? 5,
-                min_label: q.scaleMinLabel ?? "",
-                max_label: q.scaleMaxLabel ?? "",
-              }
-            : undefined,
-      })),
+      quiz_id: quizId || doc.id,
+      questions: questionsPayload,
     };
 
-    console.log("[PUBLISH] payload:", payload);
+    console.log("[PUBLISH] payload ke backend quiz-questions:", payload);
     setDoc((d) => ({
       ...d,
       status: "published",
       updatedAt: new Date().toISOString(),
     }));
-    alert("Quiz dipublish (dummy). Cek console untuk payload.");
+    alert(
+      "Quiz dipublish (dummy). Cek console untuk payload ke API quiz-questions."
+    );
   };
 
   /* =========================
@@ -464,17 +541,6 @@ export default function TeacherQuizBuilder() {
                   Pengaturan
                 </Button>
 
-                <Button
-                  variant={tab === "preview" ? "default" : "secondary"}
-                  size="sm"
-                  onClick={() =>
-                    setTab(tab === "design" ? "preview" : "design")
-                  }
-                >
-                  <Eye className="h-4 w-4 mr-1" />
-                  {tab === "design" ? "Preview" : "Kembali Edit"}
-                </Button>
-
                 <Button variant="outline" size="sm" onClick={exportJSON}>
                   <Download className="h-4 w-4 mr-1" />
                   Export
@@ -498,13 +564,20 @@ export default function TeacherQuizBuilder() {
                   </span>
                 </label>
 
-                <Button size="sm" onClick={publish}>
+                <Button size="sm" onClick={publish} disabled={!quizId}>
                   <GraduationCap className="h-4 w-4 mr-1" />
                   Publish
                 </Button>
               </div>
             </div>
           </div>
+
+          {/* Error dari API */}
+          {apiErrorMessage && (
+            <Alert variant="destructive">
+              <AlertDescription>{apiErrorMessage}</AlertDescription>
+            </Alert>
+          )}
 
           {/* Description */}
           <Card>
@@ -546,6 +619,27 @@ export default function TeacherQuizBuilder() {
 
             {/* =============== DESIGN =============== */}
             <TabsContent value="design" className="mt-3">
+              {/* Loading skeleton first time */}
+              {isLoading && doc.questions.length === 0 && (
+                <div className="grid gap-3 mb-3">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Card key={i}>
+                      <CardContent className="p-4 space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="space-y-2 flex-1">
+                            <div className="h-4 w-3/4 bg-muted rounded" />
+                            <div className="h-3 w-2/3 bg-muted rounded" />
+                          </div>
+                          <div className="h-8 w-24 bg-muted rounded" />
+                        </div>
+                        <div className="h-3 w-full bg-muted rounded" />
+                        <div className="h-3 w-5/6 bg-muted rounded" />
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
               {/* Question list */}
               <div className="grid gap-3">
                 {doc.questions.map((q, idx) => (
@@ -967,9 +1061,9 @@ function QuestionEditor(props: {
                     next.options = q.options?.length
                       ? q.options
                       : [
-                          { id: uid(), text: "Opsi 1", correct: true },
-                          { id: uid(), text: "Opsi 2", correct: false },
-                        ];
+                        { id: uid(), text: "Opsi 1", correct: true },
+                        { id: uid(), text: "Opsi 2", correct: false },
+                      ];
                   } else {
                     next.options = undefined;
                   }
@@ -1032,64 +1126,64 @@ function QuestionEditor(props: {
           {(q.type === "multiple_choice" ||
             q.type === "checkboxes" ||
             q.type === "dropdown") && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Opsi jawaban</Label>
-                <Button size="sm" variant="outline" onClick={onAddOption}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Tambah opsi
-                </Button>
-              </div>
-              <div className="grid gap-2">
-                {(q.options || []).map((o) => (
-                  <div key={o.id} className="flex items-center gap-2">
-                    {/* correct marker */}
-                    {q.type === "multiple_choice" ? (
-                      <input
-                        type="radio"
-                        name={`correct-${q.id}`}
-                        checked={!!o.correct}
-                        onChange={() => onSetSingleCorrect(o.id)}
-                        className="accent-[hsl(var(--primary))]"
-                        title="Tandai benar"
-                      />
-                    ) : (
-                      <input
-                        type="checkbox"
-                        checked={!!o.correct}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Opsi jawaban</Label>
+                  <Button size="sm" variant="outline" onClick={onAddOption}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Tambah opsi
+                  </Button>
+                </div>
+                <div className="grid gap-2">
+                  {(q.options || []).map((o) => (
+                    <div key={o.id} className="flex items-center gap-2">
+                      {/* correct marker */}
+                      {q.type === "multiple_choice" ? (
+                        <input
+                          type="radio"
+                          name={`correct-${q.id}`}
+                          checked={!!o.correct}
+                          onChange={() => onSetSingleCorrect(o.id)}
+                          className="accent-[hsl(var(--primary))]"
+                          title="Tandai benar"
+                        />
+                      ) : (
+                        <input
+                          type="checkbox"
+                          checked={!!o.correct}
+                          onChange={(e) =>
+                            onOptionChange(o.id, { correct: e.target.checked })
+                          }
+                          className="accent-[hsl(var(--primary))]"
+                          title="Boleh multi jawaban benar"
+                        />
+                      )}
+
+                      <Input
+                        value={o.text}
                         onChange={(e) =>
-                          onOptionChange(o.id, { correct: e.target.checked })
+                          onOptionChange(o.id, { text: e.target.value })
                         }
-                        className="accent-[hsl(var(--primary))]"
-                        title="Boleh multi jawaban benar"
+                        placeholder="Teks opsi…"
                       />
-                    )}
 
-                    <Input
-                      value={o.text}
-                      onChange={(e) =>
-                        onOptionChange(o.id, { text: e.target.value })
-                      }
-                      placeholder="Teks opsi…"
-                    />
-
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => onOptionRemove(o.id)}
-                      title="Hapus opsi"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => onOptionRemove(o.id)}
+                        title="Hapus opsi"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Tandai jawaban benar (radio untuk satu jawaban, checkbox untuk
+                  multi-jawaban).
+                </div>
               </div>
-              <div className="text-xs text-muted-foreground">
-                Tandai jawaban benar (radio untuk satu jawaban, checkbox untuk
-                multi-jawaban).
-              </div>
-            </div>
-          )}
+            )}
 
           {(q.type === "short_text" || q.type === "paragraph") && (
             <div className="space-y-1">

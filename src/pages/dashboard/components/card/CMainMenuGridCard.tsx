@@ -28,7 +28,7 @@ export type CMainMenuGridCardProps = {
 export default function CMainMenuGridCard({
     title = "Menu Utama",
     items,
-    columns = { base: 4, sm: 4, md: 4, xl: 5 },
+    columns = { base: 4, sm: 4, md: 4, xl: 6 },
 }: CMainMenuGridCardProps) {
     const gridClass = [
         `grid grid-cols-${columns.base ?? 3}`,

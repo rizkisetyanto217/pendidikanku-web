@@ -126,18 +126,18 @@ export default function SchoolRoomDetail() {
   const navigate = useNavigate();
 
   const { setHeader } = useDashboardHeader();
-      useEffect(() => {
-        setHeader({
-          title: "Detail Ruangan",
-          breadcrumbs: [
-            { label: "Dashboard", href: "dashboard" },
-            { label: "Akademik" },
-            { label: "Ruangan", href: "akademik/ruangan" },
-            { label: "Detail" },
-          ],
-          showBack: true,
-        });
-      }, [setHeader]);
+  useEffect(() => {
+    setHeader({
+      title: "Detail Ruangan",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Akademik" },
+        { label: "Ruangan", href: "akademik/ruangan" },
+        { label: "Detail" },
+      ],
+      showBack: true,
+    });
+  }, [setHeader]);
 
   const { data: room, isLoading, isError } = useRoomDetail(id);
 
@@ -193,53 +193,22 @@ export default function SchoolRoomDetail() {
     );
   }
 
-return (
-  <main className="">
-    <div className="mx-auto space-y-6">
-      {/* Header atas */}
-      <div className="md:flex hidden items-center gap-3 mb-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate(-1)}
-          title="Kembali"
-          className="shrink-0"
-        >
-          <ArrowLeft className="size-5" />
-        </Button>
-        <h1 className="font-semibold text-lg md:text-xl">Detail Ruangan</h1>
-      </div>
-
-  {/* Judul Ruangan + Slug + Status */}
-  <Card className="shadow-none border-none p-0">
-    <CardContent className="p-0">
-      <div className="flex items-center justify-between">
-        <div className="min-w-0 flex-1">
-          <h2 className="truncate text-xl font-semibold">
-            {room.class_room_name}
-          </h2>
-
-          {(room.class_room_code || room.class_room_slug) && (
-            <p className="mt-1 text-sm text-muted-foreground">
-              {room.class_room_code && (
-                <>
-                  Kode: <span className="font-medium">{room.class_room_code}</span>
-                </>
-              )}
-              {room.class_room_slug && (
-                <>
-                  {room.class_room_code ? " · " : ""}
-                  Slug: <code>{room.class_room_slug}</code>
-                </>
-              )}
-            </p>
-          )}
+  return (
+    <main className="">
+      <div className="mx-auto space-y-6">
+        {/* Header atas */}
+        <div className="md:flex hidden items-center gap-3 mb-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(-1)}
+            title="Kembali"
+            className="shrink-0"
+          >
+            <ArrowLeft className="size-5" />
+          </Button>
+          <h1 className="font-semibold text-lg md:text-xl">Detail Ruangan</h1>
         </div>
-
-        <StatusBadge active={isActive} />
-      </div>
-    </CardContent>
-  </Card>
 
         {/* Hero Image (opsional, kalau nanti ada di API) */}
         {room.class_room_image_url && (
@@ -492,13 +461,13 @@ return (
                   <div className="mb-1 text-xs text-muted-foreground">
                     {note.ts
                       ? new Date(note.ts).toLocaleString("id-ID", {
-                          weekday: "short",
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
+                        weekday: "short",
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
                       : "—"}
                   </div>
                   <div className="text-sm">{note.text ?? "—"}</div>
@@ -521,8 +490,8 @@ return (
                 value={
                   room.class_room_created_at
                     ? new Date(
-                        room.class_room_created_at
-                      ).toLocaleString("id-ID")
+                      room.class_room_created_at
+                    ).toLocaleString("id-ID")
                     : "—"
                 }
               />
@@ -531,8 +500,8 @@ return (
                 value={
                   room.class_room_updated_at
                     ? new Date(
-                        room.class_room_updated_at
-                      ).toLocaleString("id-ID")
+                      room.class_room_updated_at
+                    ).toLocaleString("id-ID")
                     : "—"
                 }
               />

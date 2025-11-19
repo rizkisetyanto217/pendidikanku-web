@@ -150,11 +150,6 @@ export const NAVS: NavDict = {
           end: true,
         }, // → /sekolah/keuangan
         // kalau nanti ada route khusus pengaturan keuangan, ganti to: "keuangan/pengaturan"
-        {
-          path: "pengaturan",
-          label: "Pengaturan",
-          to: "keuangan",
-        },
       ],
     },
 

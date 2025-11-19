@@ -1,32 +1,30 @@
 import { useMemo, useEffect } from "react";
 import {
   CalendarDays,
-  Building2,
   Layers,
   CheckCircle2,
-  CreditCard,
   Banknote,
-  UserCog,
   IdCard,
   BookOpen,
-  LibraryBig,
   CalendarRange,
-  NotebookPen,
-  BookOpenCheck,
-  FileText,
+  School,
+  Wallet,
+  CalendarClock,
+  ListTree,
+  User,
+  DoorClosed,
+  BookOpenText,
+  Settings,
+  HeartHandshake,
 } from "lucide-react";
 
 import CMainMenuGridCard, {
-  type CMenuItem,
 } from "@/pages/dashboard/components/card/CMainMenuGridCard";
 
-/* Tambahan untuk breadcrumb sistem dashboard */
+/* Tambahan breadcrumb */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
-/** ================= Component ================= */
 export default function SchoolMenuGrids() {
-
-  /* Atur breadcrumb dan title seperti SchoolAcademic */
   const { setHeader } = useDashboardHeader();
 
   useEffect(() => {
@@ -40,172 +38,180 @@ export default function SchoolMenuGrids() {
     });
   }, [setHeader]);
 
-  const items: CMenuItem[] = useMemo(
+  /* =============================== */
+  /*    MENU GRID BERKELOMPOK        */
+  /* =============================== */
+  const groups = useMemo(
     () => [
-      // ======== PROFIL & KEUANGAN ========
+      /* ========= PROFIL ========= */
       {
-        key: "profil",
-        label: "Profil Sekolah",
-        to: "profil/profil-sekolah",
-        icon: <IdCard />,
-      },
-      {
-        key: "keuangan",
-        label: "Keuangan",
-        to: "keuangan",
-        icon: <CreditCard />,
-      },
-      {
-        key: "keu-detail",
-        label: "Detail Tagihan",
-        icon: <FileText />,
-        requiresParam: true,
-        note: "Buka dari daftar tagihan",
-      },
-      {
-        key: "spp",
-        label: "SPP",
-        to: "spp",
-        icon: <Banknote />,
+        title: "Profil",
+        items: [
+          {
+            key: "profil",
+            label: "Sekolah",
+            to: "profil/profil-sekolah",
+            icon: <School />,
+          },
+          {
+            key: "guru",
+            label: "Guru",
+            to: "profil/guru",
+            icon: <User />,
+          },
+        ],
       },
 
-      // ======== AKADEMIK ========
+      /* ========= AKADEMIK ========= */
       {
-        key: "akademik",
-        label: "Periode Akademik",
-        to: "tahun-akademik",
-        icon: <CalendarDays />,
-      },
-      {
-        key: "akademik-detail",
-        label: "Detail Akademik",
-        icon: <NotebookPen />,
-        requiresParam: true,
-        note: "Buka dari Periode Akademik",
-      },
-
-      // ======== KELAS & SECTION ========
-      {
-        key: "kelas-all",
-        label: "Seluruh Kelas",
-        to: "kelas",
-        icon: <Layers />,
-      },
-      {
-        key: "kelas-aktif",
-        label: "Kelas Aktif",
-        to: "kelas-aktif",
-        icon: <CheckCircle2 />,
-      },
-      {
-        key: "kelas-kelola",
-        label: "Kelola Kelas",
-        icon: <Layers />,
-        requiresParam: true,
-        note: "Pilih kelas dulu",
-      },
-      {
-        key: "section-detail",
-        label: "Detail Section",
-        icon: <Layers />,
-        requiresParam: true,
-        note: "Buka dari Kelola Kelas",
-      },
-      {
-        key: "kelas-tingkat",
-        label: "Kelas per Tingkat",
-        icon: <Layers />,
-        requiresParam: true,
-        note: "Butuh levelId",
-      },
-      {
-        key: "kelas-by-id",
-        label: "Kelas (ID)",
-        icon: <Layers />,
-        requiresParam: true,
-        note: "Butuh classId",
+        title: "Akademik",
+        items: [
+          {
+            key: "periode",
+            label: "Tahun Akademik",
+            to: "tahun-akademik",
+            icon: <CalendarClock />,
+          },
+          {
+            key: "ruangan",
+            label: "Ruangan",
+            to: "ruangan",
+            icon: <DoorClosed />,
+          },
+          {
+            key: "buku",
+            label: "Buku",
+            to: "buku",
+            icon: <BookOpen />,
+          },
+          {
+            key: "mapel",
+            label: "Mata Pelajaran",
+            to: "mata-pelajaran",
+            icon: <BookOpenText />,
+          },
+        ],
       },
 
-      // ======== JADWAL ========
+      /* ========= KELAS ========= */
       {
-        key: "jadwal",
-        label: "Jadwal",
-        to: "jadwal",
-        icon: <CalendarRange />,
-      },
-      {
-        key: "jadwal-detail",
-        label: "Detail Jadwal",
-        icon: <CalendarRange />,
-        requiresParam: true,
-        note: "Buka dari Jadwal",
-      },
-
-      // ======== GURU & MURID ========
-      {
-        key: "guru",
-        label: "Guru",
-        to: "profil/guru",
-        icon: <UserCog />,
-      },
-      {
-        key: "guru-detail",
-        label: "Detail Guru",
-        icon: <UserCog />,
-        requiresParam: true,
-        note: "Buka dari daftar guru",
-      },
-
-      // ======== INVENTORI AKADEMIK ========
-      {
-        key: "ruangan",
-        label: "Ruangan",
-        to: "ruangan",
-        icon: <Building2 />,
-      },
-      {
-        key: "ruangan-detail",
-        label: "Detail Ruangan",
-        icon: <Building2 />,
-        requiresParam: true,
-        note: "Buka dari Ruangan",
-      },
-      {
-        key: "mata-pelajaran",
-        label: "Mapel",
-        to: "mata-pelajaran",
-        icon: <LibraryBig />,
-      },
-      {
-        key: "buku",
-        label: "Buku",
-        to: "buku",
-        icon: <BookOpen />,
-      },
-      {
-        key: "buku-detail",
-        label: "Detail Buku",
-        icon: <BookOpenCheck />,
-        requiresParam: true,
-        note: "Buka dari Buku",
+        title: "Kelas",
+        items: [
+          {
+            key: "level",
+            label: "Level",
+            to: "level",
+            icon: <ListTree />,
+          },
+          {
+            key: "kelas-daftar",
+            label: "Daftar Kelas",
+            to: "daftar-kelas",
+            icon: <Layers />,
+          },
+          {
+            key: "kelas-semua",
+            label: "Semua Kelas",
+            to: "semua-kelas",
+            icon: <CheckCircle2 />,
+          },
+          {
+            key: "kelas-pelajaran",
+            label: "Pelajaran",
+            to: "pelajaran",
+            icon: <BookOpenText />,
+          },
+        ],
       },
 
-      // ======== KALENDER AKADEMIK ========
+      /* ========= KEUANGAN ========= */
       {
-        key: "kalender",
-        label: "Kalender Akademik",
-        to: "kalender",
-        icon: <CalendarRange />,
+        title: "Keuangan",
+        items: [
+          {
+            key: "keuangan",
+            label: "Keuangan Sekolah",
+            to: "keuangan",
+            icon: <Wallet />,
+          },
+          {
+            key: "spp",
+            label: "SPP",
+            to: "spp",
+            icon: <Banknote />,
+          },
+        ],
+      },
+
+      /* ========= JADWAL ========= */
+      {
+        title: "Jadwal",
+        items: [
+          {
+            key: "jadwal",
+            label: "Agenda",
+            to: "agenda",
+            icon: <CalendarDays />,
+          },
+          {
+            key: "jadwal-rutin",
+            label: "Jadwal Rutin",
+            to: "rutin",
+            icon: <CalendarRange />,
+          },
+        ],
+      },
+
+      /* ========= PENDAFTARAN ========= */
+      {
+        title: "Pendaftaran",
+        items: [
+          {
+            key: "pendaftaran",
+            label: "Periode",
+            to: "pendaftaran",
+            icon: <IdCard />,
+          },
+          {
+            key: "pendaftaran-murid",
+            label: "Murid",
+            to: "pendaftaran/murid",
+            icon: <User />,
+          },
+          {
+            key: "pengaturan-daftar",
+            label: "Pengaturan",
+            to: "pendaftaran/pengaturan",
+            icon: <Settings />,
+          },
+        ],
+      },
+
+      /* ========= DUKUNGAN ========= */
+      {
+        title: "Dukungan",
+        items: [
+          {
+            key: "donasi",
+            label: "Donasi",
+            to: "donasi",
+            icon: <HeartHandshake />,
+          },
+        ],
       },
     ],
     []
   );
 
   return (
-    <CMainMenuGridCard
-      title="Akses Cepat Sekolah"
-      items={items}
-      columns={{ base: 3, sm: 3, md: 4, xl: 6 }}
-    />
+    <div className="space-y-6">
+      {groups.map((group) => (
+        <CMainMenuGridCard
+          key={group.title}
+          title={group.title}
+          items={group.items}
+        />
+      ))}
+    </div>
   );
 }

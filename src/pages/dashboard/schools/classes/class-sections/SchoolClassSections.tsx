@@ -192,8 +192,8 @@ function SectionCard({
   );
 
   const cardClassName = `group relative flex cursor-pointer flex-col overflow-hidden border transition-all duration-150 ${isActive
-      ? "border-emerald-500/60 hover:border-emerald-400 hover:bg-emerald-950/10"
-      : "border-border/70 hover:border-primary/50 hover:bg-muted/10"
+    ? "border-emerald-500/60 hover:border-emerald-400 hover:bg-emerald-950/10"
+    : "border-border/70 hover:border-primary/50 hover:bg-muted/10"
     }`;
 
   const stripClassName = `absolute inset-y-0 left-0 w-1 rounded-r-full ${isActive ? "bg-emerald-500" : "bg-muted-foreground/40"
@@ -417,11 +417,11 @@ export default function SchoolClassSection({
   const isFiltered = statusFilter !== "all" || modeFilter !== "all";
 
   return (
-    <div className="min-h-screen w-full bg-background text-foreground">
-      <main className="mx-auto flex max-w-6xl flex-col gap-6 px-3 py-4 md:px-4">
+    <div className="w-full overflow-x-hidden bg-background text-foreground">
+      <main className="mx-auto flex flex-col gap-6 py-4">
         {/* Header lokal */}
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-3">
+          <div className="md:flex hidden gap-3 items-center">
             {showBack && (
               <Button
                 onClick={handleBack}
