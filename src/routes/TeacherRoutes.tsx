@@ -20,7 +20,7 @@ import TeacherDetailClassQuiz from "@/pages/dashboard/teachers/csst/TeacherDetai
 import TeacherClassStudentsList from "@/pages/dashboard/teachers/csst/menus/student/TeacherCSSTStudentList";
 import TeacherClassStudentAttendanceList from "@/pages/dashboard/teachers/csst/menus/attendances/TeacherCSSTStudentAttendanceList";
 import TeacherMaterialList from "@/pages/dashboard/teachers/csst/menus/material/TeacherCSSTMaterialList";
-import TeacherExamList from "@/pages/dashboard/teachers/csst/menus/exams/TeacherCSSTExamList";
+import TeacherExamList from "@/pages/dashboard/teachers/csst/menus/exams/TeacherCSSTExam";
 import TeacherBookList from "@/pages/dashboard/teachers/csst/menus/books/TeacherCSSTBookList";
 import TeacherDetailClassStudent from "@/pages/dashboard/teachers/csst/menus/student/TeacherCSSTStudentDetail";
 import TeacherDetailBook from "@/pages/dashboard/teachers/csst/menus/books/TeacherCSSTBookDetail";

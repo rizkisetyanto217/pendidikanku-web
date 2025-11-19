@@ -6,7 +6,7 @@ import Unauthorized from "@/pages/UnAuthorized";
 import NotFound from "@/pages/NotFound";
 
 import { SchoolRoutes } from "./SchoolRoutes";
-import Login from "@/pages/dashboard/auth/AuthLogin"; // ⬅️ pastikan path-nya sesuai file baru
+import Login from "@/pages/dashboard/auth/AuthLogin";
 import Forbidden403 from "@/pages/Forbidden403";
 import Register from "@/pages/dashboard/auth/AuthRegister";
 import { TeacherRoutes } from "./TeacherRoutes";
@@ -20,61 +20,73 @@ import PendWebFeature from "@/pages/profile/website/website/pages/navbar-page/Pe
 import PendWebAbout from "@/pages/profile/website/website/pages/navbar-page/PendWebAbout";
 import PendWebContact from "@/pages/profile/website/website/pages/navbar-page/PendWebContact";
 import PendWebSupportUs from "@/pages/profile/website/website/support-us/PendWebSupportUs";
-// import PublicProgramsPage from "@/pages/PublicProgramsPage";
+import PendWebPMBInfo from "@/pages/dashboard/registration/PendWebPMBInfo";
 
 export default function AppRoutes() {
   return (
     <Routes>
-      {/* --- Public Pendidikanku website --- */}
-      <Route element={<PendWebLayout />}>
-        <Route index element={<PendWebHome />} />
-        <Route path="website" element={<PendWebHome />} />
-        <Route path="website/dukungan" element={<PendWebSupportUs />} />
-        <Route path="website/panduan" element={<PendWebTutorial />} />
-        <Route path="website/fitur" element={<PendWebFeature />} />
-        <Route path="website/about" element={<PendWebAbout />} />
-        <Route path="website/hubungi-kami" element={<PendWebContact />} />
+      {/* ================================
+          GROUP: Semua berbasis :school_slug
+         ================================ */}
+      <Route path=":school_slug">
+        {/* ---------- Public website per sekolah ---------- */}
+        <Route element={<PendWebLayout />}>
+          {/* /:school_slug → landing website sekolah */}
+          <Route index element={<PendWebHome />} />
+
+          {/* Kalau mau tetap ada /:school_slug/website juga */}
+          <Route path="website" element={<PendWebHome />} />
+
+          <Route path="website/dukungan" element={<PendWebSupportUs />} />
+          <Route path="website/panduan" element={<PendWebTutorial />} />
+          <Route path="website/fitur" element={<PendWebFeature />} />
+          <Route path="website/about" element={<PendWebAbout />} />
+          <Route path="website/hubungi-kami" element={<PendWebContact />} />
+        </Route>
+
+        {/* ---------- Public PMB sekolah ---------- */}
+        <Route path="pmb" element={<PendWebPMBInfo />} />
+
+        {/* ---------- Auth per-tenant ---------- */}
+        <Route path="login" element={<Login />} />
+        {/* Kalau register juga mau per sekolah */}
+        <Route path="register" element={<Register />} />
+
+        {/* ---------- Protected (dashboard dsb) ---------- */}
+        <Route element={<ProtectedRoute />}>
+          {/* Guru: /:school_slug/guru/... */}
+          <Route
+            element={<RequireschoolRoles allow={["teacher", "admin", "dkm"]} />}
+          >
+            {TeacherRoutes}
+          </Route>
+
+          {/* Murid: /:school_slug/santri/... */}
+          <Route
+            element={<RequireschoolRoles allow={["student", "admin", "dkm"]} />}
+          >
+            {StudentRoutes}
+          </Route>
+
+          {/* Sekolah/Manajemen: /:school_slug/admin/... */}
+          <Route element={<RequireschoolRoles allow={["admin", "dkm"]} />}>
+            {SchoolRoutes}
+          </Route>
+        </Route>
+
+        {/* ---------- Error page dalam konteks sekolah ---------- */}
+        <Route path="forbidden" element={<Forbidden403 />} />
+        <Route path="unauthorized" element={<Unauthorized />} />
+        <Route path="not-found" element={<NotFound />} />
       </Route>
 
-      {/* --- Public Auth --- */}
-      {/* Login sekarang per-tenant pakai slug:
-          contoh: /madinahsalam/login, /pendidikanku-demo/login */}
-      <Route path=":school_slug/login" element={<Login />} />
-      {/* Kalau mau masih punya global register tanpa slug, bisa tetap di sini */}
-      <Route path="/register" element={<Register />} />
-
-      {/* --- Protected (dengan slug di path, dari token) --- */}
-      <Route path=":school_slug" element={<ProtectedRoute />}>
-        {/* ===== Guru cluster: hanya teacher/admin/dkm ===== */}
-        <Route
-          element={<RequireschoolRoles allow={["teacher", "admin", "dkm"]} />}
-        >
-          {TeacherRoutes}
-        </Route>
-
-        {/* ===== Murid cluster: student/admin/dkm ===== */}
-        <Route
-          element={<RequireschoolRoles allow={["student", "admin", "dkm"]} />}
-        >
-          {StudentRoutes}
-        </Route>
-
-        {/* ===== Sekolah/Manajemen: admin/dkm ===== */}
-        <Route element={<RequireschoolRoles allow={["admin", "dkm"]} />}>
-          {SchoolRoutes}
-        </Route>
-      </Route>
-
-      {/* --- Forbidden harus di atas wildcard --- */}
-      <Route path=":school_slug/forbidden" element={<Forbidden403 />} />
-
-      {/* --- 404 & Unauthorized --- */}
-      <Route path="/unauthorized" element={<Unauthorized />} />
+      {/* ================================
+          Global (tanpa slug) – opsional
+          Bisa dipakai buat 404 global
+         ================================ */}
       <Route path="/not-found" element={<NotFound />} />
+      <Route path="/unauthorized" element={<Unauthorized />} />
       <Route path="*" element={<NotFound />} />
-
-      {/* --- Playground / testing --- */}
-      {/* <Route path="public-program" element={<PublicProgramsPage />} /> */}
     </Routes>
   );
 }

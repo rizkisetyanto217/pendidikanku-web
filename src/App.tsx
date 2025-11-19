@@ -1,16 +1,18 @@
+// src/App.tsx
 import AppRoutes from "@/routes/IndexRoute";
 import "./index.css";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { ThemeProvider } from "@/hooks/ThemeContext";
+import { useEffect } from "react";
+import { bootstrapThemeFromStorage } from "@/lib/theme-prefs";
 
 function App() {
   useCurrentUser();
 
-  return (
-    <ThemeProvider>
-      <AppRoutes />
-    </ThemeProvider>
-  );
+  useEffect(() => {
+    bootstrapThemeFromStorage();
+  }, []);
+
+  return <AppRoutes />;
 }
 
 export default App;

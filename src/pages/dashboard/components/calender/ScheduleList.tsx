@@ -58,6 +58,8 @@ export default function ScheduleList({
   >("all");
 
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const lastScrollSignalRef = useRef<number | undefined>(undefined);
+  const lastMonthRef = useRef<string | undefined>(undefined);
   const today = todayKey();
   const isBusy = updating || deleting;
 
@@ -104,26 +106,71 @@ export default function ScheduleList({
     return { keys, group };
   }, [listFiltered]);
 
-  /* =========================
-     Auto scroll to today (or nearest next day)
-  ========================= */
   useEffect(() => {
     if (loading) return;
     if (!listByDay.keys.length) return;
 
-    let target = listByDay.keys.find((k) => k === today);
-    if (!target)
-      target = listByDay.keys.find((k) => +new Date(k) >= +new Date(today));
-    if (!target) target = listByDay.keys[listByDay.keys.length - 1];
+    // Ambil bulan dari key pertama: "YYYY-MM-DD" → "YYYY-MM"
+    const currentMonth = listByDay.keys[0]?.slice(0, 7); // contoh: "2025-11"
+    const prevMonth = lastMonthRef.current;
+    const monthChanged = currentMonth !== prevMonth;
 
-    const el = scrollContainerRef.current?.querySelector<HTMLDivElement>(
-      `#day-${target}`
-    );
-    if (el) {
-      requestAnimationFrame(() => {
-        el.scrollIntoView({ block: "start", behavior: "smooth" });
-      });
+    // Bulan hari ini
+    const todayMonth = today.slice(0, 7); // "YYYY-MM"
+    const isCurrentMonth = currentMonth === todayMonth;
+
+    const prevSignal = lastScrollSignalRef.current;
+    const triggerBySignal =
+      scrollSignal !== undefined && scrollSignal !== prevSignal;
+
+    // update ref untuk next run
+    lastMonthRef.current = currentMonth;
+    lastScrollSignalRef.current = scrollSignal;
+
+    // Helper: scroll ke hari ini / tanggal terdekat
+    const scrollToTarget = () => {
+      const keys = listByDay.keys;
+      if (!keys.length) return;
+
+      let target = keys.find((k) => k === today);
+      if (!target) {
+        target = keys.find((k) => +new Date(k) >= +new Date(today));
+      }
+      if (!target) {
+        target = keys[keys.length - 1];
+      }
+
+      const el = scrollContainerRef.current?.querySelector<HTMLDivElement>(
+        `#day-${target}`
+      );
+      if (el) {
+        requestAnimationFrame(() => {
+          el.scrollIntoView({ block: "start", behavior: "smooth" });
+        });
+      }
+    };
+
+    // 1️⃣ Tombol "Hari ini" → paksa scroll (apapun bulannya)
+    if (triggerBySignal) {
+      scrollToTarget();
+      return;
     }
+
+    // 2️⃣ Bulan baru yang aktif = bulan sekarang → auto-scroll ke hari ini
+    if (monthChanged && isCurrentMonth) {
+      scrollToTarget();
+      return;
+    }
+
+    // 3️⃣ Bulan baru tapi BUKAN bulan sekarang → reset ke atas
+    if (monthChanged && !isCurrentMonth) {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = 0;
+      }
+      return;
+    }
+
+    // Bulan sama & bukan trigger "Hari ini" → jangan scroll, biarkan posisi user
   }, [loading, listByDay.keys, today, scrollSignal]);
 
   return (
@@ -308,4 +355,3 @@ export default function ScheduleList({
     </Card>
   );
 }
-3

@@ -40,14 +40,11 @@ import {
   Settings2,
   Trash2,
   Copy,
-  ArrowUp,
-  ArrowDown,
   Upload,
   Download,
   Timer,
   Shuffle,
   Lock,
-  ListChecks,
   GraduationCap,
 } from "lucide-react";
 
@@ -61,11 +58,7 @@ type QuestionType =
   | "short_text"
   | "paragraph"
   | "multiple_choice"
-  | "checkboxes"
-  | "dropdown"
-  | "scale"
-  | "date"
-  | "time";
+  | "checkboxes";
 
 type Option = { id: string; text: string; correct?: boolean };
 
@@ -80,13 +73,12 @@ type Question = {
   options?: Option[];
   // for answer key (short/paragraph free text)
   answerKeyText?: string;
-  // scale config
-  scaleMin?: number; // inclusive
-  scaleMax?: number; // inclusive
-  scaleMinLabel?: string;
-  scaleMaxLabel?: string;
+
   // collapsed UI state
   collapsed?: boolean;
+
+  // menandai sudah ada perubahan tapi belum di-"Selesai perubahan"
+  dirty?: boolean;
 };
 
 type QuizSettings = {
@@ -144,10 +136,6 @@ const TYPE_LABEL: Record<QuestionType, string> = {
   paragraph: "Paragraf",
   multiple_choice: "Pilihan Ganda",
   checkboxes: "Checkbox (Multi Jawaban)",
-  dropdown: "Dropdown",
-  scale: "Skala Linear",
-  date: "Tanggal",
-  time: "Waktu",
 };
 
 const TYPE_ACCENT: Record<QuestionType, string> = {
@@ -155,10 +143,6 @@ const TYPE_ACCENT: Record<QuestionType, string> = {
   paragraph: "border-l-emerald-500/70",
   multiple_choice: "border-l-violet-500/70",
   checkboxes: "border-l-indigo-500/70",
-  dropdown: "border-l-blue-500/70",
-  scale: "border-l-amber-500/70",
-  date: "border-l-rose-500/70",
-  time: "border-l-rose-500/70",
 };
 
 const defaultQuestion = (t: QuestionType = "short_text"): Question => {
@@ -169,21 +153,25 @@ const defaultQuestion = (t: QuestionType = "short_text"): Question => {
     type: t,
     required: false,
     points: 10,
+    collapsed: false, // soal baru langsung kebuka
+    dirty: true, // soal baru = belum ditandai selesai
   };
-  if (t === "multiple_choice" || t === "checkboxes" || t === "dropdown") {
+  if (t === "multiple_choice" || t === "checkboxes") {
     base.options = [
       { id: uid(), text: "Opsi 1", correct: true },
       { id: uid(), text: "Opsi 2", correct: false },
     ];
   }
-  if (t === "scale") {
-    base.scaleMin = 1;
-    base.scaleMax = 5;
-    base.scaleMinLabel = "Rendah";
-    base.scaleMaxLabel = "Tinggi";
-  }
+
   return base;
 };
+
+/* Auto-resize textarea helper */
+function autoGrow(el: HTMLTextAreaElement | null) {
+  if (!el) return;
+  el.style.height = "auto";
+  el.style.height = `${el.scrollHeight}px`;
+}
 
 /* mapping dari API → Question builder */
 function mapApiQuestionToQuestion(q: QuizQuestionFromApi): Question {
@@ -203,7 +191,144 @@ function mapApiQuestionToQuestion(q: QuizQuestionFromApi): Question {
     required: true, // API belum punya flag required, anggap wajib
     points: q.quiz_question_points ?? 1,
     options,
+    collapsed: true, // ⬅️ dari API: awalnya tertutup
+    dirty: false, // ⬅️ belum ada perubahan di FE
   };
+}
+
+//* Components rich editor
+function htmlToPlainText(html?: string) {
+  if (!html) return "";
+  return html
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .trim();
+}
+
+function RichTextInput(props: {
+  value: string;
+  onChange: (html: string) => void;
+  placeholder?: string;
+  className?: string;
+}) {
+  const { value, onChange, placeholder, className } = props;
+  const editorRef = useRef<HTMLDivElement | null>(null);
+
+  const [isBold, setIsBold] = useState(false);
+  const [isItalic, setIsItalic] = useState(false);
+  const [isUnderline, setIsUnderline] = useState(false);
+
+  // ⬇️ HANYA sync sekali ketika mount
+  useEffect(() => {
+    if (editorRef.current) {
+      editorRef.current.innerHTML = value || "";
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // <- jangan pakai [value], biar gak ngacak caret
+
+  const refreshToolbarState = () => {
+    try {
+      setIsBold(document.queryCommandState("bold"));
+      setIsItalic(document.queryCommandState("italic"));
+      setIsUnderline(document.queryCommandState("underline"));
+    } catch {
+      // abaikan kalau browser nggak support
+    }
+  };
+
+  const exec = (cmd: string) => {
+    editorRef.current?.focus();
+    document.execCommand(cmd, false);
+    refreshToolbarState();
+  };
+
+  // Update state toolbar ketika selection pindah
+  useEffect(() => {
+    const handler = () => {
+      const sel = window.getSelection();
+      const node = sel?.anchorNode;
+      if (!node || !editorRef.current) return;
+      if (!editorRef.current.contains(node)) return;
+      refreshToolbarState();
+    };
+
+    document.addEventListener("selectionchange", handler);
+    return () => document.removeEventListener("selectionchange", handler);
+  }, []);
+
+  return (
+    <div className="space-y-1">
+      {/* Toolbar */}
+      <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+        <Button
+          type="button"
+          size="icon"
+          variant={isBold ? "default" : "ghost"}
+          className="h-7 w-7"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => exec("bold")}
+        >
+          <span className="font-bold">B</span>
+        </Button>
+        <Button
+          type="button"
+          size="icon"
+          variant={isItalic ? "default" : "ghost"}
+          className="h-7 w-7 italic"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => exec("italic")}
+        >
+          I
+        </Button>
+        <Button
+          type="button"
+          size="icon"
+          variant={isUnderline ? "default" : "ghost"}
+          className="h-7 w-7 underline"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => exec("underline")}
+        >
+          U
+        </Button>
+        <Button
+          type="button"
+          size="icon"
+          variant="ghost"
+          className="h-7 w-7"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => exec("removeFormat")}
+          title="Bersihkan format"
+        >
+          <span className="text-xs">Clr</span>
+        </Button>
+      </div>
+
+      {/* Editor */}
+      <div className="relative">
+        <div
+          ref={editorRef}
+          contentEditable
+          suppressContentEditableWarning
+          dir="ltr"
+          className={cn(
+            "min-h-[60px] text-sm px-3 py-2 rounded-md border bg-background",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+            "prose prose-sm max-w-none dark:prose-invert",
+            className
+          )}
+          onInput={(e) =>
+            onChange((e.currentTarget as HTMLDivElement).innerHTML)
+          }
+        />
+
+        {!htmlToPlainText(value) && placeholder && (
+          <span className="pointer-events-none absolute left-3 top-2 text-sm text-muted-foreground/70">
+            {placeholder}
+          </span>
+        )}
+      </div>
+    </div>
+  );
 }
 
 /* =========================
@@ -301,8 +426,8 @@ export default function QuizBuilder() {
 
   const apiErrorMessage = isError
     ? (error as any)?.response?.data?.message ||
-    (error as Error).message ||
-    "Gagal memuat soal kuis."
+      (error as Error).message ||
+      "Gagal memuat soal kuis."
     : null;
 
   /* ========== Question operations ========== */
@@ -316,9 +441,31 @@ export default function QuizBuilder() {
   const updateQuestion = (qid: string, patch: Partial<Question>) =>
     setDoc((d) => ({
       ...d,
-      questions: d.questions.map((q) =>
-        q.id === qid ? { ...q, ...patch } : q
-      ),
+      questions: d.questions.map((q) => {
+        if (q.id !== qid) return q;
+
+        const next: Question = { ...q, ...patch };
+
+        const contentFields: (keyof Question)[] = [
+          "title",
+          "description",
+          "type",
+          "required",
+          "points",
+          "options",
+          "answerKeyText",
+        ];
+
+        const contentChanged = contentFields.some(
+          (f) => f in patch // kalau ada salah satu field isi ikut di-patch
+        );
+
+        if (contentChanged) {
+          next.dirty = true;
+        }
+
+        return next;
+      }),
       updatedAt: new Date().toISOString(),
     }));
 
@@ -343,19 +490,6 @@ export default function QuizBuilder() {
       return { ...d, questions: arr, updatedAt: new Date().toISOString() };
     });
 
-  const moveQuestion = (qid: string, dir: "up" | "down") =>
-    setDoc((d) => {
-      const arr = [...d.questions];
-      const i = arr.findIndex((q) => q.id === qid);
-      if (i < 0) return d;
-      if (dir === "up" && i > 0) {
-        [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]];
-      } else if (dir === "down" && i < arr.length - 1) {
-        [arr[i + 1], arr[i]] = [arr[i], arr[i + 1]];
-      }
-      return { ...d, questions: arr, updatedAt: new Date().toISOString() };
-    });
-
   /* ========== Options operations ========== */
   const addOption = (qid: string) =>
     setDoc((d) => ({
@@ -363,15 +497,16 @@ export default function QuizBuilder() {
       questions: d.questions.map((q) =>
         q.id === qid
           ? {
-            ...q,
-            options: [
-              ...(q.options || []),
-              {
-                id: uid(),
-                text: `Opsi ${((q.options || []).length ?? 0) + 1}`,
-              },
-            ],
-          }
+              ...q,
+              options: [
+                ...(q.options || []),
+                {
+                  id: uid(),
+                  text: `Opsi ${((q.options || []).length ?? 0) + 1}`,
+                },
+              ],
+              dirty: true, // ⬅️ ada perubahan konten
+            }
           : q
       ),
       updatedAt: new Date().toISOString(),
@@ -383,11 +518,12 @@ export default function QuizBuilder() {
       questions: d.questions.map((q) =>
         q.id === qid
           ? {
-            ...q,
-            options: (q.options || []).map((o) =>
-              o.id === oid ? { ...o, ...patch } : o
-            ),
-          }
+              ...q,
+              options: (q.options || []).map((o) =>
+                o.id === oid ? { ...o, ...patch } : o
+              ),
+              dirty: true, // ⬅️ ada perubahan konten
+            }
           : q
       ),
       updatedAt: new Date().toISOString(),
@@ -398,7 +534,11 @@ export default function QuizBuilder() {
       ...d,
       questions: d.questions.map((q) =>
         q.id === qid
-          ? { ...q, options: (q.options || []).filter((o) => o.id !== oid) }
+          ? {
+              ...q,
+              options: (q.options || []).filter((o) => o.id !== oid),
+              dirty: true, // ⬅️ ada perubahan konten
+            }
           : q
       ),
       updatedAt: new Date().toISOString(),
@@ -410,12 +550,28 @@ export default function QuizBuilder() {
       questions: d.questions.map((q) =>
         q.id === qid
           ? {
-            ...q,
-            options: (q.options || []).map((o) => ({
-              ...o,
-              correct: o.id === oid,
-            })),
-          }
+              ...q,
+              options: (q.options || []).map((o) => ({
+                ...o,
+                correct: o.id === oid,
+              })),
+              dirty: true, // ⬅️ ganti jawaban benar
+            }
+          : q
+      ),
+      updatedAt: new Date().toISOString(),
+    }));
+
+  const finishEditingQuestion = (qid: string) =>
+    setDoc((d) => ({
+      ...d,
+      questions: d.questions.map((q) =>
+        q.id === qid
+          ? {
+              ...q,
+              collapsed: true, // tutup lagi
+              dirty: false, // tandai sudah "beres"
+            }
           : q
       ),
       updatedAt: new Date().toISOString(),
@@ -591,7 +747,9 @@ export default function QuizBuilder() {
                     updatedAt: new Date().toISOString(),
                   }))
                 }
+                onInput={(e) => autoGrow(e.currentTarget)}
                 placeholder="Deskripsi / instruksi untuk peserta…"
+                className="min-h-[70px] resize-none"
               />
               <div className="mt-2 text-xs text-muted-foreground">
                 Status:{" "}
@@ -650,14 +808,13 @@ export default function QuizBuilder() {
                     onChange={(patch) => updateQuestion(q.id, patch)}
                     onRemove={() => removeQuestion(q.id)}
                     onDuplicate={() => duplicateQuestion(q.id)}
-                    onMoveUp={() => moveQuestion(q.id, "up")}
-                    onMoveDown={() => moveQuestion(q.id, "down")}
                     onAddOption={() => addOption(q.id)}
                     onOptionChange={(oid, patch) =>
                       updateOption(q.id, oid, patch)
                     }
                     onOptionRemove={(oid) => removeOption(q.id, oid)}
                     onSetSingleCorrect={(oid) => setSingleCorrect(q.id, oid)}
+                    onFinish={() => finishEditingQuestion(q.id)}
                   />
                 ))}
 
@@ -891,27 +1048,6 @@ export default function QuizBuilder() {
 /* =========================
    Subcomponents
 ========================= */
-function AddQuestionButtons({ onAdd }: { onAdd: (t: QuestionType) => void }) {
-  const BTN = ({ label, type }: { label: string; type: QuestionType }) => (
-    <Button size="sm" variant="outline" onClick={() => onAdd(type)}>
-      + {label}
-    </Button>
-  );
-
-  return (
-    <div className="flex flex-wrap gap-2">
-      <BTN label="Pilihan Ganda" type="multiple_choice" />
-      <BTN label="Checkbox" type="checkboxes" />
-      <BTN label="Dropdown" type="dropdown" />
-      <BTN label="Jawaban Singkat" type="short_text" />
-      <BTN label="Paragraf" type="paragraph" />
-      <BTN label="Skala" type="scale" />
-      <BTN label="Tanggal" type="date" />
-      <BTN label="Waktu" type="time" />
-    </div>
-  );
-}
-
 function StickyAddBar({
   total,
   points,
@@ -922,19 +1058,35 @@ function StickyAddBar({
   onAdd: (t: QuestionType) => void;
 }) {
   return (
-    <div className="sticky bottom-3 z-20">
-      <Card className="mx-auto max-w-4xl bg-secondary/40 backdrop-blur border-secondary/40 shadow-lg">
-        <CardContent className="p-3 flex flex-wrap items-center gap-2">
-          <div className="text-sm text-foreground/80 mr-2">
-            <span className="font-medium">{total}</span> pertanyaan •{" "}
-            <span className="font-medium">{points}</span> poin total
-          </div>
-          <div className="flex flex-wrap gap-2 ml-auto">
-            <AddQuestionButtons onAdd={onAdd} />
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+    <>
+      {/* Desktop / tablet: sticky bar di paling bawah */}
+      <div className="sticky bottom-0 z-20 hidden md:block">
+        <Card className="mx-auto max-w-4xl bg-secondary/40 backdrop-blur border-secondary/40 shadow-lg">
+          <CardContent className="p-3 flex flex-wrap items-center gap-2">
+            <div className="text-sm text-foreground/80 mr-2">
+              <span className="font-medium">{total}</span> pertanyaan •{" "}
+              <span className="font-medium">{points}</span> poin total
+            </div>
+            <div className="flex flex-wrap gap-2 ml-auto">
+              <Button size="sm" onClick={() => onAdd("multiple_choice")}>
+                <Plus className="h-4 w-4 mr-1" />
+                Buat soal
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Mobile: FAB lebih dekat ke bawah */}
+      <Button
+        size="icon"
+        className="fixed bottom-4 right-4 rounded-full h-14 w-14 shadow-lg md:hidden"
+        onClick={() => onAdd("multiple_choice")}
+        aria-label="Buat soal"
+      >
+        <Plus className="h-6 w-6" />
+      </Button>
+    </>
   );
 }
 
@@ -944,12 +1096,11 @@ function QuestionEditor(props: {
   onChange: (patch: Partial<Question>) => void;
   onRemove: () => void;
   onDuplicate: () => void;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
   onAddOption: () => void;
   onOptionChange: (oid: string, patch: Partial<Option>) => void;
   onOptionRemove: (oid: string) => void;
   onSetSingleCorrect: (oid: string) => void;
+  onFinish: () => void;
 }) {
   const {
     q,
@@ -957,13 +1108,20 @@ function QuestionEditor(props: {
     onChange,
     onRemove,
     onDuplicate,
-    onMoveUp,
-    onMoveDown,
     onAddOption,
     onOptionChange,
     onOptionRemove,
     onSetSingleCorrect,
+    onFinish,
   } = props;
+
+  const titleRef = useRef<HTMLTextAreaElement | null>(null);
+  const descRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    autoGrow(titleRef.current);
+    autoGrow(descRef.current);
+  }, [q.title, q.description]);
 
   return (
     <Card
@@ -972,61 +1130,72 @@ function QuestionEditor(props: {
         TYPE_ACCENT[q.type] ?? "border-l-primary/60"
       )}
     >
-      <CardHeader className="pb-2">
-        <div className="flex items-center gap-2 justify-between">
-          <CardTitle className="text-base flex items-center gap-2">
-            <span className="text-muted-foreground mr-1">#{idx + 1}</span>
-            <span>
-              {q.title?.trim() ? (
-                q.title
-              ) : (
-                <span className="opacity-60 italic">
-                  Pertanyaan tanpa judul
-                </span>
+      <CardHeader
+        className="pb-2 cursor-pointer"
+        onClick={() => onChange({ collapsed: !q.collapsed })}
+      >
+        <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+          {/* Kiri: nomor, judul, badges */}
+          <CardTitle className="text-sm md:text-base flex flex-col gap-1 w-full">
+            {/* Baris 1: # + judul */}
+            <div className="flex flex-wrap items-baseline gap-2">
+              <span className="text-muted-foreground mr-1">#{idx + 1}</span>
+              <span className="font-medium break-words whitespace-pre-wrap">
+                {q.title?.trim() ? (
+                  q.title
+                ) : (
+                  <span className="font-medium break-words whitespace-pre-wrap">
+                    {htmlToPlainText(q.title) ? (
+                      <span dangerouslySetInnerHTML={{ __html: q.title }} />
+                    ) : (
+                      <span className="opacity-60 italic">
+                        Pertanyaan tanpa judul
+                      </span>
+                    )}
+                  </span>
+                )}
+              </span>
+            </div>
+
+            {/* Baris 2: badges (tipe, poin, wajib, status) */}
+            <div className="flex flex-wrap gap-1">
+              <Badge variant="secondary" className="h-5">
+                {TYPE_LABEL[q.type]}
+              </Badge>
+              <Badge variant="outline" className="h-5">
+                {q.points} poin
+              </Badge>
+              {q.required && <Badge className="h-5">WAJIB</Badge>}
+
+              {q.dirty && (
+                <Badge variant="destructive" className="h-5">
+                  Belum selesai
+                </Badge>
               )}
-            </span>
-            <Badge variant="secondary" className="h-5">
-              {TYPE_LABEL[q.type]}
-            </Badge>
-            <Badge variant="outline" className="h-5">
-              {q.points} poin
-            </Badge>
-            {q.required && <Badge className="h-5">WAJIB</Badge>}
+            </div>
           </CardTitle>
 
-          <div className="flex items-center gap-1">
-            <Button size="icon" variant="ghost" onClick={onMoveUp} title="Naik">
-              <ArrowUp className="h-4 w-4" />
-            </Button>
+          {/* Kanan: action buttons */}
+          <div className="flex items-center gap-1 self-end md:self-center">
             <Button
               size="icon"
               variant="ghost"
-              onClick={onMoveDown}
-              title="Turun"
-            >
-              <ArrowDown className="h-4 w-4" />
-            </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={() => onChange({ collapsed: !q.collapsed })}
-              title="Expand/Collapse"
-            >
-              <ListChecks className="h-4 w-4" />
-            </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={onDuplicate}
               title="Duplikat"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDuplicate();
+              }}
             >
               <Copy className="h-4 w-4" />
             </Button>
             <Button
               size="icon"
               variant="ghost"
-              onClick={onRemove}
               title="Hapus"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemove();
+              }}
             >
               <Trash2 className="h-4 w-4" />
             </Button>
@@ -1040,12 +1209,13 @@ function QuestionEditor(props: {
           <div className="grid md:grid-cols-7 gap-3">
             <div className="md:col-span-4 space-y-1">
               <Label>Judul pertanyaan</Label>
-              <Input
+              <RichTextInput
                 value={q.title}
-                onChange={(e) => onChange({ title: e.target.value })}
+                onChange={(html) => onChange({ title: html })}
                 placeholder="Tulis pertanyaan…"
               />
             </div>
+
             <div className="space-y-1">
               <Label>Tipe</Label>
               <Select
@@ -1053,35 +1223,15 @@ function QuestionEditor(props: {
                 onValueChange={(v: QuestionType) => {
                   const next: Partial<Question> = { type: v };
                   // ensure fields exist for certain types
-                  if (
-                    v === "multiple_choice" ||
-                    v === "checkboxes" ||
-                    v === "dropdown"
-                  ) {
+                  if (v === "multiple_choice" || v === "checkboxes") {
                     next.options = q.options?.length
                       ? q.options
                       : [
-                        { id: uid(), text: "Opsi 1", correct: true },
-                        { id: uid(), text: "Opsi 2", correct: false },
-                      ];
+                          { id: uid(), text: "Opsi 1", correct: true },
+                          { id: uid(), text: "Opsi 2", correct: false },
+                        ];
                   } else {
                     next.options = undefined;
-                  }
-                  if (v === "scale") {
-                    next.scaleMin = q.scaleMin ?? 1;
-                    next.scaleMax = q.scaleMax ?? 5;
-                    next.scaleMinLabel = q.scaleMinLabel ?? "Rendah";
-                    next.scaleMaxLabel = q.scaleMaxLabel ?? "Tinggi";
-                  } else {
-                    next.scaleMin = undefined;
-                    next.scaleMax = undefined;
-                    next.scaleMinLabel = undefined;
-                    next.scaleMaxLabel = undefined;
-                  }
-                  if (v === "short_text" || v === "paragraph") {
-                    next.answerKeyText = q.answerKeyText ?? "";
-                  } else {
-                    next.answerKeyText = undefined;
                   }
                   onChange(next);
                 }}
@@ -1112,78 +1262,66 @@ function QuestionEditor(props: {
             </div>
           </div>
 
-          {/* Description */}
-          <div className="space-y-1">
-            <Label>Deskripsi (opsional)</Label>
-            <Textarea
-              value={q.description ?? ""}
-              onChange={(e) => onChange({ description: e.target.value })}
-              placeholder="Petunjuk tambahan…"
-            />
-          </div>
-
           {/* Type-specific configs */}
-          {(q.type === "multiple_choice" ||
-            q.type === "checkboxes" ||
-            q.type === "dropdown") && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>Opsi jawaban</Label>
-                  <Button size="sm" variant="outline" onClick={onAddOption}>
-                    <Plus className="h-4 w-4 mr-1" />
-                    Tambah opsi
-                  </Button>
-                </div>
-                <div className="grid gap-2">
-                  {(q.options || []).map((o) => (
-                    <div key={o.id} className="flex items-center gap-2">
-                      {/* correct marker */}
-                      {q.type === "multiple_choice" ? (
-                        <input
-                          type="radio"
-                          name={`correct-${q.id}`}
-                          checked={!!o.correct}
-                          onChange={() => onSetSingleCorrect(o.id)}
-                          className="accent-[hsl(var(--primary))]"
-                          title="Tandai benar"
-                        />
-                      ) : (
-                        <input
-                          type="checkbox"
-                          checked={!!o.correct}
-                          onChange={(e) =>
-                            onOptionChange(o.id, { correct: e.target.checked })
-                          }
-                          className="accent-[hsl(var(--primary))]"
-                          title="Boleh multi jawaban benar"
-                        />
-                      )}
-
-                      <Input
-                        value={o.text}
-                        onChange={(e) =>
-                          onOptionChange(o.id, { text: e.target.value })
-                        }
-                        placeholder="Teks opsi…"
-                      />
-
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => onOptionRemove(o.id)}
-                        title="Hapus opsi"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Tandai jawaban benar (radio untuk satu jawaban, checkbox untuk
-                  multi-jawaban).
-                </div>
+          {(q.type === "multiple_choice" || q.type === "checkboxes") && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Opsi jawaban</Label>
+                <Button size="sm" variant="outline" onClick={onAddOption}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Tambah opsi
+                </Button>
               </div>
-            )}
+              <div className="grid gap-2">
+                {(q.options || []).map((o) => (
+                  <div key={o.id} className="flex items-center gap-2">
+                    {/* correct marker */}
+                    {q.type === "multiple_choice" ? (
+                      <input
+                        type="radio"
+                        name={`correct-${q.id}`}
+                        checked={!!o.correct}
+                        onChange={() => onSetSingleCorrect(o.id)}
+                        className="accent-[hsl(var(--primary))]"
+                        title="Tandai benar"
+                      />
+                    ) : (
+                      <input
+                        type="checkbox"
+                        checked={!!o.correct}
+                        onChange={(e) =>
+                          onOptionChange(o.id, { correct: e.target.checked })
+                        }
+                        className="accent-[hsl(var(--primary))]"
+                        title="Boleh multi jawaban benar"
+                      />
+                    )}
+
+                    <Input
+                      value={o.text}
+                      onChange={(e) =>
+                        onOptionChange(o.id, { text: e.target.value })
+                      }
+                      placeholder="Teks opsi…"
+                    />
+
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => onOptionRemove(o.id)}
+                      title="Hapus opsi"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Tandai jawaban benar (radio untuk satu jawaban, checkbox untuk
+                multi-jawaban).
+              </div>
+            </div>
+          )}
 
           {(q.type === "short_text" || q.type === "paragraph") && (
             <div className="space-y-1">
@@ -1199,6 +1337,7 @@ function QuestionEditor(props: {
                   value={q.answerKeyText ?? ""}
                   onChange={(e) => onChange({ answerKeyText: e.target.value })}
                   placeholder="Kata kunci atau poin-poin penting…"
+                  className="min-h-[60px]"
                 />
               )}
               <div className="text-xs text-muted-foreground">
@@ -1208,59 +1347,38 @@ function QuestionEditor(props: {
             </div>
           )}
 
-          {q.type === "scale" && (
-            <div className="grid md:grid-cols-4 gap-3">
-              <div className="space-y-1">
-                <Label>Skala min</Label>
-                <Input
-                  type="number"
-                  value={q.scaleMin ?? 1}
-                  onChange={(e) =>
-                    onChange({ scaleMin: Number(e.target.value) || 1 })
-                  }
-                />
-              </div>
-              <div className="space-y-1">
-                <Label>Skala max</Label>
-                <Input
-                  type="number"
-                  value={q.scaleMax ?? 5}
-                  onChange={(e) =>
-                    onChange({ scaleMax: Number(e.target.value) || 5 })
-                  }
-                />
-              </div>
-              <div className="space-y-1">
-                <Label>Label min</Label>
-                <Input
-                  value={q.scaleMinLabel ?? ""}
-                  onChange={(e) => onChange({ scaleMinLabel: e.target.value })}
-                  placeholder="Rendah"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label>Label max</Label>
-                <Input
-                  value={q.scaleMaxLabel ?? ""}
-                  onChange={(e) => onChange({ scaleMaxLabel: e.target.value })}
-                  placeholder="Tinggi"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Required */}
-          <div className="flex items-center justify-between">
-            <div className="text-sm">
-              <div className="font-medium">Wajib diisi</div>
-              <div className="text-xs text-muted-foreground">
-                Peserta harus menjawab pertanyaan ini.
-              </div>
-            </div>
-            <Switch
-              checked={q.required}
-              onCheckedChange={(v) => onChange({ required: v })}
+          {/* Description */}
+          <div className="space-y-1">
+            <Label>Penjelasan Soal</Label>
+            <Textarea
+              ref={descRef}
+              value={q.description ?? ""}
+              onChange={(e) => onChange({ description: e.target.value })}
+              onInput={(e) => autoGrow(e.currentTarget)}
+              placeholder="Penjelasan Soal…"
+              className="resize-none min-h-[60px] text-sm"
             />
+          </div>
+
+          {/* Footer actions */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between pt-1">
+            <div className="text-xs text-muted-foreground">
+              {q.dirty ? (
+                <span className="text-amber-600 dark:text-amber-400 font-medium">
+                  • Ada perubahan yang belum ditandai selesai
+                </span>
+              ) : (
+                <span>Perubahan terakhir sudah ditandai selesai.</span>
+              )}
+            </div>
+            <Button
+              size="sm"
+              variant={q.dirty ? "default" : "outline"}
+              onClick={onFinish}
+            >
+              <Save className="h-4 w-4 mr-1" />
+              Selesai perubahan
+            </Button>
           </div>
         </CardContent>
       )}
@@ -1274,13 +1392,15 @@ function PreviewPanel({ doc }: { doc: QuizDoc }) {
     <div className="grid gap-3">
       <Card className="border-primary/40 bg-primary/5">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base md:text-lg">
+          <CardTitle className="text-base md:text-lg break-words whitespace-pre-wrap">
             {doc.title || "Kuis Tanpa Judul"}
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
           {doc.description && (
-            <p className="text-sm text-muted-foreground">{doc.description}</p>
+            <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+              {doc.description}
+            </p>
           )}
           <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             {doc.settings.timeLimitMin ? (
@@ -1312,22 +1432,32 @@ function PreviewPanel({ doc }: { doc: QuizDoc }) {
       {doc.questions.map((q, i) => (
         <Card key={q.id} className="overflow-hidden">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <span className="text-muted-foreground">#{i + 1}</span>
-              <span>
-                {q.title || (
-                  <em className="opacity-70">Pertanyaan tanpa judul</em>
-                )}
-              </span>
-              <Badge variant="secondary" className="h-5">
-                {q.points} poin
-              </Badge>
-              {q.required && <Badge className="h-5">WAJIB</Badge>}
+            <CardTitle className="text-sm md:text-base flex flex-col gap-1">
+              {/* Baris 1: # + judul */}
+              <div className="flex flex-wrap items-baseline gap-2">
+                <span className="text-muted-foreground">#{i + 1}</span>
+                <span className="font-medium break-words whitespace-pre-wrap">
+                  {htmlToPlainText(q.title) ? (
+                    <span dangerouslySetInnerHTML={{ __html: q.title }} />
+                  ) : (
+                    <em className="opacity-70">Pertanyaan tanpa judul</em>
+                  )}
+                </span>
+              </div>
+
+              {/* Baris 2: badges */}
+              <div className="flex flex-wrap gap-1">
+                <Badge variant="secondary" className="h-5">
+                  {q.points} poin
+                </Badge>
+                {q.required && <Badge className="h-5">WAJIB</Badge>}
+              </div>
             </CardTitle>
           </CardHeader>
+
           <CardContent className="pt-0">
             {q.description && (
-              <p className="text-sm text-muted-foreground mb-2">
+              <p className="text-sm text-muted-foreground mb-2 whitespace-pre-wrap">
                 {q.description}
               </p>
             )}
@@ -1354,53 +1484,6 @@ function PreviewPanel({ doc }: { doc: QuizDoc }) {
                 ))}
               </div>
             )}
-            {q.type === "dropdown" && (
-              <Select disabled>
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih jawaban" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(q.options || []).map((o) => (
-                    <SelectItem key={o.id} value={o.id}>
-                      {o.text}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-            {q.type === "scale" && (
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-muted-foreground">
-                  {q.scaleMinLabel || q.scaleMin}
-                </span>
-                <div className="flex gap-3">
-                  {Array.from({
-                    length: (q.scaleMax ?? 5) - (q.scaleMin ?? 1) + 1,
-                  }).map((_, idx) => {
-                    const v = (q.scaleMin ?? 1) + idx;
-                    return (
-                      <label
-                        key={v}
-                        className="text-sm inline-flex items-center gap-1"
-                      >
-                        <input
-                          type="radio"
-                          name={`scale-${q.id}`}
-                          disabled
-                          className="accent-[hsl(var(--primary))]"
-                        />
-                        {v}
-                      </label>
-                    );
-                  })}
-                </div>
-                <span className="text-xs text-muted-foreground">
-                  {q.scaleMaxLabel || q.scaleMax}
-                </span>
-              </div>
-            )}
-            {q.type === "date" && <Input type="date" disabled />}
-            {q.type === "time" && <Input type="time" disabled />}
           </CardContent>
         </Card>
       ))}

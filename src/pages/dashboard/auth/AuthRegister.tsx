@@ -24,13 +24,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardFooter,
-} from "@/components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -297,545 +290,563 @@ export default function Register() {
       fullWidth
       contentClassName="max-w-xl mx-auto relative overflow-hidden"
     >
-      {/* Header brand */}
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl grid place-items-center bg-primary text-primary-foreground">
-            <GraduationCap className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold leading-tight">Pendidikanku</h1>
-            <p className="text-xs text-muted-foreground">
-              Daftar untuk mulai pakai semua fitur.
-            </p>
-          </div>
-        </div>
-        <div className="hidden sm:flex items-center gap-2 text-xs px-2 py-1 rounded-full border bg-card text-card-foreground">
-          <ShieldCheck className="w-4 h-4" />
-          Aman &amp; terenkripsi
-        </div>
-      </div>
-
-      {/* Error alert */}
-      {error && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Registrasi gagal</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      <Card className="shadow-sm overflow-hidden">
-        <CardHeader>
-          <CardTitle className="text-lg">Buat Akun Baru</CardTitle>
-        </CardHeader>
-
-        <CardContent>
-          <form onSubmit={handleRegister} className="space-y-5">
-            {/* Nama */}
-            <div>
-              <Label htmlFor="name">Nama</Label>
-              <div className="relative mt-2">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  <User className="w-4 h-4" />
-                </span>
-                <Input
-                  id="name"
-                  value={userName}
-                  onChange={(e) => setUserName(e.target.value)}
-                  placeholder="Nama lengkap"
-                  required
-                  className="pl-10"
-                />
-              </div>
-            </div>
-
-            {/* Email */}
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <div className="relative mt-2">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  <Mail className="w-4 h-4" />
-                </span>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="nama@domain.com"
-                  autoComplete="email"
-                  required
-                  className="pl-10"
-                />
-              </div>
-            </div>
-
-            {/* Password */}
-            <div>
-              <Label htmlFor="password">Password</Label>
-              <div className="relative mt-2">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  <KeyRound className="w-4 h-4" />
-                </span>
-                <Input
-                  id="password"
-                  type={showPw ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onKeyUp={(e) =>
-                    setCapsLockOn((e as any).getModifierState?.("CapsLock"))
-                  }
-                  placeholder="Minimal 8 karakter"
-                  autoComplete="new-password"
-                  required
-                  className="pl-10 pr-12"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 ring-inset"
-                  onClick={() => setShowPw((s) => !s)}
-                  aria-label={
-                    showPw ? "Sembunyikan password" : "Tampilkan password"
-                  }
-                >
-                  {showPw ? (
-                    <EyeOffIcon className="w-4 h-4" />
-                  ) : (
-                    <EyeIcon className="w-4 h-4" />
-                  )}
-                </Button>
-              </div>
-
-              {capsLockOn && (
-                <div className="mt-2 flex items-center gap-2 text-xs text-destructive">
-                  <Lock className="w-3.5 h-3.5" />
-                  Caps Lock aktif
-                </div>
-              )}
-
-              {/* Strength meter */}
-              <div className="mt-3">
-                <div className="h-1.5 w-full rounded-full overflow-hidden bg-muted">
-                  <div
-                    className={cn("h-full transition-all", {
-                      "bg-destructive": strength < 2,
-                      "bg-primary": strength >= 2 && strength < 3,
-                      "bg-green-600": strength >= 3,
-                    })}
-                    style={{ width: `${(strength / 4) * 100}%` }}
-                  />
-                </div>
-                <div
-                  className={cn("mt-1 text-xs", {
-                    "text-muted-foreground": strength < 3,
-                    "text-green-600": strength >= 3,
-                  })}
-                >
-                  Kekuatan password: {strengthLabel}
-                </div>
-              </div>
-            </div>
-
-            {/* Konfirmasi */}
-            <div>
-              <Label htmlFor="confirm">Konfirmasi Password</Label>
-              <div className="relative mt-2">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  <KeyRound className="w-4 h-4" />
-                </span>
-                <Input
-                  id="confirm"
-                  type={showPw2 ? "text" : "password"}
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                  placeholder="Ulangi password"
-                  autoComplete="new-password"
-                  required
-                  className={cn(
-                    "pl-10 pr-12",
-                    confirmMismatch && "border-destructive"
-                  )}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 ring-inset"
-                  onClick={() => setShowPw2((s) => !s)}
-                  aria-label={
-                    showPw2 ? "Sembunyikan konfirmasi" : "Tampilkan konfirmasi"
-                  }
-                >
-                  {showPw2 ? (
-                    <EyeOffIcon className="w-4 h-4" />
-                  ) : (
-                    <EyeIcon className="w-4 h-4" />
-                  )}
-                </Button>
-              </div>
-              {confirmMismatch && (
-                <p className="mt-2 text-xs text-destructive">
-                  Konfirmasi password tidak sama.
-                </p>
-              )}
-            </div>
-
-            {/* Agree */}
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <Checkbox
-                  checked={agree}
-                  onCheckedChange={(v) => setAgree(Boolean(v))}
-                  id="agree"
-                />
-                <span>
-                  Saya setuju dengan{" "}
-                  <Link to="/terms" className="underline">
-                    Ketentuan
-                  </Link>{" "}
-                  &{" "}
-                  <Link to="/privacy" className="underline">
-                    Privasi
-                  </Link>
-                </span>
-              </label>
-              <Link
-                to="/login"
-                className="text-sm text-primary hover:underline"
-              >
-                Sudah punya akun?
-              </Link>
-            </div>
-
-            {/* Submit */}
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full ring-inset"
-            >
-              {loading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-primary-foreground/40 border-t-primary-foreground rounded-full animate-spin mr-2" />
-                  Membuat Akun...
-                </>
-              ) : (
-                <>
-                  Buat Akun
-                  <ArrowRight className="w-5 h-5 ml-2" />
-                </>
-              )}
-            </Button>
-          </form>
-
-          <Separator className="my-6" />
-
-          {/* CTA demo optional */}
-          <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-            <Sparkles className="w-3.5 h-3.5" />
-            Dapatkan akses cepat ke fitur terbaru setelah mendaftar.
-          </div>
-        </CardContent>
-
-        <CardFooter className="flex-col items-start gap-2">
-          <div className="text-[11px] text-muted-foreground">
-            Dengan mendaftar, kamu menyetujui Ketentuan & Privasi.
-          </div>
-        </CardFooter>
-      </Card>
-
-      {/* =========================
-          DIALOG: Pilih Peran
-      ========================= */}
-      <Dialog open={openChooseRole} onOpenChange={(v) => setOpenChooseRole(v)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader className="space-y-3">
-            <div className="mx-auto size-16 rounded-2xl grid place-items-center bg-gradient-to-br from-primary to-accent shadow-lg">
-              <Sparkles className="size-8 text-primary-foreground" />
-            </div>
-            <DialogTitle className="text-center">Apa peran Anda?</DialogTitle>
-            <DialogDescription className="text-center">
-              Pilih tujuan Anda bergabung di SekolahIslamKu
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => handleChooseRole("dkm")}
-              className="w-full py-4 rounded-2xl justify-start gap-3 border-input hover:border-primary"
-            >
-              <div className="size-10 rounded-xl grid place-items-center bg-gradient-to-br from-primary to-accent shadow-md">
-                <GraduationCap className="size-5 text-primary-foreground" />
-              </div>
-              <span className="font-semibold">Jadi DKM / Admin Sekolah</span>
-            </Button>
-
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => handleChooseRole("teacher")}
-              className="w-full py-4 rounded-2xl justify-start gap-3 border-input hover:border-primary"
-            >
-              <div className="size-10 rounded-xl grid place-items-center bg-gradient-to-br from-secondary to-primary shadow-md">
-                <Users2 className="size-5 text-primary-foreground" />
-              </div>
-              <span className="font-semibold">Gabung Sebagai Guru</span>
-            </Button>
-
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => handleChooseRole("student")}
-              className="w-full py-4 rounded-2xl justify-start gap-3 border-input hover:border-primary"
-            >
-              <div className="size-10 rounded-xl grid place-items-center bg-gradient-to-br from-accent to-primary shadow-md">
-                <GraduationCap className="size-5 text-primary-foreground" />
-              </div>
-              <span className="font-semibold">Gabung Sebagai Murid</span>
-            </Button>
-          </div>
-
-          <Button
-            variant="ghost"
-            className="w-full mt-2"
-            onClick={() => setOpenChooseRole(false)}
-          >
-            Nanti Saja
-          </Button>
-        </DialogContent>
-      </Dialog>
-
-      {/* =========================
-          DIALOG: Join / Create
-      ========================= */}
-      <Dialog open={openJoinCreate} onOpenChange={(v) => setOpenJoinCreate(v)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader className="space-y-3">
+      <>
+        {/* Wrapper: bikin header & isi punya padding sama kayak login */}
+        <div className="px-6 sm:px-8">
+          {/* Header brand */}
+          <div className="mb-6 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="size-12 rounded-xl grid place-items-center bg-gradient-to-br from-primary to-accent">
-                {selectedTujuan === "dkm" || !selectedTujuan ? (
-                  <GraduationCap className="size-6 text-primary-foreground" />
-                ) : selectedTujuan === "teacher" ? (
-                  <Users2 className="size-6 text-primary-foreground" />
-                ) : (
-                  <GraduationCap className="size-6 text-primary-foreground" />
-                )}
-              </div>
-              <div>
-                <DialogTitle>
-                  {selectedTujuan === "dkm"
-                    ? "Buat Sekolah Baru"
-                    : "Gabung ke Sekolah"}
-                </DialogTitle>
-                <DialogDescription>
-                  {selectedTujuan === "dkm"
-                    ? "Daftarkan sekolah Anda ke sistem."
-                    : "Masukkan kode akses dari admin sekolah."}
-                </DialogDescription>
-              </div>
-            </div>
-          </DialogHeader>
-
-          {selectedTujuan === "dkm" ? (
-            <form
-              className="space-y-4"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                if (!schoolName.trim()) return;
-                await handleCreateSchool({
-                  name: schoolName.trim(),
-                  file: iconFile ?? undefined,
-                });
-              }}
-            >
-              <div className="grid gap-2">
-                <Label htmlFor="schoolName">Nama Sekolah</Label>
-                <Input
-                  id="schoolName"
-                  placeholder="Contoh: SD Al-Ikhlas"
-                  value={schoolName}
-                  onChange={(e) => setSchoolName(e.target.value)}
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="iconFile">Logo Sekolah (Opsional)</Label>
-                <Input
-                  id="iconFile"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setIconFile(e.target.files?.[0] ?? null)}
-                />
-              </div>
-
-              <Button
-                type="submit"
-                disabled={!schoolName.trim() || modalLoading}
-                className="w-full bg-gradient-to-r from-primary to-accent text-primary-foreground hover:opacity-95"
-              >
-                {modalLoading ? "Membuat sekolah..." : "Buat Sekolah"}
-              </Button>
-
-              <Button
-                type="button"
-                variant="ghost"
-                className="w-full"
-                onClick={() => setOpenJoinCreate(false)}
-              >
-                Batal
-              </Button>
-            </form>
-          ) : (
-            <form
-              className="space-y-4"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                if (!accessCode.trim() || !selectedTujuan) return;
-                await handleJoinSekolah(accessCode.trim(), selectedTujuan);
-              }}
-            >
-              <div className="grid gap-2">
-                <Label htmlFor="accessCode">Kode Akses Sekolah</Label>
-                <Input
-                  id="accessCode"
-                  placeholder="Masukkan kode akses"
-                  value={accessCode}
-                  onChange={(e) => setAccessCode(e.target.value)}
-                  className="text-center font-mono tracking-wider text-lg"
-                />
-              </div>
-
-              <Button
-                type="submit"
-                disabled={!accessCode.trim() || modalLoading}
-                className="w-full bg-gradient-to-r from-accent to-primary text-primary-foreground hover:opacity-95"
-              >
-                {modalLoading ? "Memproses..." : "Gabung Sekarang"}
-              </Button>
-
-              <Button
-                type="button"
-                variant="ghost"
-                className="w-full"
-                onClick={() => setOpenJoinCreate(false)}
-              >
-                Batal
-              </Button>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* =========================
-          DIALOG: Select School & Role
-      ========================= */}
-      <Dialog
-        open={openSelectSchool}
-        onOpenChange={(v) => setOpenSelectSchool(v)}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader className="space-y-1">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full grid place-items-center bg-primary text-primary-foreground">
+              <div className="w-10 h-10 rounded-xl grid place-items-center bg-primary text-primary-foreground">
                 <GraduationCap className="w-5 h-5" />
               </div>
-              <DialogTitle>Pilih Sekolah & Role</DialogTitle>
+              <div>
+                <h1 className="text-2xl font-bold leading-tight">
+                  Pendidikanku
+                </h1>
+                <p className="text-xs text-muted-foreground">
+                  Daftar untuk mulai pakai semua fitur.
+                </p>
+              </div>
             </div>
-            <DialogDescription>
-              Pilih sekolah dan peran yang ingin kamu gunakan untuk melanjutkan.
-            </DialogDescription>
-          </DialogHeader>
+            <div className="hidden sm:flex items-center gap-2 text-xs px-2 py-1 rounded-full border bg-card text-card-foreground">
+              <ShieldCheck className="w-4 h-4" />
+              Aman &amp; terenkripsi
+            </div>
+          </div>
 
-          {loadingSelect ? (
-            <div className="text-center py-10">
-              <div className="w-10 h-10 border-4 border-muted-foreground/30 border-t-foreground rounded-full animate-spin mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">Memuat data...</p>
-            </div>
-          ) : (
-            <div className="max-h-80 overflow-y-auto space-y-3 pr-1">
-              {schools.map((m) => (
-                <button
-                  key={m.school_id}
-                  onClick={() =>
-                    setSelected((prev) => {
-                      const keepRole =
-                        prev?.school_id === m.school_id ? prev.role : undefined;
-                      const fallback: SchoolRole =
-                        keepRole ?? (m.roles?.[0] as SchoolRole) ?? "user";
-                      return { school_id: m.school_id, role: fallback };
-                    })
-                  }
-                  className={cn(
-                    "w-full text-left rounded-xl border p-4 transition-colors",
-                    selected?.school_id === m.school_id
-                      ? "border-primary/60 bg-primary/5"
-                      : "hover:bg-muted"
-                  )}
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <img
-                      src={m.school_icon_url || "/image/Gambar-school.jpeg"}
-                      alt={m.school_name}
-                      className="w-12 h-12 rounded-lg object-cover border"
-                    />
-                    <span className="font-medium">{m.school_name}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {(m.roles?.length
-                      ? m.roles
-                      : (["user"] as SchoolRole[])
-                    ).map((r) => (
-                      <Button
-                        key={r}
-                        type="button"
-                        size="sm"
-                        variant={
-                          selected?.school_id === m.school_id &&
-                          selected?.role === r
-                            ? "default"
-                            : "outline"
-                        }
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelected({ school_id: m.school_id, role: r });
-                        }}
-                        className="ring-inset"
-                      >
-                        {r.toUpperCase()}
-                      </Button>
-                    ))}
-                  </div>
-                </button>
-              ))}
-            </div>
+          {/* Error alert */}
+          {error && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Registrasi gagal</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
 
-          <div className="flex gap-3 pt-2">
+          {/* Isi register, konsep sama dengan login: section rounded */}
+          <section className="rounded-xl bg-card/40 p-6 sm:p-7 space-y-6">
+            {/* Title */}
+            <div>
+              <h2 className="text-lg font-semibold">Buat Akun Baru</h2>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleRegister} className="space-y-5">
+              {/* Nama */}
+              <div>
+                <Label htmlFor="name">Nama</Label>
+                <div className="relative mt-2">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    <User className="w-4 h-4" />
+                  </span>
+                  <Input
+                    id="name"
+                    value={userName}
+                    onChange={(e) => setUserName(e.target.value)}
+                    placeholder="Nama lengkap"
+                    required
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              {/* Email */}
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <div className="relative mt-2">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    <Mail className="w-4 h-4" />
+                  </span>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="nama@domain.com"
+                    autoComplete="email"
+                    required
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div>
+                <Label htmlFor="password">Password</Label>
+                <div className="relative mt-2">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    <KeyRound className="w-4 h-4" />
+                  </span>
+                  <Input
+                    id="password"
+                    type={showPw ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onKeyUp={(e) =>
+                      setCapsLockOn((e as any).getModifierState?.("CapsLock"))
+                    }
+                    placeholder="Minimal 8 karakter"
+                    autoComplete="new-password"
+                    required
+                    className="pl-10 pr-12"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 ring-inset"
+                    onClick={() => setShowPw((s) => !s)}
+                    aria-label={
+                      showPw ? "Sembunyikan password" : "Tampilkan password"
+                    }
+                  >
+                    {showPw ? (
+                      <EyeOffIcon className="w-4 h-4" />
+                    ) : (
+                      <EyeIcon className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+
+                {capsLockOn && (
+                  <div className="mt-2 flex items-center gap-2 text-xs text-destructive">
+                    <Lock className="w-3.5 h-3.5" />
+                    Caps Lock aktif
+                  </div>
+                )}
+
+                {/* Strength meter */}
+                <div className="mt-3">
+                  <div className="h-1.5 w-full rounded-full overflow-hidden bg-muted">
+                    <div
+                      className={cn("h-full transition-all", {
+                        "bg-destructive": strength < 2,
+                        "bg-primary": strength >= 2 && strength < 3,
+                        "bg-green-600": strength >= 3,
+                      })}
+                      style={{ width: `${(strength / 4) * 100}%` }}
+                    />
+                  </div>
+                  <div
+                    className={cn("mt-1 text-xs", {
+                      "text-muted-foreground": strength < 3,
+                      "text-green-600": strength >= 3,
+                    })}
+                  >
+                    Kekuatan password: {strengthLabel}
+                  </div>
+                </div>
+              </div>
+
+              {/* Konfirmasi */}
+              <div>
+                <Label htmlFor="confirm">Konfirmasi Password</Label>
+                <div className="relative mt-2">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    <KeyRound className="w-4 h-4" />
+                  </span>
+                  <Input
+                    id="confirm"
+                    type={showPw2 ? "text" : "password"}
+                    value={confirm}
+                    onChange={(e) => setConfirm(e.target.value)}
+                    placeholder="Ulangi password"
+                    autoComplete="new-password"
+                    required
+                    className={cn(
+                      "pl-10 pr-12",
+                      confirmMismatch && "border-destructive"
+                    )}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 ring-inset"
+                    onClick={() => setShowPw2((s) => !s)}
+                    aria-label={
+                      showPw2
+                        ? "Sembunyikan konfirmasi"
+                        : "Tampilkan konfirmasi"
+                    }
+                  >
+                    {showPw2 ? (
+                      <EyeOffIcon className="w-4 h-4" />
+                    ) : (
+                      <EyeIcon className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+                {confirmMismatch && (
+                  <p className="mt-2 text-xs text-destructive">
+                    Konfirmasi password tidak sama.
+                  </p>
+                )}
+              </div>
+
+              {/* Agree + link login */}
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <Checkbox
+                    checked={agree}
+                    onCheckedChange={(v) => setAgree(Boolean(v))}
+                    id="agree"
+                  />
+                  <span>
+                    Saya setuju dengan{" "}
+                    <Link to="/terms" className="underline">
+                      Ketentuan
+                    </Link>{" "}
+                    &{" "}
+                    <Link to="/privacy" className="underline">
+                      Privasi
+                    </Link>
+                  </span>
+                </label>
+                <Link
+                  to="/login"
+                  className="text-sm text-primary hover:underline"
+                >
+                  Sudah punya akun?
+                </Link>
+              </div>
+
+              {/* Submit */}
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full ring-inset"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-primary-foreground/40 border-t-primary-foreground rounded-full animate-spin mr-2" />
+                    Membuat Akun...
+                  </>
+                ) : (
+                  <>
+                    Buat Akun
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </>
+                )}
+              </Button>
+            </form>
+
+            <Separator className="my-6" />
+
+            {/* CTA + disclaimer, masih di dalam section */}
+            <div className="flex flex-col items-center gap-2 text-center">
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <Sparkles className="w-3.5 h-3.5" />
+                Dapatkan akses cepat ke fitur terbaru setelah mendaftar.
+              </div>
+              <div className="text-[11px] text-muted-foreground">
+                Dengan mendaftar, kamu menyetujui Ketentuan &amp; Privasi.
+              </div>
+            </div>
+          </section>
+        </div>
+
+        {/* =========================
+            DIALOG: Pilih Peran
+        ========================= */}
+        <Dialog
+          open={openChooseRole}
+          onOpenChange={(v) => setOpenChooseRole(v)}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader className="space-y-3">
+              <div className="mx-auto size-16 rounded-2xl grid place-items-center bg-gradient-to-br from-primary to-accent shadow-lg">
+                <Sparkles className="size-8 text-primary-foreground" />
+              </div>
+              <DialogTitle className="text-center">Apa peran Anda?</DialogTitle>
+              <DialogDescription className="text-center">
+                Pilih tujuan Anda bergabung di SekolahIslamKu
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleChooseRole("dkm")}
+                className="w-full py-4 rounded-2xl justify-start gap-3 border-input hover:border-primary"
+              >
+                <div className="size-10 rounded-xl grid place-items-center bg-gradient-to-br from-primary to-accent shadow-md">
+                  <GraduationCap className="size-5 text-primary-foreground" />
+                </div>
+                <span className="font-semibold">Jadi DKM / Admin Sekolah</span>
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleChooseRole("teacher")}
+                className="w-full py-4 rounded-2xl justify-start gap-3 border-input hover:border-primary"
+              >
+                <div className="size-10 rounded-xl grid place-items-center bg-gradient-to-br from-secondary to-primary shadow-md">
+                  <Users2 className="size-5 text-primary-foreground" />
+                </div>
+                <span className="font-semibold">Gabung Sebagai Guru</span>
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleChooseRole("student")}
+                className="w-full py-4 rounded-2xl justify-start gap-3 border-input hover:border-primary"
+              >
+                <div className="size-10 rounded-xl grid place-items-center bg-gradient-to-br from-accent to-primary shadow-md">
+                  <GraduationCap className="size-5 text-primary-foreground" />
+                </div>
+                <span className="font-semibold">Gabung Sebagai Murid</span>
+              </Button>
+            </div>
+
             <Button
-              type="button"
-              variant="outline"
-              className="flex-1 ring-inset"
-              onClick={() => setOpenSelectSchool(false)}
+              variant="ghost"
+              className="w-full mt-2"
+              onClick={() => setOpenChooseRole(false)}
             >
-              Batal
+              Nanti Saja
             </Button>
-            <Button
-              type="button"
-              className="flex-1 ring-inset"
-              disabled={!selected}
-              onClick={() =>
-                selected &&
-                handleSelectSchoolRole(selected.school_id, selected.role)
-              }
-            >
-              Pilih & Lanjutkan
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+
+        {/* =========================
+            DIALOG: Join / Create
+        ========================= */}
+        <Dialog
+          open={openJoinCreate}
+          onOpenChange={(v) => setOpenJoinCreate(v)}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="size-12 rounded-xl grid place-items-center bg-gradient-to-br from-primary to-accent">
+                  {selectedTujuan === "dkm" || !selectedTujuan ? (
+                    <GraduationCap className="size-6 text-primary-foreground" />
+                  ) : selectedTujuan === "teacher" ? (
+                    <Users2 className="size-6 text-primary-foreground" />
+                  ) : (
+                    <GraduationCap className="size-6 text-primary-foreground" />
+                  )}
+                </div>
+                <div>
+                  <DialogTitle>
+                    {selectedTujuan === "dkm"
+                      ? "Buat Sekolah Baru"
+                      : "Gabung ke Sekolah"}
+                  </DialogTitle>
+                  <DialogDescription>
+                    {selectedTujuan === "dkm"
+                      ? "Daftarkan sekolah Anda ke sistem."
+                      : "Masukkan kode akses dari admin sekolah."}
+                  </DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+
+            {selectedTujuan === "dkm" ? (
+              <form
+                className="space-y-4"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!schoolName.trim()) return;
+                  await handleCreateSchool({
+                    name: schoolName.trim(),
+                    file: iconFile ?? undefined,
+                  });
+                }}
+              >
+                <div className="grid gap-2">
+                  <Label htmlFor="schoolName">Nama Sekolah</Label>
+                  <Input
+                    id="schoolName"
+                    placeholder="Contoh: SD Al-Ikhlas"
+                    value={schoolName}
+                    onChange={(e) => setSchoolName(e.target.value)}
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="iconFile">Logo Sekolah (Opsional)</Label>
+                  <Input
+                    id="iconFile"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setIconFile(e.target.files?.[0] ?? null)}
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={!schoolName.trim() || modalLoading}
+                  className="w-full bg-gradient-to-r from-primary to-accent text-primary-foreground hover:opacity-95"
+                >
+                  {modalLoading ? "Membuat sekolah..." : "Buat Sekolah"}
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => setOpenJoinCreate(false)}
+                >
+                  Batal
+                </Button>
+              </form>
+            ) : (
+              <form
+                className="space-y-4"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!accessCode.trim() || !selectedTujuan) return;
+                  await handleJoinSekolah(accessCode.trim(), selectedTujuan);
+                }}
+              >
+                <div className="grid gap-2">
+                  <Label htmlFor="accessCode">Kode Akses Sekolah</Label>
+                  <Input
+                    id="accessCode"
+                    placeholder="Masukkan kode akses"
+                    value={accessCode}
+                    onChange={(e) => setAccessCode(e.target.value)}
+                    className="text-center font-mono tracking-wider text-lg"
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={!accessCode.trim() || modalLoading}
+                  className="w-full bg-gradient-to-r from-accent to-primary text-primary-foreground hover:opacity-95"
+                >
+                  {modalLoading ? "Memproses..." : "Gabung Sekarang"}
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => setOpenJoinCreate(false)}
+                >
+                  Batal
+                </Button>
+              </form>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* =========================
+            DIALOG: Select School & Role
+        ========================= */}
+        <Dialog
+          open={openSelectSchool}
+          onOpenChange={(v) => setOpenSelectSchool(v)}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader className="space-y-1">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full grid place-items-center bg-primary text-primary-foreground">
+                  <GraduationCap className="w-5 h-5" />
+                </div>
+                <DialogTitle>Pilih Sekolah & Role</DialogTitle>
+              </div>
+              <DialogDescription>
+                Pilih sekolah dan peran yang ingin kamu gunakan untuk
+                melanjutkan.
+              </DialogDescription>
+            </DialogHeader>
+
+            {loadingSelect ? (
+              <div className="text-center py-10">
+                <div className="w-10 h-10 border-4 border-muted-foreground/30 border-t-foreground rounded-full animate-spin mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">Memuat data...</p>
+              </div>
+            ) : (
+              <div className="max-h-80 overflow-y-auto space-y-3 pr-1">
+                {schools.map((m) => (
+                  <button
+                    key={m.school_id}
+                    onClick={() =>
+                      setSelected((prev) => {
+                        const keepRole =
+                          prev?.school_id === m.school_id
+                            ? prev.role
+                            : undefined;
+                        const fallback: SchoolRole =
+                          keepRole ?? (m.roles?.[0] as SchoolRole) ?? "user";
+                        return { school_id: m.school_id, role: fallback };
+                      })
+                    }
+                    className={cn(
+                      "w-full text-left rounded-xl border p-4 transition-colors",
+                      selected?.school_id === m.school_id
+                        ? "border-primary/60 bg-primary/5"
+                        : "hover:bg-muted"
+                    )}
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <img
+                        src={m.school_icon_url || "/image/Gambar-school.jpeg"}
+                        alt={m.school_name}
+                        className="w-12 h-12 rounded-lg object-cover border"
+                      />
+                      <span className="font-medium">{m.school_name}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {(m.roles?.length
+                        ? m.roles
+                        : (["user"] as SchoolRole[])
+                      ).map((r) => (
+                        <Button
+                          key={r}
+                          type="button"
+                          size="sm"
+                          variant={
+                            selected?.school_id === m.school_id &&
+                            selected?.role === r
+                              ? "default"
+                              : "outline"
+                          }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelected({ school_id: m.school_id, role: r });
+                          }}
+                          className="ring-inset"
+                        >
+                          {r.toUpperCase()}
+                        </Button>
+                      ))}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1 ring-inset"
+                onClick={() => setOpenSelectSchool(false)}
+              >
+                Batal
+              </Button>
+              <Button
+                type="button"
+                className="flex-1 ring-inset"
+                disabled={!selected}
+                onClick={() =>
+                  selected &&
+                  handleSelectSchoolRole(selected.school_id, selected.role)
+                }
+              >
+                Pilih & Lanjutkan
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </>
     </AuthLayout>
   );
 }

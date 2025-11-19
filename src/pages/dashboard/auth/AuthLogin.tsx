@@ -1,5 +1,5 @@
 // src/pages/auth/AuthLogin.tsx
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useNavigate, Link, useParams } from "react-router-dom";
 import {
   EyeIcon,
@@ -12,6 +12,8 @@ import {
   KeyRound,
   Sparkles,
   AlertCircle,
+  Building2,
+  User2,
 } from "lucide-react";
 
 import AuthLayout from "@/components/layout/CAuthLayout";
@@ -21,18 +23,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardFooter,
-} from "@/components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-
-import ModalDemoAccounts from "./components/CAuthModalDemoAccount";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter as DialogFoot,
+} from "@/components/ui/dialog";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 /* =========================
    Types
@@ -132,12 +140,42 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const [openDemo, setOpenDemo] = useState(false);
-
   // state untuk pemilihan role (multi-role)
   const [openRolePicker, setOpenRolePicker] = useState(false);
   const [availableRoles, setAvailableRoles] = useState<schoolRole[]>([]);
   const [pendingSchoolId, setPendingSchoolId] = useState<string | null>(null);
+
+  // state & handler untuk pilihan tipe pendaftaran
+  const [openChoice, setOpenChoice] = useState(false);
+
+  const handleOpenChoice = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setOpenChoice(true);
+  }, []);
+
+  const handleSelectChoice = useCallback(
+    (choice: "school" | "user") => {
+      setOpenChoice(false);
+      navigate(choice === "school" ? "/register-sekolah" : "/register-user");
+    },
+    [navigate]
+  );
+
+  // 🔤 Nama sekolah dari slug (diploma-ilmi → "Diploma Ilmi")
+  const schoolTitle = useMemo(() => {
+    if (!school_slug) return "Pendidikanku";
+
+    const parts = school_slug
+      .split(/[-_]+/)
+      .map((p) => p.trim())
+      .filter(Boolean);
+
+    if (parts.length === 0) return "Pendidikanku";
+
+    return parts
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  }, [school_slug]);
 
   // strength meter (0-4 → label 0-4)
   const strength = useMemo(() => {
@@ -179,6 +217,22 @@ export default function Login() {
     if (!pendingSchoolId) return;
     navigateByRole(pendingSchoolId, role);
     setOpenRolePicker(false);
+  }
+
+  function navigateToPMB() {
+    if (!school_slug) {
+      // kalau slug nggak ada, lempar ke PMB umum
+      navigate("/pmb", { replace: true });
+      return;
+    }
+    // PMB per sekolah
+    navigate(`/${school_slug}/pmb`, {
+      replace: true,
+      state: {
+        fromLogin: true,
+        identifier,
+      },
+    });
   }
 
   async function handleLogin(e: React.FormEvent) {
@@ -224,23 +278,29 @@ export default function Login() {
         ["dkm", "admin", "teacher", "student", "user"].includes(r)
       ) as schoolRole[];
 
-      if (normalizedRoles.length <= 1) {
-        // cuma 0 atau 1 role → auto-pick
-        const activeRole: schoolRole = normalizedRoles[0] ?? "user";
-        navigateByRole(schoolId, activeRole);
-      } else {
-        // multi-role → buka modal pilih peran
-        setPendingSchoolId(schoolId);
-        setAvailableRoles(normalizedRoles);
-        setOpenRolePicker(true);
+      // 🔹 CASE 1: belum punya peran di sekolah ini → flow PMB
+      if (normalizedRoles.length === 0) {
+        setActiveschoolContext(schoolId, "user");
+        navigateToPMB();
+        return;
       }
+
+      // 🔹 CASE 2: hanya 1 role → langsung ke dashboard
+      if (normalizedRoles.length === 1) {
+        const activeRole: schoolRole = normalizedRoles[0];
+        navigateByRole(schoolId, activeRole);
+        return;
+      }
+
+      // 🔹 CASE 3: multi-role → buka modal pilih peran
+      setPendingSchoolId(schoolId);
+      setAvailableRoles(normalizedRoles);
+      setOpenRolePicker(true);
     } catch (err: any) {
       console.error(err);
-      setError(
-        err?.response?.data?.message ||
-          err?.message ||
-          "Login gagal. Silakan coba lagi."
-      );
+
+      const backendMsg = err?.response?.data?.message as string | undefined;
+      setError(backendMsg || err?.message || "Login gagal. Silakan coba lagi.");
     } finally {
       setLoading(false);
     }
@@ -252,216 +312,272 @@ export default function Login() {
       fullWidth
       contentClassName="max-w-xl mx-auto relative overflow-hidden"
     >
-      {/* Header brand */}
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl grid place-items-center bg-primary text-primary-foreground">
-            <GraduationCap className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold leading-tight">Pendidikanku</h1>
-            <p className="text-xs text-muted-foreground">
-              Satu akun untuk sekolah, guru, dan murid.
-            </p>
-          </div>
-        </div>
-        <div className="hidden sm:flex items-center gap-2 text-xs px-2 py-1 rounded-full border bg-card text-card-foreground">
-          <ShieldCheck className="w-4 h-4" />
-          Aman &amp; terenkripsi
-        </div>
-      </div>
-
-      {/* Error alert */}
-      {error && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Login gagal</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      <Card className="shadow-sm overflow-hidden">
-        <CardHeader>
-          <CardTitle className="text-lg">Masuk ke Akun</CardTitle>
-        </CardHeader>
-
-        <CardContent>
-          <form onSubmit={handleLogin} className="space-y-5">
-            {/* Identifier */}
-            <div>
-              <Label htmlFor="identifier">Email / Username</Label>
-              <div className="relative mt-2">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  <Mail className="w-4 h-4" />
-                </span>
-                <Input
-                  id="identifier"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="Masukkan email atau username"
-                  autoComplete="username"
-                  required
-                  className="pl-10"
-                />
+      <>
+        {/* Wrapper supaya header & isi punya padding kanan-kiri yang sama */}
+        <div className="px-6 sm:px-8">
+          {/* Header brand */}
+          <div className="mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl grid place-items-center bg-primary text-primary-foreground">
+                <GraduationCap className="w-5 h-5" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold leading-tight">
+                  {schoolTitle}
+                </h1>
+                <p className="text-xs text-muted-foreground">
+                  Satu akun untuk sekolah, guru, dan murid.
+                </p>
               </div>
             </div>
+            <div className="hidden sm:flex items-center gap-2 text-xs px-2 py-1 rounded-full border bg-card text-card-foreground">
+              <ShieldCheck className="w-4 h-4" />
+              Aman &amp; terenkripsi
+            </div>
+          </div>
 
-            {/* Password */}
+          {/* Error alert */}
+          {error && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Login gagal</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {/* Card isi login (bukan shadcn Card, cuma section) */}
+          <section className="rounded-xl bg-card/40 py-6 sm:py-7 space-y-6">
+            {/* Title */}
             <div>
-              <Label htmlFor="password">Password</Label>
-              <div className="relative mt-2">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  <KeyRound className="w-4 h-4" />
-                </span>
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onKeyUp={(e) =>
-                    setCapsLockOn((e as any).getModifierState?.("CapsLock"))
-                  }
-                  placeholder="Masukkan password"
-                  autoComplete="current-password"
-                  required
-                  className="pl-10 pr-12"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 ring-inset focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  onClick={() => setShowPassword((s) => !s)}
-                  aria-label={
-                    showPassword ? "Sembunyikan password" : "Tampilkan password"
-                  }
-                >
-                  {showPassword ? (
-                    <EyeOffIcon className="w-4 h-4" />
-                  ) : (
-                    <EyeIcon className="w-4 h-4" />
-                  )}
-                </Button>
-              </div>
+              <h2 className="text-lg font-semibold">Masuk ke Akun</h2>
+            </div>
 
-              {/* Caps lock */}
-              {capsLockOn && (
-                <div className="mt-2 flex items-center gap-2 text-xs text-destructive">
-                  <Lock className="w-3.5 h-3.5" />
-                  Caps Lock aktif
-                </div>
-              )}
-
-              {/* Strength meter */}
-              <div className="mt-3">
-                <div className="h-1.5 w-full rounded-full overflow-hidden bg-muted">
-                  <div
-                    className={cn("h-full transition-all", {
-                      "bg-destructive": strength < 2,
-                      "bg-primary": strength >= 2 && strength < 3,
-                      "bg-green-600": strength >= 3,
-                    })}
-                    style={{ width: `${(strength / 4) * 100}%` }}
+            {/* Form */}
+            <form onSubmit={handleLogin} className="space-y-5">
+              {/* Identifier */}
+              <div>
+                <Label htmlFor="identifier">Email / Username</Label>
+                <div className="relative mt-2">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    <Mail className="w-4 h-4" />
+                  </span>
+                  <Input
+                    id="identifier"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    placeholder="Masukkan email atau username"
+                    autoComplete="username"
+                    required
+                    className="pl-10"
                   />
                 </div>
-                <div
-                  className={cn("mt-1 text-xs", {
-                    "text-muted-foreground": strength < 3,
-                    "text-green-600": strength >= 3,
-                  })}
-                >
-                  Kekuatan password: {strengthLabel}
+              </div>
+
+              {/* Password */}
+              <div>
+                <Label htmlFor="password">Password</Label>
+                <div className="relative mt-2">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    <KeyRound className="w-4 h-4" />
+                  </span>
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onKeyUp={(e) =>
+                      setCapsLockOn((e as any).getModifierState?.("CapsLock"))
+                    }
+                    placeholder="Masukkan password"
+                    autoComplete="current-password"
+                    required
+                    className="pl-10 pr-12"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 ring-inset focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    onClick={() => setShowPassword((s) => !s)}
+                    aria-label={
+                      showPassword
+                        ? "Sembunyikan password"
+                        : "Tampilkan password"
+                    }
+                  >
+                    {showPassword ? (
+                      <EyeOffIcon className="w-4 h-4" />
+                    ) : (
+                      <EyeIcon className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+
+                {capsLockOn && (
+                  <div className="mt-2 flex items-center gap-2 text-xs text-destructive">
+                    <Lock className="w-3.5 h-3.5" />
+                    Caps Lock aktif
+                  </div>
+                )}
+
+                {/* Strength meter */}
+                <div className="mt-3">
+                  <div className="h-1.5 w-full rounded-full overflow-hidden bg-muted">
+                    <div
+                      className={cn("h-full transition-all", {
+                        "bg-destructive": strength < 2,
+                        "bg-primary": strength >= 2 && strength < 3,
+                        "bg-green-600": strength >= 3,
+                      })}
+                      style={{ width: `${(strength / 4) * 100}%` }}
+                    />
+                  </div>
+                  <div
+                    className={cn("mt-1 text-xs", {
+                      "text-muted-foreground": strength < 3,
+                      "text-green-600": strength >= 3,
+                    })}
+                  >
+                    Kekuatan password: {strengthLabel}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Remember + forgot */}
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <Checkbox
-                  checked={remember}
-                  onCheckedChange={(v) => setRemember(Boolean(v))}
-                  id="remember"
-                />
-                <span>Ingat saya</span>
-              </label>
-              <Link
-                to="/forgot-password"
-                className="text-sm text-primary hover:underline"
+              {/* Remember + forgot */}
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <Checkbox
+                    checked={remember}
+                    onCheckedChange={(v) => setRemember(Boolean(v))}
+                    id="remember"
+                  />
+                  <span>Ingat saya</span>
+                </label>
+                <Link
+                  to="/forgot-password"
+                  className="text-sm text-primary hover:underline"
+                >
+                  Lupa password?
+                </Link>
+              </div>
+
+              {/* Submit */}
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full ring-inset"
               >
-                Lupa password?
-              </Link>
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-primary-foreground/40 border-t-primary-foreground rounded-full animate-spin mr-2" />
+                    Memproses...
+                  </>
+                ) : (
+                  <>
+                    Masuk ke Akun
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </>
+                )}
+              </Button>
+            </form>
+
+            <Separator className="my-2" />
+
+            {/* Footer kecil di dalam section yang sama */}
+            <div className="flex flex-col items-center gap-2 text-center">
+              <div className="text-[11px] text-muted-foreground">
+                Dengan masuk, kamu menyetujui{" "}
+                <Link to="/terms" className="underline">
+                  Ketentuan
+                </Link>{" "}
+                &{" "}
+                <Link to="/privacy" className="underline">
+                  Privasi
+                </Link>
+                .
+              </div>
+              <div className="hidden sm:inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                <Sparkles className="w-3 h-3" /> Akses cepat ke fitur terbaru
+              </div>
+              <div className="pt-1 text-sm text-muted-foreground">
+                Belum punya akun?{" "}
+                <button
+                  type="button"
+                  onClick={handleOpenChoice}
+                  className="font-semibold text-primary hover:underline"
+                >
+                  Daftar sekarang
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        {/* Modal pilih role kalau punya banyak role di sekolah ini */}
+        <RolePickerModal
+          open={openRolePicker}
+          roles={availableRoles}
+          onClose={() => setOpenRolePicker(false)}
+          onSelect={handleRolePicked}
+        />
+
+        {/* Modal pilihan pendaftaran (sekolah vs user) */}
+        <Dialog open={openChoice} onOpenChange={setOpenChoice}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Pilih tipe pendaftaran</DialogTitle>
+              <DialogDescription>
+                Daftarkan sekolah untuk dashboard organisasi, atau daftar
+                sebagai pengguna lalu bergabung ke sekolah.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="grid gap-3">
+              <Button
+                variant="default"
+                className="justify-start gap-3"
+                onClick={() => handleSelectChoice("school")}
+              >
+                <span className="inline-flex size-9 items-center justify-center rounded-md bg-primary-foreground/10">
+                  <Building2 className="size-5" />
+                </span>
+                <div className="flex flex-col items-start">
+                  <span className="font-medium">Daftarkan Sekolah</span>
+                  <span className="text-xs text-muted-foreground">
+                    Buat organisasi & undang admin/guru/murid.
+                  </span>
+                </div>
+              </Button>
+
+              <Button
+                variant="outline"
+                className="justify-start gap-3"
+                onClick={() => handleSelectChoice("user")}
+              >
+                <span className="inline-flex size-9 items-center justify-center rounded-md bg-muted">
+                  <User2 className="size-5" />
+                </span>
+                <div className="flex flex-col items-start">
+                  <span className="font-medium">Daftar sebagai Pengguna</span>
+                  <span className="text-xs text-muted-foreground">
+                    Buat akun pribadi, nanti bisa gabung sekolah.
+                  </span>
+                </div>
+              </Button>
             </div>
 
-            {/* Submit */}
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full ring-inset"
-            >
-              {loading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-primary-foreground/40 border-t-primary-foreground rounded-full animate-spin mr-2" />
-                  Memproses...
-                </>
-              ) : (
-                <>
-                  Masuk ke Akun
-                  <ArrowRight className="w-5 h-5 ml-2" />
-                </>
-              )}
-            </Button>
-          </form>
-
-          <Separator className="my-6" />
-
-          {/* Quick actions */}
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full ring-inset"
-            onClick={() => setOpenDemo(true)}
-          >
-            <Sparkles className="w-4 h-4 mr-2" />
-            Coba akun demo
-          </Button>
-
-          <ModalDemoAccounts
-            open={openDemo}
-            onClose={() => setOpenDemo(false)}
-            onPick={(who) => {
-              setIdentifier(`${who}@demo.id`);
-              setPassword("Demo@12345");
-              setOpenDemo(false);
-            }}
-          />
-        </CardContent>
-
-        <CardFooter className="flex-col items-start gap-2">
-          <div className="text-[11px] text-muted-foreground">
-            Dengan masuk, kamu menyetujui{" "}
-            <Link to="/terms" className="underline">
-              Ketentuan
-            </Link>{" "}
-            &{" "}
-            <Link to="/privacy" className="underline">
-              Privasi
-            </Link>
-            .
-          </div>
-          <div className="hidden sm:inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-            <Sparkles className="w-3 h-3" /> Akses cepat ke fitur terbaru
-          </div>
-        </CardFooter>
-      </Card>
-
-      {/* Modal pilih role kalau punya banyak role di sekolah ini */}
-      <RolePickerModal
-        open={openRolePicker}
-        roles={availableRoles}
-        onClose={() => setOpenRolePicker(false)}
-        onSelect={handleRolePicked}
-      />
+            <DialogFoot className="sm:justify-start">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setOpenChoice(false)}
+              >
+                Batal
+              </Button>
+            </DialogFoot>
+          </DialogContent>
+        </Dialog>
+      </>
     </AuthLayout>
   );
 }

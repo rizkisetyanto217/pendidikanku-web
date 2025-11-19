@@ -512,7 +512,7 @@ const TeacherCSSTDetail: React.FC = () => {
             {/* Ujian */}
             <Card
               className="cursor-pointer transition hover:shadow-md"
-              onClick={() => navigate("tugas")}
+              onClick={() => navigate("ujian")}
             >
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="space-y-1">
@@ -531,7 +531,7 @@ const TeacherCSSTDetail: React.FC = () => {
             {/* Buku*/}
             <Card
               className="cursor-pointer transition hover:shadow-md"
-              onClick={() => navigate("tugas")}
+              onClick={() => navigate("buku")}
             >
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="space-y-1">

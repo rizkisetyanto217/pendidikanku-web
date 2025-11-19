@@ -90,8 +90,8 @@ function seedMonth(y: number, m: number): ScheduleRow[] {
         type === "exam"
           ? `Ujian materi ${title.toLowerCase()} — persiapkan alat tulis.`
           : type === "event"
-            ? `Acara sekolah: ${title} — ${desc}`
-            : desc,
+          ? `Acara sekolah: ${title} — ${desc}`
+          : desc,
     });
   };
 
@@ -111,8 +111,8 @@ function seedMonth(y: number, m: number): ScheduleRow[] {
     [14, "08:00", "class"],
     [15, "07:30", "class"],
     [15, "10:30", "exam"],
-    [18, "09:45", "class"],
-    [20, "07:30", "class"],
+    [19, "09:45", "class"],
+    [19, "07:30", "class"],
     [20, "12:30", "class"],
     [22, "10:00", "class"],
     [22, "15:00", "event"],
