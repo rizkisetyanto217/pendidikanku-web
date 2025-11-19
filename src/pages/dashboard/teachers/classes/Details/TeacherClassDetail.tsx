@@ -176,7 +176,7 @@ const CSST_SWITCH_DEADLINE = new Date(
 ).toISOString();
 
 /* ========== Component ========== */
-export default function TeacherCSSTDetail() {
+export default function TeacherClassDetail() {
   const navigate = useNavigate();
 
   /* Atur breadcrumb dan title seperti SchoolAcademic */

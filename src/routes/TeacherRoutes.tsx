@@ -27,16 +27,16 @@ import TeacherDetailBook from "@/pages/dashboard/teachers/csst/menus/books/Teach
 import TeacherClassAttendance from "@/pages/dashboard/teachers/csst/menus/attendances/TeacherCSSTStudentAttandence";
 import TeacherAssignment from "@/pages/dashboard/teachers/csst/menus/assignments/TeacherCSSTAssignment";
 
-import TeacherClassDetail from "@/pages/dashboard/teachers/classes/Details/TeacherClassesDetail";
+import TeacherClassDetail from "@/pages/dashboard/teachers/classes/Details/TeacherClassDetail";
 import TeacherScheduleRoutine from "@/pages/dashboard/teachers/schedules/routines/TeacherScheduleRoutine";
 import TeacherScheduleAgenda from "@/pages/dashboard/teachers/schedules/agendas/TeacherScheduleAgenda";
 import TeacherQuizBuilder from "@/pages/dashboard/teachers/quiz/TeacherQuizBuilder";
 import TeacherScheduleRoutineDetail from "@/pages/dashboard/teachers/schedules/routines/details/TeacherScheduleRoutineDetail";
 import TeacherScheduleAgendaDetail from "@/pages/dashboard/teachers/schedules/agendas/details/TeacherScheduleAgendaDetail";
-import TeacherCSSTAssessmentDetail from "@/pages/dashboard/teachers/csst/menus/assignments/details/TeacherCSSTAssessmentDetail";
+import TeacherCSSTAssessmentDetail from "@/pages/dashboard/teachers/csst/menus/assignments/details/TeacherCSSTAssignmentDetail";
 import QuizBuilder from "@/pages/dashboard/teachers/quiz/TeacherQuizBuilder";
-import TeacherCSSTAssessmentCreate from "@/pages/dashboard/teachers/csst/menus/assignments/details/TeacherCSSTAssessmentCreate";
-import TeacherCSSTDetail from "@/pages/dashboard/teachers/classes/Details/TeacherClassesDetail";
+import TeacherCSSTAssessmentCreate from "@/pages/dashboard/teachers/csst/menus/assignments/details/TeacherCSSTAsseignmentCreate";
+import TeacherCSSTDetail from "@/pages/dashboard/teachers/csst/details/TeacherCSSTDetail";
 
 export const TeacherRoutes = (
   <Route path="guru" element={<DashboardLayout />}>
@@ -88,7 +88,10 @@ export const TeacherRoutes = (
         path=":csstId/tugas/:assessmentId/:quizId"
         element={<QuizBuilder />}
       />
-      <Route path=":csstId/tugas/new" element={<TeacherCSSTAssessmentCreate />} />
+      <Route
+        path=":csstId/tugas/new"
+        element={<TeacherCSSTAssessmentCreate />}
+      />
 
       <Route
         path=":csstId/semua-kehadiran"
@@ -124,7 +127,10 @@ export const TeacherRoutes = (
       <Route path="agenda" element={<TeacherScheduleAgenda showBack />} />
       <Route path="agenda/:id" element={<TeacherScheduleAgendaDetail />} />
       <Route path="rutin" element={<TeacherScheduleRoutine showBack />} />
-      <Route path="rutin/:routineId" element={<TeacherScheduleRoutineDetail />} />
+      <Route
+        path="rutin/:routineId"
+        element={<TeacherScheduleRoutineDetail />}
+      />
       <Route path="profil-guru" element={<TeacherProfil />} />
       {/* <Route path="pengaturan" element={<TeacherSettings />} /> */}
       <Route path="tugas" element={<TeacherAssignment />} />

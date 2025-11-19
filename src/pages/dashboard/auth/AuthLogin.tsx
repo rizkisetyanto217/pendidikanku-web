@@ -162,8 +162,17 @@ export default function Login() {
     const section =
       role === "teacher" ? "guru" : role === "student" ? "murid" : "sekolah";
 
+    if (!school_slug) {
+      // fallback kalau entah gimana slug-nya hilang
+      navigate("/", { replace: true });
+      return;
+    }
+
+    // Context tetap simpan ID (bagus, buat query backend)
     setActiveschoolContext(schoolId, role);
-    navigate(`/${schoolId}/${section}/dashboard`, { replace: true });
+
+    // URL tetap pakai slug
+    navigate(`/${school_slug}/${section}/dashboard`, { replace: true });
   }
 
   function handleRolePicked(role: schoolRole) {

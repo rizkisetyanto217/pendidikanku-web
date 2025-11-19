@@ -43,8 +43,8 @@ export default function AppRoutes() {
       {/* Kalau mau masih punya global register tanpa slug, bisa tetap di sini */}
       <Route path="/register" element={<Register />} />
 
-      {/* --- Protected (dengan schoolId di path, dari token) --- */}
-      <Route path=":schoolId" element={<ProtectedRoute />}>
+      {/* --- Protected (dengan slug di path, dari token) --- */}
+      <Route path=":school_slug" element={<ProtectedRoute />}>
         {/* ===== Guru cluster: hanya teacher/admin/dkm ===== */}
         <Route
           element={<RequireschoolRoles allow={["teacher", "admin", "dkm"]} />}
@@ -66,7 +66,7 @@ export default function AppRoutes() {
       </Route>
 
       {/* --- Forbidden harus di atas wildcard --- */}
-      <Route path=":schoolId/forbidden" element={<Forbidden403 />} />
+      <Route path=":school_slug/forbidden" element={<Forbidden403 />} />
 
       {/* --- 404 & Unauthorized --- */}
       <Route path="/unauthorized" element={<Unauthorized />} />
