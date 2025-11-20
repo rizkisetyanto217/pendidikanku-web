@@ -79,7 +79,7 @@ export const TeacherRoutes = (
       <Route
         path=":csstId/tugas/:assessmentId/:quizId"
         element={<TeacherQuizBuilder />}
-      />
+      />R
     </Route>
 
     {/* Jadwal */}

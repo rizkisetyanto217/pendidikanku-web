@@ -222,11 +222,11 @@ export default function Login() {
   function navigateToPMB() {
     if (!school_slug) {
       // kalau slug nggak ada, lempar ke PMB umum
-      navigate("/pmb", { replace: true });
+      navigate("/pendaftaran", { replace: true });
       return;
     }
     // PMB per sekolah
-    navigate(`/${school_slug}/pmb`, {
+    navigate(`/${school_slug}/pendaftaran`, {
       replace: true,
       state: {
         fromLogin: true,
