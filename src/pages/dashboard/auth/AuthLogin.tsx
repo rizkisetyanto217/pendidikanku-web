@@ -527,8 +527,7 @@ export default function Login() {
             <DialogHeader>
               <DialogTitle>Pilih tipe pendaftaran</DialogTitle>
               <DialogDescription>
-                Daftarkan sekolah untuk dashboard organisasi, atau daftar
-                sebagai pengguna lalu bergabung ke sekolah.
+                Daftarkan diri anda bergabung dengan Madinah Salam
               </DialogDescription>
             </DialogHeader>
 
@@ -542,7 +541,7 @@ export default function Login() {
                   <Building2 className="size-5" />
                 </span>
                 <div className="flex flex-col items-start">
-                  <span className="font-medium">Daftarkan Sekolah</span>
+                  <span className="font-medium">Daftar sebagai guru</span>
                   <span className="text-xs text-muted-foreground">
                     Buat organisasi & undang admin/guru/murid.
                   </span>
@@ -558,7 +557,7 @@ export default function Login() {
                   <User2 className="size-5" />
                 </span>
                 <div className="flex flex-col items-start">
-                  <span className="font-medium">Daftar sebagai Pengguna</span>
+                  <span className="font-medium">Daftar sebagai murid</span>
                   <span className="text-xs text-muted-foreground">
                     Buat akun pribadi, nanti bisa gabung sekolah.
                   </span>
