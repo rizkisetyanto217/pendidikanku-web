@@ -1,4 +1,4 @@
-// src/pages/sekolahislamku/teacher/books/ClassBookDetailPage.tsx
+// src/pages/sekolahislamku/teacher/books/TeacherCSSTBookDetail.tsx
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, BookOpen, CalendarDays, Hash, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -63,7 +63,7 @@ const dateLong = (iso?: string) =>
     : "-";
 
 /* ================= Component ================= */
-export default function TeacherDetailBook() {
+export default function TeacherCSSTBookDetail() {
   const { bookId = "" } = useParams<{ bookId: string }>();
   const navigate = useNavigate();
   const location = useLocation();

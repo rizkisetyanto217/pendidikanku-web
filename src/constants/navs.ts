@@ -222,7 +222,7 @@ export const NAVS: NavDict = {
       label: "Menu Utama",
       icon: ChartBar,
     },
-    // 3) KELAS
+
     {
       path: "kelas",
       label: "Kelas",
@@ -307,6 +307,8 @@ export const NAVS: NavDict = {
       icon: Users,
     },
   ],
+
+  // GURU
   guru: [
     {
       path: "dashboard",
@@ -329,7 +331,6 @@ export const NAVS: NavDict = {
       label: "Guru Mapel",
       icon: UserCog,
     },
-    // 3) KELAS
     {
       path: "jadwal",
       label: "Jadwal",

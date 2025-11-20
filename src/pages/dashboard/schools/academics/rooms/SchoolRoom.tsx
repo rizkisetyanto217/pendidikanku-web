@@ -1,8 +1,8 @@
 // src/pages/sekolahislamku/pages/classes/RoomSchool.tsx
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import axios from "@/lib/axios";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import axios, { getActiveschoolId } from "@/lib/axios";
 import {
   MapPin,
   Eye,
@@ -16,6 +16,9 @@ import {
 
 /* ✅ Import untuk breadcrumb header */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+
+/* ✅ Current user context (dari token + simple-context) */
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 /* shadcn/ui */
 import { Button } from "@/components/ui/button";
@@ -66,7 +69,7 @@ export type Room = {
 
 /* ===================== API QUERY ===================== */
 function usePublicRoomsQuery(
-  schoolId: string,
+  schoolId: string | null,
   q: string,
   page: number,
   perPage: number
@@ -76,9 +79,14 @@ function usePublicRoomsQuery(
     enabled: !!schoolId,
     staleTime: 60_000,
     queryFn: async () => {
+      if (!schoolId) {
+        return { data: [], pagination: { total: 0, total_pages: 1 } };
+      }
+
       const res = await axios.get(`/public/${schoolId}/class-rooms/list`, {
         params: { q: q || undefined, page, per_page: perPage },
       });
+      console.log("[public-rooms] response", res.status, res.data);
       return res.data as {
         data: any[];
         pagination?: { total?: number; total_pages?: number };
@@ -240,11 +248,7 @@ function ActionsMenu({
 /* ===================== PAGE ===================== */
 type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
-export default function SchoolRoom({
-  showBack = false,
-  backTo
-}: Props) {
-  const { schoolId } = useParams<{ schoolId?: string }>();
+export default function SchoolRoom({ showBack = false, backTo }: Props) {
   const navigate = useNavigate();
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
   const qc = useQueryClient();
@@ -262,6 +266,15 @@ export default function SchoolRoom({
       showBack,
     });
   }, [setHeader, showBack]);
+
+  /* ✅ Ambil school_id dari token/context */
+  const currentUserQ = useCurrentUser();
+  const activeMembership = currentUserQ.data?.membership ?? null;
+
+  // sumber utama: simple-context (JWT-based)
+  const schoolIdFromMembership = activeMembership?.school_id ?? null;
+  // fallback: cookie UI-only (kalau memang masih dipakai)
+  const schoolId = schoolIdFromMembership || getActiveschoolId() || null;
 
   /* 🔍 Query (sinkron URL) */
   const [sp, setSp] = useSearchParams();
@@ -285,9 +298,9 @@ export default function SchoolRoom({
     copy.set("page", String(page));
     copy.set("per", String(perPage));
     setSp(copy, { replace: true });
-  }, [page, perPage]);
+  }, [page, perPage, setSp, sp]);
 
-  const roomsQ = usePublicRoomsQuery(schoolId ?? "", q, page, perPage);
+  const roomsQ = usePublicRoomsQuery(schoolId, q, page, perPage);
   const data = roomsQ.data?.data ?? [];
 
   const rooms: Room[] = useMemo(
@@ -314,6 +327,8 @@ export default function SchoolRoom({
       location?: string;
       is_active: boolean;
     }) => {
+      if (!schoolId) throw new Error("School ID tidak tersedia");
+
       const payload = {
         room_name: form.name,
         room_capacity: form.capacity,
@@ -335,6 +350,7 @@ export default function SchoolRoom({
 
   const delRoom = useMutation({
     mutationFn: async (id: string) => {
+      if (!schoolId) throw new Error("School ID tidak tersedia");
       await axios.delete(`/a/${schoolId}/class-rooms/${id}`);
     },
     onSuccess: async () => {
@@ -442,6 +458,7 @@ export default function SchoolRoom({
 
             <h1 className="font-semibold text-lg md:text-xl">Daftar Ruangan</h1>
           </div>
+
           <DataTable<Room>
             onAdd={() => {
               setModalInitial(null);
@@ -465,7 +482,7 @@ export default function SchoolRoom({
             zebra={false}
             viewModes={["table", "card"] as ViewMode[]}
             defaultView="table"
-            storageKey={`rooms:${schoolId}`}
+            storageKey={`rooms:${schoolId ?? "unknown"}`}
             onRowClick={(r) => navigate(`./${r.id}`)}
             renderActions={(r) => (
               <ActionsMenu

@@ -8,52 +8,35 @@ import TeacherDashboard from "@/pages/dashboard/teachers/TeacherMainDashboard";
 // Menu utama guru
 import TeacherMenuGrids from "@/pages/dashboard/teachers/menus/TeacherMenuGrids";
 import TeacherClass from "@/pages/dashboard/teachers/classes/TeacherClassFromSections";
-import TeacherSubjects from "@/pages/dashboard/teachers/csst/TeacherCSST";
-import TeacherSchedule from "@/pages/dashboard/teachers/schedules/agendas/TeacherScheduleAgenda";
-
+import TeacherCSST from "@/pages/dashboard/teachers/csst/TeacherCSST";
+import TeacherScheduleAgenda from "@/pages/dashboard/teachers/schedules/agendas/TeacherScheduleAgenda";
 import TeacherProfil from "@/pages/dashboard/teachers/profiles/TeacherProfil";
-
-import TeacherDetailClass from "@/pages/dashboard/teachers/csst/details/TeacherCSSTDetail";
-
-import TeacherManagementClass from "@/pages/dashboard/teachers/csst/managements/TeacherCSSTManagement";
-import TeacherDetailClassQuiz from "@/pages/dashboard/teachers/csst/TeacherDetailClassQuiz";
-import TeacherClassStudentsList from "@/pages/dashboard/teachers/csst/menus/student/TeacherCSSTStudentList";
-import TeacherClassStudentAttendanceList from "@/pages/dashboard/teachers/csst/menus/attendances/TeacherCSSTStudentAttendanceList";
-import TeacherMaterialList from "@/pages/dashboard/teachers/csst/menus/material/TeacherCSSTMaterialList";
-import TeacherExamList from "@/pages/dashboard/teachers/csst/menus/exams/TeacherCSSTExam";
-import TeacherBookList from "@/pages/dashboard/teachers/csst/menus/books/TeacherCSSTBookList";
-import TeacherDetailClassStudent from "@/pages/dashboard/teachers/csst/menus/student/TeacherCSSTStudentDetail";
-import TeacherDetailBook from "@/pages/dashboard/teachers/csst/menus/books/TeacherCSSTBookDetail";
-import TeacherClassAttendance from "@/pages/dashboard/teachers/csst/menus/attendances/TeacherCSSTStudentAttandence";
-import TeacherAssignment from "@/pages/dashboard/teachers/csst/menus/assignments/TeacherCSSTAssignment";
-
+import TeacherCSSTDetail from "@/pages/dashboard/teachers/csst/details/TeacherCSSTDetail";
+import TeacherCSSTStudentList from "@/pages/dashboard/teachers/csst/menus/student-profiles/TeacherCSSTStudentList";
+import TeacherCSSTStudentDetail from "@/pages/dashboard/teachers/csst/menus/student-profiles/TeacherCSSTStudentDetail";
 import TeacherClassDetail from "@/pages/dashboard/teachers/classes/Details/TeacherClassDetail";
 import TeacherScheduleRoutine from "@/pages/dashboard/teachers/schedules/routines/TeacherScheduleRoutine";
-import TeacherScheduleAgenda from "@/pages/dashboard/teachers/schedules/agendas/TeacherScheduleAgenda";
 import TeacherQuizBuilder from "@/pages/dashboard/teachers/quiz/TeacherQuizBuilder";
 import TeacherScheduleRoutineDetail from "@/pages/dashboard/teachers/schedules/routines/details/TeacherScheduleRoutineDetail";
 import TeacherScheduleAgendaDetail from "@/pages/dashboard/teachers/schedules/agendas/details/TeacherScheduleAgendaDetail";
 import TeacherCSSTAssessmentDetail from "@/pages/dashboard/teachers/csst/menus/assignments/details/TeacherCSSTAssignmentDetail";
-import QuizBuilder from "@/pages/dashboard/teachers/quiz/TeacherQuizBuilder";
 import TeacherCSSTAssessmentCreate from "@/pages/dashboard/teachers/csst/menus/assignments/details/TeacherCSSTAsseignmentCreate";
-import TeacherCSSTDetail from "@/pages/dashboard/teachers/csst/details/TeacherCSSTDetail";
+import TeacherCSSTAssignment from "@/pages/dashboard/teachers/csst/menus/assignments/TeacherCSSTAssignment";
+import TeacherCSSTStudentAttendanceList from "@/pages/dashboard/teachers/csst/menus/student-attendances/TeacherCSSTStudentAttendanceList";
+import TeacherCSSTMaterialList from "@/pages/dashboard/teachers/csst/menus/materials/TeacherCSSTMaterialList";
+import TeacherCSSTBookList from "@/pages/dashboard/teachers/csst/menus/books/TeacherCSSTBookList";
+import TeacherCSSTExam from "@/pages/dashboard/teachers/csst/menus/exams/TeacherCSSTExam";
+import TeacherCSSTBookDetail from "@/pages/dashboard/teachers/csst/menus/books/TeacherCSSTBookDetail";
+import TeacherCSSTManagement from "@/pages/dashboard/teachers/csst/menus/managements/TeacherCSSTManagement";
+import TeacherCSSTDailyReport from "@/pages/dashboard/teachers/csst/menus/daily-progress/TeacherCSSTDailyReport";
+import Setting from "@/pages/dashboard/components/page/Setting";
 
 export const TeacherRoutes = (
   <Route path="guru" element={<DashboardLayout />}>
+    <Route path="pengaturan" element={<Setting />} />
+
     {/* Dashboard */}
     <Route path="dashboard" element={<TeacherDashboard />} />
-
-    <Route path="kelas">
-      <Route index element={<TeacherClass />} />
-      {/* <Route path=":id" element={<TeacherDetailClass />} /> */}
-      <Route path="guru-mapel">
-        <Route index element={<TeacherSubjects />} />
-      </Route>
-      <Route path="jadwal" element={<TeacherSchedule />} />
-    </Route>
-
-    {/* Profil & Penilaian */}
-    <Route path="profil-guru" element={<TeacherProfil />} />
 
     {/* Wali Kelas */}
     <Route path="wali-kelas">
@@ -61,84 +44,86 @@ export const TeacherRoutes = (
       <Route path=":classSectionId" element={<TeacherClassDetail />} />
     </Route>
 
-    <Route path="kelola-kelas/:name" element={<TeacherManagementClass />} />
-    <Route path="quizClass/detail" element={<TeacherDetailClassQuiz />} />
-
-    {/* Guru Mapel */}
+    {/* Guru Mapel / CSST */}
     <Route path="guru-mapel">
-      <Route index element={<TeacherSubjects />} />
-
-      {/* Detail 1 mapel (CSST) */}
+      <Route index element={<TeacherCSST />} />
       <Route path=":csstId" element={<TeacherCSSTDetail />} />
 
-      {/* Turunan dari CSST yang sama */}
-      <Route
-        path=":csstId/absensi-hari-ini"
-        element={<TeacherClassAttendance />}
-      />
-      <Route path=":csstId/quiz" element={<TeacherDetailClassQuiz />} />
-      <Route path=":csstId/murid" element={<TeacherClassStudentsList />} />
-      <Route path=":csstId/murid/:id" element={<TeacherDetailClassStudent />} />
-      <Route path=":csstId/tugas" element={<TeacherAssignment />} />
-      <Route
-        path=":csstId/tugas/:assessmentId"
-        element={<TeacherCSSTAssessmentDetail />}
-      />
-      <Route
-        path=":csstId/tugas/:assessmentId/:quizId"
-        element={<QuizBuilder />}
-      />
-      <Route
-        path=":csstId/tugas/new"
-        element={<TeacherCSSTAssessmentCreate />}
-      />
+      {/* Kehadiran Murid */}
+      <Route path=":csstId/absensi" element={<TeacherCSSTStudentAttendanceList />} />
+      <Route path=":csstId/murid" element={<TeacherCSSTStudentList />} />
+      <Route path=":csstId/murid/:id" element={<TeacherCSSTStudentDetail />} />
+      <Route path=":csstId/kehadiran" element={<TeacherCSSTDailyReport />} />
+      <Route path=":csstId/kelola-kelas" element={<TeacherCSSTManagement />} />
 
-      <Route
-        path=":csstId/semua-kehadiran"
-        element={<TeacherClassStudentAttendanceList />}
-      />
-      <Route path=":csstId/materi" element={<TeacherMaterialList />} />
-      <Route path=":csstId/ujian" element={<TeacherExamList />} />
-      <Route path=":csstId/buku" element={<TeacherBookList />} />
-      <Route path=":csstId/buku/:bookId" element={<TeacherDetailBook />} />
-    </Route>
+      {/* Materi, Ujian, Buku */}
+      <Route path=":csstId/materi" element={<TeacherCSSTMaterialList />} />
+      <Route path=":csstId/ujian" element={<TeacherCSSTExam />} />
+      <Route path=":csstId/buku" element={<TeacherCSSTBookList />} />
+      <Route path=":csstId/buku/:bookId" element={<TeacherCSSTBookDetail />} />
 
-    {/* === Jadwal Sekolah === */}
+      {/* Assignments */}
+      <Route path=":csstId/tugas" element={<TeacherCSSTAssignment />} />
+      <Route path=":csstId/tugas/new" element={<TeacherCSSTAssessmentCreate />} />
+      <Route path=":csstId/tugas/:assessmentId" element={<TeacherCSSTAssessmentDetail />} />
+      <Route path=":csstId/tugas/:assessmentId/:quizId" element={<TeacherQuizBuilder />} />
+    </Route >
+
+    {/* Jadwal */}
     <Route path="jadwal">
       <Route path="agenda" element={<TeacherScheduleAgenda />} />
       <Route path="agenda/:id" element={<TeacherScheduleAgendaDetail />} />
       <Route path="rutin" element={<TeacherScheduleRoutine />} />
-      <Route
-        path="rutin/:routineId"
-        element={<TeacherScheduleRoutineDetail />}
-      />
+      <Route path="rutin/:routineId" element={<TeacherScheduleRoutineDetail />} />
     </Route>
+
+    {/* Profil */}
+    <Route path="profil-guru" element={<TeacherProfil />} />
+
+
 
     {/* Menu Utama Guru */}
     <Route path="menu-utama">
       <Route index element={<TeacherMenuGrids />} />
+      {/* Wali Kelas */}
       <Route path="wali-kelas">
-        <Route index element={<TeacherClass showBack />} />
-        <Route path=":id" element={<TeacherDetailClass />} />
+        <Route index element={<TeacherClass />} />
+        <Route path=":classSectionId" element={<TeacherClassDetail />} />
       </Route>
-      <Route path="guru-mapel">
-        <Route index element={<TeacherSubjects showBack />} />
-      </Route>
-      <Route path="agenda" element={<TeacherScheduleAgenda showBack />} />
-      <Route path="agenda/:id" element={<TeacherScheduleAgendaDetail />} />
-      <Route path="rutin" element={<TeacherScheduleRoutine showBack />} />
-      <Route
-        path="rutin/:routineId"
-        element={<TeacherScheduleRoutineDetail />}
-      />
-      <Route path="profil-guru" element={<TeacherProfil />} />
-      {/* <Route path="pengaturan" element={<TeacherSettings />} /> */}
-      <Route path="tugas" element={<TeacherAssignment />} />
-      {/* <Route path="sertifikat" element={<TeacherCertificate />} /> */}
-      <Route path="kehadiran" element={<TeacherClassAttendance />} />
-      <Route path="quizClass/detail" element={<TeacherDetailClassQuiz />} />
-    </Route>
 
-    <Route path="quiz" element={<TeacherQuizBuilder />} />
-  </Route>
+      {/* Guru Mapel / CSST */}
+      <Route path="guru-mapel">
+        <Route index element={<TeacherCSST />} />
+        <Route path=":csstId" element={<TeacherCSSTDetail />} />
+
+        {/* Kehadiran Murid */}
+        <Route path=":csstId/semua-kehadiran" element={<TeacherCSSTStudentAttendanceList />} />
+        <Route path=":csstId/murid" element={<TeacherCSSTStudentList />} />
+        <Route path=":csstId/murid/:id" element={<TeacherCSSTStudentDetail />} />
+
+        {/* Assignments */}
+        <Route path=":csstId/tugas" element={<TeacherCSSTAssignment />} />
+        <Route path=":csstId/tugas/new" element={<TeacherCSSTAssessmentCreate />} />
+        <Route path=":csstId/tugas/:assessmentId" element={<TeacherCSSTAssessmentDetail />} />
+        <Route path=":csstId/tugas/:assessmentId/:quizId" element={<TeacherQuizBuilder />} />
+
+        {/* Materi, Ujian, Buku */}
+        <Route path=":csstId/materi" element={<TeacherCSSTMaterialList />} />
+        <Route path=":csstId/ujian" element={<TeacherCSSTExam />} />
+        <Route path=":csstId/buku" element={<TeacherCSSTBookList />} />
+        <Route path=":csstId/buku/:bookId" element={<TeacherCSSTBookDetail />} />
+      </Route >
+
+      {/* Jadwal */}
+      <Route path="agenda">
+        <Route index element={<TeacherScheduleAgenda />} />
+        <Route path="agenda/:id" element={<TeacherScheduleAgendaDetail />} />
+        <Route path="rutin" element={<TeacherScheduleRoutine />} />
+        <Route path="rutin/:routineId" element={<TeacherScheduleRoutineDetail />} />
+      </Route>
+
+      {/* Profil */}
+      <Route path="profil-guru" element={<TeacherProfil />} />
+    </Route >
+  </Route >
 );

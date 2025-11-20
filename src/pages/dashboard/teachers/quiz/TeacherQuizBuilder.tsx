@@ -1,4 +1,4 @@
-// src/pages/sekolahislamku/teacher/TeacherQuizBuilder.tsx
+// src/pages/dasboard/teacher/TeacherQuizBuilder.tsx
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -201,7 +201,7 @@ function mapApiQuestionToQuestion(q: QuizQuestionFromApi): Question {
 /* =========================
    Page Component
 ========================= */
-export default function QuizBuilder() {
+export default function TeacherQuizBuilder() {
   // Di sini param :id kita pakai sebagai quiz_id
   const { quizId = "" } = useParams<{
     csstId: string;
@@ -293,8 +293,8 @@ export default function QuizBuilder() {
 
   const apiErrorMessage = isError
     ? (error as any)?.response?.data?.message ||
-      (error as Error).message ||
-      "Gagal memuat soal kuis."
+    (error as Error).message ||
+    "Gagal memuat soal kuis."
     : null;
 
   /* ========== Question operations ========== */
@@ -364,16 +364,16 @@ export default function QuizBuilder() {
       questions: d.questions.map((q) =>
         q.id === qid
           ? {
-              ...q,
-              options: [
-                ...(q.options || []),
-                {
-                  id: uid(),
-                  text: `Opsi ${((q.options || []).length ?? 0) + 1}`,
-                },
-              ],
-              dirty: true, // ⬅️ ada perubahan konten
-            }
+            ...q,
+            options: [
+              ...(q.options || []),
+              {
+                id: uid(),
+                text: `Opsi ${((q.options || []).length ?? 0) + 1}`,
+              },
+            ],
+            dirty: true, // ⬅️ ada perubahan konten
+          }
           : q
       ),
       updatedAt: new Date().toISOString(),
@@ -385,12 +385,12 @@ export default function QuizBuilder() {
       questions: d.questions.map((q) =>
         q.id === qid
           ? {
-              ...q,
-              options: (q.options || []).map((o) =>
-                o.id === oid ? { ...o, ...patch } : o
-              ),
-              dirty: true, // ⬅️ ada perubahan konten
-            }
+            ...q,
+            options: (q.options || []).map((o) =>
+              o.id === oid ? { ...o, ...patch } : o
+            ),
+            dirty: true, // ⬅️ ada perubahan konten
+          }
           : q
       ),
       updatedAt: new Date().toISOString(),
@@ -402,10 +402,10 @@ export default function QuizBuilder() {
       questions: d.questions.map((q) =>
         q.id === qid
           ? {
-              ...q,
-              options: (q.options || []).filter((o) => o.id !== oid),
-              dirty: true, // ⬅️ ada perubahan konten
-            }
+            ...q,
+            options: (q.options || []).filter((o) => o.id !== oid),
+            dirty: true, // ⬅️ ada perubahan konten
+          }
           : q
       ),
       updatedAt: new Date().toISOString(),
@@ -417,13 +417,13 @@ export default function QuizBuilder() {
       questions: d.questions.map((q) =>
         q.id === qid
           ? {
-              ...q,
-              options: (q.options || []).map((o) => ({
-                ...o,
-                correct: o.id === oid,
-              })),
-              dirty: true, // ⬅️ ganti jawaban benar
-            }
+            ...q,
+            options: (q.options || []).map((o) => ({
+              ...o,
+              correct: o.id === oid,
+            })),
+            dirty: true, // ⬅️ ganti jawaban benar
+          }
           : q
       ),
       updatedAt: new Date().toISOString(),
@@ -435,10 +435,10 @@ export default function QuizBuilder() {
       questions: d.questions.map((q) =>
         q.id === qid
           ? {
-              ...q,
-              collapsed: true, // tutup lagi
-              dirty: false, // tandai sudah "beres"
-            }
+            ...q,
+            collapsed: true, // tutup lagi
+            dirty: false, // tandai sudah "beres"
+          }
           : q
       ),
       updatedAt: new Date().toISOString(),
@@ -1092,9 +1092,9 @@ function QuestionEditor(props: {
                     next.options = q.options?.length
                       ? q.options
                       : [
-                          { id: uid(), text: "Opsi 1", correct: true },
-                          { id: uid(), text: "Opsi 2", correct: false },
-                        ];
+                        { id: uid(), text: "Opsi 1", correct: true },
+                        { id: uid(), text: "Opsi 2", correct: false },
+                      ];
                   } else {
                     next.options = undefined;
                   }

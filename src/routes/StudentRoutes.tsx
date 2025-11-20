@@ -22,6 +22,7 @@ import StudentScheduleAgenda from "@/pages/dashboard/students/schedules/agendas/
 import StudentScheduleRoutine from "@/pages/dashboard/students/schedules/routine/StudentScheduleRoutine";
 import StudentEnrollment from "@/pages/dashboard/students/administration/StudentAdministrationEnrollment";
 import StudentReEnrollment from "@/pages/dashboard/students/administration/StudentAdministrationReEnrollment";
+import Setting from "@/pages/dashboard/components/page/Setting";
 
 // ======================
 // Routing untuk halaman MURID (Student Dashboard)
@@ -30,6 +31,7 @@ import StudentReEnrollment from "@/pages/dashboard/students/administration/Stude
 export const StudentRoutes = (
   // Route utama: semua path di bawah "/murid"
   <Route path="murid" element={<DashboardLayout />}>
+    <Route path="pengaturan" element={<Setting />} />
     {/* =====================
         DASHBOARD UTAMA
     ===================== */}

@@ -134,7 +134,7 @@ export default function PendWebPMBInfo() {
   const slug = school_slug ?? "sekolah";
 
   return (
-    <div className="max-w-5xl mx-auto py-10 px-4 md:py-14 md:px-6 space-y-10">
+    <div className="mx-auto py-10 px-4 md:py-14 md:px-6 space-y-10">
       {/* Header */}
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="space-y-2">

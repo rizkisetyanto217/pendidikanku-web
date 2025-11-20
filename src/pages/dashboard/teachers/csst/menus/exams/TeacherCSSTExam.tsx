@@ -1,4 +1,4 @@
-// src/pages/sekolahislamku/teacher/TeacherAssessments.tsx
+// src/pages/sekolahislamku/teacher/TeacherCSSTExam.tsx
 
 import { useMemo, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
@@ -221,8 +221,8 @@ export default function TeacherCSSTExam() {
 
   const errorMessage = isError
     ? (error as any)?.response?.data?.message ||
-      (error as Error).message ||
-      "Gagal memuat data."
+    (error as Error).message ||
+    "Gagal memuat data."
     : null;
 
   const totalClassAnnounce = assessments.filter(

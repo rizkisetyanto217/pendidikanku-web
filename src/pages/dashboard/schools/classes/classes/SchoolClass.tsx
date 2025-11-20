@@ -1,13 +1,14 @@
 // src/pages/dashboard/school/class/SchoolClass.tsx
 import { useMemo, useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useSearchParams, useParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Info, Loader2 } from "lucide-react";
-import axios from "@/lib/axios";
+import axios, { getActiveschoolId } from "@/lib/axios";
 
 /* shadcn/ui */
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Select } from "@/components/ui/select";
 
 /* Layout header hook */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
@@ -23,7 +24,9 @@ import {
   type ColumnDef,
   type ViewMode,
 } from "@/components/costum/table/CDataTable";
-import { Select } from "@/components/ui/select";
+
+/* ✅ Current user context */
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 /* ================= Types ================= */
 export type ClassStatus = "active" | "inactive";
@@ -92,9 +95,10 @@ const fmtDate = (iso?: string | null) =>
 
 /* ================= Fetchers ================= */
 async function fetchClassesPublic(
-  schoolId: string,
+  schoolId: string | null,
   params?: { q?: string; status?: ClassStatus | "all"; levelId?: string }
 ): Promise<ApiClass[]> {
+  if (!schoolId) return [];
   const p: Record<string, any> = {};
   if (params?.q?.trim()) p.search = params.q.trim();
   if (params?.status && params.status !== "all")
@@ -114,10 +118,15 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
   const navigate = useNavigate();
   const [sp, setSp] = useSearchParams();
   const qc = useQueryClient();
-  const { schoolId } = useParams<{ schoolId: string }>();
-  const hasSchool = Boolean(schoolId);
 
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
+
+  /* ✅ Ambil school_id dari token + fallback cookie */
+  const currentUserQ = useCurrentUser();
+  const activeMembership = currentUserQ.data?.membership ?? null;
+  const schoolIdFromMembership = activeMembership?.school_id ?? null;
+  const schoolId = schoolIdFromMembership || getActiveschoolId() || null;
+  const hasSchool = Boolean(schoolId);
 
   /* Header */
   const { setHeader } = useDashboardHeader();
@@ -137,7 +146,7 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
 
   const q = (sp.get("q") ?? "").trim();
   const status = (sp.get("status") ?? "all") as ClassStatus | "all";
-  const levelId = sp.get("level_id") ?? ""; // tetap didukung via query, tapi tanpa UI panel
+  const levelId = sp.get("level_id") ?? ""; // tetap didukung via query
 
   const [page, setPage] = useState(() => Number(sp.get("page") ?? 1) || 1);
   const [perPage, setPerPage] = useState(
@@ -155,7 +164,7 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
   const classesQ = useQuery({
     queryKey: ["classes-public", schoolId, q, status, levelId],
     enabled: hasSchool,
-    queryFn: () => fetchClassesPublic(schoolId!, { q, status, levelId }),
+    queryFn: () => fetchClassesPublic(schoolId, { q, status, levelId }),
     staleTime: 60_000,
   });
 
@@ -328,9 +337,10 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
 
   /* ===== Handlers: tambah kelas ===== */
   const handleClassCreated = (row: NewClassRow) => {
+    const sid = schoolId ?? (row as any).schoolId ?? "";
     const dummy: ApiClass = {
       class_id: (row as any).id ?? uid("cls"),
-      class_school_id: (row as any).schoolId ?? schoolId!,
+      class_school_id: sid,
       class_parent_id: (row as any).parentId ?? "",
       class_slug: (row as any).slug ?? toSlug(row.name ?? "kelas-baru"),
       class_name: row.name ?? "Kelas Baru",
@@ -419,7 +429,7 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
             zebra
             viewModes={["table", "card"] as ViewMode[]}
             defaultView="table"
-            storageKey={`classes:${schoolId}`}
+            storageKey={`classes:${schoolId ?? "unknown"}`}
             onRowClick={(r) => navigate(`${r.id}`)}
             pageSize={perPage}
             pageSizeOptions={[10, 20, 50, 100, 200]}

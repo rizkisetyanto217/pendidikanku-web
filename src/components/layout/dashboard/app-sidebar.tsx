@@ -1,3 +1,4 @@
+// src/components/layout/dashboard/AppSidebar.tsx
 import * as React from "react";
 import { useLocation } from "react-router-dom";
 import {
@@ -6,22 +7,18 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
-  useSidebar, // ⬅️ dipakai untuk menutup sheet di mobile saat klik menu
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { NavMain } from "@/components/layout/dashboard/nav-main";
 import { NavProjects } from "@/components/layout/dashboard/nav-projects";
 import { NavUser } from "@/components/layout/dashboard/nav-user";
-import { TeamSwitcher } from "@/components/layout/dashboard/team-switcher";
+import { TeamHeader } from "@/components/layout/dashboard/team-switcher";
 
 import { NAVS, type NavDict } from "@/constants/navs";
-import {
-  GalleryVerticalEnd,
-  AudioWaveform,
-  Command,
-  Frame,
-  PieChart,
-  Map,
-} from "lucide-react";
+import { Frame, PieChart, Map } from "lucide-react";
+
+/* 🔐 Ambil context user + school dari JWT */
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar>;
 
@@ -73,12 +70,21 @@ function useRoleAndBaseFromPath(): { role: keyof NavDict; base: string } {
   return { role: "sekolah", base: "/sekolah" };
 }
 
-
 export function AppSidebar(props: AppSidebarProps) {
   const { role, base } = useRoleAndBaseFromPath();
-  const { setOpenMobile } = useSidebar(); // ⬅️ untuk nutup saat klik menu (mobile)
+  const { setOpenMobile } = useSidebar();
 
-  // Bentuk data untuk NavMain (pakai prop `items`, bukan `children`)
+  // 🔐 Ambil user + membership dari simple-context
+  const { data: currentUser } = useCurrentUser();
+  const membership =
+    currentUser?.membership ?? currentUser?.memberships?.[0] ?? null;
+
+  const schoolName = membership?.school_name ?? "Pendidikanku";
+  const schoolIconUrl = membership?.school_icon_url;
+  const userName = currentUser?.user_name ?? "User";
+  const userEmail = currentUser?.email ?? "user@example.com";
+
+  // Data untuk NavMain (pakai prop `items`)
   const items = NAVS[role].map((it) => {
     const parentUrl =
       it.path === "" || it.path === "." ? `${base}` : `${base}/${it.path}`;
@@ -96,38 +102,39 @@ export function AppSidebar(props: AppSidebarProps) {
     };
   });
 
-  const data = {
-    user: {
-      name: "User",
-      email: "user@example.com",
-      avatar: "/avatars/shadcn.jpg",
-    },
-    teams: [
-      { name: "Sekolahku", logo: GalleryVerticalEnd, plan: "Pro" },
-      { name: "Demo", logo: AudioWaveform, plan: "Free" },
-      { name: "Lainnya", logo: Command, plan: "Free" },
-    ],
-    projects: [
+  // 📌 Projects masih dummy (kalau mau nanti bisa dihubungkan juga)
+  const projects = React.useMemo(
+    () => [
       { name: "Website", url: "#", icon: Frame },
       { name: "Umroh & Badal", url: "#", icon: PieChart },
       { name: "Toko", url: "#", icon: Map },
     ],
-  };
+    []
+  );
+
+  // 👤 Data user untuk NavUser — pakai icon sekolah sebagai avatar
+  const sidebarUser = React.useMemo(
+    () => ({
+      name: userName,
+      email: userEmail,
+      avatar: schoolIconUrl || "/avatars/shadcn.jpg",
+    }),
+    [userName, userEmail, schoolIconUrl]
+  );
 
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <TeamHeader name={schoolName} logoUrl={schoolIconUrl} />
       </SidebarHeader>
 
       <SidebarContent>
-        {/* ⬅️ Tutup sheet mobile segera setelah user klik item */}
         <NavMain items={items} onNavigate={() => setOpenMobile(false)} />
-        <NavProjects projects={data.projects} />
+        <NavProjects projects={projects} />
       </SidebarContent>
 
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={sidebarUser} />
       </SidebarFooter>
 
       <SidebarRail />

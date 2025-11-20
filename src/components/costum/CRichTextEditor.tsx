@@ -1,6 +1,5 @@
 // src/components/rich-text/RichTextInput.tsx
-import { useEffect, useRef, useState } from "react";
-import type { KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -93,9 +92,7 @@ const HIGHLIGHT_COLOR_OPTIONS = [
 type TextColorId = (typeof TEXT_COLOR_OPTIONS)[number]["id"];
 type HighlightColorId = (typeof HIGHLIGHT_COLOR_OPTIONS)[number]["id"];
 
-/* Resolve "hsl(var(--primary))" → warna nyata (rgb(...))
-   supaya execCommand nggak ngasih rgba(0,0,0,0)
-*/
+/* Resolve "hsl(var(--primary))" → warna nyata (rgb(...)) */
 function resolveCssColor(
   cssColor: string,
   mode: "color" | "background"
@@ -108,7 +105,6 @@ function resolveCssColor(
     el.style.backgroundColor = cssColor;
   }
 
-  // biar kena theme yang sama
   el.className = "hidden";
   document.body.appendChild(el);
 
@@ -221,7 +217,7 @@ export function RichTextInput(props: RichTextInputProps) {
     refreshToolbarState();
   };
 
-  // helper umum untuk warna
+  /* ========== Warna umum ========== */
   const applyColorRaw = (
     cmd: "foreColor" | "hiliteColor",
     cssColor: string
@@ -256,7 +252,6 @@ export function RichTextInput(props: RichTextInputProps) {
     refreshToolbarState();
   };
 
-  // wrapper khusus text color
   const applyTextColor = (id: TextColorId) => {
     const opt = TEXT_COLOR_OPTIONS.find((o) => o.id === id);
     if (!opt) return;
@@ -264,11 +259,48 @@ export function RichTextInput(props: RichTextInputProps) {
     setActiveTextColor(id);
   };
 
-  // wrapper khusus highlight
   const applyHighlightColor = (id: HighlightColorId) => {
     const opt = HIGHLIGHT_COLOR_OPTIONS.find((o) => o.id === id);
     if (!opt) return;
-    applyColorRaw("hiliteColor", opt.value);
+
+    if (id === "none") {
+      // Mode hapus highlight: keluar dari span background-color lama
+      if (editorRef.current) {
+        editorRef.current.focus();
+
+        try {
+          document.execCommand("styleWithCSS", false, "true");
+        } catch {
+          // ignore
+        }
+
+        try {
+          document.execCommand("hiliteColor", false, "transparent");
+          document.execCommand("backColor", false, "transparent");
+        } catch {
+          // ignore
+        }
+
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0) {
+          const startNode = sel.getRangeAt(0).startContainer;
+          let el: HTMLElement | null =
+            startNode instanceof HTMLElement
+              ? startNode
+              : startNode.parentElement;
+
+          while (el && el !== editorRef.current) {
+            if (el.style && el.style.backgroundColor) {
+              el.style.backgroundColor = "";
+            }
+            el = el.parentElement;
+          }
+        }
+      }
+    } else {
+      applyColorRaw("hiliteColor", opt.value);
+    }
+
     setActiveHighlight(id);
   };
 
@@ -441,6 +473,14 @@ export function RichTextInput(props: RichTextInputProps) {
     return () => document.removeEventListener("selectionchange", handler);
   }, []);
 
+  /* ========== Helper untuk tombol warna aktif ========== */
+  const activeTextOpt = TEXT_COLOR_OPTIONS.find(
+    (o) => o.id === activeTextColor
+  );
+  const activeHighlightOpt = HIGHLIGHT_COLOR_OPTIONS.find(
+    (o) => o.id === activeHighlight
+  );
+
   /* =================================================
      RENDER
   ================================================= */
@@ -566,8 +606,12 @@ export function RichTextInput(props: RichTextInputProps) {
             <Button
               type="button"
               size="sm"
-              variant={activeTextColor !== "default" ? "default" : "ghost"}
-              className="h-7 px-2 text-[10px]"
+              variant="ghost"
+              className={cn(
+                "h-7 px-2 text-[10px] border border-transparent",
+                activeTextColor !== "default" && "bg-muted/40 border-border",
+                activeTextOpt?.previewClass
+              )}
               onMouseDown={(e) => e.preventDefault()}
             >
               A
@@ -600,8 +644,12 @@ export function RichTextInput(props: RichTextInputProps) {
             <Button
               type="button"
               size="sm"
-              variant={activeHighlight !== "none" ? "default" : "ghost"}
-              className="h-7 px-2 text-[10px]"
+              variant="ghost"
+              className={cn(
+                "h-7 px-2 text-[10px] border border-transparent",
+                activeHighlight !== "none" && "bg-muted/40 border-border",
+                activeHighlightOpt?.previewClass
+              )}
               onMouseDown={(e) => e.preventDefault()}
             >
               Bg
@@ -651,7 +699,6 @@ export function RichTextInput(props: RichTextInputProps) {
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => {
             exec("removeFormat");
-            // reset indikator warna
             setActiveTextColor("default");
             setActiveHighlight("none");
           }}

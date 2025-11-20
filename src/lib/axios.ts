@@ -28,7 +28,7 @@ function pathOf(u: string): string {
     if (u.startsWith("http://") || u.startsWith("https://")) {
       return new URL(u).pathname || "/";
     }
-  } catch {}
+  } catch { }
   return u;
 }
 function stripApiPrefixOnce(p: string): string {
@@ -83,7 +83,11 @@ function delCookie(name: string, path = "/") {
 }
 
 /* ==========================================
-   🏷️ school CONTEXT (COOKIE-BASED, UI ONLY)
+   🏷️ SCHOOL CONTEXT (COOKIE-BASED, UI ONLY)
+   - Backend pakai JWT + /auth/me/simple-context (sudah difilter by school_slug)
+   - Di FE, ini cuma buat:
+     • simpan pilihan school aktif (per tab/browser)
+     • simpan role aktif (teacher/student/dkm) untuk UI
 ========================================== */
 const ACTIVE_school_COOKIE = "active_school_id";
 const ACTIVE_ROLE_COOKIE = "active_role";
@@ -113,10 +117,23 @@ export function clearActiveschoolDisplay() {
 export function getActiveschoolId(): string | null {
   return getCookie(ACTIVE_school_COOKIE);
 }
+
+/**
+ * Role aktif yang dipilih user untuk UI:
+ * - biasanya salah satu dari `membership.roles` (misal: "teacher" / "student" / "dkm")
+ * - BUKAN sumber kebenaran list roles — itu dari /auth/me/simple-context
+ */
 export function getActiveRole(): string | null {
   return getCookie(ACTIVE_ROLE_COOKIE);
 }
 
+/**
+ * Set context sekolah aktif di sisi UI.
+ *
+ * @param schoolId   - ID sekolah aktif (harus cocok dengan salah satu membership.school_id)
+ * @param role       - satu role aktif yang dipakai UI (misalnya "teacher" dari membership.roles)
+ * @param opts       - optional display (nama & icon) untuk header/sidebar
+ */
 export function setActiveschoolContext(
   schoolId: string,
   role?: string,
@@ -126,7 +143,7 @@ export function setActiveschoolContext(
   if (role) setCookie(ACTIVE_ROLE_COOKIE, role);
   if (opts?.name || opts?.icon) setActiveschoolDisplay(opts.name, opts.icon);
 
-  // School context sekarang UI-only (BE ambil dari JWT)
+  // School context sekarang UI-only (BE ambil dari JWT + simple-context)
   window.dispatchEvent(
     new CustomEvent("school:changed", {
       detail: { schoolId, role, meta: opts },
@@ -141,6 +158,19 @@ export function clearActiveschoolContext() {
   window.dispatchEvent(new CustomEvent("school:changed", { detail: null }));
 }
 
+/**
+ * Helper tambahan supaya gampang dipakai bareng useCurrentUser:
+ * - bisa di-combine dengan `currentUser.membership`
+ *   untuk cek kesesuaian schoolId & role aktif
+ */
+export function getActiveSchoolContext() {
+  return {
+    schoolId: getActiveschoolId(),
+    role: getActiveRole(),
+    display: getActiveschoolDisplay(),
+  };
+}
+
 /* ==========================================
    🔐 ACCESS TOKEN — sessionStorage
 ========================================== */
@@ -150,7 +180,7 @@ export function setTokens(access: string) {
   accessToken = access;
   try {
     sessionStorage.setItem("access_token", access);
-  } catch {}
+  } catch { }
   (api.defaults.headers.common as any).Authorization = `Bearer ${access}`;
   window.dispatchEvent(new CustomEvent("auth:authorized"));
 }
@@ -164,7 +194,7 @@ export function getAccessToken() {
       (api.defaults.headers.common as any).Authorization = `Bearer ${s}`;
       return s;
     }
-  } catch {}
+  } catch { }
   return null;
 }
 
@@ -172,7 +202,7 @@ export function clearTokens() {
   accessToken = null;
   try {
     sessionStorage.removeItem("access_token");
-  } catch {}
+  } catch { }
   delete (api.defaults.headers.common as any).Authorization;
 }
 
@@ -353,7 +383,7 @@ api.interceptors.response.use(
         cfg.headers = cfg.headers ?? {};
         cfg.headers["X-CSRF-Token"] = csrfTokenMem || "";
         return api(cfg);
-      } catch {}
+      } catch { }
     }
 
     // --- Refresh retry ---
@@ -434,5 +464,5 @@ export async function restoreSession(): Promise<boolean> {
       accessToken = saved;
       (api.defaults.headers.common as any).Authorization = `Bearer ${saved}`;
     }
-  } catch {}
+  } catch { }
 })();

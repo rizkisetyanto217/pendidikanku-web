@@ -420,16 +420,16 @@ const TeacherCSSTDetail: React.FC = () => {
 
           {/* Quick links */}
           <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {/* Peserta */}
+            {/* Profil Murid */}
             <Card
               className="cursor-pointer transition hover:shadow-md"
-              onClick={() => navigate("peserta")}
+              onClick={() => navigate("murid")}
             >
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="space-y-1">
                   <div className="text-sm text-muted-foreground flex items-center gap-2">
                     <Users className="h-4 w-4" />
-                    <span>Peserta</span>
+                    <span>Profil Murid</span>
                   </div>
                   <div className="text-xl font-semibold">{totalStudents}</div>
                 </div>
@@ -437,10 +437,27 @@ const TeacherCSSTDetail: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Peserta */}
+            {/* Absensii Murid */}
             <Card
               className="cursor-pointer transition hover:shadow-md"
-              onClick={() => navigate("peserta")}
+              onClick={() => navigate("absensi")}
+            >
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    <span>Absensi Murid</span>
+                  </div>
+                  <div className="text-xl font-semibold">{totalStudents}</div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </CardContent>
+            </Card>
+
+            {/* Target Pertemuan */}
+            <Card
+              className="cursor-pointer transition hover:shadow-md"
+              onClick={() => navigate("pertemuan")}
             >
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="space-y-1">
@@ -463,7 +480,7 @@ const TeacherCSSTDetail: React.FC = () => {
                 <div className="space-y-1">
                   <div className="text-sm text-muted-foreground flex items-center gap-2">
                     <CalendarDays className="h-4 w-4" />
-                    <span>Jumlah Kehadiran</span>
+                    <span>Laporan Harian</span>
                   </div>
                   <div className="text-xl font-semibold">{totalAttendance}</div>
                 </div>
@@ -548,7 +565,7 @@ const TeacherCSSTDetail: React.FC = () => {
             {/* Profil Mapel */}
             <Card
               className="cursor-pointer transition hover:shadow-md"
-              onClick={() => navigate("profil")}
+              onClick={() => navigate("kelola-kelas")}
             >
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="space-y-1">

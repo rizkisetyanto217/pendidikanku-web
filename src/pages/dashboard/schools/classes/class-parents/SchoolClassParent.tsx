@@ -1,9 +1,9 @@
 // src/pages/dashboard/school/class/SchoolClassParents.tsx
 import { useMemo, useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Info, Loader2 } from "lucide-react";
-import axios from "@/lib/axios";
+import axios, { getActiveschoolId } from "@/lib/axios";
 
 /* shadcn/ui */
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,9 @@ import {
   type ColumnDef,
   type ViewMode,
 } from "@/components/costum/table/CDataTable";
+
+/* ✅ Current user context (ambil school_id dari token) */
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 /* ================= Types ================= */
 export interface Level {
@@ -71,8 +74,9 @@ const toSlug = (s: string) =>
 
 /* ================= Fetchers ================= */
 async function fetchLevelsPublic(
-  schoolId: string
+  schoolId: string | null
 ): Promise<(Level & { totalClasses?: number | null })[]> {
+  if (!schoolId) return [];
   const res = await axios.get<{ data: ApiClassParent[] }>(
     `/public/${schoolId}/class-parents/list`
   );
@@ -83,8 +87,6 @@ async function fetchLevelsPublic(
 const SchoolClassParent: React.FC = () => {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const { schoolId } = useParams<{ schoolId: string }>();
-  const hasSchool = Boolean(schoolId);
   const [sp, setSp] = useSearchParams();
 
   const [openTambahLevel, setOpenTambahLevel] = useState(false);
@@ -94,6 +96,13 @@ const SchoolClassParent: React.FC = () => {
   const [perPage, setPerPage] = useState(
     () => Number(sp.get("per") ?? 20) || 20
   );
+
+  /* ✅ Ambil school_id dari token (simple-context) + fallback cookie */
+  const currentUserQ = useCurrentUser();
+  const activeMembership = currentUserQ.data?.membership ?? null;
+  const schoolIdFromMembership = activeMembership?.school_id ?? null;
+  const schoolId = schoolIdFromMembership || getActiveschoolId() || null;
+  const hasSchool = Boolean(schoolId);
 
   // sync page/perPage ke URL
   useEffect(() => {
@@ -122,7 +131,7 @@ const SchoolClassParent: React.FC = () => {
   const levelsQ = useQuery({
     queryKey: ["levels-public", schoolId],
     enabled: hasSchool,
-    queryFn: () => fetchLevelsPublic(schoolId!),
+    queryFn: () => fetchLevelsPublic(schoolId),
     staleTime: 60_000,
   });
 
@@ -296,7 +305,7 @@ const SchoolClassParent: React.FC = () => {
             zebra
             viewModes={["table", "card"] as ViewMode[]}
             defaultView="table"
-            storageKey={`class-parents:${schoolId}`}
+            storageKey={`class-parents:${schoolId ?? "unknown"}`}
             onRowClick={(r) => navigate(`${r.id}`)}
             pageSize={perPage}
             pageSizeOptions={[10, 20, 50, 100, 200]}

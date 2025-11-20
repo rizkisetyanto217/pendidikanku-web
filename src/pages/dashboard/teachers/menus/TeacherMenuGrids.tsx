@@ -9,20 +9,12 @@ import {
   CheckCheck,
 } from "lucide-react";
 
-/* Tambahan untuk breadcrumb sistem dashboard */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 import CMainMenuGridCard, {
-  type CMenuItem,
 } from "@/pages/dashboard/components/card/CMainMenuGridCard";
 
-/* ===================== PAGE ===================== */
-
-
 export default function TeacherMenuGrids() {
-
-
-  /* Atur breadcrumb dan title seperti SchoolAcademic */
   const { setHeader } = useDashboardHeader();
 
   useEffect(() => {
@@ -36,109 +28,104 @@ export default function TeacherMenuGrids() {
     });
   }, [setHeader]);
 
-  const items: CMenuItem[] = useMemo(
+  /* =========================== */
+  /*        GROUPED MENU         */
+  /* =========================== */
+
+  const groups = useMemo(
     () => [
-      // ===== Kelas (di bawah menu-utama) =====
+      /* ========= WALI KELAS ========= */
       {
-        key: "wali-kelas",
-        label: "Wali Kelas",
-        to: "wali-kelas",
-        icon: <Users className="w-5 h-5" />,
-      },
-      {
-        key: "kelas-detail",
-        label: "Detail Kelas",
-        icon: <Layers className="w-5 h-5" />,
-        requiresParam: true,
-        note: "Buka dari daftar kelas",
-      },
-      {
-        key: "kelas-absensi",
-        label: "Absensi Kelas",
-        icon: <CheckCheck className="w-5 h-5" />,
-        requiresParam: true,
-        note: "Pilih kelas dulu",
-      },
-      {
-        key: "kelas-tugas",
-        label: "Tugas per Kelas",
-        icon: <NotebookPen className="w-5 h-5" />,
-        requiresParam: true,
-        note: "Pilih kelas dulu",
+        title: "Wali Kelas",
+        items: [
+          {
+            key: "wali-kelas",
+            label: "Wali Kelas",
+            to: "wali-kelas",
+            icon: <Users className="w-5 h-5" />,
+          },
+          {
+            key: "kelas-absensi",
+            label: "Absensi Kelas",
+            icon: <CheckCheck className="w-5 h-5" />,
+            requiresParam: true,
+            note: "Pilih kelas dulu",
+          },
+          {
+            key: "kelas-tugas",
+            label: "Tugas per Kelas",
+            icon: <NotebookPen className="w-5 h-5" />,
+            requiresParam: true,
+            note: "Pilih kelas dulu",
+          },
+        ],
       },
 
-      // ===== Tugas (entry umum di menu-utama) =====
+      /* ========= GURU MAPEL ========= */
       {
-        key: "tugas",
-        label: "Tugas",
-        to: "tugas",
-        icon: <NotebookPen className="w-5 h-5" />,
+        title: "Guru Mapel",
+        items: [
+          {
+            key: "guru-mapel",
+            label: "Guru Mapel",
+            to: "guru-mapel",
+            icon: <Layers className="w-5 h-5" />,
+          },
+        ],
       },
 
-      // ===== Guru Mapel & Jadwal =====
+      /* ========= JADWAL ========= */
       {
-        key: "guru-mapel",
-        label: "Guru Mapel",
-        to: "guru-mapel",
-        icon: <Layers className="w-5 h-5" />,
-      },
-      {
-        key: "jadwal",
-        label: "Jadwal",
-        to: "agenda",
-        icon: <CalendarDays className="w-5 h-5" />,
-      },
-
-      // ===== Profil & Penilaian =====
-      {
-        key: "profil-guru",
-        label: "Profil Guru",
-        to: "profil-guru",
-        icon: <IdCard className="w-5 h-5" />,
+        title: "Jadwal",
+        items: [
+          {
+            key: "jadwal-agenda",
+            label: "Agenda",
+            to: "jadwal/agenda",
+            icon: <CalendarDays className="w-5 h-5" />,
+          },
+          {
+            key: "jadwal-rutin",
+            label: "Jadwal Rutin",
+            to: "jadwal/rutin",
+            icon: <CalendarDays className="w-5 h-5" />,
+          },
+        ],
       },
 
-      // ===== Kehadiran =====
+      /* ========= PROFIL ========= */
       {
-        key: "kehadiran",
-        label: "Kehadiran",
-        to: "kehadiran",
-        icon: <CheckCheck className="w-5 h-5" />,
-      },
-      {
-        key: "kehadiran-detail",
-        label: "Detail Kehadiran",
-        icon: <CheckCheck className="w-5 h-5" />,
-        requiresParam: true,
-        note: "Buka dari Kehadiran",
-      },
-
-      // ===== Kelola Kelas =====
-      {
-        key: "kelola-kelas",
-        label: "Kelola Kelas",
-        icon: <Layers className="w-5 h-5" />,
-        requiresParam: true,
-        note: "Butuh nama kelas",
-      },
-
-      // ===== QuizClass =====
-      {
-        key: "quiz-class-detail",
-        label: "QuizClass Detail",
-        to: "quizClass/detail",
-        icon: <NotebookPen className="w-5 h-5" />,
-      },
-
-      // ===== Pengaturan =====
-      {
-        key: "pengaturan",
-        label: "Pengaturan",
-        icon: <Settings className="w-5 h-5" />,
-        note: "Segera hadir",
+        title: "Profil",
+        items: [
+          {
+            key: "profil-guru",
+            label: "Profil Guru",
+            to: "profil-guru",
+            icon: <IdCard className="w-5 h-5" />,
+          },
+          {
+            key: "kehadiran",
+            label: "Kehadiran",
+            to: "kehadiran",
+            icon: <CheckCheck className="w-5 h-5" />,
+          },
+          {
+            key: "pengaturan",
+            label: "Pengaturan",
+            icon: <Settings className="w-5 h-5" />,
+            note: "Segera hadir",
+          },
+        ],
       },
     ],
     []
   );
 
-  return <CMainMenuGridCard title="Akses Cepat Guru" items={items} />;
+  return (
+    <div className="space-y-6">
+      {groups.map((group) => (
+        <CMainMenuGridCard key={group.title} title={group.title} items={group.items} />
+      ))}
+    </div>
+  );
 }

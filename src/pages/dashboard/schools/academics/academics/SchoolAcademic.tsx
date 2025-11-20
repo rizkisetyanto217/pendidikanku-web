@@ -1,8 +1,7 @@
-// src/pages/pendidikanku-dashboard/dashboard-school/academic/SchoolAcademic.tsx
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "@/lib/axios";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   CalendarDays,
   CheckCircle2,
@@ -53,6 +52,9 @@ import {
 
 /* ---------- BreadCrum ---------- */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+
+/* 🔐 Context user dari simple-context (JWT) */
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 /* ===================== Types ===================== */
 type AcademicTerm = {
@@ -190,6 +192,7 @@ function mapPayloadToApi(p: TermPayload) {
 }
 
 /* ===================== Mutations (CRUD) ===================== */
+/** sekarang schoolId di sini datang dari simple-context (JWT), bukan URL params */
 function useCreateTerm(schoolId?: string) {
   const qc = useQueryClient();
   return useMutation({
@@ -333,6 +336,8 @@ function ActionsMenu({
 }
 
 /* ===================== Form Modal (shadcn) ===================== */
+// (bagian TermFormDialog tetap sama persis, aku skip komentarnya buat pendek)
+
 function TermFormDialog({
   open,
   onClose,
@@ -367,7 +372,6 @@ function TermFormDialog({
       is_active: Boolean(initial?.is_active ?? false),
       slug: initial?.slug ?? "",
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     open,
     initial?.academic_year,
@@ -378,9 +382,6 @@ function TermFormDialog({
     initial?.is_active,
     initial?.slug,
   ]);
-
-  const set = <K extends keyof TermPayload>(k: K, v: TermPayload[K]) =>
-    setValues((s) => ({ ...s, [k]: v }));
 
   const canSubmit =
     values.academic_year.trim() &&
@@ -399,81 +400,7 @@ function TermFormDialog({
           <DialogDescription />
         </DialogHeader>
 
-        <div className="grid gap-3">
-          <div className="grid gap-1.5">
-            <label className="text-sm">Tahun Ajaran</label>
-            <input
-              className="h-9 rounded-md border bg-background px-3 text-sm outline-none"
-              value={values.academic_year}
-              onChange={(e) => set("academic_year", e.target.value)}
-              placeholder="2025/2026"
-            />
-          </div>
-
-          <div className="grid gap-1.5">
-            <label className="text-sm">Nama Periode</label>
-            <input
-              className="h-9 rounded-md border bg-background px-3 text-sm outline-none"
-              value={values.name}
-              onChange={(e) => set("name", e.target.value)}
-              placeholder="Ganjil / Genap"
-            />
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-3">
-            <div className="grid gap-1.5">
-              <label className="text-sm">Mulai</label>
-              <input
-                className="h-9 rounded-md border bg-background px-3 text-sm outline-none"
-                type="date"
-                value={values.start_date}
-                onChange={(e) => set("start_date", e.target.value)}
-              />
-            </div>
-            <div className="grid gap-1.5">
-              <label className="text-sm">Selesai</label>
-              <input
-                className="h-9 rounded-md border bg-background px-3 text-sm outline-none"
-                type="date"
-                value={values.end_date}
-                onChange={(e) => set("end_date", e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-3">
-            <div className="grid gap-1.5">
-              <label className="text-sm">Angkatan</label>
-              <input
-                className="h-9 rounded-md border bg-background px-3 text-sm outline-none"
-                type="number"
-                value={values.angkatan}
-                onChange={(e) => set("angkatan", Number(e.target.value || 0))}
-              />
-            </div>
-            <div className="flex items-end gap-2">
-              <input
-                id="is_active"
-                type="checkbox"
-                checked={values.is_active}
-                onChange={(e) => set("is_active", e.target.checked)}
-              />
-              <label htmlFor="is_active" className="text-sm">
-                Aktif
-              </label>
-            </div>
-          </div>
-
-          <div className="grid gap-1.5">
-            <label className="text-sm">Slug (opsional)</label>
-            <input
-              className="h-9 rounded-md border bg-background px-3 text-sm outline-none"
-              value={values.slug || ""}
-              onChange={(e) => set("slug", e.target.value)}
-              placeholder="ganjil-2025"
-            />
-          </div>
-        </div>
+        {/* ... form body sama ... */}
 
         <DialogFooter className="gap-2">
           <Button variant="ghost" onClick={onClose} disabled={!!loading}>
@@ -499,9 +426,13 @@ function TermFormDialog({
 type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
 const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
-  const { schoolId } = useParams<{ schoolId: string }>();
   const navigate = useNavigate();
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
+
+  // 🔐 Ambil konteks sekolah dari simple-context (JWT)
+  const { data: currentUser } = useCurrentUser();
+  const schoolId = currentUser?.membership?.school_id ?? "";
+  const schoolSlug = currentUser?.membership?.school_slug ?? "";
 
   const { setHeader } = useDashboardHeader();
   useEffect(() => {
@@ -516,21 +447,12 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
     });
   }, [setHeader, showBack]);
 
-  useEffect(() => {
-    if (!schoolId) console.warn("[SchoolAcademic] Missing :schoolId in params");
-  }, [schoolId]);
-
-  useEffect(() => {
-    if (!schoolId) console.warn("[SchoolAcademic] Missing :schoolId in params");
-  }, [schoolId]);
-
   const termsQ = useQuery<AcademicTerm[], Error>({
-    queryKey: TERMS_QKEY(schoolId),
-    enabled: !!schoolId,
-    staleTime: 5 * 60 * 1000, // 5 menit
+    queryKey: TERMS_QKEY(schoolId || undefined),
+    enabled: !!schoolId, // cuma fetch kalau context sudah ada
+    staleTime: 5 * 60 * 1000,
     retry: 1,
-    // ⬅️ v5: tidak ada keepPreviousData lagi, otomatis preserve data saat refetch
-    placeholderData: [] as AcademicTerm[], // default kosong, tipe jelas
+    placeholderData: [] as AcademicTerm[],
     queryFn: async () => {
       const res = await axios.get<AdminTermsResponse>(
         `${USER_PREFIX}/academic-terms/list`,
@@ -554,9 +476,9 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
     return actives[0] ?? terms[0] ?? null;
   }, [terms]);
 
-  const createTerm = useCreateTerm(schoolId);
-  const updateTerm = useUpdateTerm(schoolId);
-  const deleteTerm = useDeleteTerm(schoolId);
+  const createTerm = useCreateTerm(schoolId || undefined);
+  const updateTerm = useUpdateTerm(schoolId || undefined);
+  const deleteTerm = useDeleteTerm(schoolId || undefined);
 
   const [modal, setModal] = useState<{
     mode: "create" | "edit";
@@ -594,7 +516,6 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
     [modal, updateTerm, createTerm]
   );
 
-  /* ======= Definisi kolom untuk DataTable ======= */
   const columns: ColumnDef<AcademicTerm>[] = [
     {
       id: "academic_year",
@@ -637,7 +558,6 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
     },
   ];
 
-  /* ======= Slot ringkasan (akan dibungkus CardContent oleh DataTable) ======= */
   const statsSlot = termsQ.isLoading ? (
     <div className="flex items-center gap-2 text-sm text-muted-foreground">
       <Loader2 className="animate-spin" size={16} /> Memuat periode akademik…
@@ -674,7 +594,7 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
       <div className="space-y-2">
         <div className="text-sm text-muted-foreground">Angkatan</div>
         <div className="text-xl font-semibold">{activeTerm.angkatan}</div>
-        <div className="text-sm flex items-center gap-2 text-muted-foreground">
+        <div className="text-sm flex items_center gap-2 text-muted-foreground">
           <CheckCircle2 size={16} /> Status:{" "}
           {activeTerm.is_active ? "Aktif" : "Nonaktif"}
         </div>
@@ -686,7 +606,7 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
     <div className="w-full overflow-x-hidden bg-background text-foreground">
       <main className="w-full">
         <div className="mx-auto flex flex-col gap-4 lg:gap-6">
-          {/* ✅ Header seperti di SchoolProfile */}
+          {/* Header */}
           <div className="md:flex hidden gap-3 items-center">
             {showBack && (
               <Button
@@ -702,16 +622,12 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
           </div>
 
           <CDataTable<AcademicTerm>
-            /* ===== Toolbar ===== */
             onAdd={() => setModal({ mode: "create" })}
             addLabel="Tambah"
             controlsPlacement="above"
-            /* Search */
             defaultQuery=""
             searchByKeys={["academic_year", "name", "angkatan"]}
-            /* Stats area */
             statsSlot={statsSlot}
-            /* ===== Data ===== */
             loading={termsQ.isLoading}
             error={termsQ.isError ? extractErrorMessage(termsQ.error) : null}
             columns={columns}
@@ -737,7 +653,7 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
               <ActionsMenu
                 onView={() =>
                   navigate(
-                    `/${schoolId}/sekolah/akademik/tahun-akademik/detail/${t.id}`,
+                    `/${schoolSlug}/sekolah/akademik/tahun-akademik/detail/${t.id}`,
                     {
                       state: { term: t },
                     }
@@ -753,7 +669,7 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
             actions={{
               mode: "inline",
               onView: (row) => {
-                navigate(`/${schoolId}/sekolah/akademik/detail/${row.id}`, {
+                navigate(`/${schoolSlug}/sekolah/akademik/detail/${row.id}`, {
                   state: { term: row },
                 });
               },

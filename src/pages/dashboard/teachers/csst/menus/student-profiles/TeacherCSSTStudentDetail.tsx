@@ -1,4 +1,4 @@
-// src/pages/teacher/classes/TeacherStudentDetail.tsx
+// src/pages/teacher/classes/TeacherCSSTStudentDetail.tsx
 import React, { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -156,9 +156,9 @@ function pickActiveSections(sections: SectionItem[] = []) {
 /* =========================================================
    PAGE — detail satu siswa (dummy only)
 ========================================================= */
-const TeacherDetailClassStudent: React.FC = () => {
+const TeacherCSSTStudentDetail: React.FC = () => {
   const navigate = useNavigate();
-//   const location = useLocation();
+  //   const location = useLocation();
   const { studentId: paramStudentId } = useParams<{ studentId?: string }>();
 
   // Pakai dummy 100%; namun tetap hormati :studentId untuk future-proof
@@ -436,7 +436,7 @@ const TeacherDetailClassStudent: React.FC = () => {
   );
 };
 
-export default TeacherDetailClassStudent;
+export default TeacherCSSTStudentDetail;
 
 /* =========================================================
    REUSABLE FIELD COMPONENT

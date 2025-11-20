@@ -1,4 +1,4 @@
-// src/pages/sekolahislamku/teacher/books/ClassBooksPage.tsx
+// src/pages/dasboard/teacher/books/TeacherCSSTBookList.tsx
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -381,7 +381,7 @@ function BookFormDialog({
 }
 
 /* ===================== Page (pakai CDataTable) ===================== */
-export default function TeacherBookList() {
+export default function TeacherCSSTBookList() {
   const { id: classId = "" } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();

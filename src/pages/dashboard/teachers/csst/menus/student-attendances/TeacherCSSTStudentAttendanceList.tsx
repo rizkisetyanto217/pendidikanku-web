@@ -1,3 +1,4 @@
+// src/pages/dasboard/teacher/TeacherCSSTStudentAttendanceList.tsx
 import React, { useMemo, useState, useDeferredValue } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -285,7 +286,7 @@ function toCSV(rows: AttendanceRow[]) {
    KOMPONEN UTAMA — pakai shadcn/ui Table
    Route: /teacher/classes/:classId/attendance
 ========================================================= */
-const TeacherClassStudentAttendanceList: React.FC = () => {
+const TeacherCSSTStudentAttendanceList: React.FC = () => {
   const navigate = useNavigate();
   const { classId = "" } = useParams<{ classId: string }>();
 
@@ -365,17 +366,17 @@ const TeacherClassStudentAttendanceList: React.FC = () => {
 
   return (
     <div className="w-full bg-background text-foreground py-6">
-      <main className="max-w-6xl mx-auto px-4 space-y-6">
+      <main className="mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="md:flex hidden items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => navigate(-1)}
               className="mr-1"
             >
-              <ArrowLeft size={18} />
+              <ArrowLeft size={20} />
             </Button>
             <div>
               <h1 className="text-xl font-semibold">Kehadiran Siswa</h1>
@@ -582,4 +583,4 @@ const TeacherClassStudentAttendanceList: React.FC = () => {
   );
 };
 
-export default TeacherClassStudentAttendanceList;
+export default TeacherCSSTStudentAttendanceList;

@@ -1,4 +1,4 @@
-// src/pages/sekolahislamku/teacher/MaterialsClass.shadcn.tsx
+// src/pages/sekolahislamku/teacher/TeacherCSSTMaterialList.tsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -204,11 +204,11 @@ const bytesToHuman = (n?: number) => {
 const dateLong = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
     : "-";
 
 function extractYouTubeId(url?: string) {
@@ -223,7 +223,7 @@ function extractYouTubeId(url?: string) {
       const idx = segs.findIndex((s) => s === "embed");
       if (idx >= 0 && segs[idx + 1]) return segs[idx + 1];
     }
-  } catch {}
+  } catch { }
   return null;
 }
 
@@ -592,7 +592,7 @@ function EditMaterialDialog({
 /* =========================================================
    PAGE (pakai DataTable)
 ========================================================= */
-export default function TeacherMaterialList() {
+export default function TeacherCSSTMaterialList() {
   const { id = "" } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -671,16 +671,16 @@ export default function TeacherMaterialList() {
         m.id !== editing?.id
           ? m
           : {
-              ...m,
-              title: p.title,
-              type: p.type,
-              description: p.description,
-              content: p.content,
-              url: p.url,
-              fileName: p.fileName,
-              fileSize: p.fileSize,
-              updatedAt: new Date().toISOString(),
-            }
+            ...m,
+            title: p.title,
+            type: p.type,
+            description: p.description,
+            content: p.content,
+            url: p.url,
+            fileName: p.fileName,
+            fileSize: p.fileSize,
+            updatedAt: new Date().toISOString(),
+          }
       )
     );
     setOpenEdit(false);
@@ -925,168 +925,173 @@ export default function TeacherMaterialList() {
      Render
   ========================= */
   return (
-    <div className="w-full">
-      {/* Header actions */}
-      <div className="px-4 md:px-6 pt-4 md:pt-6">
-        <div className="w-full flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-lg font-semibold tracking-tight">
-            {cls ? `Materi: ${cls.name}` : "Materi Kelas"}
-          </h1>
-          <div className="ml-auto flex items-center gap-3">
+    <div className="w-full bg-background text-foreground py-6">
+      <main className="mx-auto space-y-6">
+        {/* Header actions */}
+        <div className="flex items-center justify-between">
+          <div className="w-full flex items-center gap-2">
             <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setOpenAdd(true)}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Tambah Materi
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(-1)}>
+              <ArrowLeft size={20} />
             </Button>
+            <h1 className="text-lg font-semibold tracking-tight">
+              {cls ? `Materi: ${cls.name}` : "Materi Kelas"}
+            </h1>
+            <div className="ml-auto flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setOpenAdd(true)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Tambah Materi
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Add & Edit */}
-      <AddMaterialDialog
-        open={openAdd}
-        onClose={() => setOpenAdd(false)}
-        onSubmit={handleAddSubmit}
-      />
-      <EditMaterialDialog
-        open={openEdit}
-        onClose={() => {
-          setOpenEdit(false);
-          setEditing(null);
-        }}
-        defaultValues={editDefaults}
-        onSubmit={handleEditSubmit}
-      />
-
-      {/* AlertDialog Hapus */}
-      <AlertDialog
-        open={!!deleteTarget}
-        onOpenChange={(v) => !v && setDeleteTarget(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Hapus materi?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {deleteTarget
-                ? `“${deleteTarget.title}” akan dihapus dan tidak dapat dikembalikan.`
-                : "Materi akan dihapus."}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={confirmDelete}
-            >
-              Hapus
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* FILTERS */}
-      <div className="w-full px-4 md:px-6">
-        <Card className="mb-6">
-          <CardContent className="p-4 md:p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="search" className="sr-only">
-                Cari materi
-              </Label>
-              <div className="flex items-center gap-3 h-10 rounded-md border px-3">
-                <Search className="h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="search"
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  placeholder="Cari materi…"
-                  className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-0"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="sr-only">Filter jenis</Label>
-              <div className="flex items-center gap-3 h-10">
-                <div className="h-10 aspect-square grid place-items-center rounded-md border">
-                  <Filter className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <Select value={type} onValueChange={(v) => setType(v as any)}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Semua jenis" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Semua jenis</SelectItem>
-                    <SelectItem value="article">Artikel</SelectItem>
-                    <SelectItem value="file">File/PDF</SelectItem>
-                    <SelectItem value="link">Link</SelectItem>
-                    <SelectItem value="youtube">YouTube</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* DATATABLE */}
-      <div className="px-4 md:px-6 pb-8">
-        <DataTable<Material>
-          title="Daftar Materi"
-          defaultQuery={q}
-          onQueryChange={setQ}
-          searchByKeys={["title", "description", "author"]}
-          columns={columns}
-          rows={filtered}
-          getRowId={(m: Material) => m.id}
-          stickyHeader
-          zebra
-          viewModes={["table", "card"]}
-          defaultView="table"
-          renderCard={renderCard}
-          onRowClick={(m: Material) =>
-            navigate(`../material/${m.id}`, { relative: "path" })
-          }
-          rightSlot={
-            isFetching ? (
-              <span className="text-xs text-muted-foreground">Memuat…</span>
-            ) : null
-          }
-          renderActions={(m: Material) => (
-            <div className="flex items-center justify-center gap-2">
-              {m.url && (
-                <a href={m.url} target="_blank" rel="noreferrer">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-2"
-                    data-no-row-click
-                    title={m.type === "file" ? "Unduh file" : "Buka tautan"}
-                  >
-                    {m.type === "file" ? (
-                      <Download className="h-4 w-4" />
-                    ) : (
-                      <ExternalLink className="h-4 w-4" />
-                    )}
-                  </Button>
-                </a>
-              )}
-              {/* ...dst */}
-            </div>
-          )}
-          rowHover
-          emptySlot={
-            <div className="text-sm text-muted-foreground">
-              Belum ada materi untuk kelas ini.
-            </div>
-          }
+        {/* Add & Edit */}
+        <AddMaterialDialog
+          open={openAdd}
+          onClose={() => setOpenAdd(false)}
+          onSubmit={handleAddSubmit}
         />
-      </div>
+        <EditMaterialDialog
+          open={openEdit}
+          onClose={() => {
+            setOpenEdit(false);
+            setEditing(null);
+          }}
+          defaultValues={editDefaults}
+          onSubmit={handleEditSubmit}
+        />
+
+        {/* AlertDialog Hapus */}
+        <AlertDialog
+          open={!!deleteTarget}
+          onOpenChange={(v) => !v && setDeleteTarget(null)}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Hapus materi?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {deleteTarget
+                  ? `“${deleteTarget.title}” akan dihapus dan tidak dapat dikembalikan.`
+                  : "Materi akan dihapus."}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Batal</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={confirmDelete}
+              >
+                Hapus
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* FILTERS */}
+        <div className="w-full px-4 md:px-6">
+          <Card className="mb-6">
+            <CardContent className="p-4 md:p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="search" className="sr-only">
+                  Cari materi
+                </Label>
+                <div className="flex items-center gap-3 h-10 rounded-md border px-3">
+                  <Search className="h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="search"
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    placeholder="Cari materi…"
+                    className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-0"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="sr-only">Filter jenis</Label>
+                <div className="flex items-center gap-3 h-10">
+                  <div className="h-10 aspect-square grid place-items-center rounded-md border">
+                    <Filter className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <Select value={type} onValueChange={(v) => setType(v as any)}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Semua jenis" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Semua jenis</SelectItem>
+                      <SelectItem value="article">Artikel</SelectItem>
+                      <SelectItem value="file">File/PDF</SelectItem>
+                      <SelectItem value="link">Link</SelectItem>
+                      <SelectItem value="youtube">YouTube</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* DATATABLE */}
+        <div className="px-4 md:px-6 pb-8">
+          <DataTable<Material>
+            title="Daftar Materi"
+            defaultQuery={q}
+            onQueryChange={setQ}
+            searchByKeys={["title", "description", "author"]}
+            columns={columns}
+            rows={filtered}
+            getRowId={(m: Material) => m.id}
+            stickyHeader
+            zebra
+            viewModes={["table", "card"]}
+            defaultView="table"
+            renderCard={renderCard}
+            onRowClick={(m: Material) =>
+              navigate(`../material/${m.id}`, { relative: "path" })
+            }
+            rightSlot={
+              isFetching ? (
+                <span className="text-xs text-muted-foreground">Memuat…</span>
+              ) : null
+            }
+            renderActions={(m: Material) => (
+              <div className="flex items-center justify-center gap-2">
+                {m.url && (
+                  <a href={m.url} target="_blank" rel="noreferrer">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      data-no-row-click
+                      title={m.type === "file" ? "Unduh file" : "Buka tautan"}
+                    >
+                      {m.type === "file" ? (
+                        <Download className="h-4 w-4" />
+                      ) : (
+                        <ExternalLink className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </a>
+                )}
+                {/* ...dst */}
+              </div>
+            )}
+            rowHover
+            emptySlot={
+              <div className="text-sm text-muted-foreground">
+                Belum ada materi untuk kelas ini.
+              </div>
+            }
+          />
+        </div>
+      </main>
     </div>
   );
 }

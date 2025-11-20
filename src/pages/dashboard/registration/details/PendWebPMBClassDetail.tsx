@@ -1,6 +1,6 @@
 // src/pages/profile/website/website/pmb/PendWebPMBClassDetail.tsx
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { GraduationCap, ArrowRight, Users, Info } from "lucide-react";
+import { GraduationCap, Users, Info } from "lucide-react";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
 
 // type-only import
 import type { PMBClassRow } from "../PendWebPMBInfo";
+
 
 export default function PendWebPMBClassDetail() {
   const { school_slug, id } = useParams<{
@@ -71,7 +72,7 @@ export default function PendWebPMBClassDetail() {
     cls.class_quota_taken >= cls.class_quota_total;
 
   return (
-    <div className="max-w-3xl mx-auto py-10 px-4 md:py-14 md:px-6 space-y-8">
+    <div className="mx-auto py-10 px-4 md:py-14 md:px-6 space-y-8">
       {/* Breadcrumb sederhana */}
       <div className="flex items-center justify-between gap-2">
         <Link
@@ -245,7 +246,7 @@ export default function PendWebPMBClassDetail() {
               className="w-full md:w-auto"
               disabled={isFull}
               onClick={() =>
-                navigate(`/${slug}/login`, {
+                navigate(`biaya`, {
                   state: {
                     pmb_class_id: cls.class_id,
                     pmb_class_slug: cls.class_slug,
@@ -256,33 +257,6 @@ export default function PendWebPMBClassDetail() {
             >
               <Users className="w-4 h-4 mr-2" />
               {isFull ? "Kuota penuh" : "Gabung ke kelas ini"}
-            </Button>
-
-            <Button
-              variant="outline"
-              className="w-full md:w-auto"
-              onClick={() =>
-                navigate("/register", {
-                  state: {
-                    pmb_class_id: cls.class_id,
-                    pmb_class_slug: cls.class_slug,
-                    school_slug: slug,
-                  },
-                })
-              }
-            >
-              <ArrowRight className="w-4 h-4 mr-2" />
-              Daftar akun baru dulu
-            </Button>
-
-            {/* 🔹 Tombol ke rincian biaya */}
-            <Button
-              variant="ghost"
-              className="w-full md:w-auto"
-              onClick={() => navigate(`/${slug}/pmb/${cls.class_id}/biaya`)}
-            >
-              <Info className="w-4 h-4 mr-2" />
-              Lihat rincian biaya pendidikan
             </Button>
 
             <p className="text-[11px] text-muted-foreground flex items-center gap-1">

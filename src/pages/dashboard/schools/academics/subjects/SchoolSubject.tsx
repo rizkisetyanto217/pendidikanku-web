@@ -1,7 +1,6 @@
-// src/pages/sekolahislamku/pages/academic/SchoolSubject.table.tsx
 import React, { useMemo, useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import axios from "@/lib/axios";
 
 /* icons */
@@ -9,6 +8,9 @@ import { ArrowLeft, ArrowUpDown, Loader2, AlertCircle } from "lucide-react";
 
 /* ---------- BreadCrum ---------- */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+
+/* 🔐 Context user dari simple-context (JWT) */
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 /* shadcn/ui */
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,8 +23,6 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-
-/* dialogs & inputs reused */
 import {
   Dialog,
   DialogContent,
@@ -48,7 +48,7 @@ import { Input } from "@/components/ui/input";
 import {
   DataTable,
   type ColumnDef,
-} from "@/components/costum/table/CDataTable"; // ⬅️ sesuaikan path file CDataTable kamu
+} from "@/components/costum/table/CDataTable";
 
 /* ================= Types ================= */
 export type SubjectStatus = "active" | "inactive";
@@ -155,7 +155,7 @@ type CSBListResp = {
 };
 
 /* ================= Const ================= */
-const API_PREFIX = "/u"; // ⬅️ pakai API user-scope terbaru
+const API_PREFIX = "/u"; // user-scope
 const ADMIN_PREFIX = "/a";
 
 /* ================= Helpers ================= */
@@ -167,20 +167,13 @@ const sumHours = (arr: ClassSubjectItem[]) => {
   return hrs.reduce((a, b) => a + b, 0);
 };
 
-function useResolvedSchoolId() {
-  const params = useParams<{ schoolId?: string; school_id?: string }>();
-  const { search } = useLocation();
-  const sp = useMemo(() => new URLSearchParams(search), [search]);
-  return params.schoolId || params.school_id || sp.get("school_id") || "";
-}
-
 /* ================= Mutations ================= */
 function useCreateSubjectMutation(school_id: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (form: FormData) => {
       const { data } = await axios.post(
-        `${ADMIN_PREFIX}/${school_id}/subjects`,
+        `${ADMIN_PREFIX}/${encodeURIComponent(school_id)}/subjects`,
         form,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
@@ -197,7 +190,9 @@ function useUpdateSubjectMutation(school_id: string, subjectId: string) {
   return useMutation({
     mutationFn: async (form: FormData) => {
       const { data } = await axios.patch(
-        `${ADMIN_PREFIX}/${school_id}/subjects/${subjectId}`,
+        `${ADMIN_PREFIX}/${encodeURIComponent(
+          school_id
+        )}/subjects/${subjectId}`,
         form,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
@@ -214,7 +209,7 @@ function useDeleteSubjectMutation(school_id: string, subjectId: string) {
   return useMutation({
     mutationFn: async () => {
       const { data } = await axios.delete(
-        `${ADMIN_PREFIX}/${school_id}/subjects/${subjectId}`
+        `${ADMIN_PREFIX}/${encodeURIComponent(school_id)}/subjects/${subjectId}`
       );
       return data;
     },
@@ -338,7 +333,7 @@ function SubjectDetailDialog({
   );
 }
 
-/* ================= Create/Edit/Delete Dialogs (reused) ================= */
+/* ================= Create/Edit/Delete Dialogs ================= */
 function CreateSubjectDialog({
   open,
   schoolId,
@@ -615,9 +610,13 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
       ],
       actions: null,
     });
-  }, [setHeader]);
+  }, [setHeader, showBack]);
 
-  const schoolId = useResolvedSchoolId();
+  // 🔐 Ambil schoolId dari simple-context (JWT), bukan URL params
+  const { data: currentUser } = useCurrentUser();
+  const schoolId = currentUser?.membership?.school_id ?? "";
+  // kalau suatu saat butuh slug: const schoolSlug = currentUser?.membership?.school_slug ?? "";
+
   const [detailData, setDetailData] = useState<SubjectRow | null>(null);
   const [openCreate, setOpenCreate] = useState(false);
   const [editData, setEditData] = useState<SubjectRow | null>(null);
@@ -630,28 +629,29 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
     "name-asc" | "name-desc" | "code-asc" | "code-desc"
   >("name-asc");
 
-  const delMut = useDeleteSubjectMutation(schoolId ?? "", deleteData?.id ?? "");
+  // delete mutation pakai schoolId dari context + subjectId dari deleteData
+  const delMut = useDeleteSubjectMutation(schoolId || "", deleteData?.id ?? "");
 
   const mergedQ = useQuery({
     queryKey: ["subjects-merged", schoolId],
     enabled: !!schoolId,
     queryFn: async (): Promise<SubjectRow[]> => {
       const [subjectsResp, classSubjectsResp, booksResp] = await Promise.all([
-        // 🔹 SUBJECTS — API BARU: GET /api/u/subjects/list
+        // SUBJECTS — /u/subjects/list (ambil school dari JWT)
         axios
           .get<SubjectsAPIResp>(`${API_PREFIX}/subjects/list`, {
             params: { page: 1, per_page: 500 },
           })
           .then((r) => r.data),
 
-        // 🔹 CLASS SUBJECTS — API BARU: GET /api/u/class-subjects/list
+        // CLASS SUBJECTS — /u/class-subjects/list
         axios
           .get<ClassSubjectsAPIResp>(`${API_PREFIX}/class-subjects/list`, {
             params: { page: 1, per_page: 1000 },
           })
           .then((r) => r.data),
 
-        // 🔹 CLASS SUBJECT BOOKS — API BARU: GET /api/u/class-subject-books/list
+        // CLASS SUBJECT BOOKS — /u/class-subject-books/list
         axios
           .get<CSBListResp>(`${API_PREFIX}/class-subject-books/list`, {
             params: { page: 1, per_page: 1000 },
@@ -775,7 +775,7 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
     },
   ];
 
-  /* ===== Right controls slot (status + sort + tombol tambah) ===== */
+  /* ===== Right controls slot ===== */
   const RightSlot = (
     <div className="flex items-center gap-2">
       <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
@@ -818,7 +818,7 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
             </div>
           </div>
 
-          {/* Loading / Error state di atas tabel (optional) */}
+          {/* Loading / Error */}
           {mergedQ.isLoading && (
             <Card>
               <CardContent className="p-6 text-center flex items-center justify-center gap-2 text-muted-foreground">

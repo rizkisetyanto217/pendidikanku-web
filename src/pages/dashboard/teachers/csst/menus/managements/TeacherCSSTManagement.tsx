@@ -1,4 +1,4 @@
-// src/pages/sekolahislamku/teachers/TeacherManagementClass.shadcn.tsx
+// src/pages/sekolahislamku/teachers/TeacherCSSTManagement.tsx
 import { useMemo, useState } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, Users, BookOpen, Calendar, Loader2 } from "lucide-react";
@@ -27,14 +27,14 @@ import {
 import { useToast } from "@/hooks/use-toast";
 
 // ✅ komponen = value import (tanpa 'type')
-import ModalEditManagementClass from "@/pages/dashboard/teachers/csst/managements/components/CTeacherModalEditManagementClass";
+import ModalEditManagementClass from "@/pages/dashboard/teachers/csst/menus/managements/components/CTeacherModalEditManagementClass";
 
 // ✅ ClassInfo = type-only import (pakai 'type')
-import type { ClassInfo } from "@/pages/dashboard/teachers/csst/managements/components/CTeacherModalEditManagementClass";
+import type { ClassInfo } from "@/pages/dashboard/teachers/csst/menus/managements/components/CTeacherModalEditManagementClass";
 
-import AddStudent from "@/pages/dashboard/teachers/csst/managements/components/CTeacherAddStudent";
+import AddStudent from "@/pages/dashboard/teachers/csst/menus/managements/components/CTeacherAddStudent";
 
-const TeacherManagementClass = () => {
+const TeacherCSSTManagement = () => {
   const { className } = useParams();
   const location = useLocation() as {
     state?: { className?: string; students?: number; lastSubject?: string };
@@ -53,8 +53,8 @@ const TeacherManagementClass = () => {
         typeof overrides?.students === "number"
           ? overrides?.students
           : typeof info?.students === "number"
-          ? info?.students
-          : undefined,
+            ? info?.students
+            : undefined,
       lastSubject: overrides?.lastSubject ?? info?.lastSubject ?? undefined,
     };
   }, [overrides, info, className]);
@@ -330,4 +330,4 @@ const TeacherManagementClass = () => {
   );
 };
 
-export default TeacherManagementClass;
+export default TeacherCSSTManagement;

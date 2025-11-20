@@ -774,13 +774,13 @@ const TeacherMainDashboard: React.FC = () => {
 
   return (
     <div className="w-full bg-background text-foreground">
-      <main className="max-w-screen-2xl mx-auto py-6 space-y-6">
+      <main className=" mx-auto py-6 space-y-6">
         {/* Header */}
         <Card className="shadow-sm">
           <CardContent className="p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div className="flex items-center gap-3">
-              <span className="h-12 w-12 rounded-full grid place-items-center bg-primary/10 text-primary">
-                <User className="h-6 w-6" />
+              <span className=" w-12 rounded-full grid place-items-center bg-primary/10 text-primary">
+                <User className=" w-6" />
               </span>
               <div>
                 <div className="text-sm text-muted-foreground">Guru</div>

@@ -1,4 +1,4 @@
-// src/pages/profile/website/website/pmb/PendWebPMBCostDetail.tsx
+// src/pages/profile/website/website/pmb/PendWebPMBFeesDetail.tsx
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Receipt, GraduationCap, Info, ArrowRight } from "lucide-react";
 
@@ -34,7 +34,7 @@ export default function PendWebPMBFeesDetail() {
 
   if (!cls) {
     return (
-      <div className="max-w-3xl mx-auto py-10 px-4 md:py-14 md:px-6 space-y-6">
+      <div className="mx-auto py-10 px-4 md:py-14 md:px-6 space-y-6">
         <div>
           <Link
             to={`/${slug}/pmb`}

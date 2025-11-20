@@ -1,4 +1,4 @@
-// src/pages/teacher/classes/TeacherClassStudentsList.tsx
+// src/pages/teacher/classes/TeacherCSSTStudentList.tsx
 import React, { useMemo, useState, useDeferredValue } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -238,7 +238,7 @@ function useClassStudentsSingle(key?: string) {
 /* =========================================================
    PAGE
 ========================================================= */
-const TeacherClassStudentsList: React.FC = () => {
+const TeacherCSSTStudentList: React.FC = () => {
   const navigate = useNavigate();
 
   // ambil berbagai param biar slug apapun aman
@@ -327,95 +327,95 @@ const TeacherClassStudentsList: React.FC = () => {
       __hasImportant: boolean;
     }
   >[] = [
-    {
-      id: "name",
-      header: "Nama",
-      minW: "220px",
-      cell: (s) => (
-        <div className="flex items-center gap-2">
-          <span className="font-medium">{s.name}</span>
-          {s.__hasImportant && (
-            <Badge variant="destructive" className="gap-1">
-              <AlertTriangle size={12} />
-              Penting
-            </Badge>
-          )}
-        </div>
-      ),
-    },
-    {
-      id: "nis",
-      header: "NIS",
-      align: "center" as Align,
-      cell: (s) => s.nis,
-    },
-    {
-      id: "gender",
-      header: "JK",
-      align: "center" as Align,
-      cell: (s) =>
-        s.gender ? (
-          <Badge variant="outline" className="uppercase">
-            {s.gender}
-          </Badge>
-        ) : (
-          "-"
-        ),
-    },
-    {
-      id: "guardian",
-      header: "Wali",
-      minW: "180px",
-      cell: (s) =>
-        s.guardian ? (
-          <span className="inline-flex items-center gap-1">
-            <Users size={12} />
-            {s.guardian}
-          </span>
-        ) : (
-          "-"
-        ),
-    },
-    {
-      id: "notes",
-      header: "Catatan",
-      minW: "320px",
-      cell: (s) => {
-        const items = extractImportantNotes(s);
-        if (!items.length)
-          return <span className="text-muted-foreground">—</span>;
-        const [first, ...rest] = items;
-        return (
-          <div className="text-sm">
-            <div className="flex items-center gap-2 font-medium mb-0.5">
-              <NotebookPen size={14} />
-              <span>Keterangan penting</span>
-            </div>
-            <div className="text-muted-foreground">
-              {first}
-              {rest.length ? ` (+${rest.length} lagi)` : ""}
-            </div>
+      {
+        id: "name",
+        header: "Nama",
+        minW: "220px",
+        cell: (s) => (
+          <div className="flex items-center gap-2">
+            <span className="font-medium">{s.name}</span>
+            {s.__hasImportant && (
+              <Badge variant="destructive" className="gap-1">
+                <AlertTriangle size={12} />
+                Penting
+              </Badge>
+            )}
           </div>
-        );
-      },
-    },
-    {
-      id: "phone",
-      header: "Kontak",
-      align: "center" as Align,
-      cell: (s) =>
-        s.phone ? (
-          <a href={`tel:${s.phone}`}>
-            <Button variant="secondary" size="sm" className="gap-1">
-              <Phone size={14} />
-              Telp
-            </Button>
-          </a>
-        ) : (
-          <span className="text-muted-foreground">—</span>
         ),
-    },
-  ];
+      },
+      {
+        id: "nis",
+        header: "NIS",
+        align: "center" as Align,
+        cell: (s) => s.nis,
+      },
+      {
+        id: "gender",
+        header: "JK",
+        align: "center" as Align,
+        cell: (s) =>
+          s.gender ? (
+            <Badge variant="outline" className="uppercase">
+              {s.gender}
+            </Badge>
+          ) : (
+            "-"
+          ),
+      },
+      {
+        id: "guardian",
+        header: "Wali",
+        minW: "180px",
+        cell: (s) =>
+          s.guardian ? (
+            <span className="inline-flex items-center gap-1">
+              <Users size={12} />
+              {s.guardian}
+            </span>
+          ) : (
+            "-"
+          ),
+      },
+      {
+        id: "notes",
+        header: "Catatan",
+        minW: "320px",
+        cell: (s) => {
+          const items = extractImportantNotes(s);
+          if (!items.length)
+            return <span className="text-muted-foreground">—</span>;
+          const [first, ...rest] = items;
+          return (
+            <div className="text-sm">
+              <div className="flex items-center gap-2 font-medium mb-0.5">
+                <NotebookPen size={14} />
+                <span>Keterangan penting</span>
+              </div>
+              <div className="text-muted-foreground">
+                {first}
+                {rest.length ? ` (+${rest.length} lagi)` : ""}
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        id: "phone",
+        header: "Kontak",
+        align: "center" as Align,
+        cell: (s) =>
+          s.phone ? (
+            <a href={`tel:${s.phone}`}>
+              <Button variant="secondary" size="sm" className="gap-1">
+                <Phone size={14} />
+                Telp
+              </Button>
+            </a>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          ),
+      },
+    ];
 
   /* =========================================================
      Stats di atas tabel
@@ -454,9 +454,9 @@ const TeacherClassStudentsList: React.FC = () => {
      RENDER
   ========================================================= */
   return (
-    <div className="min-h-screen w-full overflow-x-hidden bg-background text-foreground">
-      <main className="w-full px-4 md:px-6 py-4 md:py-8">
-        <div className="mx-auto flex max-w-screen-2xl flex-col gap-4 lg:gap-6">
+    <div className="w-full overflow-x-hidden bg-background text-foreground">
+      <main className="w-full">
+        <div className="mx-auto flex flex-col gap-4 lg:gap-6">
           <CDataTable
             title="Daftar Siswa"
             onBack={() => navigate(-1)}
@@ -477,4 +477,4 @@ const TeacherClassStudentsList: React.FC = () => {
   );
 };
 
-export default TeacherClassStudentsList;
+export default TeacherCSSTStudentList;
