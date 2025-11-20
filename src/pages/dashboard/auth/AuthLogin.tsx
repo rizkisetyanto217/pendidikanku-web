@@ -154,11 +154,19 @@ export default function Login() {
   }, []);
 
   const handleSelectChoice = useCallback(
-    (choice: "school" | "user") => {
+    (_choice: "school" | "user") => {
       setOpenChoice(false);
-      navigate(choice === "school" ? "/register-sekolah" : "/register-user");
+
+      // sementara: dua-duanya ke halaman register yang sama
+      if (school_slug) {
+        // contoh: /diploma-ilmi/register
+        navigate(`/${school_slug}/register`);
+      } else {
+        // fallback global
+        navigate("/register");
+      }
     },
-    [navigate]
+    [navigate, school_slug]
   );
 
   // 🔤 Nama sekolah dari slug (diploma-ilmi → "Diploma Ilmi")
@@ -522,8 +530,9 @@ export default function Login() {
         />
 
         {/* Modal pilihan pendaftaran (sekolah vs user) */}
+        {/* Modal pilihan pendaftaran (sekolah vs user) */}
         <Dialog open={openChoice} onOpenChange={setOpenChoice}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md pb-5">
             <DialogHeader>
               <DialogTitle>Pilih tipe pendaftaran</DialogTitle>
               <DialogDescription>
@@ -531,10 +540,10 @@ export default function Login() {
               </DialogDescription>
             </DialogHeader>
 
-            <div className="grid gap-3">
+            <div className="grid gap-4">
               <Button
                 variant="default"
-                className="justify-start gap-3"
+                className="justify-start gap-3 py-3.5 h-auto"
                 onClick={() => handleSelectChoice("school")}
               >
                 <span className="inline-flex size-9 items-center justify-center rounded-md bg-primary-foreground/10">
@@ -550,7 +559,7 @@ export default function Login() {
 
               <Button
                 variant="outline"
-                className="justify-start gap-3"
+                className="justify-start gap-3 py-3.5 h-auto"
                 onClick={() => handleSelectChoice("user")}
               >
                 <span className="inline-flex size-9 items-center justify-center rounded-md bg-muted">
@@ -565,10 +574,11 @@ export default function Login() {
               </Button>
             </div>
 
-            <DialogFoot className="sm:justify-start">
+            <DialogFoot className="mt-4 sm:justify-start">
               <Button
                 type="button"
                 variant="ghost"
+                className="mt-1"
                 onClick={() => setOpenChoice(false)}
               >
                 Batal

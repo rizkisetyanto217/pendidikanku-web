@@ -1,7 +1,7 @@
 // src/pages/auth/Register.tsx
 import * as React from "react";
 import { useMemo, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useParams, useLocation } from "react-router-dom";
 import {
   EyeIcon,
   EyeOffIcon,
@@ -15,10 +15,11 @@ import {
   Sparkles,
   AlertCircle,
   Users2,
+  CheckCircle2,
 } from "lucide-react";
 
 import AuthLayout from "@/components/layout/CAuthLayout";
-import api, { setTokens, setActiveschoolContext } from "@/lib/axios";
+import api, { setActiveschoolContext } from "@/lib/axios";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +43,7 @@ type SchoolRole = "dkm" | "admin" | "teacher" | "student" | "user";
 
 type SchoolItem = {
   school_id: string;
+  school_slug: string;
   school_name: string;
   school_icon_url?: string;
   roles: SchoolRole[];
@@ -52,6 +54,31 @@ type SchoolItem = {
 ========================= */
 export default function Register() {
   const navigate = useNavigate();
+  const params = useParams<{ school_slug?: string }>();
+  const location = useLocation();
+
+  // Resolve school_slug dari params atau dari path pertama
+  let schoolSlug: string | undefined = params.school_slug;
+  if (!schoolSlug) {
+    const segments = location.pathname.split("/").filter(Boolean);
+    if (segments.length > 0) {
+      schoolSlug = segments[0]; // mis: "/diploma-ilmi/register" -> "diploma-ilmi"
+    }
+  }
+
+  // Path login FE (bukan API)
+  const loginPath = schoolSlug ? `/${schoolSlug}/login` : "/login";
+
+  // URL endpoint sesuai kontrak:
+  // {{base_url}}api/{{school_slug}}/auth/register
+  // {{base_url}}api/{{school_slug}}/auth/me/simple-context
+  const registerUrl = schoolSlug
+    ? `/${schoolSlug}/auth/register`
+    : "/auth/register";
+
+  const simpleContextUrl = schoolSlug
+    ? `/${schoolSlug}/auth/me/simple-context`
+    : "/auth/me/simple-context";
 
   const [userName, setUserName] = useState("");
   const [email, setEmail] = useState("");
@@ -66,7 +93,10 @@ export default function Register() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Modals
+  // Success modal
+  const [openSuccess, setOpenSuccess] = useState(false);
+
+  // Modals lama (role / join / create)
   const [openSelectSchool, setOpenSelectSchool] = useState(false);
   const [openChooseRole, setOpenChooseRole] = useState(false);
   const [openJoinCreate, setOpenJoinCreate] = useState(false);
@@ -85,6 +115,7 @@ export default function Register() {
   const [schools, setSchools] = React.useState<SchoolItem[]>([]);
   const [selected, setSelected] = React.useState<{
     school_id: string;
+    school_slug: string;
     role: SchoolRole;
   } | null>(null);
   const [loadingSelect, setLoadingSelect] = React.useState(false);
@@ -109,25 +140,6 @@ export default function Register() {
 
   const confirmMismatch = confirm.length > 0 && confirm !== password;
 
-  async function afterAuthRouting() {
-    const ctx = await api.get("/auth/me/simple-context");
-    const memberships = ctx.data?.data?.memberships ?? [];
-
-    if (memberships.length === 0) {
-      setOpenChooseRole(true);
-      return;
-    }
-
-    if (memberships.length === 1) {
-      const m = memberships[0];
-      const role: SchoolRole = (m.roles?.[0] as SchoolRole) ?? "user";
-      await handleSelectSchoolRole(m.school_id, role);
-      return;
-    }
-
-    setOpenSelectSchool(true);
-  }
-
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
     if (!agree) {
@@ -142,26 +154,16 @@ export default function Register() {
     setLoading(true);
     setError("");
     try {
-      // 1) Register
-      await api.post("/auth/register", {
+      // 1) Register — pakai slug di URL kalau ada
+      await api.post(registerUrl, {
         user_name: userName.trim(),
         email: email.trim(),
         password,
         confirm_password: confirm,
       });
 
-      // 2) Auto login
-      const resLogin = await api.post("/auth/login", {
-        identifier: email.trim(),
-        password,
-        remember_me: true,
-      });
-      const { access_token } = resLogin.data?.data ?? {};
-      if (!access_token) throw new Error("Token tidak ditemukan.");
-      setTokens(access_token);
-
-      // 3) Routing berdasarkan membership
-      await afterAuthRouting();
+      // 2) Kalau sukses, tampilkan modal sukses
+      setOpenSuccess(true);
     } catch (err: any) {
       console.error(err);
       setError(
@@ -192,11 +194,16 @@ export default function Register() {
       const item = res.data?.data?.item;
       if (!item) throw new Error("Sekolah gagal dibuat.");
 
-      const schoolId = item.school_id;
-      await setActiveschoolContext(schoolId, "dkm");
+      const schoolId: string = item.school_id;
+      const slugFromApi: string = item.school_slug ?? item.school_id;
+
+      await setActiveschoolContext(schoolId, "dkm", {
+        name: item.school_name,
+        icon: item.school_icon_url,
+      });
 
       setOpenJoinCreate(false);
-      navigate(`/${schoolId}/sekolah`, { replace: true });
+      navigate(`/${slugFromApi}/sekolah`, { replace: true });
     } catch (err: any) {
       alert(
         err?.response?.data?.message || err?.message || "Gagal membuat sekolah."
@@ -209,17 +216,22 @@ export default function Register() {
   async function handleJoinSekolah(code: string, role: "teacher" | "student") {
     setModalLoading(true);
     try {
-      // endpoint contoh untuk murid; sesuaikan jika ada endpoint guru
       await api.post("/u/student-class-sections/join", { student_code: code });
 
-      const ctx = await api.get("/auth/me/simple-context");
+      const ctx = await api.get(simpleContextUrl);
       const memberships = ctx.data?.data?.memberships ?? [];
       if (memberships.length > 0) {
         const m = memberships[0];
-        await setActiveschoolContext(m.school_id, role);
+        const slug = m.school_slug || m.school_id;
+
+        await setActiveschoolContext(m.school_id, role, {
+          name: m.school_name,
+          icon: m.school_icon_url,
+        });
+
         const path = role === "teacher" ? "guru" : "murid";
         setOpenJoinCreate(false);
-        navigate(`/${m.school_id}/${path}`, { replace: true });
+        navigate(`/${slug}/${path}`, { replace: true });
       }
     } catch (err: any) {
       alert(
@@ -234,21 +246,26 @@ export default function Register() {
 
   async function handleSelectSchoolRole(schoolId: string, role: SchoolRole) {
     try {
-      const res = await api.get("/auth/me/simple-context");
-      const m = (res.data?.data?.memberships ?? []).find(
-        (x: any) => x.school_id === schoolId
-      );
+      const res = await api.get(simpleContextUrl);
+      const memberships = res.data?.data?.memberships ?? [];
+      const m = memberships.find((x: any) => x.school_id === schoolId);
+
+      const slug = m?.school_slug || schoolSlug || schoolId;
+
       try {
         localStorage.setItem("active_role", role);
       } catch {}
+
       await setActiveschoolContext(schoolId, role, {
         name: m?.school_name ?? undefined,
         icon: m?.school_icon_url ?? undefined,
       });
+
       const path =
         role === "teacher" ? "guru" : role === "student" ? "murid" : "sekolah";
+
       setOpenSelectSchool(false);
-      navigate(`/${schoolId}/${path}`, { replace: true });
+      navigate(`/${slug}/${path}`, { replace: true });
     } catch (err) {
       console.error(err);
     }
@@ -260,11 +277,12 @@ export default function Register() {
     async function fetchCtx() {
       setLoadingSelect(true);
       try {
-        const res = await api.get("/auth/me/simple-context");
+        const res = await api.get(simpleContextUrl);
         if (!mounted) return;
         const memberships = res.data?.data?.memberships ?? [];
         const mapped: SchoolItem[] = memberships.map((m: any) => ({
           school_id: m.school_id,
+          school_slug: m.school_slug ?? m.school_id,
           school_name: m.school_name,
           school_icon_url: m.school_icon_url,
           roles: (m.roles ?? []) as SchoolRole[],
@@ -282,7 +300,7 @@ export default function Register() {
     return () => {
       mounted = false;
     };
-  }, [openSelectSchool]);
+  }, [openSelectSchool, simpleContextUrl]);
 
   return (
     <AuthLayout
@@ -323,7 +341,7 @@ export default function Register() {
             </Alert>
           )}
 
-          {/* Isi register, konsep sama dengan login: section rounded */}
+          {/* Isi register */}
           <section className="rounded-xl bg-card/40 p-6 sm:p-7 space-y-6">
             {/* Title */}
             <div>
@@ -485,31 +503,53 @@ export default function Register() {
               </div>
 
               {/* Agree + link login */}
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <div className="flex items-center justify-between gap-4">
+                {/* Checkbox + label biasa */}
+                <div className="flex items-start gap-2 text-sm">
                   <Checkbox
                     checked={agree}
                     onCheckedChange={(v) => setAgree(Boolean(v))}
                     id="agree"
                   />
-                  <span>
-                    Saya setuju dengan{" "}
-                    <Link to="/terms" className="underline">
-                      Ketentuan
-                    </Link>{" "}
-                    &{" "}
-                    <Link to="/privacy" className="underline">
-                      Privasi
-                    </Link>
-                  </span>
-                </label>
+                  <Label
+                    htmlFor="agree"
+                    className="cursor-pointer leading-snug"
+                  >
+                    Saya setuju dengan Ketentuan &amp; Privasi.
+                  </Label>
+                </div>
+
+                {/* Link ke login, slug-aware */}
                 <Link
-                  to="/login"
-                  className="text-sm text-primary hover:underline"
+                  to={loginPath}
+                  className="text-sm text-primary hover:underline whitespace-nowrap"
                 >
                   Sudah punya akun?
                 </Link>
               </div>
+
+              {/* Link ke Ketentuan & Privasi (di bawah, bukan di dalam label) */}
+              <p className="mt-1 text-xs text-muted-foreground">
+                Baca{" "}
+                <Link
+                  to="/terms"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline"
+                >
+                  Ketentuan
+                </Link>{" "}
+                &{" "}
+                <Link
+                  to="/privacy"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline"
+                >
+                  Privasi
+                </Link>
+                .
+              </p>
 
               {/* Submit */}
               <Button
@@ -533,7 +573,7 @@ export default function Register() {
 
             <Separator className="my-6" />
 
-            {/* CTA + disclaimer, masih di dalam section */}
+            {/* CTA + disclaimer */}
             <div className="flex flex-col items-center gap-2 text-center">
               <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
                 <Sparkles className="w-3.5 h-3.5" />
@@ -545,6 +585,36 @@ export default function Register() {
             </div>
           </section>
         </div>
+
+        {/* =========================
+            DIALOG: Sukses Register
+        ========================= */}
+        <Dialog open={openSuccess} onOpenChange={setOpenSuccess}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader className="space-y-3">
+              <div className="mx-auto size-16 rounded-2xl grid place-items-center bg-emerald-500/90 text-emerald-50 shadow-lg">
+                <CheckCircle2 className="size-9" />
+              </div>
+              <DialogTitle className="text-center">
+                Pendaftaran Berhasil
+              </DialogTitle>
+              <DialogDescription className="text-center">
+                Akun kamu sudah terdaftar. Silakan masuk dengan email dan
+                password yang baru dibuat.
+              </DialogDescription>
+            </DialogHeader>
+
+            <Button
+              className="w-full mt-2"
+              onClick={() => {
+                setOpenSuccess(false);
+                navigate(loginPath, { replace: true });
+              }}
+            >
+              Masuk Sekarang
+            </Button>
+          </DialogContent>
+        </Dialog>
 
         {/* =========================
             DIALOG: Pilih Peran
@@ -775,7 +845,11 @@ export default function Register() {
                             : undefined;
                         const fallback: SchoolRole =
                           keepRole ?? (m.roles?.[0] as SchoolRole) ?? "user";
-                        return { school_id: m.school_id, role: fallback };
+                        return {
+                          school_id: m.school_id,
+                          school_slug: m.school_slug,
+                          role: fallback,
+                        };
                       })
                     }
                     className={cn(
@@ -810,7 +884,11 @@ export default function Register() {
                           }
                           onClick={(e) => {
                             e.stopPropagation();
-                            setSelected({ school_id: m.school_id, role: r });
+                            setSelected({
+                              school_id: m.school_id,
+                              school_slug: m.school_slug,
+                              role: r,
+                            });
                           }}
                           className="ring-inset"
                         >
