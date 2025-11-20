@@ -277,7 +277,7 @@ function makeDemoTeacherHome(): TeacherHome {
       name: "Ahmad Fauzi",
       titlePrefix: "Drs.",
       titleSuffix: "M.Pd.",
-      schoolName: "Sekolah Islamku",
+      schoolName: "",
     },
     kpis: {
       classesTaught: myClasses.length,
@@ -584,9 +584,9 @@ function MyClassesCard({
                 variant="outline"
                 size="sm"
                 onClick={() =>
-                (window.location.href = c.slug
-                  ? `/teacher/classes/${c.slug}`
-                  : `/teacher/classes/${c.csstId}`)
+                  (window.location.href = c.slug
+                    ? `/teacher/classes/${c.slug}`
+                    : `/teacher/classes/${c.csstId}`)
                 }
               >
                 Detail <ArrowRight className="ml-1 h-4 w-4" />
@@ -642,9 +642,9 @@ function AnnouncementsCard({ items }: { items: AnnouncementUI[] }) {
                   variant="ghost"
                   size="icon"
                   onClick={() =>
-                  (window.location.href = a.slug
-                    ? `/announcements/${a.slug}`
-                    : `/announcements/${a.id}`)
+                    (window.location.href = a.slug
+                      ? `/announcements/${a.slug}`
+                      : `/announcements/${a.id}`)
                   }
                 >
                   <ExternalLink className="h-4 w-4" />
@@ -769,8 +769,9 @@ const TeacherMainDashboard: React.FC = () => {
   }
 
   const t = data.teacher;
-  const nameFull = `${t.titlePrefix ? t.titlePrefix + " " : ""}${t.name}${t.titleSuffix ? ", " + t.titleSuffix : ""
-    }`;
+  const nameFull = `${t.titlePrefix ? t.titlePrefix + " " : ""}${t.name}${
+    t.titleSuffix ? ", " + t.titleSuffix : ""
+  }`;
 
   return (
     <div className="w-full bg-background text-foreground">

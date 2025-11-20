@@ -115,7 +115,7 @@ async function fetchContacts(): Promise<ProgramDetailLite> {
         "https://images.unsplash.com/photo-1554151228-14d9def656e4?w=256&q=80"
       ),
       adminOffice: {
-        email: "admin.akademik@kampus.ac.id",
+        email: "madinahsalam@gmail.com",
         phone: "+62 21 555 7777",
       },
     },

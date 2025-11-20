@@ -62,7 +62,7 @@ export default function ProtectedRoute() {
   }
 
   if (!ok) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
+    return <Navigate to="/diploma-ilmi/login" replace state={{ from: location }} />;
   }
 
   return <Outlet />;

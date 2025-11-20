@@ -476,6 +476,7 @@ const TeacherCSSTDetail: React.FC = () => {
               className="cursor-pointer transition hover:shadow-md"
               onClick={() => navigate("kehadiran")}
             >
+              
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="space-y-1">
                   <div className="text-sm text-muted-foreground flex items-center gap-2">

@@ -94,7 +94,7 @@ const defaultSettings: SettingsState = {
   twoFA: false,
 
   // Konteks
-  activeSchoolName: "Sekolah Islamku",
+  activeSchoolName: "Madinah Salam",
   activeRole: "Admin",
 
   // Lainnya

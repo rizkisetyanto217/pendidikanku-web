@@ -253,7 +253,7 @@ function makeDemoStudentHome(): StudentHome {
       name: "Muhammad Rizki",
       nis: "2025-001",
       className: "X IPA 1",
-      schoolName: "Sekolah Islamku",
+      schoolName: "Madinah Salam",
     },
     kpis: {
       todaySessions: scheduleToday.length,

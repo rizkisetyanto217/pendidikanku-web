@@ -28,8 +28,9 @@ import TeacherCSSTBookList from "@/pages/dashboard/teachers/csst/menus/books/Tea
 import TeacherCSSTExam from "@/pages/dashboard/teachers/csst/menus/exams/TeacherCSSTExam";
 import TeacherCSSTBookDetail from "@/pages/dashboard/teachers/csst/menus/books/TeacherCSSTBookDetail";
 import TeacherCSSTManagement from "@/pages/dashboard/teachers/csst/menus/managements/TeacherCSSTManagement";
-import TeacherCSSTDailyReport from "@/pages/dashboard/teachers/csst/menus/daily-progress/TeacherCSSTDailyReport";
+// import TeacherCSSTDailyReport from "@/pages/dashboard/teachers/csst/menus/daily-progress/TeacherCSSTDailyReport";
 import Setting from "@/pages/dashboard/components/page/Setting";
+import TeacherCSSTDailyReport from "@/pages/dashboard/teachers/csst/menus/daily-progress/TeacherCSSTDailyReport";
 
 export const TeacherRoutes = (
   <Route path="guru" element={<DashboardLayout />}>
@@ -50,7 +51,10 @@ export const TeacherRoutes = (
       <Route path=":csstId" element={<TeacherCSSTDetail />} />
 
       {/* Kehadiran Murid */}
-      <Route path=":csstId/absensi" element={<TeacherCSSTStudentAttendanceList />} />
+      <Route
+        path=":csstId/absensi"
+        element={<TeacherCSSTStudentAttendanceList />}
+      />
       <Route path=":csstId/murid" element={<TeacherCSSTStudentList />} />
       <Route path=":csstId/murid/:id" element={<TeacherCSSTStudentDetail />} />
       <Route path=":csstId/kehadiran" element={<TeacherCSSTDailyReport />} />
@@ -64,23 +68,33 @@ export const TeacherRoutes = (
 
       {/* Assignments */}
       <Route path=":csstId/tugas" element={<TeacherCSSTAssignment />} />
-      <Route path=":csstId/tugas/new" element={<TeacherCSSTAssessmentCreate />} />
-      <Route path=":csstId/tugas/:assessmentId" element={<TeacherCSSTAssessmentDetail />} />
-      <Route path=":csstId/tugas/:assessmentId/:quizId" element={<TeacherQuizBuilder />} />
-    </Route >
+      <Route
+        path=":csstId/tugas/new"
+        element={<TeacherCSSTAssessmentCreate />}
+      />
+      <Route
+        path=":csstId/tugas/:assessmentId"
+        element={<TeacherCSSTAssessmentDetail />}
+      />
+      <Route
+        path=":csstId/tugas/:assessmentId/:quizId"
+        element={<TeacherQuizBuilder />}
+      />
+    </Route>
 
     {/* Jadwal */}
     <Route path="jadwal">
       <Route path="agenda" element={<TeacherScheduleAgenda />} />
       <Route path="agenda/:id" element={<TeacherScheduleAgendaDetail />} />
       <Route path="rutin" element={<TeacherScheduleRoutine />} />
-      <Route path="rutin/:routineId" element={<TeacherScheduleRoutineDetail />} />
+      <Route
+        path="rutin/:routineId"
+        element={<TeacherScheduleRoutineDetail />}
+      />
     </Route>
 
     {/* Profil */}
     <Route path="profil-guru" element={<TeacherProfil />} />
-
-
 
     {/* Menu Utama Guru */}
     <Route path="menu-utama">
@@ -97,33 +111,54 @@ export const TeacherRoutes = (
         <Route path=":csstId" element={<TeacherCSSTDetail />} />
 
         {/* Kehadiran Murid */}
-        <Route path=":csstId/semua-kehadiran" element={<TeacherCSSTStudentAttendanceList />} />
+        <Route
+          path=":csstId/semua-kehadiran"
+          element={<TeacherCSSTStudentAttendanceList />}
+        />
         <Route path=":csstId/murid" element={<TeacherCSSTStudentList />} />
-        <Route path=":csstId/murid/:id" element={<TeacherCSSTStudentDetail />} />
+        <Route
+          path=":csstId/murid/:id"
+          element={<TeacherCSSTStudentDetail />}
+        />
 
         {/* Assignments */}
         <Route path=":csstId/tugas" element={<TeacherCSSTAssignment />} />
-        <Route path=":csstId/tugas/new" element={<TeacherCSSTAssessmentCreate />} />
-        <Route path=":csstId/tugas/:assessmentId" element={<TeacherCSSTAssessmentDetail />} />
-        <Route path=":csstId/tugas/:assessmentId/:quizId" element={<TeacherQuizBuilder />} />
+        <Route
+          path=":csstId/tugas/new"
+          element={<TeacherCSSTAssessmentCreate />}
+        />
+        <Route
+          path=":csstId/tugas/:assessmentId"
+          element={<TeacherCSSTAssessmentDetail />}
+        />
+        <Route
+          path=":csstId/tugas/:assessmentId/:quizId"
+          element={<TeacherQuizBuilder />}
+        />
 
         {/* Materi, Ujian, Buku */}
         <Route path=":csstId/materi" element={<TeacherCSSTMaterialList />} />
         <Route path=":csstId/ujian" element={<TeacherCSSTExam />} />
         <Route path=":csstId/buku" element={<TeacherCSSTBookList />} />
-        <Route path=":csstId/buku/:bookId" element={<TeacherCSSTBookDetail />} />
-      </Route >
+        <Route
+          path=":csstId/buku/:bookId"
+          element={<TeacherCSSTBookDetail />}
+        />
+      </Route>
 
       {/* Jadwal */}
       <Route path="agenda">
         <Route index element={<TeacherScheduleAgenda />} />
         <Route path="agenda/:id" element={<TeacherScheduleAgendaDetail />} />
         <Route path="rutin" element={<TeacherScheduleRoutine />} />
-        <Route path="rutin/:routineId" element={<TeacherScheduleRoutineDetail />} />
+        <Route
+          path="rutin/:routineId"
+          element={<TeacherScheduleRoutineDetail />}
+        />
       </Route>
 
       {/* Profil */}
       <Route path="profil-guru" element={<TeacherProfil />} />
-    </Route >
-  </Route >
+    </Route>
+  </Route>
 );

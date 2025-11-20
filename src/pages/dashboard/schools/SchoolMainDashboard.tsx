@@ -146,7 +146,7 @@ async function fetchSchoolHome(): Promise<SchoolHome> {
   const now = new Date();
   const iso = now.toISOString();
   return {
-    schoolName: "Sekolah Islamku",
+    schoolName: "Diploma Ilmi",
     hijriDate: "16 Muharram 1447 H",
     gregorianDate: iso,
     finance: {
@@ -275,7 +275,7 @@ function DashboardHeader({ home }: { home?: SchoolHome }) {
           </span>
           <div>
             <div className="text-xs text-muted-foreground uppercase tracking-wide">
-              Ringkasan Sekolah
+              Yayasan Madinah Salam
             </div>
             <h1 className="text-xl md:text-2xl font-semibold leading-tight">
               {schoolName}

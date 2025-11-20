@@ -59,7 +59,7 @@ const DUMMY_CONTACTS: HelpContact[] = [
     id: "c1",
     name: "Admin Akademik",
     role: "Tata Usaha",
-    email: "admin.akademik@kampus.ac.id",
+    email: "madinahsalam@gmail.com",
     phone: "+62 21 555 7777",
     whatsapp: "6281212345678",
     hours: "Sen–Jum 08.00–16.00",

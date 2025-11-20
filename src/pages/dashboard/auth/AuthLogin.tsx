@@ -50,13 +50,13 @@ type schoolRole = "dkm" | "admin" | "teacher" | "student" | "user";
 function roleLabel(r: schoolRole) {
   switch (r) {
     case "dkm":
-      return "DKM / Pengelola";
+      return "Admin";
     case "admin":
       return "Admin Sekolah";
     case "teacher":
-      return "Guru / Pengajar";
+      return "Pengajar";
     case "student":
-      return "Murid / Santri";
+      return "Murid";
     default:
       return "Pengguna";
   }
@@ -326,7 +326,7 @@ export default function Login() {
                   {schoolTitle}
                 </h1>
                 <p className="text-xs text-muted-foreground">
-                  Satu akun untuk sekolah, guru, dan murid.
+                  Satu akun semua progam Madinah Salam
                 </p>
               </div>
             </div>
