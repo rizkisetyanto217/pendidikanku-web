@@ -20,7 +20,8 @@ import PendWebFeature from "@/pages/profile/website/website/pages/navbar-page/Pe
 import PendWebAbout from "@/pages/profile/website/website/pages/navbar-page/PendWebAbout";
 import PendWebContact from "@/pages/profile/website/website/pages/navbar-page/PendWebContact";
 import PendWebSupportUs from "@/pages/profile/website/website/support-us/PendWebSupportUs";
-import PendWebPMBInfo from "@/pages/dashboard/registration/PendWebPMBInfo";
+
+import { RegistrationRoutes } from "./RegistrationRoutes";
 
 export default function AppRoutes() {
   return (
@@ -34,9 +35,8 @@ export default function AppRoutes() {
           {/* /:school_slug → landing website sekolah */}
           <Route index element={<PendWebHome />} />
 
-          {/* Kalau mau tetap ada /:school_slug/website juga */}
+          {/* alias /:school_slug/website */}
           <Route path="website" element={<PendWebHome />} />
-
           <Route path="website/dukungan" element={<PendWebSupportUs />} />
           <Route path="website/panduan" element={<PendWebTutorial />} />
           <Route path="website/fitur" element={<PendWebFeature />} />
@@ -44,31 +44,31 @@ export default function AppRoutes() {
           <Route path="website/hubungi-kami" element={<PendWebContact />} />
         </Route>
 
-        {/* ---------- Public PMB sekolah ---------- */}
-        <Route path="pmb" element={<PendWebPMBInfo />} />
-
         {/* ---------- Auth per-tenant ---------- */}
         <Route path="login" element={<Login />} />
-        {/* Kalau register juga mau per sekolah */}
         <Route path="register" element={<Register />} />
 
         {/* ---------- Protected (dashboard dsb) ---------- */}
         <Route element={<ProtectedRoute />}>
           {/* Guru: /:school_slug/guru/... */}
+
+          {/* ---------- Public PMB / Pendaftaran sekolah ---------- */}
+          {RegistrationRoutes}
+          
           <Route
             element={<RequireschoolRoles allow={["teacher", "admin", "dkm"]} />}
           >
             {TeacherRoutes}
           </Route>
 
-          {/* Murid: /:school_slug/santri/... */}
+          {/* Murid: /:school_slug/murid/... */}
           <Route
             element={<RequireschoolRoles allow={["student", "admin", "dkm"]} />}
           >
             {StudentRoutes}
           </Route>
 
-          {/* Sekolah/Manajemen: /:school_slug/admin/... */}
+          {/* Sekolah/Manajemen: /:school_slug/sekolah/... */}
           <Route element={<RequireschoolRoles allow={["admin", "dkm"]} />}>
             {SchoolRoutes}
           </Route>
@@ -81,8 +81,7 @@ export default function AppRoutes() {
       </Route>
 
       {/* ================================
-          Global (tanpa slug) – opsional
-          Bisa dipakai buat 404 global
+          Global (tanpa slug)
          ================================ */}
       <Route path="/not-found" element={<NotFound />} />
       <Route path="/unauthorized" element={<Unauthorized />} />

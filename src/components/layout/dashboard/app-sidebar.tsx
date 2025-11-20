@@ -73,6 +73,7 @@ function useRoleAndBaseFromPath(): { role: keyof NavDict; base: string } {
   return { role: "sekolah", base: "/sekolah" };
 }
 
+
 export function AppSidebar(props: AppSidebarProps) {
   const { role, base } = useRoleAndBaseFromPath();
   const { setOpenMobile } = useSidebar(); // ⬅️ untuk nutup saat klik menu (mobile)

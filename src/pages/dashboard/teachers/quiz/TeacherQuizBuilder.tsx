@@ -51,6 +51,8 @@ import {
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
+import { htmlToPlainText, RichTextInput } from "@/components/costum/CRichTextEditor";
+
 /* =========================
    Types & Helpers
 ========================= */
@@ -194,141 +196,6 @@ function mapApiQuestionToQuestion(q: QuizQuestionFromApi): Question {
     collapsed: true, // ⬅️ dari API: awalnya tertutup
     dirty: false, // ⬅️ belum ada perubahan di FE
   };
-}
-
-//* Components rich editor
-function htmlToPlainText(html?: string) {
-  if (!html) return "";
-  return html
-    .replace(/<[^>]+>/g, "")
-    .replace(/&nbsp;/g, " ")
-    .trim();
-}
-
-function RichTextInput(props: {
-  value: string;
-  onChange: (html: string) => void;
-  placeholder?: string;
-  className?: string;
-}) {
-  const { value, onChange, placeholder, className } = props;
-  const editorRef = useRef<HTMLDivElement | null>(null);
-
-  const [isBold, setIsBold] = useState(false);
-  const [isItalic, setIsItalic] = useState(false);
-  const [isUnderline, setIsUnderline] = useState(false);
-
-  // ⬇️ HANYA sync sekali ketika mount
-  useEffect(() => {
-    if (editorRef.current) {
-      editorRef.current.innerHTML = value || "";
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // <- jangan pakai [value], biar gak ngacak caret
-
-  const refreshToolbarState = () => {
-    try {
-      setIsBold(document.queryCommandState("bold"));
-      setIsItalic(document.queryCommandState("italic"));
-      setIsUnderline(document.queryCommandState("underline"));
-    } catch {
-      // abaikan kalau browser nggak support
-    }
-  };
-
-  const exec = (cmd: string) => {
-    editorRef.current?.focus();
-    document.execCommand(cmd, false);
-    refreshToolbarState();
-  };
-
-  // Update state toolbar ketika selection pindah
-  useEffect(() => {
-    const handler = () => {
-      const sel = window.getSelection();
-      const node = sel?.anchorNode;
-      if (!node || !editorRef.current) return;
-      if (!editorRef.current.contains(node)) return;
-      refreshToolbarState();
-    };
-
-    document.addEventListener("selectionchange", handler);
-    return () => document.removeEventListener("selectionchange", handler);
-  }, []);
-
-  return (
-    <div className="space-y-1">
-      {/* Toolbar */}
-      <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-        <Button
-          type="button"
-          size="icon"
-          variant={isBold ? "default" : "ghost"}
-          className="h-7 w-7"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => exec("bold")}
-        >
-          <span className="font-bold">B</span>
-        </Button>
-        <Button
-          type="button"
-          size="icon"
-          variant={isItalic ? "default" : "ghost"}
-          className="h-7 w-7 italic"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => exec("italic")}
-        >
-          I
-        </Button>
-        <Button
-          type="button"
-          size="icon"
-          variant={isUnderline ? "default" : "ghost"}
-          className="h-7 w-7 underline"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => exec("underline")}
-        >
-          U
-        </Button>
-        <Button
-          type="button"
-          size="icon"
-          variant="ghost"
-          className="h-7 w-7"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => exec("removeFormat")}
-          title="Bersihkan format"
-        >
-          <span className="text-xs">Clr</span>
-        </Button>
-      </div>
-
-      {/* Editor */}
-      <div className="relative">
-        <div
-          ref={editorRef}
-          contentEditable
-          suppressContentEditableWarning
-          dir="ltr"
-          className={cn(
-            "min-h-[60px] text-sm px-3 py-2 rounded-md border bg-background",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-            "prose prose-sm max-w-none dark:prose-invert",
-            className
-          )}
-          onInput={(e) =>
-            onChange((e.currentTarget as HTMLDivElement).innerHTML)
-          }
-        />
-
-        {!htmlToPlainText(value) && placeholder && (
-          <span className="pointer-events-none absolute left-3 top-2 text-sm text-muted-foreground/70">
-            {placeholder}
-          </span>
-        )}
-      </div>
-    </div>
-  );
 }
 
 /* =========================
@@ -699,7 +566,6 @@ export default function QuizBuilder() {
 
                 <Button variant="outline" size="sm" onClick={exportJSON}>
                   <Download className="h-4 w-4 mr-1" />
-                  Export
                 </Button>
 
                 <label className="cursor-pointer">
@@ -715,7 +581,6 @@ export default function QuizBuilder() {
                   <span>
                     <Button variant="outline" size="sm">
                       <Upload className="h-4 w-4 mr-1" />
-                      Import
                     </Button>
                   </span>
                 </label>
