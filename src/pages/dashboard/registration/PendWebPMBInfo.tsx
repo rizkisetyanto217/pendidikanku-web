@@ -316,7 +316,7 @@ export default function PendWebPMBInfo() {
               <p className="text-muted-foreground">
                 Halaman ini hanya menampilkan informasi umum PMB. Detail jadwal,
                 kuota, dan biaya dapat diatur oleh admin sekolah melalui panel
-                Pendidikanku.
+                Madinah Salam.
               </p>
               <p className="text-muted-foreground">
                 Jika kamu ragu apakah sudah punya akun atau belum, coba dulu
@@ -359,7 +359,7 @@ export default function PendWebPMBInfo() {
                 to="/website/hubungi-kami"
                 className="text-xs text-primary underline"
               >
-                Hubungi tim Pendidikanku
+                Hubungi tim Madinah Salam
               </Link>
             </CardContent>
           </Card>

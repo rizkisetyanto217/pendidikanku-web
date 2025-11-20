@@ -301,7 +301,7 @@ export default function Register() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold leading-tight">
-                  Pendidikanku
+                  Madinah Salam
                 </h1>
                 <p className="text-xs text-muted-foreground">
                   Daftar untuk mulai pakai semua fitur.

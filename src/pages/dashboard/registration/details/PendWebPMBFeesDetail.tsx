@@ -195,7 +195,7 @@ export default function PendWebPMBFeesDetail() {
             <Info className="w-3 h-3 mt-[2px]" />
             <span>
               Nominal di atas hanya contoh. Admin sekolah nantinya bisa mengatur
-              komponen dan besaran biaya langsung dari dashboard Pendidikanku.
+              komponen dan besaran biaya langsung dari dashboard Madinah Salam.
             </span>
           </p>
 

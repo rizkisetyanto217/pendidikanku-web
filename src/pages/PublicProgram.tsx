@@ -638,7 +638,7 @@ const PublicProgramsPage: React.FC = () => {
                 </ul>
                 <p className="pt-1 text-[11px]">
                   Semua fitur ini akan terhubung langsung dengan sistem
-                  Pendidikanku sehingga sekolah dapat mengelola data secara
+                  Madinah Salam sehingga sekolah dapat mengelola data secara
                   terpusat.
                 </p>
               </CardContent>

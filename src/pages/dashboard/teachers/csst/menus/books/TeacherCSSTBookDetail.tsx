@@ -37,7 +37,7 @@ function makeDummyBook(bookId: string): BookDTO {
     book_slug: "tahsin-juz-amma-dasar",
     book_image_url:
       "https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=1200&auto=format&fit=crop",
-    book_publisher: "Pendidikanku Press",
+    book_publisher: "Madinah Salam Press",
     book_publication_year: 2023,
     book_created_at: now,
     book_updated_at: now,
