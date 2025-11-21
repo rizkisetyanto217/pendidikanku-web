@@ -1,3 +1,4 @@
+// src/pages/dashboard/unnasigned/UnnasignedDashboard.tsx
 import React from "react";
 import { useParams, useLocation } from "react-router-dom";
 
@@ -23,7 +24,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 
-const StudentUnassignedDashboard: React.FC = () => {
+const UnnasignedDashboard: React.FC = () => {
   const { school_slug } = useParams<{ school_slug: string }>();
   const location = useLocation();
   const { data: currentUser, isLoading } = useCurrentUser();
@@ -275,4 +276,4 @@ const StudentUnassignedDashboard: React.FC = () => {
   );
 };
 
-export default StudentUnassignedDashboard;
+export default UnnasignedDashboard;

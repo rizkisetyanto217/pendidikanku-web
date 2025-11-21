@@ -10,6 +10,7 @@ export type ScheduleRow = {
   teacher?: string;
   type?: ScheduleType;
   description?: string;
+  status?: "present" | "absent";
 };
 
 /* ======= Helpers tanggal / format ======= */

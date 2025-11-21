@@ -14,7 +14,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { pad2, fmtFullDate } from "./types/types";
 import type { ScheduleRow } from "./types/types";
 
-// Konsisten dengan DataTable (pakai path punyamu)
 import { RowActions } from "@/components/costum/table/CRowAction";
 
 type Props = {
@@ -26,13 +25,14 @@ type Props = {
   readOnly?: boolean;
   updating?: boolean;
   deleting?: boolean;
-  /** dipakai untuk memaksa auto-scroll (mis. saat tombol "Hari ini" diklik dari parent) */
   scrollSignal?: number;
+
+  /** === BARU DITAMBAH ===
+   *   Jika true → sembunyikan icon edit/delete di list
+   */
+  hideRowActions?: boolean;
 };
 
-/* =========================
-   Helpers (local)
-========================= */
 function todayKey(): string {
   const d = new Date();
   const y = d.getFullYear();
@@ -51,6 +51,7 @@ export default function ScheduleList({
   updating = false,
   deleting = false,
   scrollSignal,
+  hideRowActions = false, // default: false
 }: Props) {
   const [q, setQ] = useState("");
   const [typeFilter, setTypeFilter] = useState<
@@ -63,9 +64,6 @@ export default function ScheduleList({
   const today = todayKey();
   const isBusy = updating || deleting;
 
-  /* =========================
-     Derive lists
-  ========================= */
   const flatList = useMemo(
     () =>
       [...data].sort(
@@ -80,9 +78,8 @@ export default function ScheduleList({
     return flatList.filter((s) => {
       const okType =
         typeFilter === "all" ? true : (s.type ?? "class") === typeFilter;
-      const hay = `${s.title} ${s.room ?? ""} ${s.teacher ?? ""} ${
-        s.description ?? ""
-      }`.toLowerCase();
+      const hay = `${s.title} ${s.room ?? ""} ${s.teacher ?? ""} ${s.description ?? ""
+        }`.toLowerCase();
       const okQ = qn ? hay.includes(qn) : true;
       return okType && okQ;
     });
@@ -110,24 +107,19 @@ export default function ScheduleList({
     if (loading) return;
     if (!listByDay.keys.length) return;
 
-    // Ambil bulan dari key pertama: "YYYY-MM-DD" → "YYYY-MM"
-    const currentMonth = listByDay.keys[0]?.slice(0, 7); // contoh: "2025-11"
+    const currentMonth = listByDay.keys[0]?.slice(0, 7);
     const prevMonth = lastMonthRef.current;
     const monthChanged = currentMonth !== prevMonth;
-
-    // Bulan hari ini
-    const todayMonth = today.slice(0, 7); // "YYYY-MM"
+    const todayMonth = today.slice(0, 7);
     const isCurrentMonth = currentMonth === todayMonth;
 
     const prevSignal = lastScrollSignalRef.current;
     const triggerBySignal =
       scrollSignal !== undefined && scrollSignal !== prevSignal;
 
-    // update ref untuk next run
     lastMonthRef.current = currentMonth;
     lastScrollSignalRef.current = scrollSignal;
 
-    // Helper: scroll ke hari ini / tanggal terdekat
     const scrollToTarget = () => {
       const keys = listByDay.keys;
       if (!keys.length) return;
@@ -150,27 +142,22 @@ export default function ScheduleList({
       }
     };
 
-    // 1️⃣ Tombol "Hari ini" → paksa scroll (apapun bulannya)
     if (triggerBySignal) {
       scrollToTarget();
       return;
     }
 
-    // 2️⃣ Bulan baru yang aktif = bulan sekarang → auto-scroll ke hari ini
     if (monthChanged && isCurrentMonth) {
       scrollToTarget();
       return;
     }
 
-    // 3️⃣ Bulan baru tapi BUKAN bulan sekarang → reset ke atas
     if (monthChanged && !isCurrentMonth) {
       if (scrollContainerRef.current) {
         scrollContainerRef.current.scrollTop = 0;
       }
       return;
     }
-
-    // Bulan sama & bukan trigger "Hari ini" → jangan scroll, biarkan posisi user
   }, [loading, listByDay.keys, today, scrollSignal]);
 
   return (
@@ -180,7 +167,6 @@ export default function ScheduleList({
           <CardTitle className="text-base">Daftar Jadwal</CardTitle>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            {/* Search */}
             <div className="relative">
               <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -191,7 +177,6 @@ export default function ScheduleList({
               />
             </div>
 
-            {/* Type filter */}
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-muted-foreground" />
               <Select
@@ -212,7 +197,6 @@ export default function ScheduleList({
               </Select>
             </div>
 
-            {/* Add new (hidden on readOnly) */}
             {!readOnly && onAddNew && (
               <Button size="sm" onClick={onAddNew}>
                 + <span className="ml-2 hidden sm:inline">Tambah</span>
@@ -297,8 +281,8 @@ export default function ScheduleList({
                                     s.type === "exam"
                                       ? "bg-red-500"
                                       : s.type === "event"
-                                      ? "bg-green-500"
-                                      : "bg-primary",
+                                        ? "bg-green-500"
+                                        : "bg-primary",
                                   ].join(" ")}
                                 />
                                 {s.type ?? "class"}
@@ -310,34 +294,55 @@ export default function ScheduleList({
                                 {s.description}
                               </p>
                             )}
+
+                            {s.status && (
+                              <div className="mt-2">
+                                <span
+                                  className={
+                                    s.status === "present"
+                                      ? "text-green-700 bg-green-100 px-2 py-1 rounded-md text-xs font-medium"
+                                      : "text-red-700 bg-red-100 px-2 py-1 rounded-md text-xs font-medium"
+                                  }
+                                >
+                                  {s.status === "present"
+                                    ? "Hadir"
+                                    : "Tidak Hadir"}
+                                </span>
+                              </div>
+                            )}
                           </div>
 
-                          {/* Row actions – inline only, guard saat busy */}
-                          {!readOnly && (onEdit || onDelete) && (
-                            <RowActions<ScheduleRow>
-                              mode="inline"
-                              size="sm"
-                              row={s}
-                              suppressView
-                              onEdit={
-                                onEdit
-                                  ? (row) => {
+                          {/* RowActions TIDAK muncul jika hideRowActions = true */}
+                          {!readOnly &&
+                            !hideRowActions && // ← BARU DITAMBAH
+                            (onEdit || onDelete) && (
+                              <RowActions<ScheduleRow>
+                                mode="inline"
+                                size="sm"
+                                row={s}
+                                suppressView
+                                onEdit={
+                                  onEdit
+                                    ? (row) => {
                                       if (isBusy) return;
                                       onEdit(row);
                                     }
-                                  : undefined
-                              }
-                              onDelete={
-                                onDelete
-                                  ? (row) => {
+                                    : undefined
+                                }
+                                onDelete={
+                                  onDelete
+                                    ? (row) => {
                                       if (isBusy) return;
                                       onDelete(row.id);
                                     }
-                                  : undefined
-                              }
-                              labels={{ edit: "Edit", delete: "Hapus" }}
-                            />
-                          )}
+                                    : undefined
+                                }
+                                labels={{
+                                  edit: "Edit",
+                                  delete: "Hapus",
+                                }}
+                              />
+                            )}
                         </div>
                       </li>
                     ))}

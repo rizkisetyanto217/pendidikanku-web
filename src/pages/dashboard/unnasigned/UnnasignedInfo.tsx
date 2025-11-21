@@ -1,4 +1,5 @@
-// src/pages/profile/website/website/pmb/PendWebPMBInfo.tsx
+// src/pages/dashboard/unnasigned/UnnasignedInfo.tsx
+import { useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   GraduationCap,
@@ -6,7 +7,11 @@ import {
   Info,
   ClipboardList,
   Users,
+  Loader2,
 } from "lucide-react";
+
+import { useQuery } from "@tanstack/react-query";
+import api from "@/lib/axios";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,7 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 
 /* =========================
-   Types & dummy data
+   Types
 ========================= */
 
 export type PMBClassRow = {
@@ -31,59 +36,83 @@ export type PMBClassRow = {
   class_quota_total: number | null;
   class_quota_taken: number;
   class_notes?: string | null;
+
+  /** status pendaftaran, dipakai di UI & sorting */
+  is_open_for_registration: boolean;
 };
 
-// nanti tinggal ganti ini dengan hasil fetch dari backend
-export const dummyClasses: PMBClassRow[] = [
-  {
-    class_id: "1",
-    class_slug: "tk-a-pagi",
-    class_name: "Kelompok A Pagi",
-    class_class_parent_name_snapshot: "TK A",
-    class_class_parent_level_snapshot: 1,
-    class_academic_term_name_snapshot: "Tahun Ajaran 2025/2026",
-    class_academic_term_angkatan_snapshot: "2025",
-    class_delivery_mode: "offline",
-    class_registration_opens_at: "2025-01-01T00:00:00Z",
-    class_registration_closes_at: "2025-03-31T23:59:59Z",
-    class_quota_total: 30,
-    class_quota_taken: 18,
-    class_notes:
-      "Kelas pagi untuk usia 4–5 tahun. Fokus pembiasaan ibadah dan pengenalan huruf hijaiyah.",
-  },
-  {
-    class_id: "2",
-    class_slug: "sd-it-1",
-    class_name: "Kelas 1 SD-IT",
-    class_class_parent_name_snapshot: "SD Kelas 1",
-    class_class_parent_level_snapshot: 2,
-    class_academic_term_name_snapshot: "Tahun Ajaran 2025/2026",
-    class_academic_term_angkatan_snapshot: "2025",
-    class_delivery_mode: "offline",
-    class_registration_opens_at: "2025-01-15T00:00:00Z",
-    class_registration_closes_at: "2025-04-30T23:59:59Z",
-    class_quota_total: 2, // bikin keliatan hampir penuh
-    class_quota_taken: 2,
-    class_notes:
-      "Full day school dengan integrasi kurikulum nasional dan tahfidz juz 30.",
-  },
-  {
-    class_id: "3",
-    class_slug: "tahfidz-malam-online",
-    class_name: "Program Tahfidz Malam Online",
-    class_class_parent_name_snapshot: "Program Ekstrakurikuler",
-    class_class_parent_level_snapshot: 3,
-    class_academic_term_name_snapshot: "Program Khusus Ramadhan 1447 H",
-    class_academic_term_angkatan_snapshot: "1447H",
-    class_delivery_mode: "online",
-    class_registration_opens_at: "2025-02-01T00:00:00Z",
-    class_registration_closes_at: "2025-03-10T23:59:59Z",
-    class_quota_total: null, // tanpa batas kuota
-    class_quota_taken: 120,
-    class_notes:
-      "Kelas online ba'da Isya khusus hafalan dan murajaah. Terbuka untuk umum.",
-  },
-];
+// === Bentuk response dari backend (disederhanakan) ===
+type ApiFeeRuleAmountOption = {
+  code: string;
+  label: string;
+  amount: number;
+};
+
+type ApiFeeRule = {
+  fee_rule_id: string;
+  fee_rule_school_id: string;
+  fee_rule_scope: string;
+  fee_rule_term_id: string | null;
+  fee_rule_bill_code: string;
+  fee_rule_option_code: string | null;
+  fee_rule_amount_options: ApiFeeRuleAmountOption[] | null;
+};
+
+type ApiClass = {
+  class_id: string;
+  class_school_id: string;
+  class_name: string;
+  class_slug: string;
+  class_start_date: string;
+  class_end_date: string;
+  class_registration_opens_at: string | null;
+  class_registration_closes_at: string | null;
+  class_quota_total: number | null;
+  class_quota_taken: number;
+  class_delivery_mode: "online" | "offline" | "hybrid";
+  class_status: "active" | "inactive" | string;
+  class_class_parent_id: string;
+  class_parent_code_snapshot: string | null;
+  class_parent_name_snapshot: string;
+  class_parent_slug_snapshot: string | null;
+  class_parent_level_snapshot: number;
+  class_academic_term_id: string;
+  class_academic_term_academic_year_snapshot: string;
+  class_academic_term_name_snapshot: string;
+  class_academic_term_slug_snapshot: string;
+  class_academic_term_angkatan_snapshot: string;
+  class_notes?: string | null;
+};
+
+type ApiTerm = {
+  academic_term_id: string;
+  academic_term_school_id: string;
+  academic_term_academic_year: string;
+  academic_term_name: string;
+  academic_term_start_date: string;
+  academic_term_end_date: string;
+  academic_term_is_active: boolean;
+  academic_term_angkatan: number | null;
+  academic_term_slug: string | null;
+};
+
+type ApiTermItem = {
+  term: ApiTerm;
+  classes?: ApiClass[];
+  fee_rules?: ApiFeeRule[];
+};
+
+type ApiListResponse<T> = {
+  success: boolean;
+  message: string;
+  data: T[];
+  pagination: {
+    page: number;
+    per_page: number;
+    total: number;
+    total_pages: number;
+  };
+};
 
 /* =========================
    Helpers
@@ -123,15 +152,116 @@ export function formatDeliveryMode(
   }
 }
 
+// cek apakah kelas sedang buka pendaftaran (mirip logic di backend)
+function isClassOpenForRegistration(cls: ApiClass, now: Date): boolean {
+  if (cls.class_status.toLowerCase() !== "active") return false;
+
+  const openAt = cls.class_registration_opens_at
+    ? new Date(cls.class_registration_opens_at)
+    : null;
+  const closeAt = cls.class_registration_closes_at
+    ? new Date(cls.class_registration_closes_at)
+    : null;
+
+  if (openAt && now < openAt) return false;
+  if (closeAt && now > closeAt) return false;
+
+  if (
+    cls.class_quota_total != null &&
+    cls.class_quota_taken >= cls.class_quota_total
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+function mapApiToPMBClasses(items: ApiTermItem[]): PMBClassRow[] {
+  const now = new Date();
+  const out: PMBClassRow[] = [];
+
+  for (const item of items) {
+    const term = item.term;
+    const classes = item.classes ?? [];
+    for (const cls of classes) {
+      const isOpen = isClassOpenForRegistration(cls, now);
+
+      out.push({
+        class_id: cls.class_id,
+        class_slug: cls.class_slug,
+        class_name: cls.class_name,
+        class_class_parent_name_snapshot: cls.class_parent_name_snapshot,
+        class_class_parent_level_snapshot: cls.class_parent_level_snapshot,
+        class_academic_term_name_snapshot:
+          cls.class_academic_term_name_snapshot ||
+          term.academic_term_name ||
+          "",
+        class_academic_term_angkatan_snapshot:
+          cls.class_academic_term_angkatan_snapshot ||
+          String(term.academic_term_angkatan ?? ""),
+        class_delivery_mode: cls.class_delivery_mode,
+        class_registration_opens_at:
+          cls.class_registration_opens_at ??
+          term.academic_term_start_date ??
+          new Date().toISOString(),
+        class_registration_closes_at:
+          cls.class_registration_closes_at ??
+          term.academic_term_end_date ??
+          new Date().toISOString(),
+        class_quota_total: cls.class_quota_total,
+        class_quota_taken: cls.class_quota_taken,
+        class_notes: cls.class_notes ?? undefined,
+        is_open_for_registration: isOpen,
+      });
+    }
+  }
+
+  // sort: yang masih buka pendaftaran di atas, lalu urut tanggal buka
+  out.sort((a, b) => {
+    if (a.is_open_for_registration !== b.is_open_for_registration) {
+      return a.is_open_for_registration ? -1 : 1;
+    }
+    const da = new Date(a.class_registration_opens_at).getTime();
+    const db = new Date(b.class_registration_opens_at).getTime();
+    return da - db;
+  });
+
+  return out;
+}
+
 /* =========================
    Component
 ========================= */
 
-export default function PendWebPMBInfo() {
+export default function UnnasignedInfo() {
   const { school_slug } = useParams<{ school_slug: string }>();
   const navigate = useNavigate();
 
+  // slug sekarang murni buat tampilan & routing saja
   const slug = school_slug ?? "sekolah";
+
+  // === Fetch dari API (school_id full dari token, bukan param/path) ===
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["pmb-terms"], // tidak tergantung slug, karena BE baca school dari JWT
+    queryFn: async () => {
+      const res = await api.get<ApiListResponse<ApiTermItem>>(
+        "/u/academic-terms/list",
+        {
+          params: {
+            include: "classes,fee_rules",
+            per_page: 50,
+          },
+        }
+      );
+      return res.data;
+    },
+    enabled: true,
+  });
+
+  const classes: PMBClassRow[] = useMemo(
+    () => (data ? mapApiToPMBClasses(data.data) : []),
+    [data]
+  );
 
   return (
     <div className="mx-auto py-10 px-4 md:py-14 md:px-6 space-y-10">
@@ -156,43 +286,35 @@ export default function PendWebPMBInfo() {
             yang sudah ada.
           </p>
         </div>
-
-        <div className="flex flex-col gap-2 md:items-end">
-          <Button
-            className="w-full md:w-auto"
-            onClick={() => navigate("/register")}
-          >
-            Daftar Akun Baru
-            <ArrowRight className="w-4 h-4 ml-2" />
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full md:w-auto"
-            onClick={() => navigate(`/${slug}/login`)}
-          >
-            Saya sudah punya akun
-          </Button>
-        </div>
       </header>
 
       <Separator />
 
-      {/* Kelas yang membuka pendaftaran (dummy) */}
+      {/* Program / Kelas PMB */}
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle className="text-base md:text-lg">
-            Program / Kelas yang Membuka Pendaftaran
+            Program / Kelas Penerimaan Murid Baru
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-sm md:text-base">
-          {dummyClasses.length === 0 ? (
+          {isLoading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Mengambil data program / kelas PMB...</span>
+            </div>
+          ) : isError ? (
+            <p className="text-sm text-destructive">
+              Gagal memuat data pendaftaran. Silakan coba beberapa saat lagi.
+            </p>
+          ) : classes.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Saat ini belum ada kelas yang membuka pendaftaran. Silakan cek
+              Saat ini belum ada program / kelas PMB yang terdaftar. Silakan cek
               kembali secara berkala atau hubungi admin sekolah.
             </p>
           ) : (
             <div className="space-y-3">
-              {dummyClasses.map((cls) => {
+              {classes.map((cls) => {
                 const quotaInfo =
                   cls.class_quota_total != null
                     ? `${cls.class_quota_taken}/${cls.class_quota_total} kursi`
@@ -239,6 +361,14 @@ export default function PendWebPMBInfo() {
                             Sisa sedikit
                           </Badge>
                         )}
+                        {!cls.is_open_for_registration && (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] border-slate-400 text-slate-600"
+                          >
+                            Pendaftaran ditutup
+                          </Badge>
+                        )}
                       </div>
 
                       <p className="text-xs md:text-sm text-muted-foreground">
@@ -252,7 +382,7 @@ export default function PendWebPMBInfo() {
                       )}
                     </div>
 
-                    {/* Kanan: info periode + CTA Lihat & Daftar */}
+                    {/* Kanan: info periode + CTA */}
                     <div className="flex flex-col gap-2 md:items-end md:text-right text-xs md:text-sm">
                       <div className="space-y-1">
                         <p className="text-muted-foreground">
@@ -267,15 +397,24 @@ export default function PendWebPMBInfo() {
                         <p className="text-muted-foreground text-[11px]">
                           Kuota: {quotaInfo}
                         </p>
+                        {!cls.is_open_for_registration && (
+                          <p className="text-[11px] text-muted-foreground italic">
+                            Pendaftaran saat ini tidak dibuka untuk kelas ini.
+                          </p>
+                        )}
                       </div>
 
                       <Button
-                        variant="outline"
+                        variant={
+                          cls.is_open_for_registration ? "outline" : "ghost"
+                        }
                         size="sm"
                         className="self-stretch md:self-end"
                         onClick={() => navigate(`${cls.class_id}`)}
                       >
-                        Lihat &amp; Daftar
+                        {cls.is_open_for_registration
+                          ? "Lihat & Daftar"
+                          : "Lihat detail"}
                         <ArrowRight className="w-3 h-3 ml-2" />
                       </Button>
                     </div>
@@ -297,9 +436,7 @@ export default function PendWebPMBInfo() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-sm md:text-base">
-            {/* ... (bagian alur pendaftaran tetap sama) ... */}
-            {/* === POTONGAN ASLI KAMU TETAPKAN DI SINI TANPA PERUBAHAN === */}
-            {/* ... */}
+            {/* ... isi alur pendaftaran kamu di sini (tanpa perubahan) ... */}
           </CardContent>
         </Card>
 

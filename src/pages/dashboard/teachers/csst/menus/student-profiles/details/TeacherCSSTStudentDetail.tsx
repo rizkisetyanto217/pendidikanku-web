@@ -271,9 +271,6 @@ const TeacherCSSTStudentDetail: React.FC = () => {
                     {dto.school_student_school_name_snapshot}
                   </span>
                 </Field>
-                <Field label="Slug Sekolah">
-                  {dto.school_student_school_slug_snapshot || "-"}
-                </Field>
               </div>
             </CardContent>
           </Card>

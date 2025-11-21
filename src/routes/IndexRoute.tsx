@@ -21,7 +21,7 @@ import PendWebLayout from "@/components/layout/CPendWebLayout";
 // import PendWebContact from "@/pages/profile/website/website/pages/navbar-page/PendWebContact";
 // import PendWebSupportUs from "@/pages/profile/website/website/support-us/PendWebSupportUs";
 
-import { RegistrationRoutes } from "./RegistrationRoutes";
+import { UnnasignedRoutes } from "./UnnasignedRoutes";
 
 export default function AppRoutes() {
   return (
@@ -55,7 +55,7 @@ export default function AppRoutes() {
           {/* Guru: /:school_slug/guru/... */}
 
           {/* ---------- Public PMB / Pendaftaran sekolah ---------- */}
-          {RegistrationRoutes}
+          {UnnasignedRoutes}
 
           <Route
             element={<RequireschoolRoles allow={["teacher", "admin", "dkm"]} />}

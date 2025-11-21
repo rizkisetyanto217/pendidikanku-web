@@ -16,15 +16,11 @@ import {
   Users,
   CalendarDays,
   BookOpen,
-  CheckSquare,
   CheckCheck,
   ListChecks,
   ClipboardList,
-  MessageSquare,
   MapPin,
   ArrowRight,
-  ExternalLink,
-  Plus,
 } from "lucide-react";
 
 /* =========================================================
@@ -584,9 +580,9 @@ function MyClassesCard({
                 variant="outline"
                 size="sm"
                 onClick={() =>
-                  (window.location.href = c.slug
-                    ? `/teacher/classes/${c.slug}`
-                    : `/teacher/classes/${c.csstId}`)
+                (window.location.href = c.slug
+                  ? `/teacher/classes/${c.slug}`
+                  : `/teacher/classes/${c.csstId}`)
                 }
               >
                 Detail <ArrowRight className="ml-1 h-4 w-4" />
@@ -611,115 +607,9 @@ function MyClassesCard({
   );
 }
 
-function AnnouncementsCard({ items }: { items: AnnouncementUI[] }) {
-  return (
-    <Card className="shadow-sm">
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <span className="h-9 w-9 rounded-xl grid place-items-center bg-muted text-primary">
-            <MessageSquare className="h-4 w-4" />
-          </span>
-          Pengumuman
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {items.length === 0 ? (
-          <div className="text-sm text-muted-foreground">
-            Tidak ada pengumuman.
-          </div>
-        ) : (
-          items.slice(0, 4).map((a) => (
-            <div key={a.id} className="rounded-xl border p-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="font-medium leading-tight">{a.title}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {dateFmt(a.date)}
-                    {a.type ? ` • ${a.type}` : ""}
-                  </div>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() =>
-                    (window.location.href = a.slug
-                      ? `/announcements/${a.slug}`
-                      : `/announcements/${a.id}`)
-                  }
-                >
-                  <ExternalLink className="h-4 w-4" />
-                </Button>
-              </div>
-              {a.body && (
-                <div className="text-sm mt-2 text-foreground/90">{a.body}</div>
-              )}
-            </div>
-          ))
-        )}
-      </CardContent>
-    </Card>
-  );
-}
 
-function QuickActions({
-  onCreateAssignment,
-  onCreateSession,
-  onMessage,
-}: {
-  onCreateAssignment?: () => void;
-  onCreateSession?: () => void;
-  onMessage?: () => void;
-}) {
-  return (
-    <Card className="shadow-sm">
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <span className="h-9 w-9 rounded-xl grid place-items-center bg-muted text-primary">
-            <CheckSquare className="h-4 w-4" />
-          </span>
-          Aksi Cepat
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-        <Button
-          className="w-full"
-          onClick={() =>
-            onCreateAssignment
-              ? onCreateAssignment()
-              : (window.location.href = "/teacher/assignments/new")
-          }
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Buat Tugas/Ulangan
-        </Button>
-        <Button
-          variant="outline"
-          className="w-full"
-          onClick={() =>
-            onCreateSession
-              ? onCreateSession()
-              : (window.location.href = "/teacher/sessions/new")
-          }
-        >
-          <CalendarDays className="mr-2 h-4 w-4" />
-          Buat Sesi Mengajar
-        </Button>
-        <Button
-          variant="outline"
-          className="w-full"
-          onClick={() =>
-            onMessage
-              ? onMessage()
-              : (window.location.href = "/teacher/messages/new")
-          }
-        >
-          <MessageSquare className="mr-2 h-4 w-4" />
-          Kirim Pesan
-        </Button>
-      </CardContent>
-    </Card>
-  );
-}
+
+
 
 /* =========================================================
    PAGE
@@ -769,9 +659,8 @@ const TeacherMainDashboard: React.FC = () => {
   }
 
   const t = data.teacher;
-  const nameFull = `${t.titlePrefix ? t.titlePrefix + " " : ""}${t.name}${
-    t.titleSuffix ? ", " + t.titleSuffix : ""
-  }`;
+  const nameFull = `${t.titlePrefix ? t.titlePrefix + " " : ""}${t.name}${t.titleSuffix ? ", " + t.titleSuffix : ""
+    }`;
 
   return (
     <div className="w-full bg-background text-foreground">
@@ -868,12 +757,6 @@ const TeacherMainDashboard: React.FC = () => {
               seeAllPath="/teacher/classes"
             />
           </div>
-        </section>
-
-        {/* Pengumuman + Aksi cepat */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <AnnouncementsCard items={data.announcements} />
-          <QuickActions />
         </section>
 
         {/* Footer mini */}

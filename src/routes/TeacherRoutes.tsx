@@ -28,9 +28,9 @@ import TeacherCSSTBookList from "@/pages/dashboard/teachers/csst/menus/books/Tea
 import TeacherCSSTExam from "@/pages/dashboard/teachers/csst/menus/exams/TeacherCSSTExam";
 import TeacherCSSTBookDetail from "@/pages/dashboard/teachers/csst/menus/books/details/TeacherCSSTBookDetail";
 import TeacherCSSTManagement from "@/pages/dashboard/teachers/csst/menus/managements/TeacherCSSTManagement";
-// import TeacherCSSTDailyReport from "@/pages/dashboard/teachers/csst/menus/daily-progress/TeacherCSSTDailyReport";
 import Setting from "@/pages/dashboard/components/page/Setting";
 import TeacherCSSTDailyReport from "@/pages/dashboard/teachers/csst/menus/daily-progress/TeacherCSSTDailyReport";
+import TeacherCSSTDailyReportDetail from "@/pages/dashboard/teachers/csst/menus/daily-progress/details/TeacherCSSTDailyReportDetail";
 import TeacherCSSTBookForm from "@/pages/dashboard/teachers/csst/menus/books/details/TeacherCSSTBookForm";
 import TeacherCSSTMaterialForm from "@/pages/dashboard/teachers/csst/menus/materials/details/TeacherCSSTMaterialForm";
 import TeacherCSSTStudentAttendanceDetail from "@/pages/dashboard/teachers/csst/menus/student-attendances/details/TeacherCSSTStudentAttendanceDetail";
@@ -46,6 +46,8 @@ export const TeacherRoutes = (
     <Route path="wali-kelas">
       <Route index element={<TeacherClass />} />
       <Route path=":classSectionId" element={<TeacherClassDetail />} />
+      <Route path=":classSectionId/murid" element={<TeacherCSSTStudentList />} />
+      <Route path=":classSectionId/murid/:id" element={<TeacherCSSTStudentDetail />} />
     </Route>
 
     {/* Guru Mapel / CSST */}
@@ -63,7 +65,8 @@ export const TeacherRoutes = (
       />
       <Route path=":csstId/murid" element={<TeacherCSSTStudentList />} />
       <Route path=":csstId/murid/:id" element={<TeacherCSSTStudentDetail />} />
-      <Route path=":csstId/kehadiran" element={<TeacherCSSTDailyReport />} />
+      <Route path=":csstId/daily-progress" element={<TeacherCSSTDailyReport />} />
+      <Route path=":csstId/daily-progress/:id" element={<TeacherCSSTDailyReportDetail />} />
       <Route path=":csstId/kelola-kelas" element={<TeacherCSSTManagement />} />
       {/* Materi, Ujian, Buku */}
       <Route path=":csstId/materi" element={<TeacherCSSTMaterialList />} />

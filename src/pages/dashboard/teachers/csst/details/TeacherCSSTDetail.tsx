@@ -308,7 +308,7 @@ const TeacherCSSTDetail: React.FC = () => {
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Guru Mapel" },
-        { label: csstView.subjectName },
+        { label: "Detail Mapel" },
       ],
       actions: null,
     });
@@ -342,12 +342,14 @@ const TeacherCSSTDetail: React.FC = () => {
   /* ===== Render utama (semua sudah pure dari API) ===== */
 
   const totalStudents = csstView.enrolledCount ?? 0;
-  const totalMeetings = csstView.totalAttendance ?? 0;
   const totalAttendance = csstView.totalAttendance ?? 0;
   const totalBooks = csstView.totalBooks ?? 0;
 
   const totalAssessmentsGraded = csstView.totalAssessmentsGraded ?? 0;
   const totalAssessmentsUngraded = csstView.totalAssessmentsUngraded ?? 0;
+
+  const whatsappGroupLink = "https://chat.whatsapp.com/xxxxInviteCodexxxx";
+
 
   return (
     <div className="w-full bg-background text-foreground">
@@ -355,10 +357,13 @@ const TeacherCSSTDetail: React.FC = () => {
         <div className="mx-auto flex flex-col gap-6 px-3 pb-10 pt-2 md:px-4">
           {/* Top bar */}
           <div className="hidden md:flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-              <ArrowLeft className="h-5 w-5" />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(-1)}>
+              <ArrowLeft size={20} />
             </Button>
-            <h1 className="text-lg font-semibold">Detail Mapel</h1>
+            <h1 className="text-lg font-semibold md:text-xl">Detail Mapel</h1>
           </div>
 
           {/* Header mapel */}
@@ -454,29 +459,12 @@ const TeacherCSSTDetail: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Target Pertemuan */}
-            <Card
-              className="cursor-pointer transition hover:shadow-md"
-              onClick={() => navigate("pertemuan")}
-            >
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="space-y-1">
-                  <div className="text-sm text-muted-foreground flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    <span>Target Pertemuan</span>
-                  </div>
-                  <div className="text-xl font-semibold"> {totalMeetings}</div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </CardContent>
-            </Card>
-
             {/* Rekap Kehadiran */}
             <Card
               className="cursor-pointer transition hover:shadow-md"
-              onClick={() => navigate("kehadiran")}
+              onClick={() => navigate("daily-progress")}
             >
-              
+
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="space-y-1">
                   <div className="text-sm text-muted-foreground flex items-center gap-2">
@@ -575,6 +563,24 @@ const TeacherCSSTDetail: React.FC = () => {
                     <span>Profil Mapel</span>
                   </div>
                   <div className="text-xl font-semibold">Detail</div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </CardContent>
+            </Card>
+
+            <Card
+              className="cursor-pointer transition hover:shadow-md"
+              onClick={() => window.open(whatsappGroupLink, "_blank")}
+            >
+              {/* Grup WhattsAp Maapel */}
+
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    <span>Grup WhattsAp Mapel</span>
+                  </div>
+                  <div className="text-md font-semibold underline">Link Group</div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </CardContent>

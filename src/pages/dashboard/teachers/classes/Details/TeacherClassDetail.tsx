@@ -1,6 +1,6 @@
 // src/pages/sekolahislamku/teacher/DetailClass.tsx
-import { useMemo, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 /* shadcn/ui */
 import { Button } from "@/components/ui/button";
@@ -13,15 +13,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Users,
   CalendarDays,
-  Clock,
-  ClipboardList,
   BookOpen,
-  ClipboardCheck,
-  GraduationCap,
-  ChevronRight,
   ArrowLeft,
-  UserSquare2,
-  CheckCircle2,
 } from "lucide-react";
 
 /* Tambahan untuk breadcrumb sistem dashboard */
@@ -62,14 +55,6 @@ type CsstItem = {
   nextTopic?: string;
 };
 
-/* ========== Helpers ========== */
-const dateShort = (iso?: string) =>
-  iso
-    ? new Date(iso).toLocaleDateString("id-ID", {
-      day: "2-digit",
-      month: "short",
-    })
-    : "-";
 
 /* ========== DUMMY DATA (penuh) ========== */
 const NOW = new Date();
@@ -78,6 +63,8 @@ const mkISO = (addDays = 0) => {
   d.setDate(d.getDate() + addDays);
   return d.toISOString();
 };
+
+const whatsappClassGroupLink = "https://chat.whatsapp.com/xxxxInviteCodexxxx";
 
 const DUMMY_CLASS: TeacherClassSummary = {
   id: "kelas-uuid-dummy",
@@ -157,24 +144,6 @@ const DUMMY_CSST: CsstItem[] = [
   },
 ];
 
-/* Mode enrolment dummy */
-type CsstMode = "self_select" | "assigned" | "hybrid";
-const csstModeLabel: Record<CsstMode, string> = {
-  self_select: "Self-select",
-  assigned: "Assigned",
-  hybrid: "Hybrid",
-};
-const CSST_MODE: CsstMode = "self_select";
-const CSST_NEED_APPROVAL = false;
-const CSST_MAX_SUBJECTS = 3;
-const CSST_SWITCH_DEADLINE = new Date(
-  NOW.getFullYear(),
-  NOW.getMonth() + 1,
-  15,
-  17,
-  0
-).toISOString();
-
 /* ========== Component ========== */
 export default function TeacherClassDetail() {
   const navigate = useNavigate();
@@ -193,73 +162,6 @@ export default function TeacherClassDetail() {
       actions: null,
     });
   }, [setHeader]);
-
-  // hitung ringkasan dari dummy
-  const activeCount = useMemo(
-    () => DUMMY_CSST.filter((x) => x.isActive).length,
-    []
-  );
-  const totalStudents = DUMMY_CLASS.studentsCount;
-  const hadir = DUMMY_CLASS.todayAttendance.hadir ?? 0;
-
-  const quick = [
-    {
-      key: "murid",
-      label: "Jumlah Murid",
-      metric: totalStudents.toString(),
-      icon: <Users className="h-4 w-4" />,
-      to: "murid",
-      aria: "Lihat daftar murid",
-    },
-    {
-      key: "kehadiran",
-      label: "Kehadiran Hari Ini",
-      metric: `${hadir}/${totalStudents}`,
-      icon: <ClipboardList className="h-4 w-4" />,
-      to: "absensi-hari-ini",
-      aria: "Lihat kehadiran hari ini",
-    },
-    {
-      key: "materi",
-      label: "Materi",
-      metric: `${DUMMY_CLASS.materialsCount}`,
-      icon: <BookOpen className="h-4 w-4" />,
-      to: "materi",
-      aria: "Lihat materi",
-    },
-    {
-      key: "tugas",
-      label: "Tugas",
-      metric: `${DUMMY_CLASS.assignmentsCount}`,
-      icon: <ClipboardCheck className="h-4 w-4" />,
-      to: "tugas",
-      aria: "Lihat tugas",
-    },
-    {
-      key: "ujian",
-      label: "Ujian",
-      metric: `${DUMMY_CLASS.assignmentsCount}`,
-      icon: <GraduationCap className="h-4 w-4" />,
-      to: "ujian",
-      aria: "Lihat ujian",
-    },
-    {
-      key: "buku",
-      label: "Buku",
-      metric: "-",
-      icon: <BookOpen className="h-4 w-4" />,
-      to: "buku",
-      aria: "Lihat buku kelas",
-    },
-    {
-      key: "profil",
-      label: "Profil",
-      metric: "-",
-      icon: <UserSquare2 className="h-4 w-4" />,
-      to: "profil",
-      aria: "Lihat profil kelas",
-    },
-  ] as const;
 
   return (
     <div className="w-full bg-background text-foreground">
@@ -288,19 +190,6 @@ export default function TeacherClassDetail() {
                   <span>• Angkatan {DUMMY_CLASS.cohortYear ?? "—"}</span>
                 </div>
               </div>
-
-              <div className="flex items-center gap-2 flex-wrap">
-                <Link to="absensi-hari-ini">
-                  <Button size="sm" variant="secondary">
-                    Absensi Hari Ini <ChevronRight className="ml-1 h-4 w-4" />
-                  </Button>
-                </Link>
-                <Link to="buku">
-                  <Button size="sm">
-                    Buku Kelas <ChevronRight className="ml-1 h-4 w-4" />
-                  </Button>
-                </Link>
-              </div>
             </CardContent>
           </Card>
 
@@ -314,55 +203,34 @@ export default function TeacherClassDetail() {
             <Separator />
             <CardContent className="p-4">
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                <Card className="p-4">
-                  <div className="text-xs text-muted-foreground">
-                    CSST Aktif
+
+                <Card className="p-4 cursor-pointer transition hover:shadow-md"
+                  onClick={() => navigate("murid")}
+                >
+                  <div className="text-xs text-muted-foreground flex items-center gap-2">
+                    <Users className="h-3 w-3 text-muted-foreground" />
+                    <span>Jumlah Murid</span>
                   </div>
-                  <div className="text-xl font-semibold">
-                    {activeCount}/{DUMMY_CSST.length}
+
+                  <div className="text-xl font-semibold mt-1">
+                    {DUMMY_CLASS.studentsCount}
                   </div>
                 </Card>
 
-                <Card className="p-4">
-                  <div className="text-xs text-muted-foreground">
-                    Mode Enrolment
+                <Card
+                  className="p-4 cursor-pointer transition hover:shadow-md"
+                  onClick={() => window.open(whatsappClassGroupLink, "_blank")}
+                >
+                  <div className="text-xs text-muted-foreground flex items-center gap-2">
+                    <Users className="h-3 w-3 text-muted-foreground" />
+                    <span>Grup WhatsApp Kelas</span>
                   </div>
-                  <div className="text-sm">
-                    <Badge variant="outline">{csstModeLabel[CSST_MODE]}</Badge>
+
+                  <div className="text-md font-semibold mt-1 underline">
+                    Link Group
                   </div>
                 </Card>
 
-                <Card className="p-4">
-                  <div className="text-xs text-muted-foreground">
-                    Self-select butuh approval
-                  </div>
-                  <div className="flex items-center gap-2 mt-1 text-sm">
-                    <CheckCircle2 className="h-4 w-4" />
-                    <span>{CSST_NEED_APPROVAL ? "Ya" : "Tidak"}</span>
-                  </div>
-                </Card>
-
-                <Card className="p-4">
-                  <div className="text-xs text-muted-foreground">
-                    Maks. Mapel per Siswa
-                  </div>
-                  <div className="text-xl font-semibold">
-                    {CSST_MAX_SUBJECTS}
-                  </div>
-                </Card>
-              </div>
-
-              <div className="mt-3 rounded-xl border p-3 bg-card text-sm">
-                Tenggat ganti pilihan:{" "}
-                <b>
-                  {new Date(CSST_SWITCH_DEADLINE).toLocaleString("id-ID", {
-                    day: "2-digit",
-                    month: "long",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </b>
               </div>
             </CardContent>
           </Card>
@@ -432,62 +300,6 @@ export default function TeacherClassDetail() {
             </CardContent>
           </Card>
 
-          {/* Quick Links */}
-          <div className="grid gap-3 grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
-            {quick.map((q) => (
-              <Card
-                key={q.key}
-                className="cursor-pointer transition hover:shadow-md"
-                onClick={() => navigate(q.to)}
-                aria-label={q.aria}
-              >
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div className="space-y-1">
-                    <div className="text-sm text-muted-foreground flex items-center gap-2">
-                      {q.icon}
-                      <span>{q.label}</span>
-                    </div>
-                    <div className="text-xl font-semibold">{q.metric}</div>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Jadwal terdekat */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <CalendarDays className="h-4 w-4" />
-                Jadwal Terdekat
-              </CardTitle>
-            </CardHeader>
-            <Separator />
-            <CardContent className="p-4">
-              {DUMMY_CLASS.nextSession ? (
-                <div className="rounded-xl border p-3 bg-card">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Clock className="h-4 w-4" />
-                    <span>
-                      {dateShort(DUMMY_CLASS.nextSession.dateISO)} •{" "}
-                      {DUMMY_CLASS.nextSession.time}
-                    </span>
-                  </div>
-                  <div className="mt-1 text-sm">
-                    {DUMMY_CLASS.nextSession.title}
-                    {DUMMY_CLASS.nextSession.room
-                      ? ` • ${DUMMY_CLASS.nextSession.room}`
-                      : ""}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-sm text-muted-foreground">
-                  Belum ada jadwal.
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </div>
       </main>
     </div>

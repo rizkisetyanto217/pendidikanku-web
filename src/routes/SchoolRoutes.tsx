@@ -117,9 +117,8 @@ export const SchoolRoutes = (
         path="semua-kelas/:classSectionId"
         element={<SchoolClassSectionDetail />}
       />
-      <Route path="semua-kelas/new" element={<SchoolClassSectionDetail />} />{" "}
-      <Route
-        path="semua-kelas/edit/:classSectionId"
+      <Route path="semua-kelas/new" element={<SchoolClassSectionDetail />} />
+      <Route path="semua-kelas/edit/:classSectionId"
         element={<SchoolClassSectionDetail />}
       />
       <Route path="pelajaran" element={<SchoolCSST />} />

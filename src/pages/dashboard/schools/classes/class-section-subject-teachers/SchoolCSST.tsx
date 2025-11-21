@@ -175,11 +175,7 @@ export default function SchoolCSST({ showBack = false, backTo }: Props) {
         { label: "Kelas" },
         { label: "Pelajaran" },
       ],
-      actions: (
-        <Button size="sm" className="gap-1" onClick={() => navigate("new")}>
-          <Plus size={14} /> Tambah Pelajaran
-        </Button>
-      ),
+      showBack,
     });
   }, [setHeader, navigate]);
 
@@ -236,7 +232,7 @@ export default function SchoolCSST({ showBack = false, backTo }: Props) {
 
           {/* Tombol tambah (fallback, biar ada juga di header dalam page) */}
           <Button size="sm" className="gap-1" onClick={() => navigate("new")}>
-            <Plus size={14} /> Tambah Pelajaran
+            <Plus size={14} /> Tambah
           </Button>
         </div>
 
@@ -357,13 +353,12 @@ export default function SchoolCSST({ showBack = false, backTo }: Props) {
                       const book = csBook?.book;
 
                       const teacherDisplay = teacher
-                        ? `${teacher.title_prefix ?? ""} ${
-                            teacher.name ?? ""
+                        ? `${teacher.title_prefix ?? ""} ${teacher.name ?? ""
                           } ${teacher.title_suffix ?? ""}`
-                            .replace(/\s+/g, " ")
-                            .trim()
+                          .replace(/\s+/g, " ")
+                          .trim()
                         : row.class_section_subject_teacher_school_teacher_name_snapshot ??
-                          "-";
+                        "-";
 
                       return (
                         <div
@@ -372,11 +367,10 @@ export default function SchoolCSST({ showBack = false, backTo }: Props) {
                           onClick={() =>
                             navigate(`${row.class_section_subject_teacher_id}`)
                           }
-                          aria-label={`Detail mapel ${
-                            row.class_section_subject_teacher_subject_name_snapshot ??
+                          aria-label={`Detail mapel ${row.class_section_subject_teacher_subject_name_snapshot ??
                             subj?.name ??
                             "Mata pelajaran"
-                          }`}
+                            }`}
                         >
                           {/* header mapel */}
                           <div className="flex items-start justify-between gap-2">
@@ -401,11 +395,10 @@ export default function SchoolCSST({ showBack = false, backTo }: Props) {
                                   ? "default"
                                   : "outline"
                               }
-                              className={`ml-1 text-[10px] ${
-                                row.class_section_subject_teacher_is_active
-                                  ? "bg-emerald-600"
-                                  : ""
-                              }`}
+                              className={`ml-1 text-[10px] ${row.class_section_subject_teacher_is_active
+                                ? "bg-emerald-600"
+                                : ""
+                                }`}
                             >
                               {row.class_section_subject_teacher_is_active
                                 ? "Aktif"
@@ -453,20 +446,20 @@ export default function SchoolCSST({ showBack = false, backTo }: Props) {
                             <div className="mt-3 flex items-center gap-3 rounded-lg border bg-background/60 p-2 text-xs text-muted-foreground">
                               {(book.image_url ||
                                 row.class_section_subject_teacher_book_image_url_snapshot) && (
-                                <img
-                                  src={
-                                    book.image_url ??
-                                    row.class_section_subject_teacher_book_image_url_snapshot ??
-                                    ""
-                                  }
-                                  alt={
-                                    book.title ??
-                                    row.class_section_subject_teacher_book_title_snapshot ??
-                                    "Book cover"
-                                  }
-                                  className="h-14 w-10 rounded-md border object-cover"
-                                />
-                              )}
+                                  <img
+                                    src={
+                                      book.image_url ??
+                                      row.class_section_subject_teacher_book_image_url_snapshot ??
+                                      ""
+                                    }
+                                    alt={
+                                      book.title ??
+                                      row.class_section_subject_teacher_book_title_snapshot ??
+                                      "Book cover"
+                                    }
+                                    className="h-14 w-10 rounded-md border object-cover"
+                                  />
+                                )}
                               <div className="space-y-1">
                                 <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
                                   Buku yang digunakan

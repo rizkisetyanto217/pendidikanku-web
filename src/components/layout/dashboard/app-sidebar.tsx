@@ -39,6 +39,9 @@ const ROLE_ALIASES: Record<string, keyof NavDict> = {
   guru: "guru",
   teacher: "guru",
   pengajar: "guru",
+
+  // 🔹 area generic user (tanpa role khusus) -> pakai NAVS.unassigned
+  user: "unassigned",
 };
 
 /** Cari role & base langsung dari path apapun bentuknya */
@@ -59,7 +62,8 @@ function useRoleAndBaseFromPath(): { role: keyof NavDict; base: string } {
   if (
     candidate === "sekolah" ||
     candidate === "murid" ||
-    candidate === "guru"
+    candidate === "guru" ||
+    candidate === "unassigned"
   ) {
     return {
       role: candidate,
@@ -74,12 +78,49 @@ function useRoleAndBaseFromPath(): { role: keyof NavDict; base: string } {
 /** Resolve nav key berdasarkan membership (role di JWT) */
 function resolveNavKey(
   membership: CurrentUserMembership | null,
-  fallback: keyof NavDict
+  pathRole: keyof NavDict
 ): keyof NavDict {
-  if (!membership) return fallback;
+  // 1️⃣ Kalau URL sudah jelas area-nya, langsung pakai itu apa adanya.
+  //    /:slug/guru/...        -> NAVS.guru
+  //    /:slug/murid/...       -> NAVS.murid
+  //    /:slug/user/...        -> NAVS.unassigned
+  if (
+    pathRole === "guru" ||
+    pathRole === "murid" ||
+    pathRole === "unassigned"
+  ) {
+    return pathRole;
+  }
+
+  // 2️⃣ Kalau ga ada membership (belum ke-load atau belum login di konteks sekolah), ya pakai yang kebaca dari path saja
+  if (!membership) {
+    return pathRole;
+  }
 
   const roles = membership.roles ?? [];
 
+  // 3️⃣ Khusus area sekolah: bedakan admin vs non-admin
+  if (pathRole === "sekolah") {
+    // Ga punya role spesifik -> unassigned
+    if (!roles.length) {
+      return "unassigned";
+    }
+
+    if (
+      roles.includes("admin") ||
+      roles.includes("dkm") ||
+      roles.includes("staff")
+    ) {
+      return "sekolah";
+    }
+
+    if (roles.includes("teacher")) return "guru";
+    if (roles.includes("student")) return "murid";
+
+    return "unassigned";
+  }
+
+  // 4️⃣ Fallback terakhir: deduksi pure dari role saja
   if (
     roles.includes("admin") ||
     roles.includes("dkm") ||
@@ -87,16 +128,9 @@ function resolveNavKey(
   ) {
     return "sekolah";
   }
+  if (roles.includes("teacher")) return "guru";
+  if (roles.includes("student")) return "murid";
 
-  if (roles.includes("teacher")) {
-    return "guru";
-  }
-
-  if (roles.includes("student")) {
-    return "murid";
-  }
-
-  // ✅ sudah login + punya membership, tapi tidak punya role spesifik
   return "unassigned";
 }
 
@@ -128,10 +162,9 @@ export function AppSidebar(props: AppSidebarProps) {
       end: it.end ?? false,
       items: it.children?.map((c) => ({
         title: c.label,
-        // to override: kalau nanti kamu mau dukung `to` di NavChild, tinggal cek di sini
+        // kalau child punya `to`, pakai itu relatif ke base
         url: c.to
-          ? // kalau child punya `to`, pakai itu relatif ke base
-            `${base}/${c.to.replace(/^\/+/, "")}`
+          ? `${base}/${c.to.replace(/^\/+/, "")}`
           : `${parentUrl}/${c.path.replace(/^\/+/, "")}`,
         end: c.end ?? false,
       })),

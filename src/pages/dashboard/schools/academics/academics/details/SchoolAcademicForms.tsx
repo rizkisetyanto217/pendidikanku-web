@@ -75,10 +75,10 @@ const TERMS_QKEY = (schoolId?: string) =>
 const dateShort = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
     : "-";
 
 function normalizeAcademicYear(input: string) {
@@ -369,7 +369,7 @@ const SchoolAcademicTermForm: React.FC = () => {
   return (
     <div className="w-full overflow-x-hidden bg-background text-foreground">
       <main className="w-full">
-        <div className="mx-auto max-w-3xl flex flex-col gap-4 lg:gap-6 py-4">
+        <div className="mx-auto flex flex-col gap-4 lg:gap-6 py-4">
           {/* Header minimal di dalam page */}
           <div className="flex items-center gap-3">
             <Button

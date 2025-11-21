@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 /* UI */
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 
 /* ScheduleList */
@@ -17,7 +17,7 @@ import type { ScheduleRow } from "@/pages/dashboard/components/calender/types/ty
 /* =======================
    FULL DUMMY DATA
 ======================= */
-const dummySchedules: ScheduleRow[] = [
+export const dummySchedules: ScheduleRow[] = [
   {
     id: "1",
     title: "Pertemuan Mingguan",
@@ -27,6 +27,7 @@ const dummySchedules: ScheduleRow[] = [
     teacher: "Budi Setiawan",
     type: "class",
     description: "Materi: Pengenalan Bab 1 dan diskusi dasar.",
+    status: "present",
   },
   {
     id: "2",
@@ -37,6 +38,7 @@ const dummySchedules: ScheduleRow[] = [
     teacher: "Budi Setiawan",
     type: "exam",
     description: "UTS materi bab 1 sampai bab 3.",
+    status: "present",
   },
   {
     id: "3",
@@ -47,6 +49,7 @@ const dummySchedules: ScheduleRow[] = [
     teacher: "Dewi Lestari",
     type: "event",
     description: "Presentasi kelompok mengenai proyek mini.",
+    status: "absent",
   },
   {
     id: "4",
@@ -57,6 +60,7 @@ const dummySchedules: ScheduleRow[] = [
     teacher: "Budi Setiawan",
     type: "class",
     description: "Materi Bab 2 dan latihan pemahaman.",
+    status: "absent",
   },
   {
     id: "5",
@@ -67,6 +71,7 @@ const dummySchedules: ScheduleRow[] = [
     teacher: "Budi Setiawan",
     type: "exam",
     description: "Evaluasi cepat untuk menilai progres harian.",
+    status: "present",
   },
   {
     id: "6",
@@ -77,6 +82,7 @@ const dummySchedules: ScheduleRow[] = [
     teacher: "Dewi Lestari",
     type: "class",
     description: "Pendalaman materi bab 3 secara detail.",
+    status: "present",
   },
   {
     id: "7",
@@ -87,6 +93,7 @@ const dummySchedules: ScheduleRow[] = [
     teacher: "Budi Setiawan",
     type: "event",
     description: "Diskusi kelompok untuk persiapan ujian.",
+    status: "present",
   },
   {
     id: "8",
@@ -97,6 +104,7 @@ const dummySchedules: ScheduleRow[] = [
     teacher: "Dewi Lestari",
     type: "exam",
     description: "Ujian materi bab 2.",
+    status: "present",
   },
   {
     id: "9",
@@ -107,6 +115,7 @@ const dummySchedules: ScheduleRow[] = [
     teacher: "Budi Setiawan",
     type: "class",
     description: "Topik lanjutan: penyelesaian studi kasus.",
+    status: "present",
   },
   {
     id: "10",
@@ -117,6 +126,7 @@ const dummySchedules: ScheduleRow[] = [
     teacher: "Dewi Lestari",
     type: "event",
     description: "Review rangkuman materi dan evaluasi umum.",
+    status: "absent",
   },
 ];
 
@@ -124,13 +134,14 @@ export default function TeacherCSSTDailyReport() {
   const navigate = useNavigate();
   const { setHeader } = useDashboardHeader();
 
-  // ✅ Set header via effect, bukan di body
+  // Set header via effect, bukan di body
   useEffect(() => {
     setHeader({
       title: "Laporan Harian",
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Guru Mapel" },
+        { label: "Detail Mapel", href: "guru mapel/detail mapel" },
         { label: "Laporan Harian" },
       ],
       // kalau DashboardLayout biasa pakai actions/null, sekalian aja:
@@ -139,16 +150,25 @@ export default function TeacherCSSTDailyReport() {
   }, [setHeader]);
 
   return (
-    <div className="p-4 space-y-4">
-      <Button variant="ghost" onClick={() => navigate(-1)}>
-        <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
-      </Button>
+    <div className="w-full overflow-x-hidden bg-background text-foreground">
+      <div className="md:flex hidden gap-3 items-center">
+        <Button
+          variant="ghost"
+          onClick={() => navigate(-1)}>
+          <ArrowLeft size={20} />
+        </Button>
+        <h1 className="text-lg font-semibold md:text-xl">Laporan Harian</h1>
+      </div>
+      <CardContent className="p-4">
+        <ScheduleList
+          data={dummySchedules}
+          loading={false}
+          hideRowActions={true}       // ICON EDIT/HAPUS HILANG
+          onEdit={(row) => navigate(`${row.id}`)}
+        />
 
-      <Card>
-        <CardContent className="p-4">
-          <ScheduleList data={dummySchedules} loading={false} readOnly />
-        </CardContent>
-      </Card>
-    </div>
+      </CardContent>
+    </div >
+
   );
 }
