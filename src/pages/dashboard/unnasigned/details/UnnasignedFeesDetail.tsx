@@ -1,14 +1,8 @@
 // src/pages/dashboard/unnasigned/details/UnnasignedFeesDetail.tsx
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import {
-  Receipt,
-  GraduationCap,
-  Info,
-  ArrowRight,
-  Loader2,
-} from "lucide-react";
+import { Receipt, GraduationCap, ArrowRight, Loader2 } from "lucide-react";
 
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/axios";
@@ -16,6 +10,13 @@ import api from "@/lib/axios";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
 import type { PMBClassRow } from "../UnnasignedInfo";
 
@@ -107,6 +108,18 @@ type ApiTermItem = {
   fee_rules?: ApiFeeRule[];
 };
 
+type RegistrationEnrollResponse = {
+  success: boolean;
+  message: string;
+  data: {
+    enrollments: any[];
+    payment: {
+      payment_checkout_url: string | null;
+      [key: string]: any;
+    };
+  };
+};
+
 type ApiListResponse<T> = {
   success: boolean;
   message: string;
@@ -126,9 +139,8 @@ export default function PendWebPMBFeesDetail() {
   const slug = school_slug ?? "sekolah";
 
   // === Fetch term + classes + fee_rules ===
-  // disamakan dengan PendWebPMBInfo: BE baca school dari JWT, bukan slug path
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["pmb-fees-detail", slug],
+    queryKey: ["pmb-fees-detail"],
     queryFn: async () => {
       const res = await api.get<ApiListResponse<ApiTermItem>>(
         "/u/academic-terms/list",
@@ -156,13 +168,11 @@ export default function PendWebPMBFeesDetail() {
       for (const c of classes) {
         if (c.class_id !== id) continue;
 
-        // fallback periode daftar kelas → kalau kosong pakai term
         const regOpen =
           c.class_registration_opens_at ?? term.academic_term_start_date;
         const regClose =
           c.class_registration_closes_at ?? term.academic_term_end_date;
 
-        // hitung apakah pendaftaran masih dibuka (logic selaras dengan UnnasignedInfo)
         const now = new Date();
         const openAt = regOpen ? new Date(regOpen) : null;
         const closeAt = regClose ? new Date(regClose) : null;
@@ -201,11 +211,10 @@ export default function PendWebPMBFeesDetail() {
           class_quota_total: c.class_quota_total,
           class_quota_taken: c.class_quota_taken,
           class_notes: c.class_notes ?? null,
-          // NEW: selaras dengan tipe PMBClassRow terbaru
           is_open_for_registration: isOpenForRegistration,
         };
 
-        // fee_rules yang relevan untuk term ini
+        // fee_rules relevan untuk term ini
         const termFeeRules = feeRules.filter(
           (fr) =>
             fr.fee_rule_term_id === term.academic_term_id ||
@@ -223,23 +232,159 @@ export default function PendWebPMBFeesDetail() {
     return null;
   }, [data, id]);
 
-  function handlePayNow() {
-    // TODO:
-    // - di step berikutnya user milih opsi biaya (T1/T2/T3)
-    // - kirim ke backend → create payment (registration-enroll)
-    // - redirect ke Midtrans Snap
-    // placeholder sekarang:
-    // console.log("Bayar sekarang untuk class_id:", view?.cls.class_id);
-  }
+  // derive agar hooks di bawah bisa jalan walau view masih null
+  const feeRules = view?.feeRules ?? [];
+  const cls = view?.cls ?? null;
 
-  // ===== STATE: loading / error / not found =====
+  // ====== DATA UNTUK PEMBAYARAN (REGISTRATION ONLY) ======
+
+  const registrationRule: ApiFeeRule | undefined = useMemo(
+    () =>
+      feeRules.find(
+        (fr) =>
+          (fr.fee_rule_gbk_category_snapshot || "").toLowerCase().trim() ===
+          "registration"
+      ),
+    [feeRules]
+  );
+
+  const optionChoices: FeeRuleAmountOption[] =
+    registrationRule?.fee_rule_amount_options ?? [];
+
+  const minSelectableAmount: number | null = useMemo(() => {
+    const optMin =
+      optionChoices.length > 0
+        ? optionChoices.reduce<number | null>((min, opt) => {
+            if (min === null) return opt.amount;
+            return opt.amount < min ? opt.amount : min;
+          }, null)
+        : null;
+
+    if (optMin != null) return optMin;
+
+    const base = registrationRule?.fee_rule_gbk_default_amount_idr_snapshot;
+    return base ?? null;
+  }, [optionChoices, registrationRule]);
+
+  // ====== STATE: mode pembayaran & pilihan ======
+  const [paymentMode, setPaymentMode] = useState<"option" | "custom">("option");
+  const [selectedOptionCode, setSelectedOptionCode] = useState<string | null>(
+    optionChoices.length > 0 ? optionChoices[0].code : null
+  );
+  const [customAmount, setCustomAmount] = useState<string>("");
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // sync kalau optionChoices berubah
+  useEffect(() => {
+    if (optionChoices.length > 0) {
+      setSelectedOptionCode(optionChoices[0].code);
+    } else {
+      setSelectedOptionCode(null);
+    }
+  }, [optionChoices]);
+
+  const selectedOption =
+    optionChoices.find((o) => o.code === selectedOptionCode) ??
+    optionChoices[0] ??
+    null;
+
+  const optionAmount = selectedOption?.amount ?? null;
+  const customAmountNumber = Number.parseInt(customAmount || "0", 10) || 0;
+
+  const isCustomInvalid =
+    paymentMode === "custom" &&
+    (customAmountNumber <= 0 ||
+      (minSelectableAmount != null &&
+        customAmountNumber < minSelectableAmount));
+
+  const totalToPay =
+    paymentMode === "option"
+      ? optionAmount ?? 0
+      : isCustomInvalid
+      ? 0
+      : customAmountNumber;
+
+  const canSubmit =
+    feeRules.length > 0 &&
+    ((paymentMode === "option" && !!optionAmount) ||
+      (paymentMode === "custom" && !isCustomInvalid && customAmountNumber > 0));
+
+  const handlePayNow = async () => {
+    if (!registrationRule || !cls || !canSubmit || totalToPay <= 0) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const payload: any = {
+        class_id: cls.class_id,
+        fee_rule_id: registrationRule.fee_rule_id,
+        payment_method: "gateway",
+        payment_gateway_provider: "midtrans",
+        customer: {
+          customer_first_name: "Budi",
+          customer_last_name: "Santoso",
+          customer_email: "budi@example.com",
+          customer_phone: "+628123456789",
+          billing_address: "Jl. Mawar No. 1",
+        },
+        notes:
+          paymentMode === "option"
+            ? `Ambil paket ${
+                selectedOption?.label ?? selectedOption?.code ?? ""
+              }.`
+            : "Isi nominal sendiri.",
+      };
+
+      if (paymentMode === "option" && selectedOption?.code) {
+        payload.fee_rule_option_code = selectedOption.code;
+      } else if (paymentMode === "custom") {
+        // kalau backendmu support custom amount, kirim di sini
+        payload.custom_amount_idr = totalToPay;
+      }
+
+      const res = await api.post<RegistrationEnrollResponse>(
+        "/u/payments/registration-enroll",
+        payload
+      );
+
+      const checkoutUrl = res.data?.data?.payment?.payment_checkout_url ?? null;
+
+      if (checkoutUrl) {
+        // langsung lempar ke Midtrans
+        window.location.href = checkoutUrl;
+        // atau kalau mau tab baru:
+        // window.open(checkoutUrl, "_blank");
+      } else {
+        setSubmitError(
+          "Pembayaran berhasil dibuat, tapi tautan pembayaran tidak ditemukan. Silakan hubungi admin."
+        );
+      }
+    } catch (err: any) {
+      console.error(err);
+      const msg =
+        err?.response?.data?.message ??
+        "Gagal membuat pembayaran. Silakan coba lagi.";
+      setSubmitError(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // ======================
+  // 🔁 BARU SETELAH SEMUA HOOK DI ATAS
+  // ======================
 
   if (isLoading) {
     return (
       <div className="max-w-3xl mx-auto py-10 px-4 md:py-14 md:px-6 space-y-6">
         <div>
           <Link
-            to={`/${slug}/pmb`}
+            to={`/${slug}/user/pendaftaran`}
             className="text-xs text-muted-foreground hover:underline"
           >
             ← Kembali ke daftar program
@@ -261,12 +406,12 @@ export default function PendWebPMBFeesDetail() {
     );
   }
 
-  if (isError || !view) {
+  if (isError || !view || !cls) {
     return (
       <div className="max-w-3xl mx-auto py-10 px-4 md:py-14 md:px-6 space-y-6">
         <div>
           <Link
-            to={`/${slug}/pmb`}
+            to={`/${slug}/user/pendaftaran`}
             className="text-xs text-muted-foreground hover:underline"
           >
             ← Kembali ke daftar program
@@ -291,23 +436,12 @@ export default function PendWebPMBFeesDetail() {
     );
   }
 
-  const { cls, feeRules } = view;
-
-  // Untuk summary kecil di bawah: ambil minimal amount (optional)
-  const minAmount =
-    feeRules
-      .flatMap((fr) => fr.fee_rule_amount_options ?? [])
-      .reduce<number | null>((min, opt) => {
-        if (min === null) return opt.amount;
-        return opt.amount < min ? opt.amount : min;
-      }, null) ?? undefined;
-
   return (
     <div className="max-w-3xl mx-auto py-10 px-4 md:py-14 md:px-6 space-y-8">
       {/* breadcrumb */}
       <div className="flex items-center justify-between gap-2">
         <Link
-          to={`/${slug}/pmb/${cls.class_id}`}
+          to={`/${slug}/user/${cls.class_id}`}
           className="text-xs text-muted-foreground hover:underline"
         >
           ← Kembali ke detail program
@@ -351,180 +485,164 @@ export default function PendWebPMBFeesDetail() {
         </CardHeader>
 
         <CardContent className="space-y-4 text-sm md:text-base">
-          {feeRules.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Belum ada aturan biaya yang terhubung dengan periode ini. Silakan
-              hubungi admin sekolah untuk informasi nominal pendaftaran.
-            </p>
-          ) : (
-            <div className="overflow-x-auto rounded-lg border bg-card/40">
-              <table className="min-w-full text-sm">
-                <thead className="bg-muted/60">
-                  <tr className="text-xs md:text-sm">
-                    <th className="px-4 py-3 text-left font-medium">
-                      Komponen
-                    </th>
-                    <th className="px-4 py-3 text-left font-medium">
-                      Pilihan / Keterangan
-                    </th>
-                    <th className="px-4 py-3 text-right font-medium">
-                      Nominal
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {feeRules.map((fr) => {
-                    const category = fr.fee_rule_gbk_category_snapshot ?? "";
-                    const isRegistration =
-                      category.toLowerCase() === "registration";
-                    const isSpp = category.toLowerCase() === "spp";
+          {/* ====== PILIHAN PEMBAYARAN (OPTION VS CUSTOM) ====== */}
+          {registrationRule && (
+            <div className="pt-4 border-t border-border/60 space-y-3">
+              <h2 className="text-sm md:text-base font-semibold">
+                Pilihan pembayaran
+              </h2>
+              <p className="text-[11px] md:text-xs text-muted-foreground">
+                Untuk komponen berikut, kalau ada lebih dari satu pilihan
+                nominal, kamu cukup pilih satu atau isi nominal sendiri (minimal
+                sesuai ketentuan). Tidak harus membayar semua opsi sekaligus.
+              </p>
 
-                    const title =
-                      fr.fee_rule_gbk_name_snapshot ||
-                      fr.fee_rule_option_code ||
-                      fr.fee_rule_gbk_code_snapshot ||
-                      "Komponen biaya";
+              <div className="rounded-lg border px-4 py-3 space-y-4 bg-card/60">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-medium">
+                      {registrationRule.fee_rule_gbk_name_snapshot ??
+                        "Biaya Pendaftaran"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Pilih satu nominal yang ingin kamu bayarkan.
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="text-[10px]">
+                    PENDAFTARAN
+                  </Badge>
+                </div>
 
-                    const options = fr.fee_rule_amount_options ?? [];
+                <div className="grid gap-4 md:grid-cols-2">
+                  {/* Mode 1: pilih dari opsi */}
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
+                      <input
+                        type="radio"
+                        name="payment-mode"
+                        value="option"
+                        className="h-3 w-3"
+                        checked={paymentMode === "option"}
+                        onChange={() => setPaymentMode("option")}
+                      />
+                      <span>Pilih dari daftar opsi</span>
+                    </label>
 
-                    if (options.length === 0) {
-                      // fallback kalau nggak ada amount_options
-                      const baseAmount =
-                        fr.fee_rule_gbk_default_amount_idr_snapshot;
-                      return (
-                        <tr
-                          key={fr.fee_rule_id}
-                          className="border-t border-border/60"
-                        >
-                          <td className="px-4 py-3 align-top">
-                            <div className="font-medium">{title}</div>
-                            <div className="mt-1 inline-flex flex-wrap items-center gap-2">
-                              {isRegistration && (
-                                <Badge
-                                  variant="outline"
-                                  className="text-[10px]"
-                                >
-                                  PENDAFTARAN
-                                </Badge>
-                              )}
-                              {isSpp && (
-                                <Badge
-                                  variant="outline"
-                                  className="text-[10px]"
-                                >
-                                  SPP
-                                </Badge>
-                              )}
-                              {fr.fee_rule_gbk_is_recurring_snapshot && (
-                                <Badge
-                                  variant="secondary"
-                                  className="text-[10px] bg-blue-600/15 text-blue-500"
-                                >
-                                  BERKALA
-                                </Badge>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-muted-foreground align-top">
-                            {fr.fee_rule_gbk_category_snapshot
-                              ? `Kategori: ${fr.fee_rule_gbk_category_snapshot}`
-                              : "Mengikuti ketentuan sekolah."}
-                          </td>
-                          <td className="px-4 py-3 text-right align-top font-medium">
-                            {baseAmount != null
-                              ? formatRupiah(baseAmount)
-                              : "-"}
-                          </td>
-                        </tr>
-                      );
-                    }
+                    <Select
+                      disabled={
+                        paymentMode !== "option" || optionChoices.length === 0
+                      }
+                      value={selectedOption?.code ?? ""}
+                      onValueChange={(val) => setSelectedOptionCode(val)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Pilih nominal" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {optionChoices.map((opt) => (
+                          <SelectItem key={opt.code} value={opt.code}>
+                            {opt.label
+                              ? `${opt.label} — ${formatRupiah(opt.amount)}`
+                              : formatRupiah(opt.amount)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
 
-                    // kalau punya amount_options → render satu baris per opsi
-                    return options.map((opt) => (
-                      <tr
-                        key={`${fr.fee_rule_id}-${opt.code}`}
-                        className="border-t border-border/60"
-                      >
-                        <td className="px-4 py-3 align-top">
-                          <div className="font-medium">{title}</div>
-                          <div className="mt-1 inline-flex flex-wrap items-center gap-2">
-                            {isRegistration && (
-                              <Badge variant="outline" className="text-[10px]">
-                                PENDAFTARAN
-                              </Badge>
-                            )}
-                            {isSpp && (
-                              <Badge variant="outline" className="text-[10px]">
-                                SPP
-                              </Badge>
-                            )}
-                            {fr.fee_rule_gbk_is_recurring_snapshot && (
-                              <Badge
-                                variant="secondary"
-                                className="text-[10px] bg-blue-600/15 text-blue-500"
-                              >
-                                BERKALA
-                              </Badge>
-                            )}
-                            {opt.code && (
-                              <Badge variant="outline" className="text-[10px]">
-                                {opt.code}
-                              </Badge>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground align-top">
-                          {opt.label || "Pilihan nominal"}
-                        </td>
-                        <td className="px-4 py-3 text-right align-top font-medium">
-                          {formatRupiah(opt.amount)}
-                        </td>
-                      </tr>
-                    ));
-                  })}
+                    {selectedOption && paymentMode === "option" && (
+                      <p className="text-[11px] text-muted-foreground">
+                        Dipilih: {selectedOption.label || selectedOption.code} (
+                        {formatRupiah(selectedOption.amount)})
+                      </p>
+                    )}
+                  </div>
 
-                  {/* baris summary kecil (opsional) */}
-                  {minAmount !== undefined && (
-                    <tr className="border-t border-border/80 bg-muted/40">
-                      <td className="px-4 py-3 font-semibold" colSpan={2}>
-                        Perkiraan minimal pembayaran awal
-                      </td>
-                      <td className="px-4 py-3 text-right font-semibold text-emerald-500">
-                        {formatRupiah(minAmount)}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                  {/* Mode 2: custom nominal */}
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
+                      <input
+                        type="radio"
+                        name="payment-mode"
+                        value="custom"
+                        className="h-3 w-3"
+                        checked={paymentMode === "custom"}
+                        onChange={() => setPaymentMode("custom")}
+                      />
+                      <span>Isi nominal sendiri</span>
+                    </label>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Rp</span>
+                      <input
+                        type="number"
+                        min={minSelectableAmount ?? undefined}
+                        className="flex-1 rounded-md border bg-background px-3 py-2 text-sm"
+                        value={customAmount}
+                        onChange={(e) => setCustomAmount(e.target.value)}
+                        disabled={paymentMode !== "custom"}
+                      />
+                    </div>
+
+                    {paymentMode === "custom" && minSelectableAmount && (
+                      <p className="text-[11px] text-muted-foreground">
+                        Minimal {formatRupiah(minSelectableAmount)}.
+                      </p>
+                    )}
+
+                    {isCustomInvalid && paymentMode === "custom" && (
+                      <p className="text-[11px] text-destructive">
+                        Nominal minimal{" "}
+                        {minSelectableAmount
+                          ? formatRupiah(minSelectableAmount)
+                          : "tidak valid"}
+                        .
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Total yang akan dibayar */}
+                <div className="flex items-center justify-between pt-3 border-t border-border/60 text-sm">
+                  <span className="text-muted-foreground">
+                    Total yang akan dibayar
+                  </span>
+                  <span className="font-semibold">
+                    {totalToPay > 0 ? formatRupiah(totalToPay) : "-"}
+                  </span>
+                </div>
+              </div>
             </div>
           )}
 
-          <p className="flex items-start gap-2 text-[11px] text-muted-foreground">
-            <Info className="w-3 h-3 mt-[2px]" />
-            <span>
-              Nominal dan komponen di atas langsung mengikuti pengaturan admin
-              sekolah di dashboard Madinah Salam. Pada langkah berikutnya, kamu
-              bisa memilih opsi biaya yang tersedia sebelum melanjutkan ke
-              pembayaran.
-            </span>
-          </p>
-
           {/* Tombol ke Midtrans */}
-          <div className="pt-2 flex flex-col gap-2">
+          <div className="pt-4 flex flex-col gap-2">
             <Button
               className="w-full md:w-auto"
               size="lg"
               onClick={handlePayNow}
-              disabled={feeRules.length === 0}
+              disabled={!canSubmit || isSubmitting}
             >
-              Lanjut ke Pembayaran
-              <ArrowRight className="w-4 h-4 ml-2" />
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Mengarahkan ke pembayaran...
+                </>
+              ) : (
+                <>
+                  Lanjut ke Pembayaran
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </>
+              )}
             </Button>
+
+            {submitError && (
+              <p className="text-xs text-destructive">{submitError}</p>
+            )}
 
             <button
               type="button"
               className="text-xs text-muted-foreground hover:underline self-start"
-              onClick={() => navigate(`/${slug}/pmb/${cls.class_id}`)}
+              onClick={() => navigate(`/${slug}/user/${cls.class_id}`)}
             >
               Kembali tanpa membayar
             </button>

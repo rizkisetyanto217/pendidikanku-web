@@ -85,7 +85,7 @@ export default function PendWebPMBClassDetail() {
 
   // === Fetch academic terms + classes (school_id dari token, bukan dari path/params) ===
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["pmb-terms-detail"], // tidak tergantung slug, BE pakai school context
+    queryKey: ["pmb-terms"], // tidak tergantung slug, BE pakai school context
     queryFn: async () => {
       const res = await api.get<ApiListResponse<ApiTermItem>>(
         "/u/academic-terms/list",
