@@ -328,7 +328,7 @@ function DonorList({ donors }: { donors: DonorItem[] }) {
 /* =========================================================
    PAGE
 ========================================================= */
-const SchoolCampaignDetailPage: React.FC = () => {
+const SchoolCampaignDetail: React.FC = () => {
   const { schoolId = "", campaignSlugOrId = "" } = useParams<{
     schoolId: string;
     campaignSlugOrId: string;
@@ -669,4 +669,4 @@ const SchoolCampaignDetailPage: React.FC = () => {
   );
 };
 
-export default SchoolCampaignDetailPage;
+export default SchoolCampaignDetail;

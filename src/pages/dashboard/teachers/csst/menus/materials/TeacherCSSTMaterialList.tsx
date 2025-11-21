@@ -1,5 +1,5 @@
 // src/pages/sekolahislamku/teacher/TeacherCSSTMaterialList.tsx
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -47,17 +47,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 
 /* DataTable reusable */
-import { DataTable, type ColumnDef } from "@/components/costum/table/CDataTable";
+import {
+  DataTable,
+  type ColumnDef,
+} from "@/components/costum/table/CDataTable";
 
 /* =========================================================
    TYPES
@@ -204,11 +199,11 @@ const bytesToHuman = (n?: number) => {
 const dateLong = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
     : "-";
 
 function extractYouTubeId(url?: string) {
@@ -223,7 +218,7 @@ function extractYouTubeId(url?: string) {
       const idx = segs.findIndex((s) => s === "embed");
       if (idx >= 0 && segs[idx + 1]) return segs[idx + 1];
     }
-  } catch { }
+  } catch {}
   return null;
 }
 
@@ -237,357 +232,6 @@ const TypeIcon = ({ t }: { t: MaterialType }) =>
   ) : (
     <PlayCircle className="h-4 w-4" />
   );
-
-/* =========================================================
-   ADD / EDIT MODALS
-========================================================= */
-type AddMaterialPayload = {
-  title: string;
-  type: MaterialType;
-  description?: string;
-  content?: string;
-  url?: string;
-  fileName?: string;
-  fileSize?: number;
-};
-type EditMaterialPayload = AddMaterialPayload;
-
-function AddMaterialDialog({
-  open,
-  onClose,
-  onSubmit,
-}: {
-  open: boolean;
-  onClose: () => void;
-  onSubmit: (p: AddMaterialPayload) => void;
-}) {
-  const [title, setTitle] = useState("");
-  const [type, setType] = useState<MaterialType>("article");
-  const [description, setDescription] = useState("");
-  const [content, setContent] = useState("");
-  const [url, setUrl] = useState("");
-  const [fileName, setFileName] = useState("");
-  const [fileSize, setFileSize] = useState<number | undefined>(undefined);
-
-  const reset = () => {
-    setTitle("");
-    setType("article");
-    setDescription("");
-    setContent("");
-    setUrl("");
-    setFileName("");
-    setFileSize(undefined);
-  };
-
-  const submit = () => {
-    onSubmit({
-      title: title.trim(),
-      type,
-      description: description.trim() || undefined,
-      content: type === "article" ? content : undefined,
-      url: type !== "article" ? url.trim() || undefined : undefined,
-      fileName: type === "file" ? fileName.trim() || undefined : undefined,
-      fileSize: type === "file" ? fileSize : undefined,
-    });
-    reset();
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>Tambah Materi</DialogTitle>
-        </DialogHeader>
-
-        <div className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="mtitle">Judul</Label>
-            <Input
-              id="mtitle"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label>Jenis</Label>
-              <Select
-                value={type}
-                onValueChange={(v) => setType(v as MaterialType)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih jenis" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="article">Artikel</SelectItem>
-                  <SelectItem value="file">File / PDF</SelectItem>
-                  <SelectItem value="link">Link</SelectItem>
-                  <SelectItem value="youtube">YouTube</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="mdesc">Deskripsi (opsional)</Label>
-            <Textarea
-              id="mdesc"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
-
-          {type === "article" && (
-            <div className="grid gap-2">
-              <Label htmlFor="mcontent">Isi Artikel</Label>
-              <Textarea
-                id="mcontent"
-                rows={8}
-                placeholder="Tulis artikel (markdown/plain)…"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-              />
-            </div>
-          )}
-
-          {(type === "link" || type === "youtube") && (
-            <div className="grid gap-2">
-              <Label htmlFor="murl">
-                {type === "youtube" ? "URL YouTube" : "URL"}
-              </Label>
-              <Input
-                id="murl"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://…"
-              />
-            </div>
-          )}
-
-          {type === "file" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="mfileurl">URL File</Label>
-                <Input
-                  id="mfileurl"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  placeholder="https://…/dokumen.pdf"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="mfilename">Nama File</Label>
-                <Input
-                  id="mfilename"
-                  value={fileName}
-                  onChange={(e) => setFileName(e.target.value)}
-                  placeholder="dokumen.pdf"
-                />
-              </div>
-              <div className="grid gap-2 md:col-span-2">
-                <Label htmlFor="mfilesize">Ukuran (byte) – opsional</Label>
-                <Input
-                  id="mfilesize"
-                  type="number"
-                  value={fileSize ?? ""}
-                  onChange={(e) =>
-                    setFileSize(
-                      e.target.value ? Number(e.target.value) : undefined
-                    )
-                  }
-                  placeholder="contoh: 325120"
-                />
-              </div>
-            </div>
-          )}
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Batal
-          </Button>
-          <Button onClick={submit} disabled={!title.trim()}>
-            Simpan
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function EditMaterialDialog({
-  open,
-  onClose,
-  defaultValues,
-  onSubmit,
-}: {
-  open: boolean;
-  onClose: () => void;
-  defaultValues?: EditMaterialPayload;
-  onSubmit: (p: EditMaterialPayload) => void;
-}) {
-  const [title, setTitle] = useState(defaultValues?.title ?? "");
-  const [type, setType] = useState<MaterialType>(
-    defaultValues?.type ?? "article"
-  );
-  const [description, setDescription] = useState(
-    defaultValues?.description ?? ""
-  );
-  const [content, setContent] = useState(defaultValues?.content ?? "");
-  const [url, setUrl] = useState(defaultValues?.url ?? "");
-  const [fileName, setFileName] = useState(defaultValues?.fileName ?? "");
-  const [fileSize, setFileSize] = useState<number | undefined>(
-    defaultValues?.fileSize
-  );
-
-  // Sinkronkan ketika dialog dibuka atau defaultValues berubah
-  useEffect(() => {
-    if (!open || !defaultValues) return;
-    setTitle(defaultValues.title ?? "");
-    setType(defaultValues.type ?? "article");
-    setDescription(defaultValues.description ?? "");
-    setContent(defaultValues.content ?? "");
-    setUrl(defaultValues.url ?? "");
-    setFileName(defaultValues.fileName ?? "");
-    setFileSize(defaultValues.fileSize);
-  }, [open, defaultValues]);
-
-  const submit = () => {
-    onSubmit({
-      title: title.trim(),
-      type,
-      description: description.trim() || undefined,
-      content: type === "article" ? content : undefined,
-      url: type !== "article" ? url.trim() || undefined : undefined,
-      fileName: type === "file" ? fileName.trim() || undefined : undefined,
-      fileSize: type === "file" ? fileSize : undefined,
-    });
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>Edit Materi</DialogTitle>
-        </DialogHeader>
-
-        <div className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="mtitle">Judul</Label>
-            <Input
-              id="mtitle"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label>Jenis</Label>
-              <Select
-                value={type}
-                onValueChange={(v) => setType(v as MaterialType)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih jenis" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="article">Artikel</SelectItem>
-                  <SelectItem value="file">File / PDF</SelectItem>
-                  <SelectItem value="link">Link</SelectItem>
-                  <SelectItem value="youtube">YouTube</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="mdesc">Deskripsi (opsional)</Label>
-            <Textarea
-              id="mdesc"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
-
-          {type === "article" && (
-            <div className="grid gap-2">
-              <Label htmlFor="mcontent">Isi Artikel</Label>
-              <Textarea
-                id="mcontent"
-                rows={8}
-                placeholder="Tulis artikel (markdown/plain)…"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-              />
-            </div>
-          )}
-
-          {(type === "link" || type === "youtube") && (
-            <div className="grid gap-2">
-              <Label htmlFor="murl">
-                {type === "youtube" ? "URL YouTube" : "URL"}
-              </Label>
-              <Input
-                id="murl"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://…"
-              />
-            </div>
-          )}
-
-          {type === "file" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="mfileurl">URL File</Label>
-                <Input
-                  id="mfileurl"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  placeholder="https://…/dokumen.pdf"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="mfilename">Nama File</Label>
-                <Input
-                  id="mfilename"
-                  value={fileName}
-                  onChange={(e) => setFileName(e.target.value)}
-                  placeholder="dokumen.pdf"
-                />
-              </div>
-              <div className="grid gap-2 md:col-span-2">
-                <Label htmlFor="mfilesize">Ukuran (byte) – opsional</Label>
-                <Input
-                  id="mfilesize"
-                  type="number"
-                  value={fileSize ?? ""}
-                  onChange={(e) =>
-                    setFileSize(
-                      e.target.value ? Number(e.target.value) : undefined
-                    )
-                  }
-                  placeholder="contoh: 325120"
-                />
-              </div>
-            </div>
-          )}
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Batal
-          </Button>
-          <Button onClick={submit} disabled={!title.trim()}>
-            Simpan Perubahan
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 /* =========================================================
    PAGE (pakai DataTable)
@@ -633,59 +277,8 @@ export default function TeacherCSSTMaterialList() {
     );
   }, [materials, q, type]);
 
-  // dialog states
-  const [openAdd, setOpenAdd] = useState(false);
-  const [openEdit, setOpenEdit] = useState(false);
-  const [editing, setEditing] = useState<Material | null>(null);
+  // delete
   const [deleteTarget, setDeleteTarget] = useState<Material | null>(null);
-
-  const editDefaults = useMemo(() => {
-    if (!editing) return undefined;
-    const { title, type, description, content, url, fileName, fileSize } =
-      editing;
-    return { title, type, description, content, url, fileName, fileSize };
-  }, [editing]);
-
-  const handleAddSubmit = (p: AddMaterialPayload) => {
-    const nowISO = new Date().toISOString();
-    const item: Material = {
-      id: `m-${Date.now()}`,
-      classId: id,
-      title: p.title,
-      type: p.type,
-      description: p.description,
-      content: p.content,
-      url: p.url,
-      fileName: p.fileName,
-      fileSize: p.fileSize,
-      createdAt: nowISO,
-      author: cls?.homeroom ?? "Guru",
-    };
-    qc.setQueryData<Material[]>(QK.MATERIALS(id), (old = []) => [item, ...old]);
-    setOpenAdd(false);
-  };
-
-  const handleEditSubmit = (p: EditMaterialPayload) => {
-    qc.setQueryData<Material[]>(QK.MATERIALS(id), (old = []) =>
-      old.map((m) =>
-        m.id !== editing?.id
-          ? m
-          : {
-            ...m,
-            title: p.title,
-            type: p.type,
-            description: p.description,
-            content: p.content,
-            url: p.url,
-            fileName: p.fileName,
-            fileSize: p.fileSize,
-            updatedAt: new Date().toISOString(),
-          }
-      )
-    );
-    setOpenEdit(false);
-    setEditing(null);
-  };
 
   const confirmDelete = () => {
     if (!deleteTarget) return;
@@ -694,11 +287,6 @@ export default function TeacherCSSTMaterialList() {
       old.filter((x) => x.id !== targetId)
     );
     setDeleteTarget(null);
-  };
-
-  const onEdit = (m: Material) => {
-    setEditing(m);
-    setOpenEdit(true);
   };
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -896,7 +484,7 @@ export default function TeacherCSSTMaterialList() {
             className="gap-2"
             onClick={(e) => {
               e.stopPropagation();
-              onEdit(m);
+              navigate(`edit/${m.id}`);
             }}
             data-no-row-click
           >
@@ -930,10 +518,7 @@ export default function TeacherCSSTMaterialList() {
         {/* Header actions */}
         <div className="flex items-center justify-between">
           <div className="w-full flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate(-1)}>
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
               <ArrowLeft size={20} />
             </Button>
             <h1 className="text-lg font-semibold tracking-tight">
@@ -943,7 +528,7 @@ export default function TeacherCSSTMaterialList() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setOpenAdd(true)}
+                onClick={() => navigate("new")}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Tambah Materi
@@ -951,22 +536,6 @@ export default function TeacherCSSTMaterialList() {
             </div>
           </div>
         </div>
-
-        {/* Add & Edit */}
-        <AddMaterialDialog
-          open={openAdd}
-          onClose={() => setOpenAdd(false)}
-          onSubmit={handleAddSubmit}
-        />
-        <EditMaterialDialog
-          open={openEdit}
-          onClose={() => {
-            setOpenEdit(false);
-            setEditing(null);
-          }}
-          defaultValues={editDefaults}
-          onSubmit={handleEditSubmit}
-        />
 
         {/* AlertDialog Hapus */}
         <AlertDialog
@@ -1053,9 +622,7 @@ export default function TeacherCSSTMaterialList() {
             viewModes={["table", "card"]}
             defaultView="table"
             renderCard={renderCard}
-            onRowClick={(m: Material) =>
-              navigate(`../material/${m.id}`, { relative: "path" })
-            }
+            onRowClick={(m: Material) => navigate(`edit/${m.id}`)}
             rightSlot={
               isFetching ? (
                 <span className="text-xs text-muted-foreground">Memuat…</span>
@@ -1080,7 +647,28 @@ export default function TeacherCSSTMaterialList() {
                     </Button>
                   </a>
                 )}
-                {/* ...dst */}
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  data-no-row-click
+                  onClick={() => navigate(`edit/${m.id}`)}
+                  title="Edit materi"
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="gap-2"
+                  data-no-row-click
+                  onClick={() => setDeleteTarget(m)}
+                  title="Hapus materi"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
             )}
             rowHover

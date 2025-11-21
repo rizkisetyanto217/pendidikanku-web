@@ -46,6 +46,9 @@ import SchoolAcademicTermForm from "@/pages/dashboard/schools/academics/academic
 import SchoolBookForm from "@/pages/dashboard/schools/academics/books/details/SchoolBookForm";
 import SchoolRoomForm from "@/pages/dashboard/schools/academics/rooms/details/SchoolRoomForm";
 import SchoolSubjectForm from "@/pages/dashboard/schools/academics/subjects/details/SchoolSubjectForm";
+import SchoolClassParentForm from "@/pages/dashboard/schools/classes/class-parents/details/SchoolClassParentForm";
+import SchoolCSSTForm from "@/pages/dashboard/schools/classes/class-section-subject-teachers/details/SchoolCSSTForm";
+import SchoolClassForm from "@/pages/dashboard/schools/classes/classes/details/SchoolClassForm";
 
 export const SchoolRoutes = (
   <Route path="sekolah" element={<DashboardLayout />}>
@@ -103,15 +106,27 @@ export const SchoolRoutes = (
         path="level/:classParentId"
         element={<SchoolClassParentDetail />}
       />
+      <Route path="level/new" element={<SchoolClassParentForm />} />
+      <Route path="level/edit/:id" element={<SchoolClassParentForm />} />
       <Route path="daftar-kelas" element={<SchoolClass />} />
       <Route path="daftar-kelas/:classId" element={<SchoolClassDetail />} />
+      <Route path="daftar-kelas/new" element={<SchoolClassForm />} />
+      <Route path="daftar-kelas/edit/:classId" element={<SchoolClassForm />} />
       <Route path="semua-kelas" element={<SchoolClassesSection />} />
       <Route
         path="semua-kelas/:classSectionId"
         element={<SchoolClassSectionDetail />}
       />
+      <Route path="semua-kelas/new" element={<SchoolClassSectionDetail />} />{" "}
+      <Route
+        path="semua-kelas/edit/:classSectionId"
+        element={<SchoolClassSectionDetail />}
+      />
       <Route path="pelajaran" element={<SchoolCSST />} />
       <Route path="pelajaran/:csstId" element={<SchoolCSSTDetail />} />
+      // di routes kelas
+      <Route path="pelajaran/new" element={<SchoolCSSTForm />} />
+      <Route path="pelajaran/:csstId/edit" element={<SchoolCSSTForm />} />
     </Route>
 
     <Route path="keuangan">
@@ -135,7 +150,10 @@ export const SchoolRoutes = (
     {/* === Campaign Sekolah === */}
     <Route path="dukungan">
       <Route path="donasi" element={<SchoolCampaign />} />
-      <Route path="donasi/detail" element={<SchoolCampaignDetail />} />
+      <Route
+        path="donasi/:campaignSlugOrId"
+        element={<SchoolCampaignDetail />}
+      />
     </Route>
 
     {/* === Menu utama (akses cepat) === */}

@@ -212,7 +212,7 @@ export const NAVS: NavDict = {
       children: [
         {
           // index -> /sekolah/dukungan
-          path: "dukungan",
+          path: "donasi",
           label: "Donasi",
           end: true,
         },

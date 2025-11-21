@@ -345,6 +345,7 @@ const TeacherCSSTStudentAttendanceList: React.FC = () => {
   }, [rows, statusFilter, dq]);
 
   const summary = useMemo(() => summarize(rows), [rows]);
+
   const labelTanggal = useMemo(
     () => (mode === "today" ? date : `${fromDate} s/d ${toDate}`),
     [mode, date, fromDate, toDate]
@@ -397,7 +398,7 @@ const TeacherCSSTStudentAttendanceList: React.FC = () => {
           <div className="flex flex-wrap gap-3 items-center">
             <Select
               value={mode}
-              onValueChange={(v: "today" | "range") => setMode(v)}
+              onValueChange={(v) => setMode(v as "today" | "range")}
             >
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Pilih mode" />
@@ -471,7 +472,9 @@ const TeacherCSSTStudentAttendanceList: React.FC = () => {
               <Filter size={16} className="text-muted-foreground" />
               <Select
                 value={statusFilter}
-                onValueChange={(v: any) => setStatusFilter(v)}
+                onValueChange={(v) =>
+                  setStatusFilter(v as AttendanceStatus | "all")
+                }
               >
                 <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder="Filter status" />
@@ -547,7 +550,15 @@ const TeacherCSSTStudentAttendanceList: React.FC = () => {
                   </TableRow>
                 ) : filtered.length > 0 ? (
                   filtered.map((r, idx) => (
-                    <TableRow key={r.studentId}>
+                    <TableRow
+                      key={r.studentId}
+                      className="cursor-pointer hover:bg-muted/60"
+                      onClick={
+                        () => navigate(`${r.studentId}`)
+                        // jika base route berbeda, sesuaikan:
+                        // navigate(`/teacher/classes/${classId}/attendance/${r.studentId}`)
+                      }
+                    >
                       <TableCell>{idx + 1}</TableCell>
                       <TableCell className="font-medium">{r.name}</TableCell>
                       <TableCell>

@@ -1,13 +1,14 @@
 // src/pages/dashboard/school/classes/class-list/section/SchoolSCSST.tsx
 import { useEffect, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import axios from "@/lib/axios";
-import { ArrowLeft, BookOpen, Layers, Users, Hash } from "lucide-react";
+import axios, { getActiveschoolId } from "@/lib/axios";
+import { ArrowLeft, BookOpen, Layers, Users, Hash, Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 /* ========= Types dari API baru ========= */
 
@@ -96,7 +97,7 @@ type GroupedSection = {
   items: ApiCSSTItem[];
 };
 
-/* ========= Query: ambil semua CSST (per sekolah) ========= */
+/* ========= Query: ambil semua CSST (per sekolah via JWT) ========= */
 
 function useCSSTList() {
   return useQuery({
@@ -124,9 +125,14 @@ function useCSSTList() {
 type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
 export default function SchoolCSST({ showBack = false, backTo }: Props) {
-  const { schoolId = "" } = useParams<{ schoolId: string }>();
   const navigate = useNavigate();
   const { setHeader } = useDashboardHeader();
+
+  // Ambil school_id dari token (membership) → fallback cookie UI
+  const currentUserQ = useCurrentUser();
+  const activeMembership = currentUserQ.data?.membership ?? null;
+  const schoolIdFromMembership = activeMembership?.school_id ?? null;
+  const schoolId = schoolIdFromMembership || getActiveschoolId() || null;
 
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
@@ -169,9 +175,13 @@ export default function SchoolCSST({ showBack = false, backTo }: Props) {
         { label: "Kelas" },
         { label: "Pelajaran" },
       ],
-      actions: null,
+      actions: (
+        <Button size="sm" className="gap-1" onClick={() => navigate("new")}>
+          <Plus size={14} /> Tambah Pelajaran
+        </Button>
+      ),
     });
-  }, [setHeader]);
+  }, [setHeader, navigate]);
 
   if (csstQ.isLoading) {
     return (
@@ -201,36 +211,53 @@ export default function SchoolCSST({ showBack = false, backTo }: Props) {
     <div className="w-full overflow-x-hidden bg-background text-foreground">
       <main className="mx-auto flex flex-col gap-4 lg:gap-6">
         {/* Header dalam page */}
-        <div className="md:flex hidden gap-3 items-center">
-          {showBack && (
-            <Button
-              onClick={handleBack}
-              variant="ghost"
-              size="icon"
-              className="cursor-pointer"
-            >
-              <ArrowLeft size={20} />
-            </Button>
-          )}
-          <div>
-            <h1 className="text-lg font-semibold md:text-xl">
-              Pelajaran & Pengajar Kelas
-            </h1>
-            <p className="mt-1 text-xs text-muted-foreground md:text-sm">
-              Ringkasan mata pelajaran yang terhubung dengan masing-masing
-              kelas/section beserta pengajarnya.
-            </p>
+        <div className="md:flex hidden gap-3 items-center justify-between">
+          <div className="flex items-center gap-3">
+            {showBack && (
+              <Button
+                onClick={handleBack}
+                variant="ghost"
+                size="icon"
+                className="cursor-pointer"
+              >
+                <ArrowLeft size={20} />
+              </Button>
+            )}
+            <div>
+              <h1 className="text-lg font-semibold md:text-xl">
+                Pelajaran & Pengajar Kelas
+              </h1>
+              <p className="mt-1 text-xs text-muted-foreground md:text-sm">
+                Ringkasan mata pelajaran yang terhubung dengan masing-masing
+                kelas/section beserta pengajarnya.
+              </p>
+            </div>
           </div>
+
+          {/* Tombol tambah (fallback, biar ada juga di header dalam page) */}
+          <Button size="sm" className="gap-1" onClick={() => navigate("new")}>
+            <Plus size={14} /> Tambah Pelajaran
+          </Button>
         </div>
 
         {/* Ringkasan singkat */}
         <Card className="border-border/70">
           <CardHeader className="pb-3">
-            <div className="flex items-center gap-2 text-primary">
-              <Layers className="h-4 w-4" />
-              <span className="text-xs font-medium uppercase tracking-wide">
-                Ringkasan Pelajaran
-              </span>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-primary">
+                <Layers className="h-4 w-4" />
+                <span className="text-xs font-medium uppercase tracking-wide">
+                  Ringkasan Pelajaran
+                </span>
+              </div>
+              {/* Tombol tambah di mobile */}
+              <Button
+                size="sm"
+                className="gap-1 md:hidden"
+                onClick={() => navigate("new")}
+              >
+                <Plus size={14} /> Tambah
+              </Button>
             </div>
           </CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-3">
@@ -253,10 +280,10 @@ export default function SchoolCSST({ showBack = false, backTo }: Props) {
             <div className="rounded-xl border bg-muted/40 px-4 py-3">
               <p className="text-xs text-muted-foreground">Sekolah (context)</p>
               <p className="mt-1 text-sm font-semibold truncate">
-                {schoolId || "Dari token aktif"}
+                {schoolId ?? "Dari token aktif"}
               </p>
               <p className="text-xs text-muted-foreground">
-                digunakan saat mengambil data CSST
+                di-resolve dari JWT / school aktif
               </p>
             </div>
           </CardContent>
@@ -265,8 +292,17 @@ export default function SchoolCSST({ showBack = false, backTo }: Props) {
         {/* List grouped per section */}
         {groupedBySection.length === 0 ? (
           <Card className="border-dashed">
-            <CardContent className="py-10 text-center text-sm text-muted-foreground">
-              Belum ada pelajaran yang terhubung dengan kelas / section.
+            <CardContent className="py-10 text-center text-sm text-muted-foreground space-y-3">
+              <div>
+                Belum ada pelajaran yang terhubung dengan kelas / section.
+              </div>
+              <Button
+                size="sm"
+                className="gap-1"
+                onClick={() => navigate("new")}
+              >
+                <Plus size={14} /> Tambah Pelajaran
+              </Button>
             </CardContent>
           </Card>
         ) : (
@@ -321,12 +357,13 @@ export default function SchoolCSST({ showBack = false, backTo }: Props) {
                       const book = csBook?.book;
 
                       const teacherDisplay = teacher
-                        ? `${teacher.title_prefix ?? ""} ${teacher.name ?? ""
+                        ? `${teacher.title_prefix ?? ""} ${
+                            teacher.name ?? ""
                           } ${teacher.title_suffix ?? ""}`
-                          .replace(/\s+/g, " ")
-                          .trim()
+                            .replace(/\s+/g, " ")
+                            .trim()
                         : row.class_section_subject_teacher_school_teacher_name_snapshot ??
-                        "-";
+                          "-";
 
                       return (
                         <div
@@ -335,10 +372,11 @@ export default function SchoolCSST({ showBack = false, backTo }: Props) {
                           onClick={() =>
                             navigate(`${row.class_section_subject_teacher_id}`)
                           }
-                          aria-label={`Detail mapel ${row.class_section_subject_teacher_subject_name_snapshot ??
+                          aria-label={`Detail mapel ${
+                            row.class_section_subject_teacher_subject_name_snapshot ??
                             subj?.name ??
                             "Mata pelajaran"
-                            }`}
+                          }`}
                         >
                           {/* header mapel */}
                           <div className="flex items-start justify-between gap-2">
@@ -363,10 +401,11 @@ export default function SchoolCSST({ showBack = false, backTo }: Props) {
                                   ? "default"
                                   : "outline"
                               }
-                              className={`ml-1 text-[10px] ${row.class_section_subject_teacher_is_active
-                                ? "bg-emerald-600"
-                                : ""
-                                }`}
+                              className={`ml-1 text-[10px] ${
+                                row.class_section_subject_teacher_is_active
+                                  ? "bg-emerald-600"
+                                  : ""
+                              }`}
                             >
                               {row.class_section_subject_teacher_is_active
                                 ? "Aktif"
@@ -414,20 +453,20 @@ export default function SchoolCSST({ showBack = false, backTo }: Props) {
                             <div className="mt-3 flex items-center gap-3 rounded-lg border bg-background/60 p-2 text-xs text-muted-foreground">
                               {(book.image_url ||
                                 row.class_section_subject_teacher_book_image_url_snapshot) && (
-                                  <img
-                                    src={
-                                      book.image_url ??
-                                      row.class_section_subject_teacher_book_image_url_snapshot ??
-                                      ""
-                                    }
-                                    alt={
-                                      book.title ??
-                                      row.class_section_subject_teacher_book_title_snapshot ??
-                                      "Book cover"
-                                    }
-                                    className="h-14 w-10 rounded-md border object-cover"
-                                  />
-                                )}
+                                <img
+                                  src={
+                                    book.image_url ??
+                                    row.class_section_subject_teacher_book_image_url_snapshot ??
+                                    ""
+                                  }
+                                  alt={
+                                    book.title ??
+                                    row.class_section_subject_teacher_book_title_snapshot ??
+                                    "Book cover"
+                                  }
+                                  className="h-14 w-10 rounded-md border object-cover"
+                                />
+                              )}
                               <div className="space-y-1">
                                 <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
                                   Buku yang digunakan

@@ -11,11 +11,10 @@ import {
   dummyClasses,
   formatDeliveryMode,
   formatRegWindow,
-} from "../PendWebPMBInfo";
+} from "../UnnasignedInfo";
 
 // type-only import
-import type { PMBClassRow } from "../PendWebPMBInfo";
-
+import type { PMBClassRow } from "../UnnasignedInfo";
 
 export default function PendWebPMBClassDetail() {
   const { school_slug, id } = useParams<{

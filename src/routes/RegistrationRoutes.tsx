@@ -1,8 +1,8 @@
 import { Route } from "react-router-dom";
 
-import PendWebPMBInfo from "@/pages/dashboard/unnasigned/PendWebPMBInfo";
-import PendWebPMBClassDetail from "@/pages/dashboard/unnasigned/details/PendWebPMBClassDetail";
-import PendWebPMBFeesDetail from "@/pages/dashboard/unnasigned/details/PendWebPMBFeesDetail";
+import PendWebPMBInfo from "@/pages/dashboard/unnasigned/UnnasignedInfo";
+import PendWebPMBClassDetail from "@/pages/dashboard/unnasigned/details/UnnasignedClassDetail";
+import PendWebPMBFeesDetail from "@/pages/dashboard/unnasigned/details/UnnasignedFeesDetail";
 import DashboardLayout from "@/components/layout/dashboard/DashboardLayout";
 
 // Cluster rute untuk PMB / Pendaftaran

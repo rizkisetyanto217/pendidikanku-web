@@ -1,8 +1,8 @@
-// src/pages/sekolahislamku/teacher/TeacherCSSTAssessmentCreate.tsx
+// src/pages/sekolahislamku/teacher/TeacherCSSTAssessmentForm.tsx
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "@/lib/axios";
 
 /* shadcn/ui */
@@ -38,11 +38,11 @@ import {
 ========================= */
 
 type AssessmentKind = "quiz" | "assignment_upload" | "offline" | "survey";
+type AssessmentSubmissionMode = "date" | "session" | string;
 
 type QuizInlinePayload = {
   quiz_title: string;
   quiz_description?: string;
-  // TODO: extend sesuai CreateQuizInline (time limit, shuffle, items, dll)
 };
 
 type CreateAssessmentPayload = {
@@ -74,9 +74,6 @@ type CreateAssessmentPayload = {
     assessment_collect_session_id?: string | null;
   };
 
-  // Backend DTO support:
-  // - "quiz": 1 quiz
-  // - "quizzes": array
   quiz?: QuizInlinePayload;
   quizzes?: QuizInlinePayload[];
 };
@@ -92,6 +89,43 @@ type CreateAssessmentResponse = {
   };
 };
 
+/* Detail untuk edit */
+type AssessmentDetail = {
+  assessment_id: string;
+  assessment_school_id: string;
+  assessment_class_section_subject_teacher_id: string;
+  assessment_type_id: string | null;
+  assessment_slug: string | null;
+  assessment_title: string;
+  assessment_description: string | null;
+
+  assessment_start_at: string | null;
+  assessment_due_at: string | null;
+
+  assessment_kind: AssessmentKind;
+  assessment_duration_minutes: number | null;
+  assessment_total_attempts_allowed: number | null;
+  assessment_max_score: number | null;
+  assessment_quiz_total: number | null;
+
+  assessment_is_published: boolean;
+  assessment_allow_submission: boolean;
+  assessment_submission_mode: AssessmentSubmissionMode;
+
+  assessment_announce_session_snapshot?: {
+    session_id?: string;
+  } | null;
+  assessment_collect_session_snapshot?: {
+    session_id?: string;
+  } | null;
+};
+
+type AssessmentDetailResponse = {
+  success: boolean;
+  message: string;
+  data: AssessmentDetail;
+};
+
 /* =========================
    Helpers
 ========================= */
@@ -101,6 +135,19 @@ function toIsoOrNull(v: string | null): string | null {
   const d = new Date(v);
   if (Number.isNaN(d.getTime())) return null;
   return d.toISOString();
+}
+
+function isoToLocalInput(v: string | null): string | null {
+  if (!v) return null;
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return null;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  const mm = pad(d.getMonth() + 1);
+  const dd = pad(d.getDate());
+  const hh = pad(d.getHours());
+  const min = pad(d.getMinutes());
+  return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
 }
 
 type LocalMode = "date" | "session";
@@ -116,18 +163,40 @@ function makeQuizId() {
 }
 
 /* =========================
+   Detail hook (edit)
+========================= */
+
+function useAssessmentDetail(assessmentId?: string) {
+  return useQuery<AssessmentDetail>({
+    queryKey: ["teacher-assessment-detail", assessmentId],
+    enabled: !!assessmentId,
+    queryFn: async () => {
+      const res = await axios.get<AssessmentDetailResponse>(
+        `/api/u/assessments/${assessmentId}`
+      );
+      return res.data.data;
+    },
+  });
+}
+
+/* =========================
    Component
 ========================= */
 
-export default function TeacherCSSTAssessmentCreate() {
-  const { csstId } = useParams<{ csstId: string }>();
+export default function TeacherCSSTAssessmentForm() {
+  const { csstId, assessmentId } = useParams<{
+    csstId: string;
+    assessmentId?: string;
+  }>();
+  const isEdit = !!assessmentId;
+
   const navigate = useNavigate();
   const qc = useQueryClient();
 
+  /* state utama */
   const [mode, setMode] = useState<LocalMode>("date");
   const [kind, setKind] = useState<AssessmentKind>("quiz");
 
-  // Assessment form state
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [desc, setDesc] = useState("");
@@ -147,13 +216,71 @@ export default function TeacherCSSTAssessmentCreate() {
   const [isPublished, setIsPublished] = useState(true);
   const [allowSubmission, setAllowSubmission] = useState(true);
 
-  // Multi quiz state
+  // Multi quiz state – dipakai HANYA untuk create
   const [quizzes, setQuizzes] = useState<QuizForm[]>([
     { id: makeQuizId(), title: "", desc: "" },
   ]);
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  /* load detail kalau edit */
+  const {
+    data: detail,
+    isLoading: loadingDetail,
+    isError: detailError,
+  } = useAssessmentDetail(assessmentId);
+
+  // Prefill state saat edit
+  useEffect(() => {
+    if (!detail || !isEdit) return;
+
+    setTitle(detail.assessment_title ?? "");
+    setSlug(detail.assessment_slug ?? "");
+    setDesc(detail.assessment_description ?? "");
+    setTypeId(detail.assessment_type_id ?? "");
+
+    setKind(detail.assessment_kind ?? "quiz");
+
+    setMode(
+      detail.assessment_submission_mode === "session" ? "session" : "date"
+    );
+
+    setStartAt(isoToLocalInput(detail.assessment_start_at));
+    setDueAt(isoToLocalInput(detail.assessment_due_at));
+
+    setAnnounceSessionId(
+      detail.assessment_announce_session_snapshot?.session_id ?? ""
+    );
+    setCollectSessionId(
+      detail.assessment_collect_session_snapshot?.session_id ?? ""
+    );
+
+    setDurationMinutes(
+      detail.assessment_duration_minutes != null
+        ? String(detail.assessment_duration_minutes)
+        : ""
+    );
+    setAttempts(
+      detail.assessment_total_attempts_allowed != null
+        ? String(detail.assessment_total_attempts_allowed)
+        : "1"
+    );
+    setMaxScore(
+      detail.assessment_max_score != null
+        ? String(detail.assessment_max_score)
+        : "100"
+    );
+    setQuizTotal(
+      detail.assessment_quiz_total != null
+        ? String(detail.assessment_quiz_total)
+        : ""
+    );
+
+    setIsPublished(detail.assessment_is_published);
+    setAllowSubmission(detail.assessment_allow_submission);
+  }, [detail, isEdit]);
+
+  /* quiz helpers (create only) */
   const addQuiz = () => {
     setQuizzes((prev) => [...prev, { id: makeQuizId(), title: "", desc: "" }]);
   };
@@ -171,35 +298,13 @@ export default function TeacherCSSTAssessmentCreate() {
     );
   };
 
+  /* mutation create + edit */
   const createMut = useMutation({
     mutationFn: async () => {
       setErrorMsg(null);
 
       if (!title.trim()) {
         throw new Error("Judul penilaian wajib diisi");
-      }
-
-      // Minimal 1 quiz
-      if (quizzes.length === 0) {
-        throw new Error("Minimal harus ada 1 quiz");
-      }
-
-      // Semua quiz harus punya judul
-      const normalizedQuizzes: QuizInlinePayload[] = quizzes
-        .map((q) => ({
-          quiz_title: q.title.trim(),
-          quiz_description: q.desc.trim() || undefined,
-        }))
-        .filter((q) => q.quiz_title !== "");
-
-      if (normalizedQuizzes.length === 0) {
-        throw new Error("Semua quiz harus memiliki judul");
-      }
-
-      // Kalau user bikin 3 form tapi 1 kosong, kita anggap hanya yang berjudul yang dikirim.
-      // Tapi tetap minimal 1.
-      if (normalizedQuizzes.length === 0) {
-        throw new Error("Minimal 1 quiz dengan judul wajib diisi");
       }
 
       const payload: CreateAssessmentPayload = {
@@ -238,13 +343,36 @@ export default function TeacherCSSTAssessmentCreate() {
         },
       };
 
-      // Sesuai FlattenQuizzes:
-      // - kalau array > 0 → pakai "quizzes"
-      // - atau single → bisa pakai "quiz"
-      if (normalizedQuizzes.length === 1) {
-        payload.quiz = normalizedQuizzes[0];
-      } else {
-        payload.quizzes = normalizedQuizzes;
+      // 🔹 VALIDASI QUIZ hanya saat CREATE
+      if (!isEdit) {
+        if (quizzes.length === 0) {
+          throw new Error("Minimal harus ada 1 quiz");
+        }
+
+        const normalizedQuizzes: QuizInlinePayload[] = quizzes
+          .map((q) => ({
+            quiz_title: q.title.trim(),
+            quiz_description: q.desc.trim() || undefined,
+          }))
+          .filter((q) => q.quiz_title !== "");
+
+        if (normalizedQuizzes.length === 0) {
+          throw new Error("Minimal 1 quiz dengan judul wajib diisi");
+        }
+
+        if (normalizedQuizzes.length === 1) {
+          payload.quiz = normalizedQuizzes[0];
+        } else {
+          payload.quizzes = normalizedQuizzes;
+        }
+      }
+
+      if (isEdit && assessmentId) {
+        const res = await axios.patch<CreateAssessmentResponse>(
+          `/api/u/assessments/${assessmentId}`,
+          payload
+        );
+        return res.data;
       }
 
       const res = await axios.post<CreateAssessmentResponse>(
@@ -254,7 +382,7 @@ export default function TeacherCSSTAssessmentCreate() {
       return res.data;
     },
     onSuccess: (data) => {
-      const assessmentId = data?.data?.assessment?.assessment_id;
+      const createdId = data?.data?.assessment?.assessment_id;
 
       if (csstId) {
         qc.invalidateQueries({
@@ -262,9 +390,15 @@ export default function TeacherCSSTAssessmentCreate() {
         });
       }
 
-      if (assessmentId && csstId) {
+      if (isEdit && assessmentId && csstId) {
+        // setelah edit → balik ke detail
         navigate(
           `/sekolahislamku/teacher/csst/${csstId}/assessments/${assessmentId}`
+        );
+      } else if (!isEdit && createdId && csstId) {
+        // setelah create → ke detail assessment baru
+        navigate(
+          `/sekolahislamku/teacher/csst/${csstId}/assessments/${createdId}`
         );
       } else if (csstId) {
         navigate(`/sekolahislamku/teacher/csst/${csstId}/assessments`);
@@ -276,12 +410,15 @@ export default function TeacherCSSTAssessmentCreate() {
       const msg =
         err?.response?.data?.message ||
         err?.message ||
-        "Gagal membuat assessment";
+        "Gagal menyimpan assessment";
       setErrorMsg(msg);
     },
   });
 
-  const submitting = createMut.isPending;
+  const submitting = createMut.isPending || (isEdit && loadingDetail);
+
+  const pageTitle = isEdit ? "Edit Penilaian" : "Buat Penilaian Baru";
+  const saveLabel = isEdit ? "Simpan perubahan" : "Simpan penilaian";
 
   return (
     <div className="space-y-4">
@@ -298,12 +435,11 @@ export default function TeacherCSSTAssessmentCreate() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-lg font-semibold leading-tight">
-              Buat Penilaian Baru
-            </h1>
+            <h1 className="text-lg font-semibold leading-tight">{pageTitle}</h1>
             <p className="text-xs text-muted-foreground">
-              Tambahkan penilaian untuk kelas-mapel ini beserta satu atau lebih
-              quiz.
+              {isEdit
+                ? "Perbarui pengaturan penilaian untuk kelas-mapel ini."
+                : "Tambahkan penilaian untuk kelas-mapel ini beserta satu atau lebih quiz."}
             </p>
           </div>
         </div>
@@ -325,7 +461,7 @@ export default function TeacherCSSTAssessmentCreate() {
           <Button
             size="sm"
             onClick={() => createMut.mutate()}
-            disabled={submitting}
+            disabled={submitting || (isEdit && detailError)}
           >
             {submitting ? (
               <>
@@ -335,13 +471,23 @@ export default function TeacherCSSTAssessmentCreate() {
             ) : (
               <>
                 <CheckCircle2 className="mr-2 h-4 w-4" />
-                Simpan penilaian
+                {saveLabel}
               </>
             )}
           </Button>
         </div>
       </div>
 
+      {/* Error detail */}
+      {isEdit && detailError && (
+        <Card className="border-destructive/40 bg-destructive/5">
+          <CardContent className="py-3 text-xs text-destructive">
+            Tidak bisa memuat data penilaian. Coba kembali ke daftar.
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Error submit */}
       {errorMsg && (
         <Card className="border-destructive/40 bg-destructive/5">
           <CardContent className="py-3 text-xs text-destructive">
@@ -644,109 +790,131 @@ export default function TeacherCSSTAssessmentCreate() {
 
         {/* =========================
             Card: Multi Quiz
+            (HANYA CREATE)
         ========================== */}
-        <Card>
-          <CardHeader className="pb-3 flex flex-row items-center justify-between">
-            <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
+        {!isEdit ? (
+          <Card>
+            <CardHeader className="pb-3 flex flex-row items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                <CardTitle className="text-sm font-semibold">
+                  Quiz untuk assessment ini
+                </CardTitle>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-7 px-2 text-[11px]"
+                onClick={addQuiz}
+                disabled={submitting}
+              >
+                <Plus className="mr-1 h-3 w-3" />
+                Tambah quiz
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-[11px] text-muted-foreground">
+                Endpoint ini memakai payload <code>quiz</code> /{" "}
+                <code>quizzes</code>. Kalau hanya satu, akan dikirim sebagai{" "}
+                <code>quiz</code>. Kalau lebih dari satu, akan dikirim sebagai{" "}
+                <code>quizzes</code> agar sesuai dengan{" "}
+                <code>FlattenQuizzes()</code> di backend.
+              </p>
+
+              <div className="space-y-3">
+                {quizzes.map((q, idx) => (
+                  <div
+                    key={q.id}
+                    className="rounded-md border p-3 space-y-2 bg-muted/40"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-[11px] font-semibold text-muted-foreground">
+                        Quiz {idx + 1}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => removeQuiz(q.id)}
+                        disabled={submitting || quizzes.length <= 1}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs">Judul quiz (quiz_title)</Label>
+                      <Input
+                        placeholder="Misal: Latihan Soal sekarang"
+                        value={q.title}
+                        onChange={(e) =>
+                          updateQuiz(q.id, { title: e.target.value })
+                        }
+                        disabled={submitting}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs">
+                        Deskripsi (quiz_description, opsional)
+                      </Label>
+                      <Textarea
+                        rows={3}
+                        placeholder="Deskripsi singkat quiz, petunjuk, atau cakupan bab…"
+                        value={q.desc}
+                        onChange={(e) =>
+                          updateQuiz(q.id, { desc: e.target.value })
+                        }
+                        disabled={submitting}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <Separator />
+
+              <div className="space-y-1 text-[11px] text-muted-foreground">
+                <p className="font-medium">Catatan backend:</p>
+                <ul className="list-disc pl-4 space-y-1">
+                  <li>
+                    Minimal harus ada 1 quiz dengan judul terisi — sisanya
+                    opsional.
+                  </li>
+                  <li>
+                    Slug quiz akan otomatis digenerate di backend (mirip
+                    assessment).
+                  </li>
+                  <li>
+                    Semua quiz akan di-attach ke <code>assessment_id</code> yang
+                    baru dibuat.
+                  </li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader className="pb-3">
               <CardTitle className="text-sm font-semibold">
                 Quiz untuk assessment ini
               </CardTitle>
-            </div>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="h-7 px-2 text-[11px]"
-              onClick={addQuiz}
-              disabled={submitting}
-            >
-              <Plus className="mr-1 h-3 w-3" />
-              Tambah quiz
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-[11px] text-muted-foreground">
-              Endpoint ini memakai payload <code>quiz</code> /{" "}
-              <code>quizzes</code>. Kalau hanya satu, akan dikirim sebagai{" "}
-              <code>quiz</code>. Kalau lebih dari satu, akan dikirim sebagai{" "}
-              <code>quizzes</code> agar sesuai dengan{" "}
-              <code>FlattenQuizzes()</code> di backend.
-            </p>
-
-            <div className="space-y-3">
-              {quizzes.map((q, idx) => (
-                <div
-                  key={q.id}
-                  className="rounded-md border p-3 space-y-2 bg-muted/40"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="text-[11px] font-semibold text-muted-foreground">
-                      Quiz {idx + 1}
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => removeQuiz(q.id)}
-                      disabled={submitting || quizzes.length <= 1}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-xs">Judul quiz (quiz_title)</Label>
-                    <Input
-                      placeholder="Misal: Latihan Soal sekarang"
-                      value={q.title}
-                      onChange={(e) =>
-                        updateQuiz(q.id, { title: e.target.value })
-                      }
-                      disabled={submitting}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-xs">
-                      Deskripsi (quiz_description, opsional)
-                    </Label>
-                    <Textarea
-                      rows={3}
-                      placeholder="Deskripsi singkat quiz, petunjuk, atau cakupan bab…"
-                      value={q.desc}
-                      onChange={(e) =>
-                        updateQuiz(q.id, { desc: e.target.value })
-                      }
-                      disabled={submitting}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <Separator />
-
-            <div className="space-y-1 text-[11px] text-muted-foreground">
-              <p className="font-medium">Catatan backend:</p>
-              <ul className="list-disc pl-4 space-y-1">
-                <li>
-                  Minimal harus ada 1 quiz dengan judul terisi — sisanya
-                  opsional.
-                </li>
-                <li>
-                  Slug quiz akan otomatis digenerate di backend (mirip
-                  assessment).
-                </li>
-                <li>
-                  Semua quiz akan di-attach ke <code>assessment_id</code> yang
-                  baru dibuat.
-                </li>
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent className="space-y-2 text-[11px] text-muted-foreground">
+              <p>
+                Pengaturan quiz untuk assessment ini sebaiknya dikelola di
+                halaman detail / builder quiz khusus.
+              </p>
+              <p>
+                Form ini hanya mengubah meta penilaian (judul, tipe, jadwal,
+                durasi, dan flag publikasi), tanpa mengubah konfigurasi quiz
+                yang sudah ada di backend.
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

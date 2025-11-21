@@ -135,8 +135,8 @@ function EmptyState({ isFiltered }: { isFiltered: boolean }) {
     <Card className="border-dashed">
       <CardContent className="py-10 text-center text-sm text-muted-foreground">
         {isFiltered
-          ? "Tidak ada kelas yang cocok dengan filter."
-          : "Belum ada kelas untuk ditampilkan."}
+          ? "Tidak ada rombel yang cocok dengan filter."
+          : "Belum ada rombel untuk ditampilkan."}
       </CardContent>
     </Card>
   );
@@ -178,9 +178,11 @@ function LoadingGrid() {
 function SectionCard({
   section,
   onOpenDetail,
+  onEdit,
 }: {
   section: ApiClassSection;
   onOpenDetail: () => void;
+  onEdit?: () => void;
 }) {
   const totalStudents = section.class_section_total_students ?? 0;
   const capacity = section.class_section_capacity ?? null;
@@ -191,16 +193,19 @@ function SectionCard({
     section.class_section_subject_teachers_self_select_requires_approval
   );
 
-  const cardClassName = `group relative flex cursor-pointer flex-col overflow-hidden border transition-all duration-150 ${isActive
-    ? "border-emerald-500/60 hover:border-emerald-400 hover:bg-emerald-950/10"
-    : "border-border/70 hover:border-primary/50 hover:bg-muted/10"
-    }`;
+  const cardClassName = `group relative flex cursor-pointer flex-col overflow-hidden border transition-all duration-150 ${
+    isActive
+      ? "border-emerald-500/60 hover:border-emerald-400 hover:bg-emerald-950/10"
+      : "border-border/70 hover:border-primary/50 hover:bg-muted/10"
+  }`;
 
-  const stripClassName = `absolute inset-y-0 left-0 w-1 rounded-r-full ${isActive ? "bg-emerald-500" : "bg-muted-foreground/40"
-    }`;
+  const stripClassName = `absolute inset-y-0 left-0 w-1 rounded-r-full ${
+    isActive ? "bg-emerald-500" : "bg-muted-foreground/40"
+  }`;
 
-  const statusBadgeClassName = `pointer-events-auto border px-2 py-0.5 text-[10px] font-semibold ${isActive ? "bg-emerald-500 text-emerald-950" : "bg-black/40"
-    }`;
+  const statusBadgeClassName = `pointer-events-auto border px-2 py-0.5 text-[10px] font-semibold ${
+    isActive ? "bg-emerald-500 text-emerald-950" : "bg-black/40"
+  }`;
 
   return (
     <Card className={cardClassName} onClick={onOpenDetail}>
@@ -319,7 +324,7 @@ function SectionCard({
               </div>
             </div>
 
-            {/* Enrollment mode + link grup + tombol kelola */}
+            {/* Mode + link + tombol kelola */}
             <div className="flex flex-col gap-2 rounded-lg border bg-background/40 p-3 md:flex-row md:items-center md:justify-between">
               <div className="flex items-start gap-2 text-[11px]">
                 <ShieldCheck className="mt-0.5 h-3.5 w-3.5 text-emerald-500" />
@@ -342,6 +347,21 @@ function SectionCard({
                     Link Grup
                   </a>
                 )}
+
+                {onEdit && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit();
+                    }}
+                  >
+                    Edit Info
+                  </Button>
+                )}
+
                 <Button
                   size="sm"
                   variant="outline"
@@ -370,7 +390,7 @@ export default function SchoolClassSection({
   showBack = false,
   backTo,
 }: Props) {
-  const { classId } = useParams<{ schoolId: string; classId?: string }>();
+  const { classId } = useParams<{ classId?: string }>();
   const navigate = useNavigate();
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
@@ -378,11 +398,11 @@ export default function SchoolClassSection({
   const { setHeader } = useDashboardHeader();
   useEffect(() => {
     setHeader({
-      title: "Semua Kelas",
+      title: "Semua Rombel",
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Kelas" },
-        { label: "Semua Kelas" },
+        { label: "Semua Rombel" },
       ],
       actions: null,
     });
@@ -397,19 +417,14 @@ export default function SchoolClassSection({
 
   const filteredSections = useMemo(() => {
     return sections.filter((s) => {
-      if (statusFilter === "active" && !s.class_section_is_active) {
+      if (statusFilter === "active" && !s.class_section_is_active) return false;
+      if (statusFilter === "inactive" && s.class_section_is_active)
         return false;
-      }
-      if (statusFilter === "inactive" && s.class_section_is_active) {
-        return false;
-      }
-
       if (modeFilter !== "all") {
         if (s.class_section_subject_teachers_enrollment_mode !== modeFilter) {
           return false;
         }
       }
-
       return true;
     });
   }, [sections, statusFilter, modeFilter]);
@@ -433,7 +448,7 @@ export default function SchoolClassSection({
               </Button>
             )}
             <div>
-              <h1 className="text-lg font-semibold md:text-xl">Semua Kelas</h1>
+              <h1 className="text-lg font-semibold md:text-xl">Semua Rombel</h1>
               <p className="text-xs text-muted-foreground md:text-sm">
                 Rombongan belajar dari program{" "}
                 <span className="font-medium">
@@ -446,6 +461,9 @@ export default function SchoolClassSection({
           </div>
 
           <div className="flex items-center gap-2 text-xs md:text-sm">
+            <Button size="sm" onClick={() => navigate("new")} className="mr-1">
+              + Tambah Rombel
+            </Button>
             <Badge variant="outline" className="font-normal">
               Total:{" "}
               <span className="ml-1 font-semibold">{sections.length}</span>
@@ -463,7 +481,7 @@ export default function SchoolClassSection({
               Menampilkan{" "}
               <span className="font-semibold">{filteredSections.length}</span>{" "}
               dari <span className="font-semibold">{sections.length}</span>{" "}
-              kelas.
+              rombel.
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
@@ -472,19 +490,19 @@ export default function SchoolClassSection({
                 <span className="text-xs text-muted-foreground">Status:</span>
                 <div className="flex rounded-md border bg-background">
                   {STATUS_FILTER_OPTIONS.map(({ value, label }) => {
-                    const isActive = statusFilter === value;
+                    const active = statusFilter === value;
                     const extraClass =
                       value === "all"
                         ? "rounded-l-md"
                         : value === "inactive"
-                          ? "rounded-r-md"
-                          : "";
+                        ? "rounded-r-md"
+                        : "";
 
                     return (
                       <Button
                         key={value}
                         type="button"
-                        variant={isActive ? "default" : "ghost"}
+                        variant={active ? "default" : "ghost"}
                         size="sm"
                         className={`h-8 rounded-none px-3 text-xs ${extraClass}`}
                         onClick={() => setStatusFilter(value)}
@@ -501,12 +519,12 @@ export default function SchoolClassSection({
                 <span className="text-xs text-muted-foreground">Mode:</span>
                 <div className="flex rounded-md border bg-background">
                   {MODE_FILTER_OPTIONS.map(({ value, label }) => {
-                    const isActive = modeFilter === value;
+                    const active = modeFilter === value;
                     return (
                       <Button
                         key={value}
                         type="button"
-                        variant={isActive ? "default" : "ghost"}
+                        variant={active ? "default" : "ghost"}
                         size="sm"
                         className="h-8 rounded-none px-3 text-[11px]"
                         onClick={() => setModeFilter(value)}
@@ -529,15 +547,18 @@ export default function SchoolClassSection({
           <EmptyState isFiltered={isFiltered} />
         )}
 
-        {/* List sections (FULL WIDTH, stack vertikal) */}
+        {/* List sections */}
         {!isLoading && filteredSections.length > 0 && (
           <div className="flex flex-col gap-4">
             {filteredSections.map((section) => (
               <SectionCard
                 key={section.class_section_id}
                 section={section}
-                onOpenDetail={() =>
-                  navigate(`${section.class_section_id}`)
+                onOpenDetail={
+                  () => navigate(`${section.class_section_id}`) // detail rombel (Kelola Mapel & Pengajar)
+                }
+                onEdit={
+                  () => navigate(`edit/${section.class_section_id}`) // ➜ form edit rombel
                 }
               />
             ))}

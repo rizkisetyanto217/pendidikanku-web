@@ -6,8 +6,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-import { dummyClasses } from "../PendWebPMBInfo";
-import type { PMBClassRow } from "../PendWebPMBInfo";
+import { dummyClasses } from "../UnnasignedInfo";
+import type { PMBClassRow } from "../UnnasignedInfo";
 
 function formatRupiah(amount: number): string {
   return amount.toLocaleString("id-ID", {

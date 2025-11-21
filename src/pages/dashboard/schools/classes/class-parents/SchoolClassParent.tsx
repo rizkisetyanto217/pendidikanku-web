@@ -1,6 +1,6 @@
 // src/pages/dashboard/school/class/SchoolClassParents.tsx
 import { useMemo, useState, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Info, Loader2 } from "lucide-react";
 import axios, { getActiveschoolId } from "@/lib/axios";
@@ -12,9 +12,6 @@ import { Select } from "@/components/ui/select";
 
 /* Layout header hook */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
-
-/* Modal */
-import TambahLevel from "./components/CSchoolAddLevel";
 
 /* DataTable */
 import {
@@ -65,13 +62,6 @@ function mapClassParent(x: ApiClassParent): Level & {
   };
 }
 
-/* ================= Helpers ================= */
-const uid = (p = "tmp") =>
-  `${p}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-
-const toSlug = (s: string) =>
-  (s || "level-baru").toLowerCase().trim().replace(/\s+/g, "-");
-
 /* ================= Fetchers ================= */
 async function fetchLevelsPublic(
   schoolId: string | null
@@ -86,10 +76,7 @@ async function fetchLevelsPublic(
 /* ================= Page ================= */
 const SchoolClassParent: React.FC = () => {
   const navigate = useNavigate();
-  const qc = useQueryClient();
   const [sp, setSp] = useSearchParams();
-
-  const [openTambahLevel, setOpenTambahLevel] = useState(false);
 
   const q = (sp.get("q") ?? "").trim();
   const [page, setPage] = useState(() => Number(sp.get("page") ?? 1) || 1);
@@ -254,23 +241,6 @@ const SchoolClassParent: React.FC = () => {
     setPage(1);
   };
 
-  const handleLevelCreated = (payload?: any) => {
-    const lvl: Row = {
-      id: payload?.id ?? uid("lv"),
-      name: payload?.name ?? "Level Baru",
-      slug: payload?.slug ?? toSlug(payload?.name ?? ""),
-      level: payload?.level ?? null,
-      fee: payload?.fee ?? null,
-      is_active: payload?.is_active ?? true,
-      totalClasses: 0,
-    };
-    qc.setQueryData<Row[]>(["levels-public", schoolId], (old = []) => [
-      lvl,
-      ...(old ?? []),
-    ]);
-    setOpenTambahLevel(false);
-  };
-
   return (
     <div className="w-full overflow-x-hidden bg-background text-foreground">
       <main className="w-full">
@@ -282,7 +252,7 @@ const SchoolClassParent: React.FC = () => {
 
           {/* Daftar Tingkat */}
           <DataTable<Row>
-            onAdd={() => setOpenTambahLevel(true)}
+            onAdd={() => navigate("new")} // ⬅️ sekarang pakai route
             addLabel="Tambah"
             controlsPlacement="above"
             defaultQuery={q}
@@ -306,12 +276,12 @@ const SchoolClassParent: React.FC = () => {
             viewModes={["table", "card"] as ViewMode[]}
             defaultView="table"
             storageKey={`class-parents:${schoolId ?? "unknown"}`}
-            onRowClick={(r) => navigate(`${r.id}`)}
+            onRowClick={(r) => navigate(`${r.id}`)} // ⬅️ ke detail: level/:classParentId
             pageSize={perPage}
             pageSizeOptions={[10, 20, 50, 100, 200]}
           />
 
-          {/* Footer pagination */}
+          {/* Footer pagination (kalau mau diisi kombo perPage lengkap, tinggal tambahin Trigger/Content) */}
           <div className="mt-2 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
             <div className="order-1 sm:order-2 flex items-center gap-2">
               <Select
@@ -325,13 +295,6 @@ const SchoolClassParent: React.FC = () => {
           </div>
         </div>
       </main>
-
-      {/* Modal tambah level */}
-      <TambahLevel
-        open={openTambahLevel}
-        onClose={() => setOpenTambahLevel(false)}
-        onCreated={handleLevelCreated}
-      />
     </div>
   );
 };

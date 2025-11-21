@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Trash2, Loader2, Eye } from "lucide-react";
+import { Pencil, Trash2, Eye } from "lucide-react";
 
 /* Tambahan untuk breadcrumb sistem dashboard */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
@@ -10,14 +10,6 @@ import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayou
 /* ============ shadcn/ui ============ */
 import { Button } from "@/components/ui/button";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -168,12 +160,6 @@ const QK = {
   BOOKS: (classId: string) => ["class-books", classId] as const,
 };
 
-/* =========================================================
-   UTIL
-========================================================= */
-
-
-
 /* ===================== Actions Menu ===================== */
 function ActionsMenu({
   onView,
@@ -207,176 +193,6 @@ function ActionsMenu({
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  );
-}
-
-/* ===================== Form Dialog ===================== */
-function BookFormDialog({
-  open,
-  onClose,
-  initial,
-  onSubmit,
-  loading,
-  classId,
-}: {
-  open: boolean;
-  onClose: () => void;
-  initial?: Partial<ClassBook>;
-  onSubmit: (values: Omit<ClassBook, "id" | "created_at">) => void;
-  loading?: boolean;
-  classId: string;
-}) {
-  const [values, setValues] = useState<Omit<ClassBook, "id" | "created_at">>({
-    class_id: classId,
-    title: initial?.title ?? "",
-    author: initial?.author ?? "",
-    subject: initial?.subject ?? "",
-    isbn: initial?.isbn ?? "",
-    year: initial?.year ?? undefined,
-    pages: initial?.pages ?? undefined,
-    status: (initial?.status as BookStatus) ?? "available",
-    cover_url: initial?.cover_url ?? "",
-    description: initial?.description ?? "",
-  });
-
-  useEffect(() => {
-    if (!open) return;
-    setValues({
-      class_id: classId,
-      title: initial?.title ?? "",
-      author: initial?.author ?? "",
-      subject: initial?.subject ?? "",
-      isbn: initial?.isbn ?? "",
-      year: initial?.year ?? undefined,
-      pages: initial?.pages ?? undefined,
-      status: (initial?.status as BookStatus) ?? "available",
-      cover_url: initial?.cover_url ?? "",
-      description: initial?.description ?? "",
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, initial?.id, classId]);
-
-  const set = <K extends keyof Omit<ClassBook, "id" | "created_at">>(
-    k: K,
-    v: Omit<ClassBook, "id" | "created_at">[K]
-  ) => setValues((s) => ({ ...s, [k]: v }));
-
-  const canSubmit = values.title.trim().length > 0;
-
-  return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-[560px]">
-        <DialogHeader>
-          <DialogTitle>{initial?.id ? "Edit Buku" : "Tambah Buku"}</DialogTitle>
-          <DialogDescription>
-            Lengkapi detail buku di bawah ini, kemudian simpan.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="md:col-span-2">
-            <label className="text-sm">Judul</label>
-            <input
-              className="h-9 rounded-md border bg-background px-3 text-sm outline-none w-full"
-              value={values.title}
-              onChange={(e) => set("title", e.target.value)}
-              required
-            />
-          </div>
-
-          <div>
-            <label className="text-sm">Penulis</label>
-            <input
-              className="h-9 rounded-md border bg-background px-3 text-sm outline-none w-full"
-              value={values.author || ""}
-              onChange={(e) => set("author", e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="text-sm">Mapel</label>
-            <input
-              className="h-9 rounded-md border bg-background px-3 text-sm outline-none w-full"
-              value={values.subject || ""}
-              onChange={(e) => set("subject", e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="text-sm">ISBN</label>
-            <input
-              className="h-9 rounded-md border bg-background px-3 text-sm outline-none w-full"
-              value={values.isbn || ""}
-              onChange={(e) => set("isbn", e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="text-sm">Tahun</label>
-            <input
-              type="number"
-              className="h-9 rounded-md border bg-background px-3 text-sm outline-none w-full"
-              value={values.year ?? ""}
-              onChange={(e) =>
-                set("year", e.target.value ? Number(e.target.value) : undefined)
-              }
-            />
-          </div>
-
-          <div>
-            <label className="text-sm">Halaman</label>
-            <input
-              type="number"
-              className="h-9 rounded-md border bg-background px-3 text-sm outline-none w-full"
-              value={values.pages ?? ""}
-              onChange={(e) =>
-                set(
-                  "pages",
-                  e.target.value ? Number(e.target.value) : undefined
-                )
-              }
-            />
-          </div>
-
-
-
-          <div className="md:col-span-2">
-            <label className="text-sm">URL Sampul (opsional)</label>
-            <input
-              className="h-9 rounded-md border bg-background px-3 text-sm outline-none w-full"
-              value={values.cover_url || ""}
-              onChange={(e) => set("cover_url", e.target.value)}
-              placeholder="https://…"
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="text-sm">Deskripsi (opsional)</label>
-            <input
-              className="h-9 rounded-md border bg-background px-3 text-sm outline-none w-full"
-              value={values.description || ""}
-              onChange={(e) => set("description", e.target.value)}
-            />
-          </div>
-        </div>
-
-        <DialogFooter className="gap-2">
-          <Button variant="ghost" onClick={onClose} disabled={!!loading}>
-            Batal
-          </Button>
-          <Button
-            onClick={() => onSubmit(values)}
-            disabled={!canSubmit || !!loading}
-          >
-            {loading ? (
-              <Loader2 className="animate-spin" size={16} />
-            ) : (
-              "Simpan"
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }
 
@@ -415,30 +231,12 @@ export default function TeacherCSSTBookList() {
     placeholderData: (prev) => prev ?? [],
   });
 
-  const createBook = useMutation({
-    mutationFn: (payload: Omit<ClassBook, "id" | "created_at">) =>
-      createClassBook(payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: QK.BOOKS(classId) }),
-  });
-
-  const updateBook = useMutation({
-    mutationFn: (vars: { id: string; patch: Partial<ClassBook> }) =>
-      updateClassBook(vars.id, classId, vars.patch),
-    onSuccess: () => qc.invalidateQueries({ queryKey: QK.BOOKS(classId) }),
-  });
-
   const deleteBook = useMutation({
     mutationFn: (id: string) => deleteClassBook(id, classId),
     onSuccess: () => qc.invalidateQueries({ queryKey: QK.BOOKS(classId) }),
   });
 
   const books = booksQ.data ?? [];
-
-  /* ====== Modal states ====== */
-  const [modal, setModal] = useState<{
-    mode: "create" | "edit";
-    editing?: ClassBook | null;
-  } | null>(null);
 
   const [toDelete, setToDelete] = useState<ClassBook | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -508,11 +306,6 @@ export default function TeacherCSSTBookList() {
     },
   ];
 
-  /* ====== Stats Slot (ringkas, ala Academic) ====== */
-
-
-
-
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-background text-foreground">
       <main className="w-full">
@@ -521,27 +314,25 @@ export default function TeacherCSSTBookList() {
             /* ===== Toolbar ===== */
             title="Buku Kelas"
             onBack={() => navigate(-1)}
-            onAdd={() => setModal({ mode: "create" })}
+            onAdd={() => navigate("new")}
             addLabel="Tambah"
             controlsPlacement="above"
             /* Search (client-side) */
             defaultQuery=""
             searchByKeys={["title", "author", "subject", "isbn"]}
-
             /* ===== Data ===== */
             loading={booksQ.isLoading}
             error={booksQ.isError ? "Gagal memuat buku." : null}
             columns={columns}
             rows={books}
             getRowId={(b) => b.id}
-            /* Klik baris = view detail (kalau ada), sementara buka edit */
-            onRowClick={(row) =>
-              navigate(`${row.id}`)
-            } /* Actions menu ala Academic */
+            /* Klik baris = misalnya ke detail buku (nanti bisa diisi) */
+            onRowClick={(row) => navigate(`${row.id}`)}
+            /* Actions menu ala Academic */
             renderActions={(b) => (
               <ActionsMenu
-                onView={() => setModal({ mode: "edit", editing: b })}
-                onEdit={() => setModal({ mode: "edit", editing: b })}
+                onView={() => navigate(`${b.id}`)}
+                onEdit={() => navigate(`${b.id}/edit`)}
                 onDelete={() => {
                   setToDelete(b);
                   setConfirmOpen(true);
@@ -550,8 +341,8 @@ export default function TeacherCSSTBookList() {
             )}
             actions={{
               mode: "inline",
-              onView: (row) => setModal({ mode: "edit", editing: row }),
-              onEdit: (row) => setModal({ mode: "edit", editing: row }),
+              onView: (row) => navigate(`${row.id}`),
+              onEdit: (row) => navigate(`${row.id}/edit`),
               onDelete: (row) => {
                 setToDelete(row);
                 setConfirmOpen(true);
@@ -561,26 +352,6 @@ export default function TeacherCSSTBookList() {
           />
         </div>
       </main>
-
-      {/* Dialog Add/Edit */}
-      <BookFormDialog
-        key={modal?.editing?.id ?? modal?.mode ?? "closed"}
-        open={!!modal}
-        onClose={() => setModal(null)}
-        initial={modal?.editing ?? undefined}
-        loading={createBook.isPending || updateBook.isPending}
-        classId={classId}
-        onSubmit={(v) => {
-          if (modal?.mode === "edit" && modal.editing) {
-            updateBook.mutate(
-              { id: modal.editing.id, patch: v },
-              { onSuccess: () => setModal(null) }
-            );
-          } else {
-            createBook.mutate(v, { onSuccess: () => setModal(null) });
-          }
-        }}
-      />
 
       {/* Konfirmasi Hapus */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
@@ -608,3 +379,8 @@ export default function TeacherCSSTBookList() {
     </div>
   );
 }
+
+/* =========================================================
+   Export helper untuk halaman form
+========================================================= */
+export { fetchClassBooks, createClassBook, updateClassBook };

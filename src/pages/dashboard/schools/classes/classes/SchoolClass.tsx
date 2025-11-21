@@ -1,6 +1,6 @@
 // src/pages/dashboard/school/class/SchoolClass.tsx
 import { useMemo, useState, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Info, Loader2 } from "lucide-react";
 import axios, { getActiveschoolId } from "@/lib/axios";
@@ -12,11 +12,6 @@ import { Select } from "@/components/ui/select";
 
 /* Layout header hook */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
-
-/* Modal kelas */
-import TambahKelas, {
-  type ClassRow as NewClassRow,
-} from "./components/CSchoolAddClass";
 
 /* DataTable */
 import {
@@ -78,19 +73,13 @@ type MiddleClassRow = {
 };
 
 /* ================= Helpers ================= */
-const uid = (p = "tmp") =>
-  `${p}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-
-const toSlug = (s: string) =>
-  (s || "kelas-baru").toLowerCase().trim().replace(/\s+/g, "-");
-
 const fmtDate = (iso?: string | null) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    })
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
     : "-";
 
 /* ================= Fetchers ================= */
@@ -117,7 +106,6 @@ type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
   const navigate = useNavigate();
   const [sp, setSp] = useSearchParams();
-  const qc = useQueryClient();
 
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
@@ -141,8 +129,6 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
       actions: null,
     });
   }, [setHeader]);
-
-  const [openTambah, setOpenTambah] = useState(false);
 
   const q = (sp.get("q") ?? "").trim();
   const status = (sp.get("status") ?? "all") as ClassStatus | "all";
@@ -335,44 +321,6 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
     setPage(1);
   };
 
-  /* ===== Handlers: tambah kelas ===== */
-  const handleClassCreated = (row: NewClassRow) => {
-    const sid = schoolId ?? (row as any).schoolId ?? "";
-    const dummy: ApiClass = {
-      class_id: (row as any).id ?? uid("cls"),
-      class_school_id: sid,
-      class_parent_id: (row as any).parentId ?? "",
-      class_slug: (row as any).slug ?? toSlug(row.name ?? "kelas-baru"),
-      class_name: row.name ?? "Kelas Baru",
-      class_status: (row as any).is_active ? "active" : "inactive",
-      class_registration_opens_at: (row as any).registrationOpen ?? null,
-      class_registration_closes_at: (row as any).registrationClose ?? null,
-      class_quota_total: (row as any).quotaTotal ?? null,
-      class_quota_taken: (row as any).studentCount ?? 0,
-      class_start_date: null,
-      class_end_date: null,
-      class_term_id: null,
-      class_image_url: null,
-      class_parent_code_snapshot: null,
-      class_parent_name_snapshot: (row as any).parentName ?? null,
-      class_parent_slug_snapshot: (row as any).parentSlug ?? null,
-      class_parent_level_snapshot: (row as any).parentLevel ?? null,
-      class_term_academic_year_snapshot: null,
-      class_term_name_snapshot: null,
-      class_term_slug_snapshot: null,
-      class_term_angkatan_snapshot: null,
-      class_created_at: new Date().toISOString(),
-      class_updated_at: new Date().toISOString(),
-    };
-
-    qc.setQueryData<ApiClass[]>(
-      ["classes-public", schoolId, q, status, levelId],
-      (old = []) => [dummy, ...(old ?? [])]
-    );
-
-    setOpenTambah(false);
-  };
-
   /* ===== Layout ===== */
   return (
     <div className="w-full overflow-x-hidden bg-background text-foreground">
@@ -407,7 +355,7 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
           </div>
 
           <DataTable<MiddleClassRow>
-            onAdd={() => setOpenTambah(true)}
+            onAdd={() => navigate("new")} // ➜ /sekolah/kelas/daftar-kelas/new
             addLabel="Tambah"
             controlsPlacement="above"
             defaultQuery={q}
@@ -430,9 +378,23 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
             viewModes={["table", "card"] as ViewMode[]}
             defaultView="table"
             storageKey={`classes:${schoolId ?? "unknown"}`}
-            onRowClick={(r) => navigate(`${r.id}`)}
+            onRowClick={(r) => navigate(`${r.id}`)} // ➜ /sekolah/kelas/daftar-kelas/:classId
             pageSize={perPage}
             pageSizeOptions={[10, 20, 50, 100, 200]}
+            enableActions
+            actions={{
+              mode: "menu",
+              onView: (row) => navigate(`${row.id}`),
+              onEdit: (row) =>
+                navigate(`edit/${row.id}`, {
+                  state: { classRow: row }, // bisa dipakai buat prefill SchoolClassForm
+                }),
+              labels: {
+                view: "Detail",
+                edit: "Edit",
+              },
+              size: "sm",
+            }}
           />
 
           {/* Footer pagination */}
@@ -449,13 +411,6 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
           </div>
         </div>
       </main>
-
-      {/* Modal tambah kelas */}
-      <TambahKelas
-        open={openTambah}
-        onClose={() => setOpenTambah(false)}
-        onCreated={handleClassCreated}
-      />
     </div>
   );
 };

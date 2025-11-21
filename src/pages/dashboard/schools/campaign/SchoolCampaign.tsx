@@ -244,13 +244,17 @@ async function fetchSchoolCampaigns(schoolId: string): Promise<CampaignItem[]> {
    SMALL UI PIECES
 ========================================================= */
 function CampaignCard({ c }: { c: CampaignItem }) {
+  const navigate = useNavigate();
   const progress = calcProgress(c.targetAmount, c.collectedAmount);
   const isOpen = c.status === "open";
 
+  const detailPath = c.slug ?? c.id;
+
   return (
     <Card
-      className={`overflow-hidden ${c.isHighlighted ? "border-primary/60 shadow-md" : "shadow-sm"
-        }`}
+      className={`overflow-hidden ${
+        c.isHighlighted ? "border-primary/60 shadow-md" : "shadow-sm"
+      }`}
     >
       <div className="grid md:grid-cols-[220px,1fr]">
         {/* Image */}
@@ -345,11 +349,7 @@ function CampaignCard({ c }: { c: CampaignItem }) {
               size="sm"
               variant={isOpen ? "default" : "outline"}
               disabled={!isOpen}
-              onClick={() =>
-              (window.location.href = c.slug
-                ? `/campaigns/${c.slug}`
-                : `/campaigns/${c.id}`)
-              }
+              onClick={() => navigate(detailPath)}
               className="inline-flex items-center gap-1"
             >
               <Heart className="h-4 w-4" />
@@ -359,11 +359,7 @@ function CampaignCard({ c }: { c: CampaignItem }) {
               size="sm"
               variant="ghost"
               className="text-xs"
-              onClick={() =>
-              (window.location.href = c.slug
-                ? `/campaigns/${c.slug}`
-                : `/campaigns/${c.id}`)
-              }
+              onClick={() => navigate(detailPath)}
             >
               Detail campaign
               <ArrowRight className="h-3.5 w-3.5 ml-1" />
@@ -380,10 +376,7 @@ function CampaignCard({ c }: { c: CampaignItem }) {
 ========================================================= */
 type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
-const SchoolCampaign: React.FC<Props> = ({
-  showBack = false,
-  backTo,
-}) => {
+const SchoolCampaign: React.FC<Props> = ({ showBack = false, backTo }) => {
   const { schoolId = "" } = useParams<{ schoolId: string }>();
   const navigate = useNavigate();
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
@@ -514,20 +507,8 @@ const SchoolCampaign: React.FC<Props> = ({
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="text-xs text-muted-foreground">
-                Status campaign:
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {showBack && (
-                  <Button
-                    onClick={handleBack}
-                    variant="ghost"
-                    size="icon"
-                    className="mb-3"
-                  >
-                    <ArrowLeft size={20} />
-                  </Button>
-                )}
-                <h1 className="font-semibold text-lg md:text-xl">Donasi</h1>
+                Status campaign (sementara: hanya menampilkan yang sedang
+                dibuka).
               </div>
             </CardContent>
           </Card>
