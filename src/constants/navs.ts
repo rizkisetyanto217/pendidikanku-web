@@ -36,24 +36,30 @@ export type NavDict = {
   sekolah: NavItem[];
   murid: NavItem[];
   guru: NavItem[];
+  unassigned: NavItem[];
 };
 
 export const NAVS: NavDict = {
+  /* =========================================================
+   * SEKOLAH (admin/dkm/staff)
+   * base: /:school_slug/sekolah
+   * =======================================================*/
   sekolah: [
     // DASHBOARD
     {
       path: "dashboard",
       label: "Dashboard",
       icon: LayoutDashboard,
-      end: true,
+      end: true, // /sekolah/dashboard
     },
 
-    // (Opsional) Menu Utama tetap ada bila mau ditampilkan
+    // Menu utama umum
     {
       path: "menu-utama",
       label: "Menu Utama",
-      icon: ChartBar,
+      icon: ChartBar, // /sekolah/menu-utama
     },
+
     // 1) PROFIL
     {
       path: "profil",
@@ -61,15 +67,16 @@ export const NAVS: NavDict = {
       icon: School,
       children: [
         {
+          // profil sekolah (route existing: /sekolah/profil-sekolah)
           path: "profil-sekolah",
           label: "Sekolah",
           end: true,
-        }, // → /sekolah/profil-sekolah
+        },
         {
+          // daftar guru -> /sekolah/guru
           path: "guru",
           label: "Guru",
-          to: "guru",
-        }, // → /sekolah/guru
+        },
       ],
     },
 
@@ -79,28 +86,25 @@ export const NAVS: NavDict = {
       label: "Akademik",
       icon: FileSpreadsheet,
       children: [
-        // Tahun Akademik memang index-nya halaman akademik
         {
+          // Index akademik -> /sekolah/akademik
           path: "tahun-akademik",
           label: "Tahun Akademik",
           end: true,
-        }, // → /sekolah/akademik
+        },
         // Tiga item berikut diarahkan ke rute yang sudah ada (di luar /akademik)
         {
           path: "ruangan",
           label: "Ruangan",
-          to: "ruangan",
-        }, // → /sekolah/menu-utama/ruangan
+        },
         {
           path: "buku",
           label: "Buku",
-          to: "buku",
-        }, // → /sekolah/buku
+        },
         {
           path: "mata-pelajaran",
           label: "Mata Pelajaran",
-          to: "mata-pelajaran",
-        }, // → /sekolah/menu-utama/pelajaran
+        },
       ],
     },
 
@@ -111,25 +115,26 @@ export const NAVS: NavDict = {
       icon: BookOpen,
       children: [
         {
+          // index kelas -> /sekolah/kelas
           path: "level",
           label: "Level",
           end: true,
-        }, // → /sekolah/kelas
+        },
         {
+          // -> /sekolah/kelas/daftar-kelas
           path: "daftar-kelas",
           label: "Daftar Kelas",
-          to: "daftar-kelas",
-        }, // → /sekolah/kelas/akademik
+        },
         {
+          // -> /sekolah/kelas/semua-kelas
           path: "semua-kelas",
           label: "Semua Kelas",
-          to: "semua-kelas",
-        }, // → /sekolah/kelas/kelas
+        },
         {
+          // -> /sekolah/kelas/pelajaran
           path: "pelajaran",
           label: "Pelajaran",
-          to: "pelajaran",
-        }, // → /sekolah/kelas/pelajaran
+        },
       ],
     },
 
@@ -140,34 +145,36 @@ export const NAVS: NavDict = {
       icon: Wallet,
       children: [
         {
+          // SPP route existing: /sekolah/spp (di luar /keuangan)
           path: "spp",
           label: "SPP",
-          to: "spp",
-        }, // → /sekolah/spp
+        },
         {
+          // index keuangan -> /sekolah/keuangan
           path: "lainnya",
           label: "Lainnya",
           end: true,
-        }, // → /sekolah/keuangan
-        // kalau nanti ada route khusus pengaturan keuangan, ganti to: "keuangan/pengaturan"
+        },
+        // kalau nanti ada /sekolah/keuangan/pengaturan:
+        // { path: "pengaturan", label: "Pengaturan" }
       ],
     },
 
-    // 3) KELAS
+    // 5) JADWAL
     {
       path: "jadwal",
       label: "Jadwal",
       icon: CalendarDays,
       children: [
         {
+          // -> /sekolah/jadwal/agenda
           path: "agenda",
           label: "Agenda",
-          to: "agenda",
         },
         {
+          // -> /sekolah/jadwal/rutin
           path: "rutin",
           label: "Rutin",
-          to: "rutin",
         },
       ],
     },
@@ -179,48 +186,55 @@ export const NAVS: NavDict = {
       icon: ClipboardCheck,
       children: [
         {
+          // index -> /sekolah/pendaftaran
           path: "",
           label: "Periode",
           end: true,
-        }, // → /sekolah/pendaftaran
+        },
         {
+          // -> /sekolah/pendaftaran/murid
           path: "murid",
           label: "Murid",
-        }, // → /sekolah/pendaftaran/murid
+        },
         {
+          // -> /sekolah/pendaftaran/pengaturan
           path: "pengaturan",
           label: "Pengaturan",
-        }, // → /sekolah/pendaftaran/pengaturan
+        },
       ],
     },
 
-    // 6) DUKUNGAN
+    // 7) DUKUNGAN
     {
       path: "dukungan",
       label: "Dukungan",
       icon: HeartHandshake,
       children: [
         {
-          path: "donasi",
+          // index -> /sekolah/dukungan
+          path: "dukungan",
           label: "Donasi",
           end: true,
-        }, // → /sekolah/dukungan
+        },
       ],
     },
   ],
 
-  // tetap
+  /* =========================================================
+   * MURID
+   * base: /:school_slug/murid
+   * =======================================================*/
   murid: [
     {
       path: "dashboard",
       label: "Dashboard",
       icon: LayoutDashboard,
-      end: true,
+      end: true, // /murid/dashboard
     },
     {
       path: "menu-utama",
       label: "Menu Utama",
-      icon: ChartBar,
+      icon: ChartBar, // /murid/menu-utama
     },
 
     {
@@ -229,74 +243,76 @@ export const NAVS: NavDict = {
       icon: BookOpen,
       children: [
         {
+          // -> /murid/kelas-saya
           path: "kelas-saya",
           label: "Kelas Saya",
-          to: "kelas-saya",
         },
         {
+          // -> /murid/progress
           path: "progress",
           label: "Progress",
-          to: "progress",
         },
         {
+          // -> /murid/tugas
           path: "tugas",
           label: "Tugas",
-          to: "tugas",
         },
         {
+          // -> /murid/ujian
           path: "ujian",
           label: "Ujian",
-          to: "ujian",
         },
         {
+          // -> /murid/kontak
           path: "kontak",
           label: "Kontak",
-          to: "kontak",
         },
       ],
     },
-    // 3) KELAS
+
     {
       path: "jadwal",
       label: "Jadwal",
       icon: CalendarDays,
       children: [
         {
+          // -> /murid/jadwal/agenda
           path: "agenda",
           label: "Agenda",
-          to: "agenda",
         },
         {
+          // -> /murid/jadwal/rutin
           path: "rutin",
           label: "Rutin",
-          to: "rutin",
         },
       ],
     },
+
     {
-      path: "Administrasi",
+      path: "administrasi",
       label: "Administrasi",
       icon: CalendarDays,
       children: [
         {
+          // -> /murid/pendaftaran
           path: "pendaftaran",
           label: "Pendaftaran",
-          to: "pendaftaran",
         },
         {
+          // -> /murid/daftar-ulang
           path: "daftar-ulang",
           label: "Daftar Ulang",
-          to: "daftar-ulang",
         },
         {
-          path: "Keuangan",
+          // -> /murid/keuangan
+          path: "keuangan",
           label: "Keuangan",
-          to: "keuangan",
         },
         {
+          // kalau mau beda page list:
+          // -> /murid/keuangan/list
           path: "keuangan-list",
           label: "Keuangan List",
-          to: "keuangan",
         },
       ],
     },
@@ -304,32 +320,35 @@ export const NAVS: NavDict = {
     {
       path: "profil-murid",
       label: "Profil",
-      icon: Users,
+      icon: Users, // /murid/profil-murid
     },
   ],
 
-  // GURU
+  /* =========================================================
+   * GURU
+   * base: /:school_slug/guru
+   * =======================================================*/
   guru: [
     {
       path: "dashboard",
       label: "Dashboard",
       icon: LayoutDashboard,
-      end: true,
+      end: true, // /guru/dashboard
     },
     {
       path: "menu-utama",
       label: "Menu Utama",
-      icon: ChartBar,
+      icon: ChartBar, // /guru/menu-utama
     },
     {
       path: "wali-kelas",
       label: "Wali Kelas",
-      icon: Users,
+      icon: Users, // /guru/wali-kelas
     },
     {
       path: "guru-mapel",
       label: "Guru Mapel",
-      icon: UserCog,
+      icon: UserCog, // /guru/guru-mapel
     },
     {
       path: "jadwal",
@@ -337,21 +356,76 @@ export const NAVS: NavDict = {
       icon: CalendarDays,
       children: [
         {
+          // -> /guru/jadwal/agenda
           path: "agenda",
           label: "Agenda",
-          to: "agenda",
         },
         {
+          // -> /guru/jadwal/rutin
           path: "rutin",
           label: "Rutin",
-          to: "rutin",
         },
       ],
     },
     {
       path: "profil-guru",
       label: "Profil",
-      icon: Users,
+      icon: Users, // /guru/profil-guru
+    },
+  ],
+
+  /* =========================================================
+   * UNASSIGNED (sudah login, punya membership, tapi belum ada role)
+   * base biasanya tetap /:school_slug/sekolah
+   * =======================================================*/
+  unassigned: [
+    {
+      path: "dashboard",
+      label: "Dashboard",
+      icon: LayoutDashboard,
+      end: true, // /sekolah/dashboard
+    },
+    {
+      path: "menu-utama",
+      label: "Menu Utama",
+      icon: ChartBar, // /sekolah/menu-utama
+    },
+    {
+      path: "profil",
+      label: "Profil",
+      icon: Users, // misal: /sekolah/profil (profil user di sekolah)
+    },
+    {
+      path: "administrasi",
+      label: "Administrasi",
+      icon: ClipboardCheck,
+      children: [
+        {
+          // -> /sekolah/pendaftaran
+          path: "pendaftaran",
+          label: "Pendaftaran",
+          to: "pendaftaran",
+        },
+        {
+          // -> /sekolah/keuangan
+          path: "keuangan",
+          label: "Keuangan",
+          to: "keuangan",
+        },
+      ],
+    },
+    {
+      path: "dukungan",
+      label: "Dukungan",
+      icon: HeartHandshake,
+      children: [
+        {
+          // -> /sekolah/dukungan
+          path: "",
+          label: "Donasi",
+          end: true,
+        },
+      ],
     },
   ],
 };

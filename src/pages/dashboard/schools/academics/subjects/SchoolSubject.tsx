@@ -1,3 +1,4 @@
+// src/pages/sekolahislamku/pages/academic/SchoolSubject.table.tsx
 import React, { useMemo, useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -24,13 +25,6 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import {
   AlertDialog,
   AlertDialogContent,
   AlertDialogHeader,
@@ -39,10 +33,6 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 
 /* re-use your DataTable */
 import {
@@ -168,42 +158,6 @@ const sumHours = (arr: ClassSubjectItem[]) => {
 };
 
 /* ================= Mutations ================= */
-function useCreateSubjectMutation(school_id: string) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (form: FormData) => {
-      const { data } = await axios.post(
-        `${ADMIN_PREFIX}/${encodeURIComponent(school_id)}/subjects`,
-        form,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
-      return data;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["subjects-merged", school_id] });
-    },
-  });
-}
-
-function useUpdateSubjectMutation(school_id: string, subjectId: string) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (form: FormData) => {
-      const { data } = await axios.patch(
-        `${ADMIN_PREFIX}/${encodeURIComponent(
-          school_id
-        )}/subjects/${subjectId}`,
-        form,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
-      return data;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["subjects-merged", school_id] });
-    },
-  });
-}
-
 function useDeleteSubjectMutation(school_id: string, subjectId: string) {
   const qc = useQueryClient();
   return useMutation({
@@ -219,344 +173,7 @@ function useDeleteSubjectMutation(school_id: string, subjectId: string) {
   });
 }
 
-/* ================= Small UI ================= */
-function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="flex justify-between border-b py-2 text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <span>{value}</span>
-    </div>
-  );
-}
-
-/* ================= Detail Modal ================= */
-function SubjectDetailDialog({
-  open,
-  subject,
-  onClose,
-}: {
-  open: boolean;
-  subject: SubjectRow | null;
-  onClose: () => void;
-}) {
-  return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Detail Mapel — {subject?.name}</DialogTitle>
-          <DialogDescription>
-            Informasi ringkas dan penugasan per kelas.
-          </DialogDescription>
-        </DialogHeader>
-
-        {subject && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <InfoRow label="Kode" value={subject.code || "-"} />
-              <InfoRow
-                label="Status"
-                value={
-                  subject.status === "active" ? (
-                    <Badge>Aktif</Badge>
-                  ) : (
-                    <Badge variant="secondary">Nonaktif</Badge>
-                  )
-                }
-              />
-              <InfoRow label="Jumlah Kelas" value={subject.class_count} />
-              <InfoRow
-                label="Total Jam/Minggu"
-                value={
-                  subject.total_hours_per_week != null
-                    ? `${subject.total_hours_per_week}`
-                    : "-"
-                }
-              />
-              <InfoRow label="Jumlah Buku" value={subject.book_count} />
-            </div>
-
-            <div>
-              <div className="font-semibold mb-2">Penugasan per Kelas</div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm min-w-[720px]">
-                  <thead className="border-b">
-                    <tr className="text-left">
-                      <th className="py-2 pr-3">Slug Kelas</th>
-                      <th className="py-2 pr-3">Jam/Minggu</th>
-                      <th className="py-2 pr-3">Passing</th>
-                      <th className="py-2 pr-3">Bobot Rapor</th>
-                      <th className="py-2 pr-3">Core</th>
-                      <th className="py-2 pr-3">Aktif</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {subject.assignments.map((cs) => (
-                      <tr key={cs.class_subject_id} className="border-b">
-                        <td className="py-2 pr-3">
-                          {cs.class_subject_slug || "-"}
-                        </td>
-                        <td className="py-2 pr-3">
-                          {cs.class_subject_hours_per_week ?? "-"}
-                        </td>
-                        <td className="py-2 pr-3">
-                          {cs.class_subject_min_passing_score ?? "-"}
-                        </td>
-                        <td className="py-2 pr-3">
-                          {cs.class_subject_weight_on_report ?? "-"}
-                        </td>
-                        <td className="py-2 pr-3">
-                          {cs.class_subject_is_core ? "Ya" : "Tidak"}
-                        </td>
-                        <td className="py-2 pr-3">
-                          {cs.class_subject_is_active ? "Aktif" : "Nonaktif"}
-                        </td>
-                      </tr>
-                    ))}
-                    {subject.assignments.length === 0 && (
-                      <tr>
-                        <td
-                          colSpan={6}
-                          className="py-4 text-center text-muted-foreground"
-                        >
-                          Belum ditugaskan ke kelas manapun.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-/* ================= Create/Edit/Delete Dialogs ================= */
-function CreateSubjectDialog({
-  open,
-  schoolId,
-  onClose,
-}: {
-  open: boolean;
-  schoolId: string;
-  onClose: () => void;
-}) {
-  const [code, setCode] = useState("");
-  const [name, setName] = useState("");
-  const [desc, setDesc] = useState("");
-  const [file, setFile] = useState<File | null>(null);
-
-  const createMutation = useCreateSubjectMutation(schoolId);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const fd = new FormData();
-    if (code.trim()) fd.append("subject_code", code.trim());
-    fd.append("subject_name", name.trim());
-    if (desc.trim()) fd.append("subject_desc", desc.trim());
-    if (file) fd.append("file", file);
-    await createMutation.mutateAsync(fd);
-    onClose();
-    setCode("");
-    setName("");
-    setDesc("");
-    setFile(null);
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>Tambah Mapel</DialogTitle>
-          <DialogDescription>Isi detail mapel di bawah ini.</DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1">
-              <Label>Kode (opsional)</Label>
-              <Input
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="B-Ing-1"
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <Label>Nama *</Label>
-              <Input
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Bahasa Inggris"
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <Label>Deskripsi (opsional)</Label>
-            <Textarea
-              rows={3}
-              value={desc}
-              onChange={(e) => setDesc(e.target.value)}
-              placeholder="Deskripsi singkat"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <Label>Gambar (opsional)</Label>
-            <Input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            />
-          </div>
-
-          {createMutation.isError && (
-            <div className="text-destructive text-sm">
-              {(createMutation.error as any)?.message ??
-                "Gagal membuat subject."}
-            </div>
-          )}
-
-          <div className="pt-2 flex justify-end gap-2">
-            <Button type="button" variant="ghost" onClick={onClose}>
-              Batal
-            </Button>
-            <Button
-              type="submit"
-              disabled={createMutation.isPending}
-              className="gap-1"
-            >
-              {createMutation.isPending ? "Menyimpan…" : "Simpan"}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function EditSubjectDialog({
-  open,
-  schoolId,
-  subject,
-  onClose,
-}: {
-  open: boolean;
-  schoolId: string;
-  subject: SubjectRow | null;
-  onClose: () => void;
-}) {
-  const [code, setCode] = useState(subject?.code ?? "");
-  const [name, setName] = useState(subject?.name ?? "");
-  const [desc, setDesc] = useState<string>("");
-  const [isActive, setIsActive] = useState(subject?.status === "active");
-  const [file, setFile] = useState<File | null>(null);
-
-  useEffect(() => {
-    setCode(subject?.code ?? "");
-    setName(subject?.name ?? "");
-    setIsActive(subject?.status === "active");
-    setDesc("");
-    setFile(null);
-  }, [subject?.id]);
-
-  const updateMutation = useUpdateSubjectMutation(schoolId, subject?.id ?? "");
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!subject) return;
-
-    const fd = new FormData();
-    fd.append("subject_name", name.trim());
-    fd.append("subject_is_active", isActive ? "true" : "false");
-    if (code.trim()) fd.append("subject_code", code.trim());
-    if (desc.trim()) fd.append("subject_desc", desc.trim());
-    if (file) fd.append("file", file);
-
-    await updateMutation.mutateAsync(fd);
-    onClose();
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>Edit Mapel — {subject?.name}</DialogTitle>
-          <DialogDescription>Perbarui informasi mapel.</DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1">
-              <Label>Kode</Label>
-              <Input value={code} onChange={(e) => setCode(e.target.value)} />
-            </div>
-            <div className="flex flex-col gap-1">
-              <Label>Nama *</Label>
-              <Input
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Checkbox
-              checked={isActive}
-              onCheckedChange={(v) => setIsActive(Boolean(v))}
-              id="is-active"
-            />
-            <Label htmlFor="is-active">Aktif</Label>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <Label>Deskripsi (opsional)</Label>
-            <Textarea
-              rows={3}
-              value={desc}
-              onChange={(e) => setDesc(e.target.value)}
-              placeholder="Update deskripsi jika perlu"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <Label>Gambar (opsional — menimpa yang lama)</Label>
-            <Input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            />
-          </div>
-
-          {updateMutation.isError && (
-            <div className="text-destructive text-sm">
-              {(updateMutation.error as any)?.message ??
-                "Gagal mengubah subject."}
-            </div>
-          )}
-
-          <div className="pt-2 flex justify-end gap-2">
-            <Button type="button" variant="ghost" onClick={onClose}>
-              Batal
-            </Button>
-            <Button
-              type="submit"
-              disabled={updateMutation.isPending}
-              className="gap-1"
-            >
-              {updateMutation.isPending ? "Menyimpan…" : "Simpan Perubahan"}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
+/* ================= Confirm Delete Dialog ================= */
 function ConfirmDeleteDialog({
   open,
   title,
@@ -602,11 +219,11 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
   const { setHeader } = useDashboardHeader();
   useEffect(() => {
     setHeader({
-      title: "Mapel",
+      title: "Mata Pelajaran",
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Akademik" },
-        { label: "Mapel" },
+        { label: "Mata Pelajaran" },
       ],
       actions: null,
     });
@@ -615,11 +232,7 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
   // 🔐 Ambil schoolId dari simple-context (JWT), bukan URL params
   const { data: currentUser } = useCurrentUser();
   const schoolId = currentUser?.membership?.school_id ?? "";
-  // kalau suatu saat butuh slug: const schoolSlug = currentUser?.membership?.school_slug ?? "";
 
-  const [detailData, setDetailData] = useState<SubjectRow | null>(null);
-  const [openCreate, setOpenCreate] = useState(false);
-  const [editData, setEditData] = useState<SubjectRow | null>(null);
   const [deleteData, setDeleteData] = useState<SubjectRow | null>(null);
 
   // controls (mengikat ke DataTable)
@@ -791,7 +404,8 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
         </SelectContent>
       </Select>
 
-      <Button className="gap-1" onClick={() => setOpenCreate(true)}>
+      {/* Tambah sekarang diarahkan ke halaman form */}
+      <Button className="gap-1" onClick={() => navigate("new")}>
         + Tambah
       </Button>
     </div>
@@ -814,7 +428,9 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
                   <ArrowLeft size={20} />
                 </Button>
               )}
-              <h1 className="font-semibold text-lg md:text-xl">Mapel</h1>
+              <h1 className="font-semibold text-lg md:text-xl">
+                Mata Pelajaran
+              </h1>
             </div>
           </div>
 
@@ -856,8 +472,11 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
               enableActions
               actions={{
                 mode: "menu",
-                onView: (row) => navigate(`${row.id}`),
-                onEdit: (row) => setEditData(row),
+                onView: (row) => navigate(`${row.id}`), // -> /mata-pelajaran/:id
+                onEdit: (row) =>
+                  navigate(`edit/${row.id}`, {
+                    state: { subject: row }, // buat prefilling di SchoolSubjectForm
+                  }),
                 onDelete: (row) => setDeleteData(row),
                 labels: { view: "Detail", edit: "Edit", delete: "Hapus" },
                 size: "sm",
@@ -903,30 +522,7 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
         </div>
       </main>
 
-      {/* Dialogs */}
-      <SubjectDetailDialog
-        open={!!detailData}
-        subject={detailData}
-        onClose={() => setDetailData(null)}
-      />
-
-      {schoolId && (
-        <CreateSubjectDialog
-          open={openCreate}
-          schoolId={schoolId}
-          onClose={() => setOpenCreate(false)}
-        />
-      )}
-
-      {schoolId && (
-        <EditSubjectDialog
-          open={!!editData}
-          schoolId={schoolId}
-          subject={editData}
-          onClose={() => setEditData(null)}
-        />
-      )}
-
+      {/* Hapus pakai AlertDialog, tetap di halaman ini */}
       <ConfirmDeleteDialog
         open={!!deleteData}
         title={`Hapus "${deleteData?.name}"?`}

@@ -1,6 +1,6 @@
 // src/pages/dasboard/schools/SchoolProfile.shadcn.tsx
 import React, { useMemo, useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "@/lib/axios";
 import {
@@ -48,6 +48,9 @@ import { adaptToUi, adaptFromUi } from "./types/schoolProfile";
 
 /* Breadcrumb header */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+
+/* 🔐 Current user (ambil school_id dari JWT/simple-context) */
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 /* =================== Helpers =================== */
 type ApiList<T> = { message: string; data: T[]; pagination?: any };
@@ -104,8 +107,12 @@ type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
 const SchoolProfile: React.FC<Props> = ({ showBack = false, backTo }) => {
   const navigate = useNavigate();
-  const { schoolId } = useParams<{ schoolId: string }>();
   const q = useQueryClient();
+
+  /* 🔐 Ambil school_id dari currentUser (JWT/simple-context) */
+  const { data: currentUser, isLoading: userLoading } = useCurrentUser();
+  const activeMembership = currentUser?.membership ?? null;
+  const schoolId = activeMembership?.school_id ?? null;
 
   /* Set breadcrumb */
   const { setHeader } = useDashboardHeader();
@@ -121,7 +128,7 @@ const SchoolProfile: React.FC<Props> = ({ showBack = false, backTo }) => {
     });
   }, [setHeader, showBack]);
 
-  // Queries
+  // Queries (pakai schoolId dari token)
   const qSchool = useQuery({
     queryKey: ["school", schoolId],
     queryFn: () => fetchSchool(schoolId!),
@@ -133,7 +140,7 @@ const SchoolProfile: React.FC<Props> = ({ showBack = false, backTo }) => {
     enabled: !!schoolId,
   });
 
-  const isLoading = qSchool.isLoading || qProfile.isLoading;
+  const isLoading = userLoading || qSchool.isLoading || qProfile.isLoading;
   const error = (qSchool.error || qProfile.error) as any | null;
 
   const ui: SchoolUi | null = useMemo(() => {
@@ -144,6 +151,24 @@ const SchoolProfile: React.FC<Props> = ({ showBack = false, backTo }) => {
   const [editOpen, setEditOpen] = useState(false);
 
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
+
+  /* Kalau belum ada schoolId dari token */
+  if (!schoolId && !userLoading) {
+    return (
+      <div className="w-full">
+        <main className="w-full">
+          <div className="mx-auto max-w-3xl py-8">
+            <Card>
+              <CardContent className="p-6 text-sm text-muted-foreground">
+                Tidak ditemukan sekolah aktif pada akun ini. Pastikan Anda sudah
+                memiliki membership sekolah.
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full">
@@ -162,9 +187,7 @@ const SchoolProfile: React.FC<Props> = ({ showBack = false, backTo }) => {
                   <ArrowLeft size={20} />
                 </Button>
               )}
-              <h1 className="font-semibold text-lg md:text-xl">
-                Sekolah
-              </h1>
+              <h1 className="font-semibold text-lg md:text-xl">Sekolah</h1>
             </div>
 
             {/* States */}
@@ -302,7 +325,6 @@ const SchoolProfile: React.FC<Props> = ({ showBack = false, backTo }) => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3 text-sm text-muted-foreground">
-                      {/* Kita hanya punya principal_user_id di BE */}
                       <InfoRow
                         icon={<UserCog size={16} />}
                         label="User ID"
@@ -382,7 +404,6 @@ const SchoolProfile: React.FC<Props> = ({ showBack = false, backTo }) => {
           onOpenChange={setEditOpen}
           initial={ui}
           onSubmit={async (v) => {
-            // validasi ringan sesuai constraint
             if (
               v.foundedYear &&
               (v.foundedYear < 1800 || v.foundedYear > new Date().getFullYear())
@@ -394,9 +415,8 @@ const SchoolProfile: React.FC<Props> = ({ showBack = false, backTo }) => {
             }
 
             const { schoolsPatch, profilePatch } = adaptFromUi(v);
-
-            // patch paralel (profile bisa create or patch)
             const currentProfileId = qProfile.data?.school_profile_id;
+
             await Promise.all([
               patchSchool(v.id, schoolsPatch),
               upsertProfile(v.id, {

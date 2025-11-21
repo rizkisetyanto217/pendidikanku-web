@@ -22,14 +22,6 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 /* shadcn/ui */
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -95,120 +87,6 @@ function usePublicRoomsQuery(
   });
 }
 
-/* ===================== DIALOG FORM ===================== */
-function RoomDialog({
-  open,
-  onOpenChange,
-  initial,
-  onSubmit,
-  submitting,
-}: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  initial: Room | null;
-  onSubmit: (form: {
-    id?: string;
-    name: string;
-    capacity: number;
-    location?: string;
-    is_active: boolean;
-  }) => Promise<void> | void;
-  submitting?: boolean;
-}) {
-  const isEdit = Boolean(initial);
-  const [name, setName] = useState(initial?.name ?? "");
-  const [capacity, setCapacity] = useState<number>(initial?.capacity ?? 0);
-  const [location, setLocation] = useState<string>(initial?.location ?? "");
-  const [active, setActive] = useState<boolean>(initial?.is_active ?? true);
-
-  useEffect(() => {
-    if (!open) return;
-    setName(initial?.name ?? "");
-    setCapacity(initial?.capacity ?? 0);
-    setLocation(initial?.location ?? "");
-    setActive(initial?.is_active ?? true);
-  }, [open, initial?.id]);
-
-  return (
-    <Dialog open={open} onOpenChange={(v) => !submitting && onOpenChange(v)}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>
-            {isEdit ? "Edit Ruangan" : "Tambah Ruangan"}
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="grid gap-4">
-          <div className="grid gap-2">
-            <Label>Nama Ruangan *</Label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="cth. Lab Komputer"
-              required
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label>Kapasitas *</Label>
-            <Input
-              type="number"
-              inputMode="numeric"
-              value={Number.isFinite(capacity) ? capacity : 0}
-              onChange={(e) => setCapacity(parseInt(e.target.value || "0", 10))}
-              min={0}
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label>Lokasi</Label>
-            <Input
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="Gedung A, Lt. 2 / Link Zoom"
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <input
-              id="room-active"
-              type="checkbox"
-              className="h-4 w-4 rounded border"
-              checked={active}
-              onChange={(e) => setActive(e.target.checked)}
-            />
-            <Label htmlFor="room-active">Aktif</Label>
-          </div>
-        </div>
-
-        <div className="mt-4 flex justify-end gap-2">
-          <Button
-            variant="ghost"
-            onClick={() => onOpenChange(false)}
-            disabled={submitting}
-          >
-            Batal
-          </Button>
-          <Button
-            onClick={() =>
-              onSubmit({
-                id: initial?.id,
-                name: name.trim(),
-                capacity: Number.isFinite(capacity) ? capacity : 0,
-                location: location.trim() || undefined,
-                is_active: active,
-              })
-            }
-            disabled={submitting || !name.trim()}
-          >
-            {submitting ? "Menyimpan…" : isEdit ? "Simpan" : "Tambah"}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 /* ===================== ACTIONS MENU ===================== */
 function ActionsMenu({
   onView,
@@ -271,9 +149,7 @@ export default function SchoolRoom({ showBack = false, backTo }: Props) {
   const currentUserQ = useCurrentUser();
   const activeMembership = currentUserQ.data?.membership ?? null;
 
-  // sumber utama: simple-context (JWT-based)
   const schoolIdFromMembership = activeMembership?.school_id ?? null;
-  // fallback: cookie UI-only (kalau memang masih dipakai)
   const schoolId = schoolIdFromMembership || getActiveschoolId() || null;
 
   /* 🔍 Query (sinkron URL) */
@@ -281,6 +157,7 @@ export default function SchoolRoom({ showBack = false, backTo }: Props) {
   const qUrl = sp.get("q") ?? "";
   const [q, setQ] = useState(qUrl);
   useEffect(() => setQ(qUrl), [qUrl]);
+
   const handleQueryChange = (val: string) => {
     setQ(val);
     const copy = new URLSearchParams(sp);
@@ -318,36 +195,7 @@ export default function SchoolRoom({ showBack = false, backTo }: Props) {
     [data]
   );
 
-  /* CRUD */
-  const createOrUpdate = useMutation({
-    mutationFn: async (form: {
-      id?: string;
-      name: string;
-      capacity: number;
-      location?: string;
-      is_active: boolean;
-    }) => {
-      if (!schoolId) throw new Error("School ID tidak tersedia");
-
-      const payload = {
-        room_name: form.name,
-        room_capacity: form.capacity,
-        room_location: form.location ?? null,
-        room_is_active: form.is_active,
-      };
-      if (form.id) {
-        await axios.put(`/a/${schoolId}/class-rooms/${form.id}`, payload);
-      } else {
-        await axios.post(`/a/${schoolId}/class-rooms`, payload);
-      }
-    },
-    onSuccess: async () => {
-      await qc.invalidateQueries({
-        queryKey: ["public-rooms", schoolId, q, page, perPage],
-      });
-    },
-  });
-
+  /* DELETE */
   const delRoom = useMutation({
     mutationFn: async (id: string) => {
       if (!schoolId) throw new Error("School ID tidak tersedia");
@@ -360,8 +208,6 @@ export default function SchoolRoom({ showBack = false, backTo }: Props) {
     },
   });
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalInitial, setModalInitial] = useState<Room | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Room | null>(null);
 
@@ -435,7 +281,7 @@ export default function SchoolRoom({ showBack = false, backTo }: Props) {
       </Button>
     </div>
   ) : (
-    <div></div>
+    <div />
   );
 
   /* Layout */
@@ -460,10 +306,8 @@ export default function SchoolRoom({ showBack = false, backTo }: Props) {
           </div>
 
           <DataTable<Room>
-            onAdd={() => {
-              setModalInitial(null);
-              setModalOpen(true);
-            }}
+            /* Tambah → ke halaman /akademik/ruangan/new */
+            onAdd={() => navigate("new")}
             addLabel="Tambah"
             controlsPlacement="above"
             defaultQuery={q}
@@ -483,14 +327,16 @@ export default function SchoolRoom({ showBack = false, backTo }: Props) {
             viewModes={["table", "card"] as ViewMode[]}
             defaultView="table"
             storageKey={`rooms:${schoolId ?? "unknown"}`}
+            /* klik baris → detail /ruangan/:id */
             onRowClick={(r) => navigate(`./${r.id}`)}
             renderActions={(r) => (
               <ActionsMenu
                 onView={() => navigate(`./${r.id}`)}
-                onEdit={() => {
-                  setModalInitial(r);
-                  setModalOpen(true);
-                }}
+                onEdit={() =>
+                  navigate(`edit/${r.id}`, {
+                    state: { room: r },
+                  })
+                }
                 onDelete={() => {
                   setDeleteTarget(r);
                   setConfirmOpen(true);
@@ -500,15 +346,6 @@ export default function SchoolRoom({ showBack = false, backTo }: Props) {
           />
         </div>
       </main>
-
-      {/* Modal */}
-      <RoomDialog
-        open={modalOpen}
-        onOpenChange={(v) => (v ? setModalOpen(true) : setModalOpen(false))}
-        initial={modalInitial}
-        submitting={createOrUpdate.isPending}
-        onSubmit={async (form) => await createOrUpdate.mutateAsync(form)}
-      />
 
       {/* Hapus Dialog */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>

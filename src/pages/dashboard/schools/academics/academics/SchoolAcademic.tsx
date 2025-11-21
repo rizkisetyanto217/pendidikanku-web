@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "@/lib/axios";
 import { useNavigate } from "react-router-dom";
@@ -17,14 +17,6 @@ import {
 /* ---------- shadcn/ui ---------- */
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -111,23 +103,11 @@ const TERMS_QKEY = (schoolId?: string) =>
 const dateShort = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    })
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
     : "-";
-
-function normalizeAcademicYear(input: string) {
-  const s = (input || "").trim();
-  const m = s.match(/^(\d{4})\s*\/\s*(\d{2})$/);
-  if (m) {
-    const start = Number(m[1]);
-    return `${start}/${start + 1}`;
-  }
-  const mFull = s.match(/^(\d{4})\s*\/\s*(\d{4})$/);
-  if (mFull) return `${mFull[1]}/${mFull[2]}`;
-  return s;
-}
 
 function extractErrorMessage(err: any) {
   const d = err?.response?.data;
@@ -146,126 +126,7 @@ function extractErrorMessage(err: any) {
   }
 }
 
-function toZDate(d: string) {
-  if (!d) return "";
-  if (d.includes("T")) return d;
-  return `${d}T00:00:00Z`;
-}
-
-/* ========== Payload & mapping ========= */
-type TermPayload = {
-  academic_year: string;
-  name: string;
-  start_date: string; // yyyy-mm-dd
-  end_date: string; // yyyy-mm-dd
-  angkatan: number;
-  is_active: boolean;
-  slug?: string;
-};
-
-function mapApiToTerm(x: AcademicTermApi): AcademicTerm {
-  return {
-    id: x.academic_term_id,
-    school_id: x.academic_term_school_id,
-    academic_year: x.academic_term_academic_year,
-    name: x.academic_term_name,
-    start_date: x.academic_term_start_date,
-    end_date: x.academic_term_end_date,
-    is_active: x.academic_term_is_active,
-    angkatan: x.academic_term_angkatan,
-    slug: x.academic_term_slug,
-    created_at: x.academic_term_created_at,
-    updated_at: x.academic_term_updated_at,
-  };
-}
-
-function mapPayloadToApi(p: TermPayload) {
-  return {
-    academic_term_academic_year: normalizeAcademicYear(p.academic_year),
-    academic_term_name: p.name,
-    academic_term_angkatan: Number(p.angkatan),
-    academic_term_start_date: toZDate(p.start_date),
-    academic_term_end_date: toZDate(p.end_date),
-    academic_term_is_active: Boolean(p.is_active),
-    ...(p.slug ? { academic_term_slug: p.slug } : {}),
-  };
-}
-
 /* ===================== Mutations (CRUD) ===================== */
-/** sekarang schoolId di sini datang dari simple-context (JWT), bukan URL params */
-function useCreateTerm(schoolId?: string) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (payload: TermPayload) => {
-      const { data } = await axios.post(
-        `${ADMIN_PREFIX}/${encodeURIComponent(schoolId!)}/academic-terms`,
-        mapPayloadToApi(payload)
-      );
-      return data;
-    },
-    onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: TERMS_QKEY(schoolId) });
-      await qc.refetchQueries({
-        queryKey: TERMS_QKEY(schoolId),
-        type: "active",
-      });
-    },
-  });
-}
-
-function useUpdateTerm(schoolId?: string) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({
-      id,
-      payload,
-    }: {
-      id: string;
-      payload: TermPayload;
-    }) => {
-      const { data } = await axios.patch(
-        `${ADMIN_PREFIX}/${encodeURIComponent(schoolId!)}/academic-terms/${id}`,
-        mapPayloadToApi(payload)
-      );
-      return data;
-    },
-    onMutate: async ({ id, payload }) => {
-      await qc.cancelQueries({ queryKey: TERMS_QKEY(schoolId) });
-      const previous = qc.getQueryData<AcademicTerm[]>(TERMS_QKEY(schoolId));
-      if (previous) {
-        qc.setQueryData<AcademicTerm[]>(
-          TERMS_QKEY(schoolId),
-          previous.map((t) =>
-            t.id === id
-              ? {
-                ...t,
-                academic_year: normalizeAcademicYear(payload.academic_year),
-                name: payload.name,
-                start_date: toZDate(payload.start_date),
-                end_date: toZDate(payload.end_date),
-                angkatan: Number(payload.angkatan),
-                is_active: Boolean(payload.is_active),
-                slug: payload.slug ?? t.slug,
-              }
-              : t
-          )
-        );
-      }
-      return { previous };
-    },
-    onError: (_e, _vars, ctx) => {
-      if (ctx?.previous) qc.setQueryData(TERMS_QKEY(schoolId), ctx.previous);
-    },
-    onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: TERMS_QKEY(schoolId) });
-      await qc.refetchQueries({
-        queryKey: TERMS_QKEY(schoolId),
-        type: "active",
-      });
-    },
-  });
-}
-
 function useDeleteTerm(schoolId?: string) {
   const qc = useQueryClient();
   return useMutation({
@@ -335,93 +196,6 @@ function ActionsMenu({
   );
 }
 
-/* ===================== Form Modal (shadcn) ===================== */
-// (bagian TermFormDialog tetap sama persis, aku skip komentarnya buat pendek)
-
-function TermFormDialog({
-  open,
-  onClose,
-  initial,
-  onSubmit,
-  loading,
-}: {
-  open: boolean;
-  onClose: () => void;
-  initial?: Partial<TermPayload>;
-  onSubmit: (values: TermPayload) => void;
-  loading?: boolean;
-}) {
-  const [values, setValues] = useState<TermPayload>(() => ({
-    academic_year: initial?.academic_year ?? "",
-    name: initial?.name ?? "",
-    start_date: initial?.start_date ?? "",
-    end_date: initial?.end_date ?? "",
-    angkatan: Number(initial?.angkatan ?? new Date().getFullYear()),
-    is_active: Boolean(initial?.is_active ?? false),
-    slug: initial?.slug ?? "",
-  }));
-
-  useEffect(() => {
-    if (!open) return;
-    setValues({
-      academic_year: initial?.academic_year ?? "",
-      name: initial?.name ?? "",
-      start_date: initial?.start_date ?? "",
-      end_date: initial?.end_date ?? "",
-      angkatan: Number(initial?.angkatan ?? new Date().getFullYear()),
-      is_active: Boolean(initial?.is_active ?? false),
-      slug: initial?.slug ?? "",
-    });
-  }, [
-    open,
-    initial?.academic_year,
-    initial?.name,
-    initial?.start_date,
-    initial?.end_date,
-    initial?.angkatan,
-    initial?.is_active,
-    initial?.slug,
-  ]);
-
-  const canSubmit =
-    values.academic_year.trim() &&
-    values.name.trim() &&
-    values.start_date &&
-    values.end_date &&
-    new Date(values.end_date) > new Date(values.start_date) &&
-    Number.isFinite(values.angkatan) &&
-    values.angkatan > 0;
-
-  return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Periode Akademik</DialogTitle>
-          <DialogDescription />
-        </DialogHeader>
-
-        {/* ... form body sama ... */}
-
-        <DialogFooter className="gap-2">
-          <Button variant="ghost" onClick={onClose} disabled={!!loading}>
-            Batal
-          </Button>
-          <Button
-            onClick={() => onSubmit(values)}
-            disabled={!canSubmit || !!loading}
-          >
-            {loading ? (
-              <Loader2 className="animate-spin" size={16} />
-            ) : (
-              "Simpan"
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 /* ===================== Page (pakai DataTable) ===================== */
 type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
@@ -464,7 +238,19 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
         }
       );
       const raw = res.data?.data ?? [];
-      return raw.map(mapApiToTerm);
+      return raw.map((x) => ({
+        id: x.academic_term_id,
+        school_id: x.academic_term_school_id,
+        academic_year: x.academic_term_academic_year,
+        name: x.academic_term_name,
+        start_date: x.academic_term_start_date,
+        end_date: x.academic_term_end_date,
+        is_active: x.academic_term_is_active,
+        angkatan: x.academic_term_angkatan,
+        slug: x.academic_term_slug,
+        created_at: x.academic_term_created_at,
+        updated_at: x.academic_term_updated_at,
+      }));
     },
   });
 
@@ -476,14 +262,7 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
     return actives[0] ?? terms[0] ?? null;
   }, [terms]);
 
-  const createTerm = useCreateTerm(schoolId || undefined);
-  const updateTerm = useUpdateTerm(schoolId || undefined);
   const deleteTerm = useDeleteTerm(schoolId || undefined);
-
-  const [modal, setModal] = useState<{
-    mode: "create" | "edit";
-    editing?: AcademicTerm | null;
-  } | null>(null);
 
   const [toDelete, setToDelete] = useState<AcademicTerm | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -493,28 +272,6 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
     await deleteTerm.mutateAsync(toDelete.id);
     setConfirmOpen(false);
   };
-
-  const handleSubmit = useCallback(
-    (v: TermPayload) => {
-      if (modal?.mode === "edit" && modal.editing) {
-        updateTerm.mutate(
-          { id: modal.editing.id, payload: v },
-          {
-            onSuccess: () => setModal(null),
-            onError: (e: any) =>
-              alert(extractErrorMessage(e) || "Gagal memperbarui term"),
-          }
-        );
-      } else {
-        createTerm.mutate(v, {
-          onSuccess: () => setModal(null),
-          onError: (e: any) =>
-            alert(extractErrorMessage(e) || "Gagal membuat term"),
-        });
-      }
-    },
-    [modal, updateTerm, createTerm]
-  );
 
   const columns: ColumnDef<AcademicTerm>[] = [
     {
@@ -622,7 +379,9 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
           </div>
 
           <CDataTable<AcademicTerm>
-            onAdd={() => setModal({ mode: "create" })}
+            onAdd={() =>
+              navigate(`/${schoolSlug}/sekolah/akademik/tahun-akademik/new`)
+            }
             addLabel="Tambah"
             controlsPlacement="above"
             defaultQuery=""
@@ -634,32 +393,31 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
             rows={terms}
             getRowId={(t) => t.id}
             onRowClick={(row) =>
-              navigate(`${row.id}`, {
-                state: {
-                  term: {
-                    academic_terms_school_id: row.school_id,
-                    academic_terms_academic_year: row.academic_year,
-                    academic_terms_name: row.name,
-                    academic_terms_start_date: row.start_date,
-                    academic_terms_end_date: row.end_date,
-                    academic_terms_is_active: row.is_active,
-                    academic_terms_angkatan: row.angkatan,
-                    academic_terms_id: row.id,
-                  },
-                },
-              })
+              navigate(
+                `/${schoolSlug}/sekolah/akademik/tahun-akademik/${row.id}`,
+                {
+                  state: { term: row },
+                }
+              )
             }
             renderActions={(t) => (
               <ActionsMenu
                 onView={() =>
                   navigate(
-                    `/${schoolSlug}/sekolah/akademik/tahun-akademik/detail/${t.id}`,
+                    `/${schoolSlug}/sekolah/akademik/tahun-akademik/${t.id}`,
                     {
                       state: { term: t },
                     }
                   )
                 }
-                onEdit={() => setModal({ mode: "edit", editing: t })}
+                onEdit={() =>
+                  navigate(
+                    `/${schoolSlug}/sekolah/akademik/tahun-akademik/edit/${t.id}`,
+                    {
+                      state: { term: t },
+                    }
+                  )
+                }
                 onDelete={() => {
                   setToDelete(t);
                   setConfirmOpen(true);
@@ -669,11 +427,21 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
             actions={{
               mode: "inline",
               onView: (row) => {
-                navigate(`/${schoolSlug}/sekolah/akademik/detail/${row.id}`, {
-                  state: { term: row },
-                });
+                navigate(
+                  `/${schoolSlug}/sekolah/akademik/tahun-akademik/${row.id}`,
+                  {
+                    state: { term: row },
+                  }
+                );
               },
-              onEdit: (row) => setModal({ mode: "edit", editing: row }),
+              onEdit: (row) => {
+                navigate(
+                  `/${schoolSlug}/sekolah/akademik/tahun-akademik/edit/${row.id}`,
+                  {
+                    state: { term: row },
+                  }
+                );
+              },
               onDelete: (row) => {
                 setToDelete(row);
                 setConfirmOpen(true);
@@ -683,32 +451,6 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
           />
         </div>
       </main>
-
-      {/* Modal Create/Edit */}
-      <TermFormDialog
-        key={modal?.editing?.id ?? modal?.mode ?? "closed"}
-        open={!!modal}
-        onClose={() => setModal(null)}
-        initial={
-          modal?.editing
-            ? {
-              academic_year: modal.editing.academic_year,
-              name: modal.editing.name,
-              start_date: modal.editing.start_date
-                ? modal.editing.start_date.slice(0, 10)
-                : "",
-              end_date: modal.editing.end_date
-                ? modal.editing.end_date.slice(0, 10)
-                : "",
-              angkatan: modal.editing.angkatan,
-              is_active: modal.editing.is_active,
-              slug: modal.editing.slug,
-            }
-            : undefined
-        }
-        loading={createTerm.isPending || updateTerm.isPending}
-        onSubmit={(v) => handleSubmit(v)}
-      />
 
       {/* Modal Konfirmasi Hapus */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>

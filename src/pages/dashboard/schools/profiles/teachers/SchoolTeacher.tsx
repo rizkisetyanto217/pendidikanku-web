@@ -1,8 +1,8 @@
 // src/pages/sekolahislamku/dashboard-school/SchoolTeacher.tsx
 import { useMemo, useState, useEffect } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import axios from "@/lib/axios";
+import axios, { getActiveschoolId } from "@/lib/axios";
 import type { AxiosError } from "axios";
 
 /* Icons */
@@ -19,6 +19,8 @@ import {
 /* Tambahan untuk breadcrumb sistem dashboard */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
+/* 🔐 Current user */
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 /* shadcn/ui */
 import { Button } from "@/components/ui/button";
@@ -150,7 +152,7 @@ function parsePhoneFromWa(wa?: string | null) {
   }
 }
 
-/* ================= Hooks kecil: search (debounce + sync ?q=) ================= */
+/* ===================== Hooks kecil: search (debounce + sync ?q=) ===================== */
 function useSearchQueryParam(key: string, initial = "") {
   const [sp, setSp] = useSearchParams();
   const urlValue = sp.get(key) ?? initial;
@@ -196,20 +198,21 @@ function ActionsMenu({ onView }: { onView: () => void }) {
 /* ================= Main Component ================= */
 type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
-const SchoolTeacher: React.FC<Props> = ({
-  showBack = false,
-  backTo,
-}) => {
+const SchoolTeacher: React.FC<Props> = ({ showBack = false, backTo }) => {
   const navigate = useNavigate();
-  const { schoolId } = useParams<{ schoolId: string }>();
   const [openAdd, setOpenAdd] = useState(false);
   const [openImport, setOpenImport] = useState(false);
+
+  /* 🔐 Ambil school_id dari JWT/simple-context, fallback cookie UI */
+  const { data: currentUser, isLoading: userLoading } = useCurrentUser();
+  const activeMembership = currentUser?.membership ?? null;
+  const schoolIdFromMembership = activeMembership?.school_id ?? null;
+  const schoolId = schoolIdFromMembership || getActiveschoolId() || null;
 
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
   /* Atur breadcrumb dan title seperti SchoolAcademic */
   const { setHeader } = useDashboardHeader();
-
   useEffect(() => {
     setHeader({
       title: "Guru",
@@ -227,20 +230,24 @@ const SchoolTeacher: React.FC<Props> = ({
   const q = search.value;
   const setQ = search.setValue;
 
-  if (!schoolId) {
+  /* Guard kalau belum ada schoolId setelah user ke-load */
+  if (!schoolId && !userLoading) {
     return (
       <div className="p-4 text-sm">
-        <b>schoolId</b> tidak ditemukan di path. Pastikan URL seperti:
-        <code className="ml-1">/SCHOOL_ID/sekolah/menu-utama/guru</code>
+        Tidak ditemukan sekolah aktif pada akun ini. Pastikan Anda sudah
+        memiliki membership sekolah.
       </div>
     );
   }
 
   /* ===== Query list (public) ===== */
-  const { data, isLoading, isError, refetch, error } = useQuery<
-    PublicTeachersResponse,
-    AxiosError
-  >({
+  const {
+    data,
+    isLoading: teachersLoading,
+    isError,
+    refetch,
+    error,
+  } = useQuery<PublicTeachersResponse, AxiosError>({
     queryKey: ["public-school-teachers", schoolId],
     enabled: Boolean(schoolId),
     staleTime: 120_000,
@@ -301,7 +308,6 @@ const SchoolTeacher: React.FC<Props> = ({
         id: "name",
         header: "Nama",
         minW: "240px",
-
         cell: (r) => (
           <div>
             <div className="font-medium">{r.name}</div>
@@ -376,7 +382,7 @@ const SchoolTeacher: React.FC<Props> = ({
   }, []);
 
   /* ===== StatsSlot (konsisten) ===== */
-
+  const isLoading = userLoading || teachersLoading;
 
   const statsSlot = isLoading ? (
     <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -396,8 +402,7 @@ const SchoolTeacher: React.FC<Props> = ({
     </div>
   ) : (
     <div className="flex items-center justify-between gap-2">
-      <div className="text-sm text-muted-foreground">
-      </div>
+      <div className="text-sm text-muted-foreground" />
       {/* Tombol Import CSV tetap ada, dijaga konsisten di area ringkasan */}
       <div className="flex items-center gap-2">
         <Button
@@ -455,7 +460,7 @@ const SchoolTeacher: React.FC<Props> = ({
           className="gap-1"
           onClick={(e) => {
             e.stopPropagation();
-            navigate(`/${schoolId}/sekolah/profil/guru/${t.id}`);
+            navigate(`/sekolah/profil/guru/${t.id}`);
           }}
         >
           Lihat <Eye size={14} />
@@ -464,25 +469,25 @@ const SchoolTeacher: React.FC<Props> = ({
     </div>
   );
 
-
-
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-background text-foreground">
       {/* Modals */}
-      <TambahGuru
-        open={openAdd}
-        onClose={() => setOpenAdd(false)}
-        subjects={[
-          "Matematika",
-          "Bahasa Indonesia",
-          "Bahasa Inggris",
-          "IPA",
-          "IPS",
-          "Agama",
-        ]}
-        schoolId={schoolId!}
-        onCreated={() => refetch()}
-      />
+      {schoolId && (
+        <TambahGuru
+          open={openAdd}
+          onClose={() => setOpenAdd(false)}
+          subjects={[
+            "Matematika",
+            "Bahasa Indonesia",
+            "Bahasa Inggris",
+            "IPA",
+            "IPS",
+            "Agama",
+          ]}
+          schoolId={schoolId}
+          onCreated={() => refetch()}
+        />
+      )}
       <UploadFileGuru open={openImport} onClose={() => setOpenImport(false)} />
 
       <main className="w-full">
@@ -496,7 +501,6 @@ const SchoolTeacher: React.FC<Props> = ({
                 size="icon"
                 className="cursor-pointer self-start"
               >
-                {/* kamu bisa ganti icon sesuai kebutuhan */}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-5 w-5"
@@ -519,6 +523,7 @@ const SchoolTeacher: React.FC<Props> = ({
           <DataTable<TeacherItem>
             /* ===== Toolbar konsisten ===== */
             addLabel="Tambah"
+            onAdd={() => setOpenAdd(true)}
             controlsPlacement="above"
             /* Search (sinkron URL) */
             defaultQuery={q}
@@ -539,14 +544,14 @@ const SchoolTeacher: React.FC<Props> = ({
             zebra={false}
             viewModes={["table", "card"] as ViewMode[]}
             defaultView="table"
-            storageKey={`teachers:${schoolId}`}
+            storageKey={`teachers:${schoolId || "unknown"}`}
             renderCard={renderCard}
             /* Klik baris → detail */
-            onRowClick={(r) => navigate(`/${schoolId}/sekolah/profil/guru/${r.id}`)}
+            onRowClick={(r) => navigate(`/sekolah/profil/guru/${r.id}`)}
             /* Actions dropdown ala Room */
             renderActions={(r) => (
               <ActionsMenu
-                onView={() => navigate(`/${schoolId}/sekolah/profil/guru/${r.id}`)}
+                onView={() => navigate(`/sekolah/profil/guru/${r.id}`)}
               />
             )}
             /* Pagination client-side (pakai bawaan DataTable) */

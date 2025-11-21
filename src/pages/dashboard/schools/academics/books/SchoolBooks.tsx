@@ -1,5 +1,4 @@
 // src/pages/sekolahislamku/dashboard-school/books/SchoolBooks.tsx
-import * as React from "react";
 import { useMemo, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -21,14 +20,6 @@ import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayou
 /* shadcn/ui */
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -45,10 +36,6 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 
 /* ✅ DataTable baru — sama seperti Academic */
 import {
@@ -86,7 +73,7 @@ export type BooksResponse = {
 };
 
 /* =========================================================
-   Fetch list (USER) - /api/u/books/list
+   Fetch list (USER) - /u/books/list
 ========================================================= */
 function useBooksList(params: { schoolId: string }) {
   const { schoolId } = params; // masih dipakai buat context & routing
@@ -122,42 +109,8 @@ function useBooksList(params: { schoolId: string }) {
 }
 
 /* =========================================================
-   CRUD hooks (tetap pakai /api/a/... seperti sebelumnya)
+   DELETE hook (masih pakai /api/a/...)
 ========================================================= */
-function useCreateBook(schoolId: string) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (payload: FormData) => {
-      const { data } = await axios.post(
-        `/api/a/${encodeURIComponent(schoolId)}/books`,
-        payload,
-        {
-          withCredentials: true,
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
-      return data;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["books-list-public"] }),
-  });
-}
-function useUpdateBook() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, payload }: { id: string; payload: FormData }) => {
-      const { data } = await axios.patch(
-        `/api/a/books/${encodeURIComponent(id)}`,
-        payload,
-        {
-          withCredentials: true,
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
-      return data;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["books-list-public"] }),
-  });
-}
 function useDeleteBook() {
   const qc = useQueryClient();
   return useMutation({
@@ -217,140 +170,11 @@ function ActionsMenu({
 }
 
 /* =========================================================
-   Modal Form
-========================================================= */
-function BookModal({
-  open,
-  setOpen,
-  mode,
-  book,
-  onSubmit,
-  submitting,
-}: {
-  open: boolean;
-  setOpen: (v: boolean) => void;
-  mode: "create" | "edit";
-  book: BookAPI | null;
-  onSubmit: (data: FormData) => Promise<void> | void;
-  submitting?: boolean;
-}) {
-  const [title, setTitle] = useState(book?.book_title ?? "");
-  const [author, setAuthor] = useState(book?.book_author ?? "");
-  const [desc, setDesc] = useState(book?.book_desc ?? "");
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(
-    book?.book_image_url ?? null
-  );
-
-  React.useEffect(() => {
-    if (!file) return;
-    const u = URL.createObjectURL(file);
-    setPreview(u);
-    return () => URL.revokeObjectURL(u);
-  }, [file]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const fd = new FormData();
-    fd.set("book_title", title);
-    fd.set("book_author", author);
-    fd.set("book_desc", desc);
-    if (file) fd.set("file", file);
-    await onSubmit(fd);
-    setOpen(false);
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>
-            {mode === "edit" ? "Edit Buku" : "Tambah Buku"}
-          </DialogTitle>
-          <DialogDescription>Isi informasi buku lalu simpan.</DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="grid gap-5">
-          <div className="grid md:grid-cols-12 gap-4">
-            <div className="md:col-span-4">
-              <div className="rounded-xl border bg-card">
-                <AspectRatio ratio={3 / 4} className="grid place-items-center">
-                  {preview ? (
-                    <img
-                      src={preview}
-                      alt="Preview"
-                      className="h-full w-full rounded-xl object-cover"
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center text-xs text-muted-foreground">
-                      <ImageOff className="h-4 w-4" />
-                      <span>Preview cover</span>
-                    </div>
-                  )}
-                </AspectRatio>
-              </div>
-              <Input
-                type="file"
-                accept="image/*"
-                className="mt-3"
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-              />
-            </div>
-
-            <div className="grid md:col-span-8 gap-3">
-              <div className="grid gap-1">
-                <Label>Judul *</Label>
-                <Input
-                  required
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-1">
-                <Label>Penulis</Label>
-                <Input
-                  value={author}
-                  onChange={(e) => setAuthor(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-1">
-                <Label>Deskripsi</Label>
-                <Textarea
-                  value={desc}
-                  onChange={(e) => setDesc(e.target.value)}
-                  className="min-h-[96px]"
-                />
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setOpen(false)}
-            >
-              Batal
-            </Button>
-            <Button type="submit" disabled={submitting}>
-              {submitting ? "Menyimpan..." : "Simpan"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-/* =========================================================
-   Page — sama layout & interaksi dengan Academic
+   Page — integrasi dengan halaman add/edit
 ========================================================= */
 type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
-export default function SchoolBooks({
-  showBack = false,
-  backTo
-}: Props) {
+export default function SchoolBooks({ showBack = false, backTo }: Props) {
   const navigate = useNavigate();
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
@@ -374,13 +198,7 @@ export default function SchoolBooks({
   const booksQ = useBooksList({ schoolId });
   const rows = booksQ.data?.data ?? [];
 
-  const createBook = useCreateBook(schoolId);
-  const updateBook = useUpdateBook();
   const deleteBook = useDeleteBook();
-
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<"create" | "edit">("create");
-  const [modalBook, setModalBook] = useState<BookAPI | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<BookAPI | null>(null);
 
@@ -440,7 +258,6 @@ export default function SchoolBooks({
           </div>
         ),
       },
-      // ❌ Kolom slug dihapus dari table utama
     ];
   }, []);
 
@@ -464,19 +281,19 @@ export default function SchoolBooks({
     </div>
   );
 
-  /* ====== Actions (Dropdown) — konsisten Academic ====== */
+  /* ====== Actions (Dropdown) — diarahkan ke halaman detail/edit ====== */
   const renderActions = (r: BookAPI) => (
     <ActionsMenu
       onView={() =>
-        navigate(`/${schoolId}/sekolah/buku/${r.book_id}`, {
+        navigate(`${r.book_id}`, {
           state: { book: r },
         })
       }
-      onEdit={() => {
-        setModalMode("edit");
-        setModalBook(r);
-        setModalOpen(true);
-      }}
+      onEdit={() =>
+        navigate(`edit/${r.book_id}`, {
+          state: { book: r },
+        })
+      }
       onDelete={() => {
         setDeleteTarget(r);
         setDeleteOpen(true);
@@ -504,12 +321,8 @@ export default function SchoolBooks({
           </div>
 
           <DataTable<BookAPI>
-            /* ===== Toolbar (sama Academic) ===== */
-            onAdd={() => {
-              setModalMode("create");
-              setModalBook(null);
-              setModalOpen(true);
-            }}
+            /* ===== Toolbar ===== */
+            onAdd={() => navigate("new")} // 🔗 ke /akademik/buku/new
             addLabel="Tambah"
             controlsPlacement="above"
             /* ===== Search ===== */
@@ -576,23 +389,7 @@ export default function SchoolBooks({
         </div>
       </main>
 
-      {/* Modal & Delete Dialog */}
-      <BookModal
-        open={modalOpen}
-        setOpen={setModalOpen}
-        mode={modalMode}
-        book={modalBook}
-        submitting={createBook.isPending || updateBook.isPending}
-        onSubmit={async (fd) => {
-          if (modalMode === "create") await createBook.mutateAsync(fd);
-          else if (modalBook?.book_id)
-            await updateBook.mutateAsync({
-              id: modalBook.book_id,
-              payload: fd,
-            });
-        }}
-      />
-
+      {/* Dialog Konfirmasi Hapus */}
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

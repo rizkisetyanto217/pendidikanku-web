@@ -19,10 +19,11 @@ import { Frame, PieChart, Map } from "lucide-react";
 
 /* 🔐 Ambil context user + school dari JWT */
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import type { CurrentUserMembership } from "@/hooks/useCurrentUser";
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar>;
 
-/** Normalisasi string segmen ke role NAVS */
+/** Normalisasi string segmen ke role NAVS (berbasis path) */
 const ROLE_ALIASES: Record<string, keyof NavDict> = {
   // sekolah/admin
   sekolah: "sekolah",
@@ -70,8 +71,37 @@ function useRoleAndBaseFromPath(): { role: keyof NavDict; base: string } {
   return { role: "sekolah", base: "/sekolah" };
 }
 
+/** Resolve nav key berdasarkan membership (role di JWT) */
+function resolveNavKey(
+  membership: CurrentUserMembership | null,
+  fallback: keyof NavDict
+): keyof NavDict {
+  if (!membership) return fallback;
+
+  const roles = membership.roles ?? [];
+
+  if (
+    roles.includes("admin") ||
+    roles.includes("dkm") ||
+    roles.includes("staff")
+  ) {
+    return "sekolah";
+  }
+
+  if (roles.includes("teacher")) {
+    return "guru";
+  }
+
+  if (roles.includes("student")) {
+    return "murid";
+  }
+
+  // ✅ sudah login + punya membership, tapi tidak punya role spesifik
+  return "unassigned";
+}
+
 export function AppSidebar(props: AppSidebarProps) {
-  const { role, base } = useRoleAndBaseFromPath();
+  const { role: pathRole, base } = useRoleAndBaseFromPath();
   const { setOpenMobile } = useSidebar();
 
   // 🔐 Ambil user + membership dari simple-context
@@ -79,13 +109,15 @@ export function AppSidebar(props: AppSidebarProps) {
   const membership =
     currentUser?.membership ?? currentUser?.memberships?.[0] ?? null;
 
+  const navKey: keyof NavDict = resolveNavKey(membership, pathRole);
+
   const schoolName = membership?.school_name ?? "Pendidikanku";
   const schoolIconUrl = membership?.school_icon_url;
   const userName = currentUser?.user_name ?? "User";
   const userEmail = currentUser?.email ?? "user@example.com";
 
   // Data untuk NavMain (pakai prop `items`)
-  const items = NAVS[role].map((it) => {
+  const items = NAVS[navKey].map((it) => {
     const parentUrl =
       it.path === "" || it.path === "." ? `${base}` : `${base}/${it.path}`;
 
@@ -96,7 +128,11 @@ export function AppSidebar(props: AppSidebarProps) {
       end: it.end ?? false,
       items: it.children?.map((c) => ({
         title: c.label,
-        url: `${parentUrl}/${c.path.replace(/^\/+/, "")}`,
+        // to override: kalau nanti kamu mau dukung `to` di NavChild, tinggal cek di sini
+        url: c.to
+          ? // kalau child punya `to`, pakai itu relatif ke base
+            `${base}/${c.to.replace(/^\/+/, "")}`
+          : `${parentUrl}/${c.path.replace(/^\/+/, "")}`,
         end: c.end ?? false,
       })),
     };
