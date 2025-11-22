@@ -23,6 +23,7 @@ import StudentScheduleRoutine from "@/pages/dashboard/students/schedules/routine
 import StudentEnrollment from "@/pages/dashboard/students/administration/StudentAdministrationEnrollment";
 import StudentReEnrollment from "@/pages/dashboard/students/administration/StudentAdministrationReEnrollment";
 import Setting from "@/pages/dashboard/components/page/Setting";
+import StudentChooseClassSection from "@/pages/dashboard/students/classes/my-classes/my-class/StudentChooseClassSection";
 
 // ======================
 // Routing untuk halaman MURID (Student Dashboard)
@@ -150,6 +151,10 @@ export const StudentRoutes = (
       <Route
         path="kelas-saya/:id/kehadiran"
         element={<StudentClassesAttandence />}
+      />
+      <Route
+        path="kelas-saya/pilih-kelas"
+        element={<StudentChooseClassSection />}
       />
 
       {/* Detail perkembangan belajar murid */}

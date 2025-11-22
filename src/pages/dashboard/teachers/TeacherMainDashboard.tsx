@@ -17,11 +17,10 @@ import {
   CalendarDays,
   BookOpen,
   CheckCheck,
-  ListChecks,
   ClipboardList,
-  MapPin,
   ArrowRight,
 } from "lucide-react";
+import { useNavigate} from "react-router-dom";
 
 /* =========================================================
    DEMO TOGGLE
@@ -41,6 +40,7 @@ export type TeacherScheduleItem = {
   room?: string;
   mode?: "offline" | "online" | "hybrid";
   note?: string;
+  day?: string;
 };
 
 export type AttendanceTodoItem = {
@@ -137,6 +137,14 @@ const dateFmt = (iso?: string): string => {
   }
 };
 
+const dayName = (iso: string) => {
+  try {
+    return new Date(iso).toLocaleDateString("id-ID", { weekday: "long" });
+  } catch {
+    return "";
+  }
+};
+
 /* =========================================================
    DEMO DATA
 ========================================================= */
@@ -185,6 +193,7 @@ function makeDemoTeacherHome(): TeacherHome {
   const todaySchedule: TeacherScheduleItem[] = rawSchedule.map((it) => ({
     ...it,
     timeText: timeRangeText(it.startISO, it.endISO),
+    day: dayName(it.startISO),
   }));
 
   const attendanceTodos: AttendanceTodoItem[] = [
@@ -355,10 +364,13 @@ function ScheduleCard({
   title?: string;
   seeAllPath?: string;
 }) {
+  const navigate = useNavigate();
+
   const shown = items.slice(0, 5);
+
   return (
     <Card className="shadow-sm">
-      <CardHeader className="pb-2">
+      <CardHeader className="px-5 py-4">
         <CardTitle className="flex items-center gap-2 text-base">
           <span className="h-9 w-9 rounded-xl grid place-items-center bg-muted text-primary">
             <CalendarDays className="h-4 w-4" />
@@ -366,6 +378,7 @@ function ScheduleCard({
           {title}
         </CardTitle>
       </CardHeader>
+
       <CardContent className="space-y-3">
         {shown.length === 0 ? (
           <div className="text-sm text-muted-foreground">Tidak ada jadwal.</div>
@@ -373,49 +386,30 @@ function ScheduleCard({
           shown.map((s) => (
             <div
               key={s.id}
-              className="rounded-xl border p-3 flex items-start gap-3"
-            >
-              <Badge variant="outline" className="shrink-0">
-                {s.timeText ?? timeRangeText(s.startISO, s.endISO)}
-              </Badge>
+              className="rounded-xl border p-3 flex items-start gap-3">
+              <Badge variant="outline">{s.timeText}</Badge>
+
               <div className="min-w-0">
                 <div className="font-medium leading-tight">
                   {s.subject} — {s.sectionName}
                 </div>
-                {(s.room || s.mode || s.note) && (
-                  <div className="text-xs text-muted-foreground flex flex-wrap gap-1">
-                    {s.room && (
-                      <span className="inline-flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        {s.room}
-                      </span>
-                    )}
-                    {s.mode && (
-                      <>
-                        <span>•</span>
-                        <span>{s.mode}</span>
-                      </>
-                    )}
-                    {s.note && (
-                      <>
-                        <span>•</span>
-                        <span>{s.note}</span>
-                      </>
-                    )}
-                  </div>
-                )}
+
+                <div className="mt-1 text-xs text-muted-foreground flex items-center gap-1">
+                  <CalendarDays className="h-3 w-3" />
+                  {s.day}
+                </div>
               </div>
             </div>
           ))
         )}
+
         {seeAllPath && (
           <>
             <Separator className="my-1" />
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => (window.location.href = seeAllPath)}
-            >
+              onClick={() => navigate(seeAllPath)}>
               Lihat semua jadwal
             </Button>
           </>
@@ -435,7 +429,7 @@ function AttendanceTodoCard({
   const pending = items.filter((t) => t.status === "pending");
   return (
     <Card className="shadow-sm">
-      <CardHeader className="pb-2">
+      <CardHeader className="px-5 py-4">
         <CardTitle className="flex items-center gap-2 text-base">
           <span className="h-9 w-9 rounded-xl grid place-items-center bg-muted text-primary">
             <ClipboardList className="h-4 w-4" />
@@ -452,8 +446,7 @@ function AttendanceTodoCard({
           pending.map((t) => (
             <div
               key={t.sessionId}
-              className="rounded-xl border p-3 flex items-center justify-between gap-3"
-            >
+              className="rounded-xl border p-3 flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <div className="font-medium leading-tight truncate">
                   {t.subject} — {t.sectionName}
@@ -468,71 +461,9 @@ function AttendanceTodoCard({
                   onOpen
                     ? onOpen(t.sessionId)
                     : (window.location.href = `/teacher/sessions/${t.sessionId}/attendance`)
-                }
-              >
+                }>
                 Buka Absen
               </Button>
-            </div>
-          ))
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function GradingQueueCard({
-  items,
-  onOpen,
-}: {
-  items: GradingQueueItem[];
-  onOpen?: (id: string) => void;
-}) {
-  return (
-    <Card className="shadow-sm">
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <span className="h-9 w-9 rounded-xl grid place-items-center bg-muted text-primary">
-            <ListChecks className="h-4 w-4" />
-          </span>
-          Antrean Penilaian
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {items.length === 0 ? (
-          <div className="text-sm text-muted-foreground">
-            Tidak ada pekerjaan penilaian.
-          </div>
-        ) : (
-          items.slice(0, 5).map((g) => (
-            <div
-              key={g.id}
-              className="rounded-xl border p-3 flex items-center justify-between gap-3"
-            >
-              <div className="min-w-0">
-                <div className="font-medium leading-tight truncate">
-                  {g.title} — {g.subject} ({g.sectionName})
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {g.dueISO
-                    ? `Jatuh tempo: ${dateFmt(g.dueISO)}`
-                    : "Tanpa tenggat"}
-                </div>
-              </div>
-              <div className="text-right shrink-0">
-                <Badge variant="outline" className="mb-1">
-                  {g.toGradeCount} perlu dinilai
-                </Badge>
-                <Button
-                  size="sm"
-                  onClick={() =>
-                    onOpen
-                      ? onOpen(g.id)
-                      : (window.location.href = `/teacher/grades/${g.id}`)
-                  }
-                >
-                  Nilai
-                </Button>
-              </div>
             </div>
           ))
         )}
@@ -550,7 +481,7 @@ function MyClassesCard({
 }) {
   return (
     <Card className="shadow-sm">
-      <CardHeader className="pb-2">
+      <CardHeader className="px-5 py-4">
         <CardTitle className="flex items-center gap-2 text-base">
           <span className="h-9 w-9 rounded-xl grid place-items-center bg-muted text-primary">
             <BookOpen className="h-4 w-4" />
@@ -565,8 +496,7 @@ function MyClassesCard({
           items.slice(0, 6).map((c) => (
             <div
               key={c.csstId}
-              className="rounded-xl border p-3 flex items-center justify-between gap-3"
-            >
+              className="rounded-xl border p-3 flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <div className="font-medium leading-tight truncate">
                   {c.subject} — {c.sectionName}
@@ -580,11 +510,10 @@ function MyClassesCard({
                 variant="outline"
                 size="sm"
                 onClick={() =>
-                (window.location.href = c.slug
-                  ? `/teacher/classes/${c.slug}`
-                  : `/teacher/classes/${c.csstId}`)
-                }
-              >
+                  (window.location.href = c.slug
+                    ? `/guru/guru-mapel/${c.slug}`
+                    : `/guru/guru-mapel/${c.csstId}`)
+                }>
                 Detail <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
             </div>
@@ -596,8 +525,7 @@ function MyClassesCard({
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => (window.location.href = seeAllPath)}
-            >
+              onClick={() => (window.location.href = seeAllPath)}>
               Lihat semua kelas
             </Button>
           </>
@@ -606,10 +534,6 @@ function MyClassesCard({
     </Card>
   );
 }
-
-
-
-
 
 /* =========================================================
    PAGE
@@ -659,8 +583,9 @@ const TeacherMainDashboard: React.FC = () => {
   }
 
   const t = data.teacher;
-  const nameFull = `${t.titlePrefix ? t.titlePrefix + " " : ""}${t.name}${t.titleSuffix ? ", " + t.titleSuffix : ""
-    }`;
+  const nameFull = `${t.titlePrefix ? t.titlePrefix + " " : ""}${t.name}${
+    t.titleSuffix ? ", " + t.titleSuffix : ""
+  }`;
 
   return (
     <div className="w-full bg-background text-foreground">
@@ -731,11 +656,8 @@ const TeacherMainDashboard: React.FC = () => {
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-5 items-stretch">
           {/* Kiri */}
           <div className="col-span-1 md:col-span-6 space-y-6">
-            <ScheduleCard
-              items={data.todaySchedule}
-              title="Jadwal Mengajar Hari Ini"
-              seeAllPath="/teacher/schedule"
-            />
+            <MyClassesCard items={data.myClasses} seeAllPath={`guru-mapel`} />
+
             <AttendanceTodoCard
               items={data.attendanceTodos}
               onOpen={(sid) =>
@@ -745,16 +667,11 @@ const TeacherMainDashboard: React.FC = () => {
           </div>
 
           {/* Kanan */}
-          <div className="col-span-1 md:col-span-6 space-y-6">
-            <GradingQueueCard
-              items={data.gradingQueue}
-              onOpen={(gid) =>
-                (window.location.href = `/teacher/grades/${gid}`)
-              }
-            />
-            <MyClassesCard
-              items={data.myClasses}
-              seeAllPath="/teacher/classes"
+          <div className=" col-span-1 md:col-span-6 space-y-6">
+            <ScheduleCard
+              items={data.todaySchedule}
+              title="Jadwal Mengajar Pekan Ini"
+              seeAllPath={`jadwal/agenda`}
             />
           </div>
         </section>

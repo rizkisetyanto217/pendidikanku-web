@@ -181,26 +181,33 @@ const TeacherCSSTStudentDetail: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen w-full bg-background text-foreground">
-      <main className="w-full px-4 md:px-6 py-4 md:py-8 max-w-screen-2xl mx-auto">
-        {/* Top Bar */}
+    <div className="w-full bg-background text-foreground">
+      <main className="w-full max-w-screen-2xl mx-auto">
+       {/* Top Bar */}
+      <div className="hidden md:block">
+        {/* Baris 1 */}
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate(-1)}
-            aria-label="Kembali"
           >
             <ArrowLeft />
           </Button>
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-xl md:text-2xl font-semibold tracking-tight">
-              {dto.school_student_user_profile_name_snapshot}
-            </h1>
-            <Badge className="uppercase">
-              {statusToBadge(dto.school_student_status).label}
-            </Badge>
-          </div>
+          <h1 className="font-semibold text-lg md:text-xl">
+            Detail Murid
+          </h1>
+        </div>
+        {/* Baris 2 */}
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <h1 className="text-xl md:text-2xl font-semibold tracking-tight">
+            {dto.school_student_user_profile_name_snapshot}
+          </h1>
+
+          <Badge className="uppercase">
+            {statusToBadge(dto.school_student_status).label}
+          </Badge>
+
           <div className="ml-auto flex items-center gap-2">
             {dto.school_student_user_profile_whatsapp_url_snapshot && (
               <a
@@ -213,11 +220,10 @@ const TeacherCSSTStudentDetail: React.FC = () => {
                 </Button>
               </a>
             )}
+
             {dto.school_student_user_profile_parent_whatsapp_url_snapshot && (
               <a
-                href={
-                  dto.school_student_user_profile_parent_whatsapp_url_snapshot
-                }
+                href={dto.school_student_user_profile_parent_whatsapp_url_snapshot}
                 target="_blank"
                 rel="noreferrer"
               >
@@ -228,6 +234,8 @@ const TeacherCSSTStudentDetail: React.FC = () => {
             )}
           </div>
         </div>
+      </div>
+
 
         <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
           {/* Identitas */}

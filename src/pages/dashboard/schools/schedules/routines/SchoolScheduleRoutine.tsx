@@ -460,18 +460,40 @@ function FilterBar({
   onReset: () => void;
 }) {
   return (
-    <div className="rounded-xl border p-3 bg-card text-card-foreground">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="inline-flex items-center gap-2">
+    <div className="rounded-xl border p-3 sm:p-4 bg-card text-card-foreground space-y-3">
+      {/* Bar atas: title + (optional) toggle view di mobile */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="inline-flex items-center gap-2 text-sm font-medium">
           <Filter size={16} />
-          <span className="font-medium">Filter</span>
+          <span>Filter</span>
         </div>
 
+        {/* Toggle view icon-only di mobile (opsional) */}
+        <div className="flex items-center gap-1 md:hidden">
+          <Button
+            size="icon"
+            variant={view === "calendar" ? "secondary" : "ghost"}
+            onClick={() => setView("calendar")}
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </Button>
+          <Button
+            size="icon"
+            variant={view === "list" ? "secondary" : "ghost"}
+            onClick={() => setView("list")}
+          >
+            <ListIcon className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Grid filter utama: full width di mobile, rapet di desktop */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
         <Select
           value={classId ?? "all"}
           onValueChange={(v) => setClassId(v === "all" ? undefined : v)}
         >
-          <SelectTrigger className="w-[160px]">
+          <SelectTrigger className="w-full">
             <SelectValue placeholder="Kelas" />
           </SelectTrigger>
           <SelectContent>
@@ -488,7 +510,7 @@ function FilterBar({
           value={teacherId ?? "all"}
           onValueChange={(v) => setTeacherId(v === "all" ? undefined : v)}
         >
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-full">
             <SelectValue placeholder="Guru" />
           </SelectTrigger>
           <SelectContent>
@@ -502,7 +524,7 @@ function FilterBar({
         </Select>
 
         <Select value={type ?? "all"} onValueChange={(v) => setType(v as any)}>
-          <SelectTrigger className="w-[150px]">
+          <SelectTrigger className="w-full">
             <SelectValue placeholder="Tipe" />
           </SelectTrigger>
           <SelectContent>
@@ -513,42 +535,51 @@ function FilterBar({
           </SelectContent>
         </Select>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           <Input
             type="date"
             value={from ?? ""}
             onChange={(e) => setFrom(e.target.value || undefined)}
-            className="w-[150px]"
+            className="w-full"
           />
-          <span className="text-sm text-muted-foreground">s/d</span>
+          <span className="hidden sm:inline text-sm text-muted-foreground">
+            s/d
+          </span>
           <Input
             type="date"
             value={to ?? ""}
             onChange={(e) => setTo(e.target.value || undefined)}
-            className="w-[150px]"
+            className="w-full"
           />
         </div>
+      </div>
 
-        <div className="ml-auto flex items-center gap-2">
-          <Button variant="outline" onClick={onReset}>
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Reset
-          </Button>
-          <Button
-            variant={view === "calendar" ? "secondary" : "ghost"}
-            onClick={() => setView("calendar")}
-          >
-            <LayoutGrid className="mr-2 h-4 w-4" />
-            Kalender
-          </Button>
-          <Button
-            variant={view === "list" ? "secondary" : "ghost"}
-            onClick={() => setView("list")}
-          >
-            <ListIcon className="mr-2 h-4 w-4" />
-            List
-          </Button>
-        </div>
+      {/* Bar bawah: Reset + view toggle versi full button */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+        <Button
+          variant="outline"
+          onClick={onReset}
+          className="w-full sm:w-auto"
+        >
+          <RefreshCw className="mr-2 h-4 w-4" />
+          Reset
+        </Button>
+        <Button
+          variant={view === "calendar" ? "secondary" : "ghost"}
+          onClick={() => setView("calendar")}
+          className="w-full sm:w-auto"
+        >
+          <LayoutGrid className="mr-2 h-4 w-4" />
+          Kalender
+        </Button>
+        <Button
+          variant={view === "list" ? "secondary" : "ghost"}
+          onClick={() => setView("list")}
+          className="w-full sm:w-auto"
+        >
+          <ListIcon className="mr-2 h-4 w-4" />
+          List
+        </Button>
       </div>
     </div>
   );
@@ -886,77 +917,87 @@ function SimpleWeekCalendar({
   const today = new Date().getDay();
 
   return (
-    <div className="rounded-xl border overflow-hidden">
-      <div className="grid grid-cols-7 text-center bg-muted/50 border-b">
-        {days.map((d) => (
-          <div key={d} className="px-2 py-2 text-sm font-medium">
-            {weekdayShort[d]}
+    <div className="rounded-xl border bg-card">
+      {/* wrapper scroll horizontal */}
+      <div className="overflow-x-auto">
+        <div className="min-w-[980px] sm:min-w-[1120px]">
+          {/* header hari */}
+          <div className="grid grid-cols-7 text-center bg-muted/50 border-b">
+            {days.map((d) => (
+              <div key={d} className="px-2 py-2 text-xs font-medium">
+                {weekdayShort[d]}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-      <div className="grid grid-cols-7 gap-px bg-border">
-        {days.map((d) => (
-          <div
-            key={d}
-            className={[
-              "min-h-[180px] bg-background p-2",
-              d === today ? "ring-2 ring-primary/40" : "",
-            ].join(" ")}
-          >
-            <div className="space-y-1">
-              {groupedR[d].map((r) => (
-                <div
-                  key={r.id}
-                  className="text-xs rounded border p-1 bg-card cursor-pointer hover:bg-accent"
-                  onClick={() => onClickItem({ kind: "routine", id: r.id })}
-                >
-                  <div className="flex items-center gap-1">
-                    <Badge variant="secondary" className="capitalize">
-                      {r.type ?? "class"}
-                    </Badge>
-                    <span className="font-medium">{r.title}</span>
-                  </div>
-                  <div className="text-[11px] text-muted-foreground flex gap-2">
-                    <span>
-                      <Clock className="inline h-3 w-3 mr-1" />
-                      {r.time}
-                    </span>
-                    {r.className ? (
-                      <span>
-                        <Users className="inline h-3 w-3 mr-1" />
-                        {r.className}
-                      </span>
-                    ) : null}
-                  </div>
+
+          {/* body */}
+          <div className="grid grid-cols-7 gap-px bg-border">
+            {days.map((d) => (
+              <div
+                key={d}
+                className={[
+                  "min-h-[180px] bg-background p-2",
+                  d === today ? "ring-2 ring-primary/40" : "",
+                ].join(" ")}
+              >
+                <div className="space-y-1">
+                  {groupedR[d].map((r) => (
+                    <div
+                      key={r.id}
+                      className="text-[11px] rounded border p-1 bg-card cursor-pointer hover:bg-accent"
+                      onClick={() => onClickItem({ kind: "routine", id: r.id })}
+                    >
+                      <div className="flex items-center gap-1">
+                        <Badge variant="secondary" className="capitalize">
+                          {r.type ?? "class"}
+                        </Badge>
+                        <span className="font-medium truncate">{r.title}</span>
+                      </div>
+                      <div className="text-[10px] text-muted-foreground flex gap-2 flex-wrap">
+                        <span>
+                          <Clock className="inline h-3 w-3 mr-1" />
+                          {r.time}
+                        </span>
+                        {r.className ? (
+                          <span>
+                            <Users className="inline h-3 w-3 mr-1" />
+                            {r.className}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  ))}
+
+                  {groupedO[d].map((o) => (
+                    <div
+                      key={o.id}
+                      className="text-[11px] rounded border p-1 bg-card cursor-pointer hover:bg-accent"
+                      onClick={() => onClickItem({ kind: "once", id: o.id })}
+                    >
+                      <div className="flex items-center gap-1">
+                        <Badge variant="secondary" className="capitalize">
+                          {o.type ?? "event"}
+                        </Badge>
+                        <span className="font-medium truncate">{o.title}</span>
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        <Clock className="inline h-3 w-3 mr-1" />
+                        {new Date(o.date).toLocaleTimeString("id-ID", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </div>
+                    </div>
+                  ))}
+
+                  {groupedR[d].length + groupedO[d].length === 0 ? (
+                    <div className="text-[10px] text-muted-foreground">—</div>
+                  ) : null}
                 </div>
-              ))}
-              {groupedO[d].map((o) => (
-                <div
-                  key={o.id}
-                  className="text-xs rounded border p-1 bg-card cursor-pointer hover:bg-accent"
-                  onClick={() => onClickItem({ kind: "once", id: o.id })}
-                >
-                  <div className="flex items-center gap-1">
-                    <Badge variant="secondary" className="capitalize">
-                      {o.type ?? "event"}
-                    </Badge>
-                    <span className="font-medium">{o.title}</span>
-                  </div>
-                  <div className="text-[11px] text-muted-foreground">
-                    <Clock className="inline h-3 w-3 mr-1" />
-                    {new Date(o.date).toLocaleTimeString("id-ID", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </div>
-                </div>
-              ))}
-              {groupedR[d].length + groupedO[d].length === 0 ? (
-                <div className="text-[11px] text-muted-foreground">—</div>
-              ) : null}
-            </div>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
       </div>
     </div>
   );
@@ -1145,7 +1186,7 @@ export default function SchoolScheduleRoutine({
 
   return (
     <div className="w-full bg-background text-foreground">
-      <div className="mx-auto flex flex-col gap-4">
+      <div className="mx-auto flex flex-col gap-4 max-w-5xl px-3 sm:px-4 lg:px-0">
         {/* Header */}
         <div className="md:flex hidden gap-3 items-center">
           {showBack && (

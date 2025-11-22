@@ -403,9 +403,9 @@ export default function Login() {
                   />
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="icon"
                     size="icon"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 ring-inset focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-0"
                     onClick={() => setShowPassword((s) => !s)}
                     aria-label={
                       showPassword

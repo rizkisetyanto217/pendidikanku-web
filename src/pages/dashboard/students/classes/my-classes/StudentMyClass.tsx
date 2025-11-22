@@ -3,17 +3,13 @@ import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
-  CalendarDays,
+  Search,
+  Info,
+  GraduationCap,
   BookOpen,
+  Activity,
   FileText,
   ClipboardList,
-  GraduationCap,
-  ChevronDown,
-  Search,
-  Activity,
-  Video,
-  Info,
-  Clock,
 } from "lucide-react";
 
 /* Breadcrumb (opsional) */
@@ -31,128 +27,66 @@ import {
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 
+/* Data fetching */
+import { useQuery } from "@tanstack/react-query";
+import api from "@/lib/axios";
+
 /* ===== Helpers ===== */
-const dateLong = (iso?: string) =>
+const dateLong = (iso?: string | null) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-      weekday: "long",
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    })
+        weekday: "long",
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      })
     : "-";
 
-const isSameDay = (iso?: string) => {
-  if (!iso) return false;
-  const a = new Date(iso);
-  const b = new Date();
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
+/* ============ Types dari API ============ */
+
+type StudentClassEnrollmentStatus =
+  | "pending"
+  | "accepted"
+  | "waitlisted"
+  | "rejected"
+  | "canceled";
+
+type StudentClassEnrollmentRow = {
+  student_class_enrollments_id: string;
+  student_class_enrollments_class_id: string;
+  student_class_enrollments_class_name: string;
+  student_class_enrollments_class_name_snapshot: string;
+  student_class_enrollments_class_slug_snapshot: string;
+  student_class_enrollments_class_section_id: string | null;
+  student_class_enrollments_class_section_name_snapshot: string | null;
+  student_class_enrollments_status: StudentClassEnrollmentStatus;
+  student_class_enrollments_total_due_idr: number;
+  student_class_enrollments_applied_at: string;
+  student_class_enrollments_accepted_at: string | null;
+  student_class_enrollments_created_at: string;
+  student_class_enrollments_updated_at: string;
+  student_class_enrollments_term_name_snapshot: string;
+  student_class_enrollments_term_academic_year_snapshot: string;
+  student_class_enrollments_term_angkatan_snapshot: number;
+  student_class_enrollments_username: string;
+  // tambahkan field lain kalau perlu
 };
 
-/* ===== Dummy data kelas (ditambah status) ===== */
-type EnrolledClass = {
-  id: string;
-  name: string;
-  room?: string;
-  homeroom: string;
-  nextSession?: { dateISO: string; time: string; title: string };
-  progress?: number;
-  pendingAssignments?: number;
-  activeQuizzes?: number;
-  lastScore?: number;
-  status: "active" | "legacy";
+type ListResponse<T> = {
+  success?: boolean;
+  message: string;
+  data: T[];
 };
-
-const ENROLLED: EnrolledClass[] = [
-  {
-    id: "tahsin",
-    name: "Tahsin",
-    room: "Aula 1",
-    homeroom: "Ustadz Abdullah",
-    nextSession: {
-      dateISO: new Date().toISOString(), // hari ini
-      time: "07:30",
-      title: "Tahsin — Tajwid & Makhraj",
-    },
-    progress: 68,
-    pendingAssignments: 2,
-    activeQuizzes: 1,
-    lastScore: 88,
-    status: "active",
-  },
-  {
-    id: "tahfidz",
-    name: "Tahfidz",
-    room: "R. Tahfiz",
-    homeroom: "Ustadz Salman",
-    nextSession: {
-      dateISO: new Date(Date.now() + 864e5).toISOString(), // besok
-      time: "09:30",
-      title: "Hafalan Juz 30",
-    },
-    progress: 42,
-    pendingAssignments: 1,
-    activeQuizzes: 0,
-    lastScore: 92,
-    status: "active",
-  },
-  {
-    id: "fiqih-2024",
-    name: "Fiqih (Tahun Lalu)",
-    room: "R. Syariah",
-    homeroom: "Ustadz Ma'mun",
-    progress: 100,
-    pendingAssignments: 0,
-    activeQuizzes: 0,
-    lastScore: 90,
-    status: "legacy",
-  },
-];
-
-/* ===== Zoom per-kelas (dummy) ===== */
-const ZOOM_INFO: Record<
-  string,
-  | {
-    url: string;
-    topic: string;
-    meetingId: string;
-    passcode: string;
-    startAtLabel: string;
-  }
-  | undefined
-> = {
-  tahsin: {
-    url: "https://us04web.zoom.us/j/74836152611?pwd=28Lxo5tjoNgArUWEEFZenOsxaDBuSk.1",
-    topic: "Sumini's Zoom Meeting",
-    meetingId: "748 3615 2611",
-    passcode: "4pj4qt",
-    startAtLabel: "Kamis, 9 Okt 2025 • 13:00 WIB",
-  },
-  tahfidz: {
-    url: "https://us04web.zoom.us/j/74836152611?pwd=28Lxo5tjoNgArUWEEFZenOsxaDBuSk.1",
-    topic: "Sumini's Zoom Meeting",
-    meetingId: "748 3615 2611",
-    passcode: "4pj4qt",
-    startAtLabel: "Kamis, 9 Okt 2025 • 13:00 WIB",
-  },
-};
-
 
 /* ===================== Page ===================== */
 type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
-export default function StudentMyClass({
-  showBack = false,
-  backTo,
-}: Props) {
+export default function StudentMyClass({ showBack = false, backTo }: Props) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
   const base = `/${slug}/murid`;
+
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
   /* Breadcrumb/title */
   const { setHeader } = useDashboardHeader();
@@ -167,25 +101,120 @@ export default function StudentMyClass({
     });
   }, [setHeader, showBack]);
 
+  /* ===== Fetch data dari API ===== */
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["student-my-classes"],
+    queryFn: async (): Promise<StudentClassEnrollmentRow[]> => {
+      // SESUAIKAN PATH kalau di backend kamu prefix-nya beda
+      const res = await api.get<ListResponse<StudentClassEnrollmentRow>>(
+        "/u/class-enrollments/list",
+        { params: { student_id: "me" } }
+      );
+      return res.data.data ?? [];
+    },
+  });
+
   const [q, setQ] = useState("");
-  const list = useMemo(() => {
+
+  // Filter by search
+  const filtered = useMemo(() => {
+    const rows = data ?? [];
     const key = q.trim().toLowerCase();
-    if (!key) return ENROLLED;
-    return ENROLLED.filter(
-      (c) =>
-        c.name.toLowerCase().includes(key) ||
-        c.homeroom.toLowerCase().includes(key) ||
-        (c.room ?? "").toLowerCase().includes(key)
-    );
-  }, [q]);
+    if (!key) return rows;
 
-  const active = list.filter((c) => c.status === "active");
-  const legacy = list.filter((c) => c.status === "legacy");
+    return rows.filter((r) => {
+      const name =
+        r.student_class_enrollments_class_name ||
+        r.student_class_enrollments_class_name_snapshot ||
+        "";
+      const term = r.student_class_enrollments_term_name_snapshot || "";
+      const year =
+        r.student_class_enrollments_term_academic_year_snapshot || "";
+      const section =
+        r.student_class_enrollments_class_section_name_snapshot || "";
+      return (
+        name.toLowerCase().includes(key) ||
+        term.toLowerCase().includes(key) ||
+        year.toString().toLowerCase().includes(key) ||
+        section.toLowerCase().includes(key)
+      );
+    });
+  }, [data, q]);
 
-  const todayActive = active.filter((c) => isSameDay(c.nextSession?.dateISO));
-  const upcomingActive = active.filter(
-    (c) => !isSameDay(c.nextSession?.dateISO)
+  // Kelompokkan:
+  const accepted = (filtered ?? []).filter(
+    (r) => r.student_class_enrollments_status === "accepted"
   );
+
+  const withSection = accepted.filter(
+    (r) => !!r.student_class_enrollments_class_section_id
+  );
+  const withoutSection = accepted.filter(
+    (r) => !r.student_class_enrollments_class_section_id
+  );
+
+  const others = (filtered ?? []).filter(
+    (r) => r.student_class_enrollments_status !== "accepted"
+  );
+
+  /* ===== Loading / error state ===== */
+  if (isLoading) {
+    return (
+      <div className="w-full bg-background text-foreground">
+        <main className="w-full">
+          <div className="mx-auto flex flex-col gap-6">
+            <div className="flex items-center gap-3">
+              {showBack && (
+                <Button
+                  onClick={handleBack}
+                  variant="ghost"
+                  size="icon"
+                  className="cursor-pointer self-start"
+                >
+                  <ArrowLeft size={20} />
+                </Button>
+              )}
+              <h1 className="text-lg font-semibold md:text-xl">Kelas Saya</h1>
+            </div>
+            <Card>
+              <CardContent className="p-6 text-sm text-muted-foreground">
+                Memuat daftar kelas…
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="w-full bg-background text-foreground">
+        <main className="w-full">
+          <div className="mx-auto flex flex-col gap-6">
+            <div className="flex items-center gap-3">
+              {showBack && (
+                <Button
+                  onClick={handleBack}
+                  variant="ghost"
+                  size="icon"
+                  className="cursor-pointer self-start"
+                >
+                  <ArrowLeft size={20} />
+                </Button>
+              )}
+              <h1 className="text-lg font-semibold md:text-xl">Kelas Saya</h1>
+            </div>
+            <Card>
+              <CardContent className="p-6 text-sm text-destructive">
+                Gagal memuat kelas. Coba muat ulang halaman.
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full bg-background text-foreground">
@@ -203,11 +232,11 @@ export default function StudentMyClass({
                 <ArrowLeft size={20} />
               </Button>
             )}
-            <h1 className="text-lg font-semibold md:text-xl">Kelas Yang Saya Ajar</h1>
+            <h1 className="text-lg font-semibold md:text-xl">Kelas Saya</h1>
           </div>
 
           {/* Search */}
-          <CardContent className=" md:p-5">
+          <CardContent className="md:p-5">
             <div className="relative w-full md:w-96">
               <Search
                 size={16}
@@ -216,54 +245,61 @@ export default function StudentMyClass({
               <Input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Cari kelas / wali kelas / ruangan…"
+                placeholder="Cari kelas / angkatan / rombel…"
                 className="pl-9"
               />
             </div>
           </CardContent>
 
-          {/* ===== Highlight: kelas yang aktif hari ini ===== */}
-          {todayActive.length > 0 && (
-            <Card className="border-secondary/50 bg-secondary/10">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base md:text-lg flex items-center gap-2">
-                  <Badge className="h-6">
-                    Sedang Berlangsung / Mulai Hari Ini
-                  </Badge>
-                  <span className="text-secondary-foreground/80 text-sm">
-                    {todayActive.length} kelas
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0 grid gap-3">
-                {todayActive.map((c) => (
-                  <ActiveClassRow key={c.id} c={c} base={base} />
-                ))}
-              </CardContent>
-            </Card>
-          )}
+          {/* ===== Section: butuh pilih rombel ===== */}
+          <Section
+            title="Belum Punya Rombel"
+            hint={
+              withoutSection.length
+                ? `${withoutSection.length} kelas menunggu penempatan`
+                : undefined
+            }
+            emptyText="Tidak ada kelas yang menunggu penempatan."
+          >
+            {withoutSection.map((row) => (
+              <NeedSectionCard
+                key={row.student_class_enrollments_id}
+                row={row}
+                base={base}
+              />
+            ))}
+          </Section>
 
-          {/* ===== Kelas Aktif Lainnya ===== */}
+          {/* ===== Section: Kelas Aktif (sudah punya rombel) ===== */}
           <Section
             title="Kelas Aktif"
-            hint={`${upcomingActive.length} kelas`}
+            hint={`${withSection.length} kelas`}
             emptyText="Belum ada kelas aktif."
           >
-            {upcomingActive.map((c) => (
-              <ClassCard key={c.id} c={c} base={base} />
+            {withSection.map((row) => (
+              <ActiveEnrollmentCard
+                key={row.student_class_enrollments_id}
+                row={row}
+                base={base}
+              />
             ))}
           </Section>
 
-          {/* ===== Legacy ===== */}
-          <Section
-            title="Kelas Legacy (Arsip)"
-            hint={`${legacy.length} kelas`}
-            emptyText="Tidak ada arsip kelas."
-          >
-            {legacy.map((c) => (
-              <LegacyCard key={c.id} c={c} base={base} />
-            ))}
-          </Section>
+          {/* ===== Section: Status lain (pending / waitlist / dst) ===== */}
+          {others.length > 0 && (
+            <Section
+              title="Pendaftaran Lainnya"
+              hint={`${others.length} pendaftaran`}
+              emptyText="Tidak ada pendaftaran lain."
+            >
+              {others.map((row) => (
+                <OtherEnrollmentCard
+                  key={row.student_class_enrollments_id}
+                  row={row}
+                />
+              ))}
+            </Section>
+          )}
         </div>
       </main>
     </div>
@@ -309,94 +345,34 @@ function Section({
   );
 }
 
-function ActiveClassRow({ c, base }: { c: EnrolledClass; base: string }) {
-  const z = ZOOM_INFO[c.id];
-  return (
-    <div
-      className={cn(
-        "rounded-xl border p-3 bg-background/60 backdrop-blur",
-        "ring-1 ring-secondary/40"
-      )}
-    >
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge variant="secondary" className="h-6">
-          AKTIF HARI INI
-        </Badge>
-        <span className="font-semibold">{c.name}</span>
-        {c.room && (
-          <Badge variant="outline" className="h-6">
-            {c.room}
-          </Badge>
-        )}
-        <span className="text-sm text-muted-foreground">
-          • Wali: {c.homeroom}
-        </span>
-        <div className="ml-auto flex items-center gap-2">
-          {z && (
-            <a
-              href={z.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="shrink-0"
-            >
-              <Button size="sm" className="inline-flex gap-2">
-                <Video size={16} />
-                Masuk Zoom
-              </Button>
-            </a>
-          )}
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() =>
-              (window.location.href = `${base}/menu-utama/my-class/${c.id}/materi`)
-            }
-            className="inline-flex gap-2"
-          >
-            <BookOpen size={16} />
-            Materi
-          </Button>
-        </div>
-      </div>
-      {c.nextSession && (
-        <div className="mt-2 text-sm text-muted-foreground flex flex-wrap items-center gap-2">
-          <CalendarDays size={14} />
-          <span>
-            {dateLong(c.nextSession.dateISO)} • {c.nextSession.time}
-          </span>
-          <span>— {c.nextSession.title}</span>
-        </div>
-      )}
-    </div>
-  );
-}
+/* Kartu untuk enrollment yang SUDAH punya class_section_id */
+function ActiveEnrollmentCard({
+  row,
+  base,
+}: {
+  row: StudentClassEnrollmentRow;
+  base: string;
+}) {
+  const name =
+    row.student_class_enrollments_class_name ||
+    row.student_class_enrollments_class_name_snapshot;
+  const sectionName = row.student_class_enrollments_class_section_name_snapshot;
+  const term = row.student_class_enrollments_term_name_snapshot;
+  const year = row.student_class_enrollments_term_academic_year_snapshot;
 
-function ProgressBar({ value = 0 }: { value?: number }) {
-  return (
-    <div className="h-2 w-full rounded-full bg-secondary/20 overflow-hidden">
-      <div
-        className="h-full bg-secondary transition-all"
-        style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
-      />
-    </div>
-  );
-}
-
-function ClassCard({ c, base }: { c: EnrolledClass; base: string }) {
-  const z = ZOOM_INFO[c.id];
   const go = (path: string) => (window.location.href = `${base}${path}`);
 
   return (
     <Card className="p-0 overflow-hidden">
       <CardHeader className="pb-2">
         <CardTitle className="text-base md:text-lg flex items-center gap-2 flex-wrap">
-          <span className="truncate">{c.name}</span>
+          <span className="truncate">{name}</span>
           <Badge variant="secondary" className="h-6">
             AKTIF
           </Badge>
-          {c.room && (
+          {sectionName && (
             <Badge variant="outline" className="h-6">
-              {c.room}
+              {sectionName}
             </Badge>
           )}
         </CardTitle>
@@ -404,33 +380,10 @@ function ClassCard({ c, base }: { c: EnrolledClass; base: string }) {
 
       <CardContent className="px-4 md:px-5 pb-4">
         <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-          <span>Wali Kelas: {c.homeroom}</span>
-          <span>• Tugas menunggu: {c.pendingAssignments ?? 0}</span>
-          <span>• Quiz aktif: {c.activeQuizzes ?? 0}</span>
-          {typeof c.lastScore === "number" && (
-            <span>• Nilai terakhir: {c.lastScore}</span>
-          )}
-        </div>
-
-        <div className="mt-2 flex items-center gap-2">
-          <Clock size={14} className="text-muted-foreground" />
-          <div className="flex-1">
-            <ProgressBar value={c.progress ?? 0} />
-          </div>
-          <span className="text-xs text-muted-foreground w-10 text-right">
-            {c.progress ?? 0}%
+          <span>
+            Angkatan {term} • {year}
           </span>
         </div>
-
-        {c.nextSession && (
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            <CalendarDays size={14} />
-            <span>
-              {dateLong(c.nextSession.dateISO)} • {c.nextSession.time}
-            </span>
-            <span>— {c.nextSession.title}</span>
-          </div>
-        )}
 
         <div className="mt-4 border-t pt-3">
           <Collapsible>
@@ -439,7 +392,7 @@ function ClassCard({ c, base }: { c: EnrolledClass; base: string }) {
                 <span className="text-sm text-muted-foreground">
                   Aksi cepat
                 </span>
-                <ChevronDown
+                <ClipboardList
                   size={18}
                   className="transition-transform data-[state=open]:rotate-180"
                 />
@@ -447,39 +400,15 @@ function ClassCard({ c, base }: { c: EnrolledClass; base: string }) {
             </CollapsibleTrigger>
 
             <CollapsibleContent>
-              {z && (
-                <div className="mt-3 rounded-lg border p-3 text-xs md:text-sm bg-card text-foreground/90">
-                  <div className="flex items-center gap-2 font-medium">
-                    <Info size={14} />
-                    {z.topic} • {z.startAtLabel}
-                  </div>
-                  <div className="mt-1 text-muted-foreground">
-                    ID: <span className="font-semibold">{z.meetingId}</span>
-                    {" • "}Passcode:{" "}
-                    <span className="font-semibold">{z.passcode}</span>
-                  </div>
-                </div>
-              )}
-
               <div className="mt-3 flex flex-wrap gap-2">
-                {z && (
-                  <a
-                    href={z.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="shrink-0"
-                  >
-                    <Button size="sm" className="inline-flex gap-2">
-                      <Video size={16} />
-                      Masuk Kelas (Zoom)
-                    </Button>
-                  </a>
-                )}
-
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => go(`/menu-utama/my-class/${c.id}/kehadiran`)}
+                  onClick={() =>
+                    go(
+                      `/menu-utama/my-class/${row.student_class_enrollments_class_id}/kehadiran`
+                    )
+                  }
                   className="inline-flex gap-2"
                 >
                   <Activity size={16} />
@@ -489,7 +418,11 @@ function ClassCard({ c, base }: { c: EnrolledClass; base: string }) {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => go(`/menu-utama/my-class/${c.id}/materi`)}
+                  onClick={() =>
+                    go(
+                      `/menu-utama/my-class/${row.student_class_enrollments_class_id}/materi`
+                    )
+                  }
                   className="inline-flex gap-2"
                 >
                   <BookOpen size={16} />
@@ -499,7 +432,11 @@ function ClassCard({ c, base }: { c: EnrolledClass; base: string }) {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => go(`/menu-utama/my-class/${c.id}/tugas`)}
+                  onClick={() =>
+                    go(
+                      `/menu-utama/my-class/${row.student_class_enrollments_class_id}/tugas`
+                    )
+                  }
                   className="inline-flex gap-2"
                 >
                   <FileText size={16} />
@@ -509,7 +446,11 @@ function ClassCard({ c, base }: { c: EnrolledClass; base: string }) {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => go(`/menu-utama/my-class/${c.id}/quiz`)}
+                  onClick={() =>
+                    go(
+                      `/menu-utama/my-class/${row.student_class_enrollments_class_id}/quiz`
+                    )
+                  }
                   className="inline-flex gap-2"
                 >
                   <ClipboardList size={16} />
@@ -519,18 +460,8 @@ function ClassCard({ c, base }: { c: EnrolledClass; base: string }) {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => go(`/menu-utama/my-class/${c.id}/ujian`)}
-                  className="inline-flex gap-2"
-                >
-                  <ClipboardList size={16} />
-                  Ujian
-                </Button>
-
-                <Button
-                  size="sm"
-                  variant="outline"
                   onClick={() =>
-                    (window.location.href = `${base}/kelas/${c.id}/score`)
+                    (window.location.href = `${base}/kelas/${row.student_class_enrollments_class_id}/score`)
                   }
                   className="inline-flex gap-2"
                 >
@@ -546,65 +477,100 @@ function ClassCard({ c, base }: { c: EnrolledClass; base: string }) {
   );
 }
 
-function LegacyCard({ c, base }: { c: EnrolledClass; base: string }) {
-  const go = (path: string) => (window.location.href = `${base}${path}`);
+/* Kartu untuk enrollment yang BELUM punya class_section_id → CTA pilih rombel */
+function NeedSectionCard({
+  row,
+  base,
+}: {
+  row: StudentClassEnrollmentRow;
+  base: string;
+}) {
+  const name =
+    row.student_class_enrollments_class_name ||
+    row.student_class_enrollments_class_name_snapshot;
+  const term = row.student_class_enrollments_term_name_snapshot;
+  const year = row.student_class_enrollments_term_academic_year_snapshot;
+
+  const navigate = useNavigate();
+
+  const handleChooseSection = () => {
+    // Di sini kamu tinggal arahkan ke halaman "Pilih Rombel"
+    // yang nanti menampilkan daftar class_sections berdasarkan enrollment ini.
+    // Contoh route (silakan sesuaikan):
+    navigate(
+      `${base}/menu-utama/enrollments/${row.student_class_enrollments_id}/pilih-kelas`
+    );
+  };
 
   return (
-    <Card className="p-0 overflow-hidden border-dashed">
+    <Card className={cn("border-dashed")}>
       <CardHeader className="pb-2">
         <CardTitle className="text-base md:text-lg flex items-center gap-2 flex-wrap">
-          <span className="truncate">{c.name}</span>
+          <span className="truncate">{name}</span>
           <Badge variant="outline" className="h-6">
-            LEGACY
+            DITERIMA
           </Badge>
-          {c.room && (
-            <Badge variant="outline" className="h-6">
-              {c.room}
-            </Badge>
-          )}
         </CardTitle>
       </CardHeader>
-
       <CardContent className="px-4 md:px-5 pb-4">
         <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-          <span>Wali Kelas: {c.homeroom}</span>
-          <span>• Progres: {c.progress ?? 0}%</span>
-          {typeof c.lastScore === "number" && (
-            <span>• Nilai akhir: {c.lastScore}</span>
-          )}
+          <span>
+            Angkatan {term} • {year}
+          </span>
         </div>
 
-        <div className="mt-2 flex items-center gap-2">
-          <Clock size={14} className="text-muted-foreground" />
-          <div className="flex-1">
-            <ProgressBar value={c.progress ?? 0} />
+        <div className="mt-3 flex flex-col gap-2 text-sm text-muted-foreground">
+          <div className="flex items-start gap-2">
+            <Info size={16} className="mt-0.5" />
+            <span>
+              Kamu sudah diterima di kelas ini, tetapi belum ditempatkan di
+              rombel (kelas paralel). Silakan pilih rombel yang tersedia.
+            </span>
           </div>
-          <span className="text-xs text-muted-foreground w-10 text-right">
-            {c.progress ?? 0}%
-          </span>
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
           <Button
             size="sm"
-            variant="outline"
-            onClick={() => go(`/menu-utama/my-class/${c.id}/materi`)}
+            onClick={handleChooseSection}
             className="inline-flex gap-2"
           >
-            <BookOpen size={16} />
-            Materi (Arsip)
+            Pilih Rombel / Gabung Kelas
           </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() =>
-              (window.location.href = `${base}/kelas/${c.id}/score`)
-            }
-            className="inline-flex gap-2"
-          >
-            <GraduationCap size={16} />
-            Nilai
-          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/* Kartu untuk status selain accepted (pending, waitlist, dst) */
+function OtherEnrollmentCard({ row }: { row: StudentClassEnrollmentRow }) {
+  const name =
+    row.student_class_enrollments_class_name ||
+    row.student_class_enrollments_class_name_snapshot;
+  const term = row.student_class_enrollments_term_name_snapshot;
+  const year = row.student_class_enrollments_term_academic_year_snapshot;
+
+  const statusLabel = row.student_class_enrollments_status.toUpperCase();
+
+  return (
+    <Card className="p-0 overflow-hidden border-dashed">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base md:text-lg flex items-center gap-2 flex-wrap">
+          <span className="truncate">{name}</span>
+          <Badge variant="outline" className="h-6">
+            {statusLabel}
+          </Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="px-4 md:px-5 pb-4">
+        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+          <span>
+            Angkatan {term} • {year}
+          </span>
+          <span>
+            • Diajukan: {dateLong(row.student_class_enrollments_applied_at)}
+          </span>
         </div>
       </CardContent>
     </Card>

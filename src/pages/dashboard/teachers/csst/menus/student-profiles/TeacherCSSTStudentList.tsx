@@ -458,13 +458,13 @@ const TeacherCSSTStudentList: React.FC = () => {
       <main className="w-full">
         <div className="mx-auto flex flex-col gap-4 lg:gap-6">
           <CDataTable
-            title="Daftar Siswa"
+            title="Daftar Murid"
             onBack={() => navigate(-1)}
             controlsPlacement="above"
             searchPlaceholder="Cari nama/NIS/wali/keterangan…"
             statsSlot={statsSlot}
             loading={isLoading}
-            error={isError ? "Gagal memuat data siswa." : null}
+            error={isError ? "Gagal memuat data murid." : null}
             columns={columns}
             rows={normalized}
             getRowId={(s: AnyRec) => s.id ?? s.nis ?? s.name}

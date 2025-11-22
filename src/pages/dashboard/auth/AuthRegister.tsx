@@ -410,9 +410,15 @@ export default function Register() {
                   />
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 ring-inset"
+                    className="
+    absolute right-2 top-1/2 -translate-y-1/2
+    p-0
+    bg-transparent hover:bg-transparent
+    text-muted-foreground hover:text-foreground
+    focus-visible:ring-0
+  "
                     onClick={() => setShowPw((s) => !s)}
                     aria-label={
                       showPw ? "Sembunyikan password" : "Tampilkan password"
@@ -478,9 +484,15 @@ export default function Register() {
                   />
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 ring-inset"
+                    className="
+    absolute right-2 top-1/2 -translate-y-1/2
+    p-0
+    bg-transparent hover:bg-transparent
+    text-muted-foreground hover:text-foreground
+    focus-visible:ring-0
+  "
                     onClick={() => setShowPw2((s) => !s)}
                     aria-label={
                       showPw2
