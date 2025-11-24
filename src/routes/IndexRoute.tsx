@@ -22,6 +22,9 @@ import PendWebLayout from "@/components/layout/CPendWebLayout";
 // import PendWebSupportUs from "@/pages/profile/website/website/support-us/PendWebSupportUs";
 
 import { UnnasignedRoutes } from "./UnnasignedRoutes";
+import AuthPrivacy from "@/pages/dashboard/auth/other/AuthPrivacy";
+import AuthTerm from "@/pages/dashboard/auth/other/AuthTerm";
+import AuthForgotPassword from "@/pages/dashboard/auth/other/AuthForgotPassword";
 
 export default function AppRoutes() {
   return (
@@ -49,6 +52,10 @@ export default function AppRoutes() {
         {/* ---------- Auth per-tenant ---------- */}
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Register />} />
+
+        <Route path="privasi" element={<AuthPrivacy />} />
+        <Route path="ketentuan" element={<AuthTerm />} />
+        <Route path="lupa-password" element={<AuthForgotPassword />} />
 
         {/* ---------- Protected (dashboard dsb) ---------- */}
         <Route element={<ProtectedRoute />}>

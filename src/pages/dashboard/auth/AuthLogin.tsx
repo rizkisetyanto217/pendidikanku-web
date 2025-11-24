@@ -12,8 +12,6 @@ import {
   KeyRound,
   Sparkles,
   AlertCircle,
-  Building2,
-  User2,
 } from "lucide-react";
 
 import AuthLayout from "@/components/layout/CAuthLayout";
@@ -26,14 +24,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter as DialogFoot,
-} from "@/components/ui/dialog";
 import {
   Card,
   CardContent,
@@ -145,29 +135,16 @@ export default function Login() {
   const [availableRoles, setAvailableRoles] = useState<schoolRole[]>([]);
   const [pendingSchoolId, setPendingSchoolId] = useState<string | null>(null);
 
-  // state & handler untuk pilihan tipe pendaftaran
-  const [openChoice, setOpenChoice] = useState(false);
-
-  const handleOpenChoice = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setOpenChoice(true);
-  }, []);
-
-  const handleSelectChoice = useCallback(
-    (_choice: "school" | "user") => {
-      setOpenChoice(false);
-
-      // sementara: dua-duanya ke halaman register yang sama
-      if (school_slug) {
-        // contoh: /diploma-ilmi/register
-        navigate(`/${school_slug}/register`);
-      } else {
-        // fallback global
-        navigate("/register");
-      }
-    },
-    [navigate, school_slug]
-  );
+  // === NEW: langsung ke halaman register tanpa popup pilihan guru/murid
+  const handleGoRegister = useCallback(() => {
+    if (school_slug) {
+      // contoh: /diploma-ilmi/register
+      navigate(`/${school_slug}/register`);
+    } else {
+      // fallback global
+      navigate("/register");
+    }
+  }, [navigate, school_slug]);
 
   // 🔤 Nama sekolah dari slug (diploma-ilmi → "Diploma Ilmi")
   const schoolTitle = useMemo(() => {
@@ -229,12 +206,19 @@ export default function Login() {
 
   function navigateToPMB() {
     if (!school_slug) {
-      // kalau slug nggak ada, lempar ke PMB umum
-      navigate("user/pendaftaran", { replace: true });
+      // fallback global: langsung ke profil unassigned
+      navigate("/user/profil", {
+        replace: true,
+        state: {
+          fromLogin: true,
+          identifier,
+        },
+      });
       return;
     }
-    // PMB per sekolah
-    navigate(`/${school_slug}/user/pendaftaran`, {
+
+    // PMB per sekolah: langsung ke profil (form murid/guru)
+    navigate(`/${school_slug}/user/profil`, {
       replace: true,
       state: {
         fromLogin: true,
@@ -353,7 +337,7 @@ export default function Login() {
             </Alert>
           )}
 
-          {/* Card isi login (bukan shadcn Card, cuma section) */}
+          {/* Card isi login */}
           <section className="rounded-xl bg-card/40 py-6 sm:py-7 space-y-6">
             {/* Title */}
             <div>
@@ -401,6 +385,7 @@ export default function Login() {
                     required
                     className="pl-10 pr-12"
                   />
+
                   <Button
                     type="button"
                     variant="icon"
@@ -469,10 +454,9 @@ export default function Login() {
                 </Link>
               </div>
 
-              {/* Submit */}
               <Button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !identifier.trim() || !password}
                 className="w-full ring-inset"
               >
                 {loading ? (
@@ -491,7 +475,7 @@ export default function Login() {
 
             <Separator className="my-2" />
 
-            {/* Footer kecil di dalam section yang sama */}
+            {/* Footer kecil */}
             <div className="flex flex-col items-center gap-2 text-center">
               <div className="text-[11px] text-muted-foreground">
                 Dengan masuk, kamu menyetujui{" "}
@@ -511,7 +495,7 @@ export default function Login() {
                 Belum punya akun?{" "}
                 <button
                   type="button"
-                  onClick={handleOpenChoice}
+                  onClick={handleGoRegister}
                   className="font-semibold text-primary hover:underline"
                 >
                   Daftar sekarang
@@ -528,64 +512,6 @@ export default function Login() {
           onClose={() => setOpenRolePicker(false)}
           onSelect={handleRolePicked}
         />
-
-        {/* Modal pilihan pendaftaran (sekolah vs user) */}
-        {/* Modal pilihan pendaftaran (sekolah vs user) */}
-        <Dialog open={openChoice} onOpenChange={setOpenChoice}>
-          <DialogContent className="sm:max-w-md pb-5">
-            <DialogHeader>
-              <DialogTitle>Pilih tipe pendaftaran</DialogTitle>
-              <DialogDescription>
-                Daftarkan diri anda bergabung dengan Madinah Salam
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="grid gap-4">
-              <Button
-                variant="default"
-                className="justify-start gap-3 py-3.5 h-auto"
-                onClick={() => handleSelectChoice("school")}
-              >
-                <span className="inline-flex size-9 items-center justify-center rounded-md bg-primary-foreground/10">
-                  <Building2 className="size-5" />
-                </span>
-                <div className="flex flex-col items-start">
-                  <span className="font-medium">Daftar sebagai guru</span>
-                  <span className="text-xs text-muted-foreground">
-                    Buat organisasi & undang admin/guru/murid.
-                  </span>
-                </div>
-              </Button>
-
-              <Button
-                variant="outline"
-                className="justify-start gap-3 py-3.5 h-auto"
-                onClick={() => handleSelectChoice("user")}
-              >
-                <span className="inline-flex size-9 items-center justify-center rounded-md bg-muted">
-                  <User2 className="size-5" />
-                </span>
-                <div className="flex flex-col items-start">
-                  <span className="font-medium">Daftar sebagai murid</span>
-                  <span className="text-xs text-muted-foreground">
-                    Buat akun pribadi, nanti bisa gabung sekolah.
-                  </span>
-                </div>
-              </Button>
-            </div>
-
-            <DialogFoot className="mt-4 sm:justify-start">
-              <Button
-                type="button"
-                variant="ghost"
-                className="mt-1"
-                onClick={() => setOpenChoice(false)}
-              >
-                Batal
-              </Button>
-            </DialogFoot>
-          </DialogContent>
-        </Dialog>
       </>
     </AuthLayout>
   );

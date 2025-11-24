@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Search,
   AlertTriangle,
+  CheckCircle2,
 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
@@ -24,12 +25,22 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+import api from "@/lib/axios";
 
 import type {
   StudentClassEnrollmentRow,
   ClassSectionRow,
-} from "../StudentMyClass"; // sesuaikan path import kalau beda
+} from "../StudentMyClass";
 
 /* ==========================================================
    View Model (re-use dari TeacherClassFromSections)
@@ -144,9 +155,11 @@ function useFilters(rows: SectionRow[]) {
 function SectionCard({
   s,
   onSelect,
+  joining,
 }: {
   s: SectionRow;
   onSelect: (sectionId: string) => void;
+  joining?: boolean;
 }) {
   return (
     <Card className="p-4 hover:shadow-lg transition">
@@ -195,8 +208,9 @@ function SectionCard({
           size="sm"
           className="inline-flex items-center"
           onClick={() => onSelect(s.id)}
+          disabled={joining}
         >
-          Pilih Rombel Ini
+          {joining ? "Menggabung..." : "Pilih Rombel Ini"}
           <ChevronRight className="ml-1 h-4 w-4" />
         </Button>
       </div>
@@ -225,6 +239,13 @@ export default function StudentChooseClassSection({
 
   const { enrollment, sections } = (state ?? {}) as LocationState;
 
+  const [joiningSectionId, setJoiningSectionId] = useState<string | null>(null);
+  const [successSectionName, setSuccessSectionName] = useState<string | null>(
+    null
+  );
+
+  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
+
   useEffect(() => {
     if (!enrollment) return;
 
@@ -242,8 +263,6 @@ export default function StudentChooseClassSection({
       showBack,
     });
   }, [enrollment, setHeader, showBack]);
-
-  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
   if (!enrollment || !sections) {
     return (
@@ -300,12 +319,32 @@ export default function StudentChooseClassSection({
   const term = enrollment.student_class_enrollments_term_name_snapshot;
   const year = enrollment.student_class_enrollments_term_academic_year_snapshot;
 
-  const handleSelectSection = (sectionId: string) => {
-    // TODO: panggil API join section di sini
-    // contoh:
-    // api.post(`/u/classes/my-enrollments/${enrollment.student_class_enrollments_id}/join-section`, { class_section_id: sectionId })
-    //   .then(() => navigate("/..."));
-    console.log("Pilih rombel:", sectionId);
+  const handleSelectSection = async (sectionId: string) => {
+    try {
+      setJoiningSectionId(sectionId);
+
+      const section = sections.find((s) => s.class_section_id === sectionId);
+      const sectionName = section?.class_section_name ?? "Rombel";
+
+      // 🔥 POST ke API join-section
+      await api.post(
+        `/u/class-enrollments/${enrollment.student_class_enrollments_id}/join-section`,
+        {
+          class_section_id: sectionId,
+        }
+      );
+
+      setJoiningSectionId(null);
+      setSuccessSectionName(sectionName);
+    } catch (err: any) {
+      console.error("Gagal join section:", err);
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Gagal bergabung ke rombel.";
+      alert(msg);
+      setJoiningSectionId(null);
+    }
   };
 
   return (
@@ -405,7 +444,12 @@ export default function StudentChooseClassSection({
         <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
           {f.filtered.length ? (
             f.filtered.map((s) => (
-              <SectionCard key={s.id} s={s} onSelect={handleSelectSection} />
+              <SectionCard
+                key={s.id}
+                s={s}
+                onSelect={handleSelectSection}
+                joining={joiningSectionId === s.id}
+              />
             ))
           ) : (
             <Card className="col-span-2 p-10 text-center">
@@ -414,6 +458,42 @@ export default function StudentChooseClassSection({
           )}
         </div>
       </main>
+
+      {/* Modal sukses join rombel */}
+      <Dialog
+        open={!!successSectionName}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSuccessSectionName(null);
+            handleBack();
+          }
+        }}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+              Berhasil bergabung ke rombel
+            </DialogTitle>
+            <DialogDescription>
+              Kamu sekarang terdaftar di rombel{" "}
+              <span className="font-semibold">{successSectionName}</span>.
+              Silakan kembali ke halaman kelas untuk melihat detail rombel dan
+              mata pelajaran.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              onClick={() => {
+                setSuccessSectionName(null);
+                handleBack();
+              }}
+            >
+              Kembali ke Kelas Saya
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

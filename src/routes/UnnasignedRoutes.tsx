@@ -6,20 +6,27 @@ import UnnasignedFeesDetail from "@/pages/dashboard/unnasigned/details/Unnasigne
 import DashboardLayout from "@/components/layout/dashboard/DashboardLayout";
 import UnnasignedDashboard from "@/pages/dashboard/unnasigned/UnnasignedDashboard";
 import UnnasignedPaymentResult from "@/pages/dashboard/unnasigned/payments/UnnasignedPaymentResult";
+import UnnasignedProfiles from "@/pages/dashboard/unnasigned/profiles/UnnasignedProfiles";
 
 // Cluster rute untuk PMB / Pendaftaran
-// Base path: /:school_slug/pendaftaran
+// Base path: /:school_slug/user
 export const UnnasignedRoutes = (
   <Route path="user" element={<DashboardLayout />}>
-    {/* /:school_slug/pendaftaran */}
-    <Route path="pendaftaran" index element={<UnnasignedInfo />} />
+    {/* index: /:school_slug/user → langsung ke profil */}
+    <Route index element={<UnnasignedProfiles />} />
+
+    {/* /:school_slug/user/profil → tetap ke profil */}
+    <Route path="profil" element={<UnnasignedProfiles />} />
+
+    {/* /:school_slug/user/pendaftaran → halaman info PMB / daftar program */}
+    <Route path="pendaftaran" element={<UnnasignedInfo />} />
 
     <Route path="dashboard" element={<UnnasignedDashboard />} />
 
-    {/* /:school_slug/pendaftaran/:id */}
+    {/* /:school_slug/user/pendaftaran/:id */}
     <Route path="pendaftaran/:id" element={<UnnasignedClassDetail />} />
 
-    {/* /:school_slug/pendaftaran/:id/biaya */}
+    {/* /:school_slug/user/pendaftaran/:id/biaya */}
     <Route path="pendaftaran/:id/biaya" element={<UnnasignedFeesDetail />} />
 
     {/* 🔽 HALAMAN HASIL PEMBAYARAN */}

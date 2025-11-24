@@ -18,6 +18,7 @@ import {
   ArrowLeft,
   ClipboardList,
   UserSquare2,
+  MapPin, // ⬅️ NEW
 } from "lucide-react";
 
 /* dashboard header */
@@ -42,6 +43,9 @@ type ApiCSSTEmbedded = {
   class_section_subject_teacher_class_section_name_snapshot?: string | null;
   class_section_subject_teacher_class_section_code_snapshot?: string | null;
   class_section_subject_teacher_class_section_slug_snapshot?: string | null;
+
+  // ⬅️ NEW: snapshot nama ruangan (kalau ada di API)
+  class_section_subject_teacher_room_name_snapshot?: string | null;
 
   class_section_subject_teacher_delivery_mode?: DeliveryMode | null;
   class_section_subject_teacher_enrolled_count?: number | null;
@@ -106,6 +110,9 @@ type CsstView = {
 
   enrolledCount: number;
   minPassingScore?: number | null;
+
+  // ⬅️ NEW
+  roomName?: string | null;
 };
 
 /* ========== Utils kecil ========== */
@@ -153,7 +160,6 @@ const StudentCSST: React.FC = () => {
           params: {
             include: "csst",
             csst_id: csstId,
-            // tidak pakai student_id=me karena contoh sukses kamu tanpa itu
           },
         }
       );
@@ -214,6 +220,9 @@ const StudentCSST: React.FC = () => {
     const minPassingScore =
       csst.class_section_subject_teacher_min_passing_score ?? null;
 
+    const roomName =
+      csst.class_section_subject_teacher_room_name_snapshot ?? null;
+
     return {
       id: csst.class_section_subject_teacher_id,
       slug: csst.class_section_subject_teacher_slug,
@@ -225,6 +234,7 @@ const StudentCSST: React.FC = () => {
       isActive,
       enrolledCount,
       minPassingScore,
+      roomName,
     };
   }, [csstQ.data]);
 
@@ -270,13 +280,20 @@ const StudentCSST: React.FC = () => {
   /* ===== Render utama ===== */
 
   const totalStudents = csstView.enrolledCount ?? 0;
-  // sementara: belum ada field khusus di response, jadi pakai 0 dulu
-  const totalAttendance = 0;
+  // placeholder: belum ada field khusus di response
+  const totalAttendanceToday = 0; // ⬅️ bisa di-wire ke API absensi nanti
   const totalBooks = 0;
   const totalAssessmentsGraded = 0;
   const totalAssessmentsUngraded = 0;
 
   const whatsappGroupLink = "https://chat.whatsapp.com/xxxxInviteCodexxxx";
+
+  const attendanceTodayLabel =
+    totalAttendanceToday > 0 && totalStudents > 0
+      ? `${totalAttendanceToday}/${totalStudents} hadir`
+      : "Belum ada data";
+
+  const roomLabel = csstView.roomName || "Belum diatur";
 
   return (
     <div className="w-full bg-background text-foreground">
@@ -336,6 +353,12 @@ const StudentCSST: React.FC = () => {
                       </span>
                     </span>
                   )}
+                  {csstView.roomName && (
+                    <span>
+                      Ruangan:{" "}
+                      <span className="font-mono">{csstView.roomName}</span>
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -355,7 +378,37 @@ const StudentCSST: React.FC = () => {
 
           {/* Quick links (versi murid) */}
           <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {/* Profil Murid di mapel ini */}
+            {/* Absensi hari ini */}
+            <Card className="cursor-pointer transition hover:shadow-md">
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4" />
+                    <span>Absensi Hari Ini</span>
+                  </div>
+                  <div className="text-xl font-semibold">
+                    {attendanceTodayLabel}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Ruangan yang dipakai */}
+            <Card className="cursor-pointer transition hover:shadow-md">
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    <span>Ruangan</span>
+                  </div>
+                  <div className="text-base font-semibold truncate max-w-[140px]">
+                    {roomLabel}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Jumlah Murid */}
             <Card className="cursor-pointer transition hover:shadow-md">
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="space-y-1">
@@ -376,7 +429,7 @@ const StudentCSST: React.FC = () => {
                     <CalendarDays className="h-4 w-4" />
                     <span>Laporan Kehadiran</span>
                   </div>
-                  <div className="text-xl font-semibold">{totalAttendance}</div>
+                  <div className="text-xl font-semibold">0</div>
                 </div>
               </CardContent>
             </Card>

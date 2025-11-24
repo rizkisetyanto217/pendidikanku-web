@@ -64,11 +64,10 @@ type SubmitPayload = {
 };
 
 /* =========================
-   DUMMY QUESTIONS (lebih banyak)
+   DUMMY QUESTIONS
 ========================= */
 
 const DUMMY_QUESTIONS: StudentQuestion[] = [
-  // 1
   {
     id: "q1",
     text: "<p>Siapakah <strong>khalifah pertama</strong> setelah wafatnya Rasulullah ﷺ?</p>",
@@ -81,21 +80,18 @@ const DUMMY_QUESTIONS: StudentQuestion[] = [
       { key: "D", text: "Umar bin Khattab" },
     ],
   },
-  // 2
   {
     id: "q2",
     text: "Apa arti kata <em>“taqwa”</em> secara sederhana?",
     type: "short_text",
     points: 5,
   },
-  // 3
   {
     id: "q3",
     text: "Sebutkan minimal dua contoh adab ketika menuntut ilmu.",
     type: "paragraph",
     points: 10,
   },
-  // 4
   {
     id: "q4",
     text: "Rukun Islam yang keempat adalah…",
@@ -108,14 +104,12 @@ const DUMMY_QUESTIONS: StudentQuestion[] = [
       { key: "D", text: "Haji ke Baitullah" },
     ],
   },
-  // 5
   {
     id: "q5",
     text: "Tuliskan secara singkat pengertian <strong>ikhlas</strong> dalam beramal.",
     type: "short_text",
     points: 5,
   },
-  // 6
   {
     id: "q6",
     text: "<p>Berikut ini yang <strong>bukan</strong> termasuk nama Al-Qur’an adalah…</p>",
@@ -128,14 +122,12 @@ const DUMMY_QUESTIONS: StudentQuestion[] = [
       { key: "D", text: "Al-Kitab" },
     ],
   },
-  // 7
   {
     id: "q7",
     text: "Sebutkan adab saat memasuki masjid.",
     type: "paragraph",
     points: 10,
   },
-  // 8
   {
     id: "q8",
     text: "<p>Amalan hati yang paling utama adalah…</p>",
@@ -148,14 +140,12 @@ const DUMMY_QUESTIONS: StudentQuestion[] = [
       { key: "D", text: "Sabar" },
     ],
   },
-  // 9
   {
     id: "q9",
     text: "Apa perbedaan singkat antara <em>iman</em> dan <em>Islam</em>?",
     type: "paragraph",
     points: 10,
   },
-  // 10
   {
     id: "q10",
     text: "<p>Berikut ini yang termasuk <strong>rukun iman</strong> adalah…</p>",
@@ -168,14 +158,12 @@ const DUMMY_QUESTIONS: StudentQuestion[] = [
       { key: "D", text: "Berjihad di jalan Allah" },
     ],
   },
-  // 11
   {
     id: "q11",
     text: "Tuliskan dua contoh akhlak terpuji kepada orang tua.",
     type: "paragraph",
     points: 10,
   },
-  // 12
   {
     id: "q12",
     text: "<p>Nabi yang menerima wahyu pertama kali di gua Hira adalah…</p>",
@@ -202,9 +190,7 @@ function formatTime(sec: number) {
 ========================= */
 
 export default function StudentQuiz() {
-  const { quizId = "dummy-quiz-1" } = useParams<{
-    quizId: string;
-  }>();
+  const { quizId = "dummy-quiz-1" } = useParams<{ quizId: string }>();
 
   const navigate = useNavigate();
   const { state } = useLocation();
@@ -215,6 +201,9 @@ export default function StudentQuiz() {
   const attemptsAllowed = quizMeta.attemptsAllowed ?? 1;
 
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [doubts, setDoubts] = useState<Record<string, boolean>>({});
+
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
 
@@ -224,6 +213,10 @@ export default function StudentQuiz() {
 
   // dialog pengaturan lanjutan
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // dialog auto-submit saat semua soal terjawab
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [autoSubmitPromptShown, setAutoSubmitPromptShown] = useState(false);
 
   // timer (detik)
   const [remainingSec, setRemainingSec] = useState(timeLimit * 60);
@@ -247,12 +240,10 @@ export default function StudentQuiz() {
 
   /* ====== Timer effect ====== */
 
-  // reset kalau timeLimit dari meta berubah
   useEffect(() => {
     setRemainingSec(timeLimit * 60);
   }, [timeLimit]);
 
-  // countdown
   useEffect(() => {
     const id = window.setInterval(() => {
       setRemainingSec((prev) => (prev > 0 ? prev - 1 : 0));
@@ -270,6 +261,14 @@ export default function StudentQuiz() {
     setAnswers((prev) => ({ ...prev, [qid]: text }));
   };
 
+  const handleChangeNote = (qid: string, text: string) => {
+    setNotes((prev) => ({ ...prev, [qid]: text }));
+  };
+
+  const toggleDoubt = (qid: string) => {
+    setDoubts((prev) => ({ ...prev, [qid]: !prev[qid] }));
+  };
+
   /* ====== Hitung jumlah terjawab ====== */
 
   const totalQuestions = DUMMY_QUESTIONS.length;
@@ -280,9 +279,22 @@ export default function StudentQuiz() {
     return false;
   }).length;
 
+  /* ====== Auto-open modal submit kalau semua terjawab ====== */
+
+  useEffect(() => {
+    if (
+      totalQuestions > 0 &&
+      answeredCount === totalQuestions &&
+      !autoSubmitPromptShown
+    ) {
+      setConfirmOpen(true);
+      setAutoSubmitPromptShown(true);
+    }
+  }, [answeredCount, totalQuestions, autoSubmitPromptShown]);
+
   /* ====== Submit (DUMMY) ====== */
 
-  const handleSubmit = () => {
+  const doSubmit = () => {
     setSubmitError(null);
     setSubmitSuccess(null);
 
@@ -316,16 +328,45 @@ export default function StudentQuiz() {
     );
   };
 
+  const handleSubmit = () => {
+    setConfirmOpen(false);
+    doSubmit();
+  };
+
   /* soal yang ditampilkan sesuai mode */
   const visibleQuestions =
     mode === "scroll"
       ? DUMMY_QUESTIONS
       : [DUMMY_QUESTIONS[Math.min(currentIndex, DUMMY_QUESTIONS.length - 1)]];
 
+  /* ====== Question Map (untuk mode satu per satu) ====== */
+
+  type QuestionStatus = "empty" | "answered" | "doubt";
+
+  const questionStatuses: QuestionStatus[] = DUMMY_QUESTIONS.map((q) => {
+    const val = answers[q.id];
+    const hasAnswer =
+      typeof val === "string"
+        ? val.trim() !== ""
+        : Array.isArray(val)
+        ? val.length > 0
+        : false;
+    const isDoubt = !!doubts[q.id];
+
+    if (isDoubt) return "doubt";
+    if (hasAnswer) return "answered";
+    return "empty";
+  });
+
   return (
     <div className="w-full bg-background text-foreground">
       <main className="w-full px-4 md:px-6 md:py-6">
-        <div className="mx-auto max-w-3xl flex flex-col gap-4">
+        <div
+          className={cn(
+            "mx-auto max-w-3xl flex flex-col gap-4",
+            mode === "paged" && "min-h-[calc(100vh-6rem)]"
+          )}
+        >
           {/* Top bar (mobile) */}
           <div className="flex items-center gap-3 md:hidden">
             <Button variant="ghost" size="icon" onClick={handleBack}>
@@ -336,32 +377,34 @@ export default function StudentQuiz() {
             </h1>
           </div>
 
-          {/* Info quiz */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base md:text-lg">
-                {quizMeta.title || "Kuis Dummy: Materi Umum"}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0 space-y-2 text-sm text-muted-foreground">
-              <p className="whitespace-pre-wrap">
-                {quizMeta.description ||
-                  "Ini adalah tampilan kuis untuk murid (dummy). Jawab semua pertanyaan, lalu kirim. Payload akan muncul di console browser."}
-              </p>
-              <div className="flex flex-wrap gap-2 text-xs">
-                <Badge variant="outline" className="h-5">
-                  <Timer className="h-3 w-3 mr-1" />
-                  {timeLimit} menit
-                </Badge>
-                <Badge variant="outline" className="h-5">
-                  Percobaan: {attemptsAllowed}x
-                </Badge>
-                <Badge variant="outline" className="h-5">
-                  {DUMMY_QUESTIONS.length} pertanyaan
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Info quiz – DISABLED saat mode satu per satu */}
+          {mode === "scroll" && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base md:text-lg">
+                  {quizMeta.title || "Kuis Dummy: Materi Umum"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0 space-y-2 text-sm text-muted-foreground">
+                <p className="whitespace-pre-wrap">
+                  {quizMeta.description ||
+                    "Ini adalah tampilan kuis untuk murid (dummy). Jawab semua pertanyaan, lalu kirim. Payload akan muncul di console browser."}
+                </p>
+                <div className="flex flex-wrap gap-2 text-xs">
+                  <Badge variant="outline" className="h-5">
+                    <Timer className="h-3 w-3 mr-1" />
+                    {timeLimit} menit
+                  </Badge>
+                  <Badge variant="outline" className="h-5">
+                    Percobaan: {attemptsAllowed}x
+                  </Badge>
+                  <Badge variant="outline" className="h-5">
+                    {DUMMY_QUESTIONS.length} pertanyaan
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Bar: waktu & progress & pengaturan */}
           <div className="flex flex-wrap items-center justify-between gap-3 text-xs md:text-sm">
@@ -379,12 +422,17 @@ export default function StudentQuiz() {
                 </span>{" "}
                 soal
               </span>
-              <span className="hidden md:inline">
-                • Mode:{" "}
-                <span className="font-semibold">
-                  {mode === "scroll" ? "Scroll (semua soal)" : "Satu per satu"}
+              {mode === "scroll" && (
+                <span className="hidden md:inline">
+                  • Mode:{" "}
+                  <span className="font-semibold">Scroll (semua soal)</span>
                 </span>
-              </span>
+              )}
+              {mode === "paged" && (
+                <span className="hidden md:inline">
+                  • Mode: <span className="font-semibold">Satu per satu</span>
+                </span>
+              )}
             </div>
 
             <Button
@@ -395,6 +443,63 @@ export default function StudentQuiz() {
               Pengaturan lanjutan
             </Button>
           </div>
+
+          {/* Question map (hanya saat mode satu per satu) */}
+          {mode === "paged" && (
+            <Card className="border-dashed bg-card/40">
+              <CardContent className="py-3 space-y-2">
+                <div className="flex items-center justify-between gap-2 text-xs">
+                  <span className="font-medium">
+                    Peta soal ({totalQuestions} pertanyaan)
+                  </span>
+                  <div className="flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+                    <span className="inline-flex items-center gap-1">
+                      <span className="h-2 w-2 rounded-full bg-muted-foreground/50" />
+                      Belum dijawab
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <span className="h-2 w-2 rounded-full bg-primary" />
+                      Terjawab
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <span className="h-2 w-2 rounded-full bg-amber-500" />
+                      Ragu-ragu
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-1.5">
+                  {questionStatuses.map((status, idx) => {
+                    const isActive = idx === currentIndex;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setCurrentIndex(idx)}
+                        className={cn(
+                          "h-7 text-[11px] rounded-md border flex items-center justify-center transition",
+                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+
+                          status === "empty" &&
+                            "border-border bg-muted/40 text-muted-foreground",
+                          status === "answered" &&
+                            "border-primary/70 bg-primary/10 dark:bg-primary/20 text-primary",
+                          status === "doubt" &&
+                            "border-amber-500 bg-amber-500/10 text-amber-300",
+
+                          // ⬇️ DI SINI TAMBahkan override untuk state aktif
+                          isActive &&
+                            "ring-1 ring-primary bg-primary text-primary-foreground"
+                        )}
+                      >
+                        {idx + 1}
+                      </button>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Error / success submit */}
           {submitError && (
@@ -412,19 +517,28 @@ export default function StudentQuiz() {
           )}
 
           {/* List pertanyaan */}
-          <div className="grid gap-4">
+          <div
+            className={cn(
+              "grid gap-4",
+              mode === "paged" && "grid-cols-1 auto-rows-fr"
+            )}
+          >
             {visibleQuestions.map((q) => {
               const idx = DUMMY_QUESTIONS.findIndex((it) => it.id === q.id);
+              const qId = q.id;
               return (
                 <QuestionCard
                   key={q.id}
                   q={q}
                   index={idx}
-                  value={answers[q.id]}
-                  onChangeSingle={(key) => handleChangeSingle(q.id, key)}
-                  onChangeShortText={(text) =>
-                    handleChangeShortText(q.id, text)
-                  }
+                  value={answers[qId]}
+                  note={notes[qId] ?? ""}
+                  isDoubtful={!!doubts[qId]}
+                  fullHeight={mode === "paged"}
+                  onChangeSingle={(key) => handleChangeSingle(qId, key)}
+                  onChangeShortText={(text) => handleChangeShortText(qId, text)}
+                  onChangeNote={(text) => handleChangeNote(qId, text)}
+                  onToggleDoubt={() => toggleDoubt(qId)}
                 />
               );
             })}
@@ -457,13 +571,13 @@ export default function StudentQuiz() {
             </div>
           )}
 
-          {/* Footer submit */}
-          {DUMMY_QUESTIONS.length > 0 && (
+          {/* Footer submit – HANYA muncul kalau SEMUA soal terjawab */}
+          {DUMMY_QUESTIONS.length > 0 && answeredCount === totalQuestions && (
             <>
               <Separator className="my-2" />
               <div className="flex justify-end">
                 <Button
-                  onClick={handleSubmit}
+                  onClick={() => setConfirmOpen(true)}
                   className="flex items-center gap-2"
                 >
                   <Send className="h-4 w-4" />
@@ -536,8 +650,8 @@ export default function StudentQuiz() {
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Hanya satu soal yang tampil sekaligus. Gunakan tombol
-                    &ldquo;Soal sebelumnya/berikutnya&rdquo; untuk berpindah.
-                    Cocok untuk fokus lebih tinggi.
+                    &ldquo;Soal sebelumnya/berikutnya&rdquo; atau peta soal
+                    untuk berpindah.
                   </p>
                 </div>
                 <div className="ml-auto">
@@ -558,6 +672,44 @@ export default function StudentQuiz() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog konfirmasi submit */}
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Kirim jawaban sekarang?</DialogTitle>
+            <DialogDescription>
+              {answeredCount === totalQuestions
+                ? "Semua soal sudah kamu jawab. Kamu bisa mengirim jawaban sekarang, atau meninjau ulang dulu (misalnya soal yang ditandai ragu-ragu)."
+                : `Saat ini baru ${answeredCount} dari ${totalQuestions} soal yang terjawab.`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2 text-sm text-muted-foreground">
+            Soal yang ditandai{" "}
+            <span className="inline-flex items-center gap-1 align-middle">
+              <span className="h-2 w-2 rounded-full bg-amber-500" />
+              <span>ragu-ragu</span>
+            </span>{" "}
+            bisa kamu cek ulang sebelum kirim.
+          </div>
+          <DialogFooter className="flex gap-2 justify-end">
+            <Button
+              variant="outline"
+              onClick={() => setConfirmOpen(false)}
+              type="button"
+            >
+              Tinjau dulu
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              type="button"
+              disabled={answeredCount !== totalQuestions}
+            >
+              Kirim Jawaban
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -570,14 +722,24 @@ function QuestionCard({
   q,
   index,
   value,
+  note,
+  isDoubtful,
+  fullHeight,
   onChangeSingle,
   onChangeShortText,
+  onChangeNote,
+  onToggleDoubt,
 }: {
   q: StudentQuestion;
   index: number;
   value: string | string[] | undefined;
+  note: string;
+  isDoubtful: boolean;
+  fullHeight: boolean;
   onChangeSingle: (key: string) => void;
   onChangeShortText: (text: string) => void;
+  onChangeNote: (text: string) => void;
+  onToggleDoubt: () => void;
 }) {
   const plainTitle = htmlToPlainText
     ? htmlToPlainText(q.text)
@@ -590,8 +752,17 @@ function QuestionCard({
       ? value.length > 0
       : false;
 
+  const [noteOpen, setNoteOpen] = useState(Boolean(note));
+
   return (
-    <Card className="overflow-hidden">
+    <Card
+      className={cn(
+        "overflow-hidden flex flex-col",
+        fullHeight && "h-full",
+        isDoubtful &&
+          "border-amber-400 bg-amber-50/60 dark:bg-amber-950/20 dark:border-amber-500"
+      )}
+    >
       <CardHeader className="pb-2">
         <CardTitle className="text-sm md:text-base flex flex-col gap-1">
           <div className="flex flex-wrap items-baseline gap-2">
@@ -604,7 +775,7 @@ function QuestionCard({
               )}
             </span>
           </div>
-          <div className="flex flex-wrap gap-1 text-xs text-muted-foreground">
+          <div className="flex flex-wrap gap-1 text-xs text-muted-foreground items-center">
             <Badge variant="secondary" className="h-5">
               {q.points} poin
             </Badge>
@@ -613,12 +784,20 @@ function QuestionCard({
                 Terjawab
               </Badge>
             )}
+            {isDoubtful && (
+              <Badge
+                variant="outline"
+                className="h-5 border-amber-500 text-amber-700 dark:text-amber-300"
+              >
+                Ragu-ragu
+              </Badge>
+            )}
           </div>
         </CardTitle>
       </CardHeader>
 
-      <CardContent className="pt-0 space-y-2">
-        {/* Pilihan ganda (card style) */}
+      <CardContent className="pt-0 space-y-3 flex-1 flex flex-col">
+        {/* Pilihan ganda */}
         {q.type === "single" && q.options && (
           <div className="grid gap-2 mt-1">
             {q.options.map((opt) => {
@@ -637,7 +816,6 @@ function QuestionCard({
                       : "border-border bg-background"
                   )}
                 >
-                  {/* Bubble huruf A/B/C/D */}
                   <div
                     className={cn(
                       "mt-0.5 h-6 w-6 rounded-full border flex items-center justify-center text-[11px] font-semibold",
@@ -648,8 +826,6 @@ function QuestionCard({
                   >
                     {opt.key}
                   </div>
-
-                  {/* Teks opsi */}
                   <div className="text-sm leading-snug">{opt.text}</div>
                 </button>
               );
@@ -673,6 +849,53 @@ function QuestionCard({
             onChange={(e) => onChangeShortText(e.target.value)}
           />
         )}
+
+        {/* Spacer biar tombol nempel bawah saat fullHeight */}
+        <div className="flex-1" />
+
+        {/* Tombol ragu & catatan */}
+        <div className="mt-4 space-y-2">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant={isDoubtful ? "default" : "outline"}
+              onClick={onToggleDoubt}
+              className="inline-flex items-center gap-2"
+            >
+              <span className="h-2 w-2 rounded-full bg-amber-500" />
+              {isDoubtful ? "Hapus tanda ragu-ragu" : "Tandai ragu-ragu"}
+            </Button>
+
+            <Button
+              type="button"
+              size="sm"
+              variant={noteOpen || !!note ? "default" : "outline"}
+              onClick={() => setNoteOpen((o) => !o)}
+              className="inline-flex items-center gap-2"
+            >
+              {noteOpen
+                ? "Sembunyikan catatan"
+                : note
+                ? "Lihat / ubah catatan"
+                : "Tambah catatan"}
+            </Button>
+          </div>
+
+          {noteOpen && (
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">
+                Catatan pribadi (opsional, tidak mempengaruhi nilai)
+              </p>
+              <Textarea
+                rows={2}
+                value={note}
+                onChange={(e) => onChangeNote(e.target.value)}
+                placeholder="Tulis poin penting atau hal yang masih kamu pikirkan di soal ini."
+              />
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
