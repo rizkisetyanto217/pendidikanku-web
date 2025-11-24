@@ -139,7 +139,7 @@ export default function StudentFinance({
       <main className="mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="md:flex hidden gap-3 items-center">
+          <div className="hidden md:flex gap-3 items-center">
             {showBack && (
               <Button
                 onClick={handleBack}

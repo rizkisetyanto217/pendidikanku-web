@@ -20,18 +20,26 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 
+type SubItem = {
+  title: string;
+  url: string;
+  end?: boolean;
+  locked?: boolean;
+};
+
 type Item = {
   title: string;
   url: string;
   icon?: LucideIcon;
   end?: boolean;
   isActive?: boolean;
-  items?: { title: string; url: string; end?: boolean }[];
+  locked?: boolean;
+  items?: SubItem[];
 };
 
 export function NavMain({
   items,
-  onNavigate, // ⬅️ optional: dipanggil saat klik link untuk nutup sheet mobile
+  onNavigate, // optional: dipanggil saat klik link untuk nutup sheet mobile
 }: {
   items: Item[];
   onNavigate?: () => void;
@@ -41,7 +49,7 @@ export function NavMain({
   const isUrlActive = (url: string, end?: boolean) =>
     !!matchPath({ path: url, end: !!end }, pathname);
 
-  const anyChildActive = (children?: Item["items"]) =>
+  const anyChildActiveRaw = (children?: SubItem[]) =>
     (children ?? []).some((c) => isUrlActive(c.url, c.end));
 
   // 🔥 aktif style: pill + ring + strip kiri — versi rounded lebih kecil
@@ -69,17 +77,21 @@ export function NavMain({
 
       <SidebarMenu>
         {items.map((item) => {
-          const parentActive =
+          const isLocked = !!item.locked;
+
+          const parentActiveRaw =
             typeof item.isActive === "boolean"
               ? item.isActive
               : isUrlActive(item.url, item.end);
 
+          // ❗ item locked tidak pernah tampil sebagai "active" hijau
+          const parentActive = parentActiveRaw && !isLocked;
+
           const hasChildren = !!(item.items && item.items.length);
           const open =
-            hasChildren && (anyChildActive(item.items) || parentActive);
+            hasChildren && (anyChildActiveRaw(item.items) || parentActiveRaw);
 
           if (hasChildren) {
-            // Parent hanya toggle submenu → jangan panggil onNavigate di sini
             return (
               <Collapsible
                 key={item.title}
@@ -90,10 +102,23 @@ export function NavMain({
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton
-                      isActive={open}
-                      className={activeClasses + " px-3 py-2.5 gap-3"}
+                      isActive={parentActive}
+                      className={[
+                        activeClasses,
+                        "px-3 py-2.5 gap-3",
+                        isLocked
+                          ? // gaya SILVER untuk item terkunci
+                          "bg-muted/40 text-muted-foreground border border-muted/60 shadow-none cursor-pointer"
+                          : "hover:bg-primary/5",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
                     >
-                      {item.icon && <item.icon />}
+                      {item.icon && (
+                        <item.icon
+                          className={isLocked ? "opacity-70" : undefined}
+                        />
+                      )}
                       <span>{item.title}</span>
                       <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                     </SidebarMenuButton>
@@ -102,15 +127,25 @@ export function NavMain({
                   <CollapsibleContent>
                     <SidebarMenuSub className="mt-1">
                       {item.items!.map((sub) => {
-                        const subActive = isUrlActive(sub.url, sub.end);
+                        const subLocked = sub.locked ?? isLocked;
+                        const subActiveRaw = isUrlActive(sub.url, sub.end);
+                        const subActive = subActiveRaw && !subLocked;
+
                         return (
                           <SidebarMenuSubItem key={sub.title}>
-                            {/* Link submenu → panggil onNavigate saat klik */}
                             <SidebarMenuSubButton
                               asChild
                               isActive={subActive}
                               onClick={onNavigate}
-                              className={subActiveClasses + " px-3 py-2"}
+                              className={[
+                                subActiveClasses,
+                                "px-3 py-2",
+                                subLocked
+                                  ? "bg-muted/40 text-muted-foreground border border-muted/60 shadow-none cursor-pointer"
+                                  : "hover:bg-primary/5",
+                              ]
+                                .filter(Boolean)
+                                .join(" ")}
                             >
                               <NavLink to={sub.url} end={sub.end}>
                                 <span>{sub.title}</span>
@@ -126,17 +161,29 @@ export function NavMain({
             );
           }
 
-          // Top-level tanpa submenu → link langsung, panggil onNavigate saat klik
+          // Top-level tanpa submenu → link langsung
           return (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton
                 asChild
                 isActive={parentActive}
                 onClick={onNavigate}
-                className={activeClasses + " px-3 py-2.5 gap-3"}
+                className={[
+                  activeClasses,
+                  "px-3 py-2.5 gap-3",
+                  isLocked
+                    ? "bg-muted/40 text-muted-foreground border border-muted/60 shadow-none cursor-pointer"
+                    : "hover:bg-primary/5",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
               >
                 <NavLink to={item.url} end={item.end}>
-                  {item.icon && <item.icon />}
+                  {item.icon && (
+                    <item.icon
+                      className={isLocked ? "opacity-70" : undefined}
+                    />
+                  )}
                   <span>{item.title}</span>
                 </NavLink>
               </SidebarMenuButton>

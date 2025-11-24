@@ -24,7 +24,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 
-const UnnasignedDashboard: React.FC = () => {
+const UnnasignedStudentDashboard: React.FC = () => {
   const { school_slug } = useParams<{ school_slug: string }>();
   const location = useLocation();
   const { data: currentUser, isLoading } = useCurrentUser();
@@ -276,4 +276,4 @@ const UnnasignedDashboard: React.FC = () => {
   );
 };
 
-export default UnnasignedDashboard;
+export default UnnasignedStudentDashboard;

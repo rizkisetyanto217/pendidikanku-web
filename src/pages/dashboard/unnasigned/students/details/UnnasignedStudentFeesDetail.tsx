@@ -18,7 +18,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 
-import type { PMBClassRow } from "../UnnasignedInfo";
+import type { PMBClassRow } from "../UnnasignedStudentInfo";
 
 function formatRupiah(amount: number): string {
   return amount.toLocaleString("id-ID", {
@@ -132,7 +132,7 @@ type ApiListResponse<T> = {
   };
 };
 
-export default function PendWebPMBFeesDetail() {
+export default function UnnasignedStudentFeesDetail() {
   const { school_slug, id } = useParams<{ school_slug: string; id: string }>();
   const navigate = useNavigate();
 

@@ -366,7 +366,7 @@ const TeacherCSSTDetail: React.FC = () => {
   return (
     <div className="w-full bg-background text-foreground">
       <main className="w-full">
-        <div className="mx-auto flex flex-col gap-6 px-3 pb-10 pt-2 md:px-4">
+        <div className="mx-auto flex flex-col gap-6">
           {/* Top bar */}
           <div className="hidden md:flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
@@ -397,23 +397,6 @@ const TeacherCSSTDetail: React.FC = () => {
                         ? `${csstView.teacherTitle} ${csstView.teacherName}`
                         : csstView.teacherName}
                     </span>
-                  </span>
-                </div>
-
-                <div className="mt-1 text-xs text-muted-foreground flex flex-wrap gap-3">
-                  <span>
-                    Slug CSST:{" "}
-                    <span className="font-mono">{csstView.slug}</span>
-                  </span>
-                  {csstView.subjectSlug && (
-                    <span>
-                      Slug mapel:{" "}
-                      <span className="font-mono">{csstView.subjectSlug}</span>
-                    </span>
-                  )}
-                  <span>
-                    Section slug:{" "}
-                    <span className="font-mono">{sectionView.sectionSlug}</span>
                   </span>
                 </div>
               </div>
@@ -449,7 +432,7 @@ const TeacherCSSTDetail: React.FC = () => {
                     <CalendarDays className="h-4 w-4" />
                     <span>Absensi Hari Ini</span>
                   </div>
-                  <div className="text-2xl font-semibold leading-tight">
+                  <div className="text-xl font-semibold leading-tight">
                     {attendanceTodayLabel}
                   </div>
                   <p className="text-xs text-muted-foreground">

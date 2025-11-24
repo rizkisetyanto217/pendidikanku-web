@@ -62,6 +62,9 @@ export default function Register() {
     }
   }
 
+  // Base tenant untuk link-link lain
+  const tenantBase = schoolSlug ? `/${schoolSlug}` : ""; // ⬅️ NEW
+
   // Path login FE (bukan API)
   const loginPath = schoolSlug ? `/${schoolSlug}/login` : "/login";
 
@@ -423,7 +426,6 @@ export default function Register() {
                   )}
                 </div>
               </div>
-
               {/* Agree + link login */}
               <div className="flex items-center justify-between gap-4">
                 {/* Checkbox + label biasa */}
@@ -454,25 +456,20 @@ export default function Register() {
               <p className="mt-1 text-xs text-muted-foreground">
                 Baca{" "}
                 <Link
-                  to="/terms"
-                  target="_blank"
-                  rel="noreferrer"
+                  to={tenantBase ? `${tenantBase}/ketentuan` : "/ketentuan"}
                   className="underline"
                 >
                   Ketentuan
                 </Link>{" "}
                 &{" "}
                 <Link
-                  to="/privacy"
-                  target="_blank"
-                  rel="noreferrer"
+                  to={tenantBase ? `${tenantBase}/privasi` : "/privasi"}
                   className="underline"
                 >
                   Privasi
                 </Link>
                 .
               </p>
-
               {/* Submit */}
               <Button
                 type="submit"

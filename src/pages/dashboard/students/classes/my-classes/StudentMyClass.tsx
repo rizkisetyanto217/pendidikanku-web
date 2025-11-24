@@ -1,4 +1,4 @@
-// src/pages/sekolahislamku/pages/student/MyClass.tsx
+// src/pages/dasboard/student/StudentMyClass.tsx
 import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Search, Info } from "lucide-react";
@@ -21,11 +21,11 @@ import api from "@/lib/axios";
 const dateLong = (iso?: string | null) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        weekday: "long",
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      })
+      weekday: "long",
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    })
     : "-";
 
 /* ============ Types dari API ============ */
@@ -182,7 +182,7 @@ export default function StudentMyClass({ showBack = false, backTo }: Props) {
   if (isLoading) {
     return (
       <div className="w-full bg-background text-foreground">
-        <main className="mx-auto max-w-6xl px-3 md:px-6 py-6 md:py-8">
+        <main className="mx-auto">
           <div className="flex items-center gap-3 mb-4">
             {showBack && (
               <Button
@@ -209,7 +209,7 @@ export default function StudentMyClass({ showBack = false, backTo }: Props) {
   if (isError) {
     return (
       <div className="w-full bg-background text-foreground">
-        <main className="mx-auto max-w-6xl px-3 md:px-6 py-6 md:py-8">
+        <main className="mx-auto">
           <div className="flex items-center gap-3 mb-4">
             {showBack && (
               <Button
@@ -235,7 +235,7 @@ export default function StudentMyClass({ showBack = false, backTo }: Props) {
 
   return (
     <div className="w-full bg-background text-foreground">
-      <main className="mx-auto max-w-6xl px-3 md:px-6 py-6 md:py-8 space-y-6">
+      <main className="mx-auto space-y-6">
         {/* Back + title */}
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">

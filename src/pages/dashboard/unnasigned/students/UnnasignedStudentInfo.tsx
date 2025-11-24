@@ -233,7 +233,7 @@ function mapApiToPMBClasses(items: ApiTermItem[]): PMBClassRow[] {
    Component
 ========================= */
 
-export default function UnnasignedInfo() {
+export default function UnnasignedStudentInfo() {
   const { school_slug } = useParams<{ school_slug: string }>();
   const navigate = useNavigate();
 

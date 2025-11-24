@@ -199,11 +199,11 @@ const bytesToHuman = (n?: number) => {
 const dateLong = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
     : "-";
 
 function extractYouTubeId(url?: string) {
@@ -218,7 +218,7 @@ function extractYouTubeId(url?: string) {
       const idx = segs.findIndex((s) => s === "embed");
       if (idx >= 0 && segs[idx + 1]) return segs[idx + 1];
     }
-  } catch {}
+  } catch { }
   return null;
 }
 

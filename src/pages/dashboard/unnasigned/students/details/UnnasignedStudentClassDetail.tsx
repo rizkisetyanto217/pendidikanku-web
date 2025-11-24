@@ -12,8 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 // helpers (formatting) tetap pakai file lama
-import { formatDeliveryMode, formatRegWindow } from "../UnnasignedInfo";
-import type { PMBClassRow } from "../UnnasignedInfo";
+import { formatDeliveryMode, formatRegWindow } from "../UnnasignedStudentInfo";
+import type { PMBClassRow } from "../UnnasignedStudentInfo";
 
 /* =========================
    API types (disederhanakan)
@@ -74,7 +74,7 @@ type ApiListResponse<T> = {
   };
 };
 
-export default function PendWebPMBClassDetail() {
+export default function UnnasignedStudentClassDetail() {
   const { school_slug, id } = useParams<{
     school_slug: string;
     id: string;

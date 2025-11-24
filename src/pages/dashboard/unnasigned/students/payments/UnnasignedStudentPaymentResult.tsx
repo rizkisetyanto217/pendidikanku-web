@@ -75,7 +75,7 @@ function mapInternalStatusToBadgeVariant(
   return "outline";
 }
 
-export default function UnnasignedPaymentFinish() {
+export default function UnnasignedStudentPaymentFinish() {
   const navigate = useNavigate();
   const { school_slug } = useParams<Params>();
   const q = useQueryParams();

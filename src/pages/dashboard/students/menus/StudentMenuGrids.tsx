@@ -1,7 +1,23 @@
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
-import type { CMenuItem } from "../../components/card/CMainMenuGridCard";
 import { useEffect, useMemo } from "react";
-import { BadgeCheck, BookOpen, BookText, CalendarDays, FileStack, FileText, IdCard, ListChecks, NotebookPen, StickyNote, UserCheck, Wallet } from "lucide-react";
+import {
+  BookText,
+  CalendarDays,
+  CalendarRange,
+  ClipboardCheck,
+  FileCheck2,
+  FileStack,
+  IdCard,
+  ListChecks,
+  NotebookPen,
+  Pencil,
+  RefreshCcw,
+  School,
+  UserCheck,
+  UserCircle,
+  UsersRound,
+  Wallet,
+} from "lucide-react";
 import CMainMenuGridCard from "../../components/card/CMainMenuGridCard";
 
 export default function StudentMenuGrids() {
@@ -18,69 +34,127 @@ export default function StudentMenuGrids() {
     });
   }, [setHeader]);
 
-  const items: CMenuItem[] = useMemo(
+  /* ===============================
+      MENU GRID BERKELOMPOK
+  =============================== */
+  const groups = useMemo(
     () => [
-      // ======================
-      // MENU UTAMA (lokal /menu-utama)
-      // ======================
-      { key: "kelas-saya", label: "Kelas Saya", to: "kelas-saya", icon: <BookOpen /> },
-      { key: "keuangan", label: "Pembayaran", to: "keuangan", icon: <Wallet /> },
-      { key: "jadwal-local", label: "Jadwal", to: "jadwal", icon: <CalendarDays /> },
-      { key: "profil", label: "Profil Murid", to: "profil-murid", icon: <IdCard /> },
 
-      // ======================
-      // ROOT ROUTES (/murid/*)
-      // ======================
-      { key: "tugas", label: "Daftar Tugas", to: "tugas", icon: <NotebookPen /> },
-      { key: "tagihan", label: "Daftar Tagihan", to: "/keuangan-list", icon: <FileStack /> },
-
-      // ======================
-      // PROGRESS AKADEMIK (lokal menu-utama)
-      // ======================
-      { key: "progress", label: "Progress Akademik", to: "progress", icon: <ListChecks /> },
-      { key: "raport", label: "Raport", to: "raport", icon: <FileText /> },
-      { key: "absensi", label: "Absensi", to: "absensi", icon: <UserCheck /> },
-      { key: "catatan-hasil", label: "Catatan Hasil", to: "catatan-hasil", icon: <StickyNote /> },
-
-      // ======================
-      // JADWAL ROOT (/murid/jadwal)
-      // ======================
-      { key: "jadwal-root", label: "Jadwal", to: "jadwal", icon: <CalendarDays /> },
-
-      // ======================
-      // DETAIL KELAS (butuh param)
-      // ======================
+      /* ===== Kelas ===== */
       {
-        key: "kelas-materi",
-        label: "Materi Kelas",
-        icon: <BookText />,
-        requiresParam: true,
-        note: "Buka dari ‘Kelas Saya’",
+        title: "Kelas",
+        items: [
+          { key: "kelas-saya", label: "Kelas Saya", to: "kelas-saya", icon: <School /> },
+          { key: "progress", label: "Progress", to: "progress", icon: <ListChecks /> },
+          { key: "tugas", label: "Tugas", to: "tugas", icon: <Pencil /> },
+          { key: "ujian", label: "Ujian", to: "ujian", icon: <FileCheck2 /> },
+          { key: "kontak", label: "Kontak", to: "kontak", icon: <UsersRound /> },
+
+          /* Detail kelas (requiresParam) */
+          {
+            key: "kelas-materi",
+            label: "Materi",
+            icon: <BookText />,
+            requiresParam: true,
+            note: "Buka dari Kelas Saya",
+          },
+          {
+            key: "kelas-tugas-param",
+            label: "Tugas Kelas",
+            icon: <NotebookPen />,
+            requiresParam: true,
+            note: "Buka dari Kelas Saya",
+          },
+          {
+            key: "kelas-quiz",
+            label: "Quiz Kelas",
+            icon: <ClipboardCheck />,
+            requiresParam: true,
+            note: "Buka dari Kelas Saya",
+          },
+          {
+            key: "kelas-kehadiran",
+            label: "Kehadiran Kelas",
+            icon: <UserCheck />,
+            requiresParam: true,
+            note: "Buka dari Kelas Saya",
+          },
+        ],
       },
+
+      /* ===== Jadwal ===== */
       {
-        key: "kelas-tugas",
-        label: "Tugas Kelas",
-        icon: <NotebookPen />,
-        requiresParam: true,
-        note: "Buka dari ‘Kelas Saya’",
+        title: "Jadwal",
+        items: [
+          {
+            key: "agenda",
+            label: "Agenda",
+            to: "agenda",
+            icon: <CalendarDays />,
+          },
+          {
+            key: "rutin",
+            label: "Rutin",
+            to: "rutin",
+            icon: <CalendarRange />,
+          },
+
+        ],
       },
+
+      /* ===== Administrasi ===== */
       {
-        key: "kelas-quiz",
-        label: "Quiz Kelas",
-        icon: <BadgeCheck />,
-        requiresParam: true,
-        note: "Buka dari ‘Kelas Saya’",
+        title: "Administrasi",
+        items: [
+          {
+            key: "pendaftaran",
+            label: "Pendaftaran",
+            to: "pendaftaran",
+            icon: <IdCard />,
+          },
+          {
+            key: "daftar-ulang",
+            label: "Daftar Ulang",
+            to: "daftar-ulang",
+            icon: <RefreshCcw />,
+          },
+          {
+            key: "keuangan",
+            label: "Keuangan",
+            to: "keuangan",
+            icon: <Wallet />,
+          },
+          {
+            key: "keuangan-list",
+            label: "Keuangan List",
+            to: "keuangan-list",
+            icon: <FileStack />,
+          },
+        ],
       },
+
+      /* ===== Profil ===== */
       {
-        key: "kelas-kehadiran",
-        label: "Kehadiran Kelas",
-        icon: <UserCheck />,
-        requiresParam: true,
-        note: "Buka dari ‘Kelas Saya’",
+        title: "Profil",
+        items: [
+          {
+            key: "profil-murid",
+            label: "Profil Murid",
+            to: "profil-murid",
+            icon: <UserCircle />,
+          },
+        ],
       },
     ],
     []
   );
 
-  return <CMainMenuGridCard title="Akses Cepat Murid" items={items} />;
+  /* ========== RENDER ========== */
+  return (
+    <div className="space-y-6">
+      {groups.map((group) => (
+        <CMainMenuGridCard key={group.title} title={group.title} items={group.items} />
+      ))}
+    </div>
+  );
 }

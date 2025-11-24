@@ -11,6 +11,7 @@ import {
   ChartBar,
   School,
   HeartHandshake,
+  Building2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -240,7 +241,7 @@ export const NAVS: NavDict = {
     {
       path: "kelas",
       label: "Kelas",
-      icon: BookOpen,
+      icon: School,
       children: [
         {
           // -> /murid/kelas-saya
@@ -291,7 +292,7 @@ export const NAVS: NavDict = {
     {
       path: "administrasi",
       label: "Administrasi",
-      icon: CalendarDays,
+      icon: Building2,
       children: [
         {
           // -> /murid/pendaftaran

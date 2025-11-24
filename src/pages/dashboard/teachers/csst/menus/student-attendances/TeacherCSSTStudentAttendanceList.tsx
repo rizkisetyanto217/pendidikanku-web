@@ -366,7 +366,7 @@ const TeacherCSSTStudentAttendanceList: React.FC = () => {
   }
 
   return (
-    <div className="w-full bg-background text-foreground py-6">
+    <div className="w-full bg-background text-foreground">
       <main className="mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">

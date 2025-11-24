@@ -1,4 +1,4 @@
-// src/pages/sekolahislamku/pages/student/StudentQuizTake.tsx
+// src/pages/sekolahislamku/pages/student/StudentQuiz.tsx
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
@@ -349,8 +349,8 @@ export default function StudentQuiz() {
       typeof val === "string"
         ? val.trim() !== ""
         : Array.isArray(val)
-        ? val.length > 0
-        : false;
+          ? val.length > 0
+          : false;
     const isDoubt = !!doubts[q.id];
 
     if (isDoubt) return "doubt";
@@ -481,15 +481,15 @@ export default function StudentQuiz() {
                           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
 
                           status === "empty" &&
-                            "border-border bg-muted/40 text-muted-foreground",
+                          "border-border bg-muted/40 text-muted-foreground",
                           status === "answered" &&
-                            "border-primary/70 bg-primary/10 dark:bg-primary/20 text-primary",
+                          "border-primary/70 bg-primary/10 dark:bg-primary/20 text-primary",
                           status === "doubt" &&
-                            "border-amber-500 bg-amber-500/10 text-amber-300",
+                          "border-amber-500 bg-amber-500/10 text-amber-300",
 
                           // ⬇️ DI SINI TAMBahkan override untuk state aktif
                           isActive &&
-                            "ring-1 ring-primary bg-primary text-primary-foreground"
+                          "ring-1 ring-primary bg-primary text-primary-foreground"
                         )}
                       >
                         {idx + 1}
@@ -749,8 +749,8 @@ function QuestionCard({
     typeof value === "string"
       ? value.trim() !== ""
       : Array.isArray(value)
-      ? value.length > 0
-      : false;
+        ? value.length > 0
+        : false;
 
   const [noteOpen, setNoteOpen] = useState(Boolean(note));
 
@@ -760,7 +760,7 @@ function QuestionCard({
         "overflow-hidden flex flex-col",
         fullHeight && "h-full",
         isDoubtful &&
-          "border-amber-400 bg-amber-50/60 dark:bg-amber-950/20 dark:border-amber-500"
+        "border-amber-400 bg-amber-50/60 dark:bg-amber-950/20 dark:border-amber-500"
       )}
     >
       <CardHeader className="pb-2">
@@ -877,8 +877,8 @@ function QuestionCard({
               {noteOpen
                 ? "Sembunyikan catatan"
                 : note
-                ? "Lihat / ubah catatan"
-                : "Tambah catatan"}
+                  ? "Lihat / ubah catatan"
+                  : "Tambah catatan"}
             </Button>
           </div>
 

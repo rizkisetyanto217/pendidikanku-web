@@ -276,11 +276,11 @@ const TeacherCSSTStudentAttendanceDetail: React.FC = () => {
   const summary = useMemo(() => summarize(rows), [rows]);
 
   return (
-    <div className="w-full bg-background text-foreground py-6">
-      <main className="mx-auto space-y-6 max-w-5xl">
+    <div className="w-full bg-background text-foreground">
+      <main className="mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
+          <div className="md:flex hidden items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
@@ -290,7 +290,7 @@ const TeacherCSSTStudentAttendanceDetail: React.FC = () => {
               <ArrowLeft size={20} />
             </Button>
             <div>
-              <h1 className="text-xl font-semibold">Riwayat Kehadiran Siswa</h1>
+              <h1 className="text-xl font-semibold">Detail Kehadiran Siswa</h1>
               <p className="text-sm text-muted-foreground">
                 {studentName} —{" "}
                 <span className="font-mono text-xs text-foreground/80">

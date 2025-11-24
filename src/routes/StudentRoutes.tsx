@@ -28,6 +28,9 @@ import StudentCSST from "@/pages/dashboard/students/classes/my-classes/csst/Stud
 import StudentClassSection from "@/pages/dashboard/students/classes/my-classes/class-sections/StudentClassSection";
 import StudentQuiz from "@/pages/dashboard/students/classes/my-classes/quiz/StudentQuiz";
 import StudentQuizReview from "@/pages/dashboard/students/classes/my-classes/quiz/StudentQuizReview";
+import StudentCSSTDailyReport from "@/pages/dashboard/students/classes/my-classes/csst/daily-progress/StudentCSSTDailyReport";
+import StudentCSSTDailyReportDetail from "@/pages/dashboard/students/classes/my-classes/csst/daily-progress/details/StudentCSSTDailyReportDetail";
+// import StudentCSSTAttandenceList from "@/pages/dashboard/students/classes/my-classes/csst/attendances/StudentCSSTAttandenceList";
 
 // ======================
 // Routing untuk halaman MURID (Student Dashboard)
@@ -88,6 +91,9 @@ export const StudentRoutes = (
         />
         <Route path="rombel/:sectionId" element={<StudentClassSection />} />
         <Route path="mapel/:csstId" element={<StudentCSST />} />
+        <Route path="mapel/:csstId/daily-progress" element={<StudentCSSTDailyReport />} />
+        <Route path="mapel/:csstId/daily-progress/:id" element={<StudentCSSTDailyReportDetail />} />
+        {/* <Route path="mapel/:csstId/absensi" element={<StudentCSSTAttandenceList />} /> */}
       </Route>
 
       <Route path="progress">
@@ -146,16 +152,17 @@ export const StudentRoutes = (
         element={<StudentChooseClassSection />}
       />
 
-      {/* Keuangan dari menu utama */}
-      <Route path="keuangan" element={<StudentFinance />} />
-
       {/* Jadwal dari menu utama */}
-      <Route path="jadwal" element={<StudentAllSchedule showBack />} />
+      <Route path="agenda" element={<StudentAllSchedule showBack />} />
       <Route path="rutin" element={<StudentScheduleRoutine showBack />} />
 
       {/* Tugas & ujian */}
       <Route path="tugas" element={<StudentClassesAssignment showBack />} />
       <Route path="ujian" element={<StudentExam showBack />} />
+
+      {/* Kontak */}
+      <Route path="kontak" element={<StudentClassesContact showBack />} />
+
 
       {/* Detail per kelas */}
       <Route path="kelas-saya/:id/materi" element={<StudentMaterial />} />
@@ -176,10 +183,17 @@ export const StudentRoutes = (
       <Route path="catatan-hasil" element={<StudentNotesSummary />} />
 
       {/* Profil dari menu utama */}
-      <Route path="profil-murid" element={<StudentProfil />} />
+      <Route path="profil-murid" element={<StudentProfil showBack />} />
 
       {/* /:school_slug/murid/menu-utama/mapel-saya/:csst_id */}
       <Route path="mapel/:csstId" element={<StudentCSST />} />
+
+      {/* === Administrasi === */}
+
+      <Route path="pendaftaran" element={<StudentEnrollment showBack />} />
+      <Route path="daftar-ulang" element={<StudentReEnrollment showBack />} />
+      <Route path="keuangan" element={<StudentFinance showBack />} />
+      <Route path="keuangan-list" element={<StudentListFinance showBack />} />
     </Route>
   </Route>
 );

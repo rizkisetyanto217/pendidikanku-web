@@ -37,6 +37,14 @@ import {
 ========================= */
 type schoolRole = "dkm" | "admin" | "teacher" | "student" | "user";
 
+type ProfileCompletionStatus = {
+  has_profile: boolean;
+  is_profile_completed: boolean;
+  has_teacher: boolean;
+  is_teacher_completed: boolean;
+  is_fully_completed: boolean;
+};
+
 function roleLabel(r: schoolRole) {
   switch (r) {
     case "dkm":
@@ -121,6 +129,7 @@ function RolePickerModal({
 export default function Login() {
   const navigate = useNavigate();
   const { school_slug } = useParams<{ school_slug: string }>();
+  const tenantBase = school_slug ? `/${school_slug}` : "";
 
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -134,28 +143,28 @@ export default function Login() {
   const [openRolePicker, setOpenRolePicker] = useState(false);
   const [availableRoles, setAvailableRoles] = useState<schoolRole[]>([]);
   const [pendingSchoolId, setPendingSchoolId] = useState<string | null>(null);
+  const [profileCompletion, setProfileCompletion] =
+    useState<ProfileCompletionStatus | null>(null);
 
-  // === NEW: langsung ke halaman register tanpa popup pilihan guru/murid
+  // langsung ke halaman register tanpa popup pilihan guru/murid
   const handleGoRegister = useCallback(() => {
     if (school_slug) {
-      // contoh: /diploma-ilmi/register
       navigate(`/${school_slug}/register`);
     } else {
-      // fallback global
       navigate("/register");
     }
   }, [navigate, school_slug]);
 
-  // 🔤 Nama sekolah dari slug (diploma-ilmi → "Diploma Ilmi")
+  // Nama sekolah dari slug (diploma-ilmi → "Diploma Ilmi")
   const schoolTitle = useMemo(() => {
-    if (!school_slug) return "Pendidikanku";
+    if (!school_slug) return "Madinah Salam";
 
     const parts = school_slug
       .split(/[-_]+/)
       .map((p) => p.trim())
       .filter(Boolean);
 
-    if (parts.length === 0) return "Pendidikanku";
+    if (parts.length === 0) return "Madinah Salam";
 
     return parts
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -186,45 +195,69 @@ export default function Login() {
       role === "teacher" ? "guru" : role === "student" ? "murid" : "sekolah";
 
     if (!school_slug) {
-      // fallback kalau entah gimana slug-nya hilang
       navigate("/", { replace: true });
       return;
     }
 
-    // Context tetap simpan ID (bagus, buat query backend)
     setActiveschoolContext(schoolId, role);
 
-    // URL tetap pakai slug
     navigate(`/${school_slug}/${section}/dashboard`, { replace: true });
   }
 
-  function handleRolePicked(role: schoolRole) {
-    if (!pendingSchoolId) return;
-    navigateByRole(pendingSchoolId, role);
-    setOpenRolePicker(false);
-  }
+  // arahkan ke cluster unassigned sesuai role + halaman
+  function navigateToUnassigned(
+    initialRole?: schoolRole,
+    page: "profil" | "pendaftaran" = "profil"
+  ) {
+    const state = {
+      fromLogin: true,
+      identifier,
+      initialRole,
+    };
 
-  function navigateToPMB() {
+    const section = initialRole === "teacher" ? "user-guru" : "user-murid";
+
+    // mapping: "profil" → "profil-new"
+    const pathSegment = page === "profil" ? "profil-new" : "pendaftaran";
+
     if (!school_slug) {
-      // fallback global: langsung ke profil unassigned
-      navigate("/user/profil", {
+      navigate(`/${section}/${pathSegment}`, {
         replace: true,
-        state: {
-          fromLogin: true,
-          identifier,
-        },
+        state,
       });
       return;
     }
 
-    // PMB per sekolah: langsung ke profil (form murid/guru)
-    navigate(`/${school_slug}/user/profil`, {
+    navigate(`/${school_slug}/${section}/${pathSegment}`, {
       replace: true,
-      state: {
-        fromLogin: true,
-        identifier,
-      },
+      state,
     });
+  }
+
+  function handleRolePicked(role: schoolRole) {
+    if (!pendingSchoolId) return;
+    const schoolId = pendingSchoolId;
+
+    // admin/dkm → langsung dashboard sekolah
+    if (role === "admin" || role === "dkm") {
+      navigateByRole(schoolId, role);
+      setOpenRolePicker(false);
+      return;
+    }
+
+    // teacher/student → cek dulu profileCompletion
+    if (
+      profileCompletion &&
+      (!profileCompletion.has_profile ||
+        !profileCompletion.is_profile_completed)
+    ) {
+      setActiveschoolContext(schoolId, role);
+      navigateToUnassigned(role);
+    } else {
+      navigateByRole(schoolId, role);
+    }
+
+    setOpenRolePicker(false);
   }
 
   async function handleLogin(e: React.FormEvent) {
@@ -238,7 +271,6 @@ export default function Login() {
         throw new Error("school_slug tidak ditemukan di URL.");
       }
 
-      // Backend: POST /api/:school_slug/auth/login
       const res = await api.post(`/${slug}/auth/login`, {
         identifier,
         password,
@@ -250,41 +282,90 @@ export default function Login() {
         throw new Error("Respon login tidak lengkap (token / user kosong).");
       }
 
-      // Simpan access token (sessionStorage + header axios)
       setTokens(access_token);
 
-      // Ambil info sekolah & roles dari payload user
       const schoolId: string | undefined = user.school_id;
       const rawRoles: string[] = Array.isArray(user.roles)
         ? user.roles.map((r: string) => r.toLowerCase())
         : [];
 
       if (!schoolId) {
-        // fallback ekstrem: tidak ada school_id padahal login via slug
         navigate("/", { replace: true });
         return;
       }
 
-      // Filter & normalisasi roles ke union type
       const normalizedRoles = rawRoles.filter((r) =>
         ["dkm", "admin", "teacher", "student", "user"].includes(r)
       ) as schoolRole[];
 
-      // 🔹 CASE 1: belum punya peran di sekolah ini → flow PMB
+      // cek profile-completion
+      let completion: ProfileCompletionStatus | null = null;
+      try {
+        const pcRes = await api.get<{
+          success: boolean;
+          message: string;
+          data: ProfileCompletionStatus;
+        }>(`/${slug}/auth/me/profile-completion`);
+
+        completion = pcRes.data?.data ?? null;
+      } catch (e) {
+        console.warn("[login] gagal cek profile-completion", e);
+      }
+      setProfileCompletion(completion);
+
+      // ==== Branching utama ====
+
+      // CASE 0: tidak punya peran di sekolah ini → unassigned (user/pendaftaran)
       if (normalizedRoles.length === 0) {
-        setActiveschoolContext(schoolId, "user");
-        navigateToPMB();
+        const inferredRole: schoolRole =
+          completion?.has_teacher && completion?.is_teacher_completed
+            ? "teacher"
+            : "student";
+
+        setActiveschoolContext(schoolId, inferredRole);
+
+        // kalau profil SUDAH lengkap & role murid → langsung ke pendaftaran
+        if (
+          completion &&
+          completion.has_profile &&
+          completion.is_profile_completed &&
+          inferredRole === "student"
+        ) {
+          navigateToUnassigned(inferredRole, "pendaftaran");
+        } else {
+          // profil belum lengkap → ke profil-new
+          navigateToUnassigned(inferredRole, "profil");
+        }
         return;
       }
 
-      // 🔹 CASE 2: hanya 1 role → langsung ke dashboard
+      // CASE 1: hanya 1 role
       if (normalizedRoles.length === 1) {
-        const activeRole: schoolRole = normalizedRoles[0];
-        navigateByRole(schoolId, activeRole);
+        const singleRole: schoolRole = normalizedRoles[0];
+
+        if (singleRole === "admin" || singleRole === "dkm") {
+          navigateByRole(schoolId, singleRole);
+          return;
+        }
+
+        // teacher/student tunggal → cek kelengkapan profil dulu
+        if (
+          completion &&
+          (!completion.has_profile || !completion.is_profile_completed)
+        ) {
+          const initialRole: schoolRole =
+            singleRole === "teacher" ? "teacher" : "student";
+
+          setActiveschoolContext(schoolId, initialRole);
+          navigateToUnassigned(initialRole);
+          return;
+        }
+
+        navigateByRole(schoolId, singleRole);
         return;
       }
 
-      // 🔹 CASE 3: multi-role → buka modal pilih peran
+      // CASE 2: multi-role (>= 2, contoh: dkm + teacher + student)
       setPendingSchoolId(schoolId);
       setAvailableRoles(normalizedRoles);
       setOpenRolePicker(true);
@@ -447,7 +528,11 @@ export default function Login() {
                   <span>Ingat saya</span>
                 </label>
                 <Link
-                  to="/forgot-password"
+                  to={
+                    tenantBase
+                      ? `${tenantBase}/lupa-password`
+                      : "/lupa-password"
+                  }
                   className="text-sm text-primary hover:underline"
                 >
                   Lupa password?
@@ -479,11 +564,17 @@ export default function Login() {
             <div className="flex flex-col items-center gap-2 text-center">
               <div className="text-[11px] text-muted-foreground">
                 Dengan masuk, kamu menyetujui{" "}
-                <Link to="/terms" className="underline">
+                <Link
+                  to={tenantBase ? `${tenantBase}/ketentuan` : "/ketentuan"}
+                  className="underline"
+                >
                   Ketentuan
-                </Link>{" "}
+                </Link>
                 &{" "}
-                <Link to="/privacy" className="underline">
+                <Link
+                  to={tenantBase ? `${tenantBase}/privasi` : "/privasi"}
+                  className="underline"
+                >
                   Privasi
                 </Link>
                 .

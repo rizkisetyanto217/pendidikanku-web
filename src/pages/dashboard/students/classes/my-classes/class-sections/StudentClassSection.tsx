@@ -104,7 +104,7 @@ export default function StudentClassSection() {
     return (
       <div className="w-full bg-background text-foreground">
         <main className="w-full">
-          <div className="mx-auto flex flex-col gap-4 max-w-5xl px-3 py-8">
+          <div className="mx-auto flex flex-col gap-4">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="icon" onClick={handleBack}>
                 <ArrowLeft className="h-5 w-5" />
@@ -133,7 +133,7 @@ export default function StudentClassSection() {
   return (
     <div className="w-full bg-background text-foreground">
       <main className="w-full">
-        <div className="mx-auto flex flex-col gap-6 max-w-5xl px-3 md:px-4 py-6 md:py-8">
+        <div className="mx-auto flex flex-col gap-6">
           {/* Top bar (desktop) */}
           <div className="hidden md:flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={handleBack}>
