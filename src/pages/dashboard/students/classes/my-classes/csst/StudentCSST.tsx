@@ -377,37 +377,59 @@ const StudentCSST: React.FC = () => {
           </Card>
 
           {/* Quick links (versi murid) */}
-          <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {/* Absensi hari ini */}
+
+          {/* Row khusus: Absensi & Ruangan (card memanjang) */}
+          <div className="grid gap-3 md:grid-cols-2">
+            {/* Absensi hari ini - wide card */}
             <Card className="cursor-pointer transition hover:shadow-md">
-              <CardContent className="p-4 flex items-center justify-between">
+              <CardContent className="p-4 md:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <div className="space-y-1">
                   <div className="text-sm text-muted-foreground flex items-center gap-2">
                     <CalendarDays className="h-4 w-4" />
                     <span>Absensi Hari Ini</span>
                   </div>
-                  <div className="text-xl font-semibold">
+                  <div className="text-2xl font-semibold leading-tight">
                     {attendanceTodayLabel}
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    Rekap kehadiran kamu untuk pertemuan hari ini.
+                  </p>
+                </div>
+                {/* placeholder nanti bisa diganti badge status */}
+                <div className="self-start md:self-center">
+                  <Badge variant="outline" className="text-[11px]">
+                    Belum tersedia
+                  </Badge>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Ruangan yang dipakai */}
+            {/* Ruangan - wide card */}
             <Card className="cursor-pointer transition hover:shadow-md">
-              <CardContent className="p-4 flex items-center justify-between">
+              <CardContent className="p-4 md:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <div className="space-y-1">
                   <div className="text-sm text-muted-foreground flex items-center gap-2">
                     <MapPin className="h-4 w-4" />
                     <span>Ruangan</span>
                   </div>
-                  <div className="text-base font-semibold truncate max-w-[140px]">
+                  <div className="text-xl font-semibold leading-tight">
                     {roomLabel}
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    Lokasi pembelajaran utama untuk mata pelajaran ini.
+                  </p>
+                </div>
+                <div className="self-start md:self-center">
+                  <Badge variant="outline" className="text-[11px]">
+                    {formatDeliveryMode(csstView.deliveryMode)}
+                  </Badge>
                 </div>
               </CardContent>
             </Card>
+          </div>
 
+          {/* Grid lainnya */}
+          <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {/* Jumlah Murid */}
             <Card className="cursor-pointer transition hover:shadow-md">
               <CardContent className="p-4 flex items-center justify-between">
@@ -421,7 +443,7 @@ const StudentCSST: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Rekap Kehadiran (placeholder) */}
+            {/* Laporan Kehadiran (rekap) */}
             <Card className="cursor-pointer transition hover:shadow-md">
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="space-y-1">

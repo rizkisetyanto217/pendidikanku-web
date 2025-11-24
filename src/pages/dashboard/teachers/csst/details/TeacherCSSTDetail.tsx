@@ -19,6 +19,7 @@ import {
   ArrowLeft,
   ClipboardList,
   UserSquare2,
+  MapPin,
 } from "lucide-react";
 
 /* dashboard header */
@@ -339,7 +340,7 @@ const TeacherCSSTDetail: React.FC = () => {
     );
   }
 
-  /* ===== Render utama (semua sudah pure dari API) ===== */
+  /* ===== Render utama ===== */
 
   const totalStudents = csstView.enrolledCount ?? 0;
   const totalAttendance = csstView.totalAttendance ?? 0;
@@ -350,6 +351,17 @@ const TeacherCSSTDetail: React.FC = () => {
 
   const whatsappGroupLink = "https://chat.whatsapp.com/xxxxInviteCodexxxx";
 
+  // ⬅️ NEW: label untuk card lebar
+  const attendanceTodayLabel =
+    totalAttendance > 0
+      ? `${totalAttendance} kehadiran tercatat`
+      : "Belum ada data";
+
+  const roomLabel =
+    roomView?.roomName ||
+    (roomView?.isVirtual
+      ? roomView.platform || "Kelas virtual"
+      : "Belum diatur");
 
   return (
     <div className="w-full bg-background text-foreground">
@@ -357,10 +369,7 @@ const TeacherCSSTDetail: React.FC = () => {
         <div className="mx-auto flex flex-col gap-6 px-3 pb-10 pt-2 md:px-4">
           {/* Top bar */}
           <div className="hidden md:flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate(-1)}>
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
               <ArrowLeft size={20} />
             </Button>
             <h1 className="text-lg font-semibold md:text-xl">Detail Mapel</h1>
@@ -423,7 +432,70 @@ const TeacherCSSTDetail: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Quick links */}
+          {/* =========================
+              Quick links (guru)
+             ========================= */}
+
+          {/* Row khusus: Absensi & Ruangan (card memanjang) */}
+          <div className="grid gap-3 md:grid-cols-2">
+            {/* Absensi hari ini - wide card */}
+            <Card
+              className="cursor-pointer transition hover:shadow-md"
+              onClick={() => navigate("absensi")}
+            >
+              <CardContent className="p-4 md:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4" />
+                    <span>Absensi Hari Ini</span>
+                  </div>
+                  <div className="text-2xl font-semibold leading-tight">
+                    {attendanceTodayLabel}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Rekap kehadiran murid untuk pertemuan hari ini.
+                  </p>
+                </div>
+                <div className="self-start md:self-center">
+                  <Badge variant="outline" className="text-[11px]">
+                    {totalStudents} murid terdaftar
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Ruangan - wide card */}
+            <Card
+              className="cursor-pointer transition hover:shadow-md"
+              onClick={() => {
+                if (roomView?.joinUrl) {
+                  window.open(roomView.joinUrl, "_blank");
+                }
+              }}
+            >
+              <CardContent className="p-4 md:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    <span>Ruangan</span>
+                  </div>
+                  <div className="text-xl font-semibold leading-tight">
+                    {roomLabel}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Lokasi atau platform utama untuk pertemuan mapel ini.
+                  </p>
+                </div>
+                <div className="self-start md:self-center">
+                  <Badge variant="outline" className="text-[11px]">
+                    {formatDeliveryMode(csstView.deliveryMode)}
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Grid lainnya */}
           <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {/* Profil Murid */}
             <Card
@@ -442,34 +514,16 @@ const TeacherCSSTDetail: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Absensii Murid */}
-            <Card
-              className="cursor-pointer transition hover:shadow-md"
-              onClick={() => navigate("absensi")}
-            >
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="space-y-1">
-                  <div className="text-sm text-muted-foreground flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    <span>Absensi Murid</span>
-                  </div>
-                  <div className="text-xl font-semibold">{totalStudents}</div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </CardContent>
-            </Card>
-
-            {/* Rekap Kehadiran */}
+            {/* Laporan Kehadiran / Harian */}
             <Card
               className="cursor-pointer transition hover:shadow-md"
               onClick={() => navigate("daily-progress")}
             >
-
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="space-y-1">
                   <div className="text-sm text-muted-foreground flex items-center gap-2">
                     <CalendarDays className="h-4 w-4" />
-                    <span>Laporan Harian</span>
+                    <span>Laporan Kehadiran</span>
                   </div>
                   <div className="text-xl font-semibold">{totalAttendance}</div>
                 </div>
@@ -488,9 +542,7 @@ const TeacherCSSTDetail: React.FC = () => {
                     <BookOpen className="h-4 w-4" />
                     <span>Materi</span>
                   </div>
-                  <div className="text-xl font-semibold">
-                    {csstView.totalBooks}
-                  </div>
+                  <div className="text-xl font-semibold">{totalBooks}</div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </CardContent>
@@ -534,7 +586,7 @@ const TeacherCSSTDetail: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Buku*/}
+            {/* Buku */}
             <Card
               className="cursor-pointer transition hover:shadow-md"
               onClick={() => navigate("buku")}
@@ -568,26 +620,27 @@ const TeacherCSSTDetail: React.FC = () => {
               </CardContent>
             </Card>
 
+            {/* Grup WhatsApp */}
             <Card
               className="cursor-pointer transition hover:shadow-md"
               onClick={() => window.open(whatsappGroupLink, "_blank")}
             >
-              {/* Grup WhattsAp Maapel */}
-
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="space-y-1">
                   <div className="text-sm text-muted-foreground flex items-center gap-2">
                     <Users className="h-4 w-4" />
-                    <span>Grup WhattsAp Mapel</span>
+                    <span>Grup WhatsApp Mapel</span>
                   </div>
-                  <div className="text-md font-semibold underline">Link Group</div>
+                  <div className="text-md font-semibold underline">
+                    Link Group
+                  </div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </CardContent>
             </Card>
           </div>
 
-          {/* Ruang / Platform Kelas */}
+          {/* Ruang / Platform Kelas (detail, biarin tetap ada) */}
           {roomView && (roomView.roomName || roomView.joinUrl) && (
             <Card>
               <CardHeader className="pb-2">
