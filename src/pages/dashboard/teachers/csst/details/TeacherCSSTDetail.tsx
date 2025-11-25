@@ -190,8 +190,8 @@ const TeacherCSSTDetail: React.FC = () => {
   const { setHeader } = useDashboardHeader();
 
   /* ===== Query detail CSST (pakai API terbaru) ===== */
-  const csstQ = useQuery<ApiCSSTItem | undefined, AxiosError>({
-    queryKey: ["teacher-csst-detail", csstId, teacherId],
+  const csstQ = useQuery<ApiCSSTItem | null, AxiosError>({
+    queryKey: ["teacher-csst-detail", csstId, teacherId ?? null],
     enabled: !!csstId,
     queryFn: async () => {
       const res = await axios.get<ApiCSSTDetailResponse>(
@@ -204,7 +204,10 @@ const TeacherCSSTDetail: React.FC = () => {
         }
       );
       const items = res.data?.data ?? [];
-      return items[0];
+      console.log(
+        "[TeacherCSSTDetail] API /u/class-section-subject-teachers/list response:"
+      );
+      return items.length ? items[0] : null; // ✅ nggak pernah undefined
     },
     staleTime: 60_000,
   });

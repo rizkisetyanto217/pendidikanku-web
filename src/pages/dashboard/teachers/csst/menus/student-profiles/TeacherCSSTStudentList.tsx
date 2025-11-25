@@ -24,167 +24,55 @@ import {
   type Align,
 } from "@/components/costum/table/CDataTable";
 
-/* =========================================================
-   KONFIG + TIPE
-========================================================= */
-const USE_DUMMY = true;
+import api from "@/lib/axios";
 
+/* =========================================================
+   TIPE
+========================================================= */
 type AnyRec = Record<string, any>;
 
 export type StudentSummary = {
-  id: string;
-  name: string;
+  id: string; // school_student_id
+  name: string; // nama siswa
   [key: string]: any;
 };
 
-type ClassStudentsMap = Record<string, StudentSummary[]>;
+/* ====== API TYPES (sesuai contoh respons) ====== */
+
+type ApiStudentClassSection = {
+  student_class_section_id: string;
+  student_class_section_school_student_id: string;
+  student_class_section_section_id: string;
+  student_class_section_school_id: string;
+  student_class_section_section_slug_snapshot: string;
+  student_class_section_status: string;
+  student_class_section_user_profile_name_snapshot?: string | null;
+  student_class_section_user_profile_avatar_url_snapshot?: string | null;
+  student_class_section_user_profile_whatsapp_url_snapshot?: string | null;
+  student_class_section_assigned_at?: string | null;
+  student_class_section_created_at?: string | null;
+  student_class_section_updated_at?: string | null;
+};
+
+type ApiClassSection = {
+  class_section_id: string;
+  class_section_school_id: string;
+  class_section_slug: string;
+  class_section_name: string;
+  class_section_total_students: number;
+  class_sections_student_class_sections_active_count: number;
+  class_sections_student_class_sections_count: number;
+  class_sections_student_class_sections: ApiStudentClassSection[];
+};
+
+type ApiResponse = {
+  success: boolean;
+  message: string;
+  data: ApiClassSection[];
+};
 
 /* =========================================================
-   DUMMY 15 SISWA
-========================================================= */
-const DUMMY_STUDENTS_15: AnyRec[] = [
-  {
-    id: "s-01",
-    nis: "2025001",
-    name: "Ahmad Fathir",
-    gender: "L",
-    phone: "081200000001",
-    parentName: "Bpk. Fajar",
-    importantNotes: ["Alergi kacang", "Asthma ringan (bawa inhaler)"],
-  },
-  {
-    id: "s-02",
-    nis: "2025002",
-    name: "Aisyah Zahra",
-    gender: "P",
-    phone: "081200000002",
-    parentName: "Ibu Rani",
-    notes: ["Sedang proses mutasi kelas"],
-  },
-  {
-    id: "s-03",
-    nis: "2025003",
-    name: "Muhammad Iqbal",
-    gender: "L",
-    phone: "081200000003",
-    parentName: "Bpk. Dodi",
-    flags: {
-      finance: "Tunggakan SPP 1 bulan",
-      behavior: "Perlu pendampingan fokus",
-    },
-  },
-  {
-    id: "s-04",
-    nis: "2025004",
-    name: "Siti Nurhaliza",
-    gender: "P",
-    phone: "081200000004",
-    parentName: "Ibu Dewi",
-    importantNotes: ["Punya kacamata minus tinggi"],
-  },
-  {
-    id: "s-05",
-    nis: "2025005",
-    name: "Rafi Pratama",
-    gender: "L",
-    phone: "081200000005",
-    parentName: "Bpk. Bayu",
-    flags: ["Riwayat demam kejang 2019 (observasi bila demam)"],
-  },
-  {
-    id: "s-06",
-    nis: "2025006",
-    name: "Nabila Kirana",
-    gender: "P",
-    phone: "081200000006",
-    parentName: "Ibu Mira",
-    notes: ["Sedang mengikuti lomba tahfiz (porsi hafalan bertahap)"],
-  },
-  {
-    id: "s-07",
-    nis: "2025007",
-    name: "Fauzan Alfarizi",
-    gender: "L",
-    phone: "081200000007",
-    parentName: "Bpk. Rudi",
-    importantNotes: ["Alergi susu sapi"],
-  },
-  {
-    id: "s-08",
-    nis: "2025008",
-    name: "Kayla Putri",
-    gender: "P",
-    phone: "081200000008",
-    parentName: "Ibu Nadia",
-    healthNote: "Pemulihan pasca flu (hindari aktivitas berat)",
-  },
-  {
-    id: "s-09",
-    nis: "2025009",
-    name: "Zidan Maulana",
-    gender: "L",
-    phone: "081200000009",
-    parentName: "Bpk. Salman",
-    flags: { medical: "Alergi udang", finance: "Beasiswa 50%" },
-  },
-  {
-    id: "s-10",
-    nis: "2025010",
-    name: "Alya Safira",
-    gender: "P",
-    phone: "081200000010",
-    parentName: "Ibu Fitri",
-    importantNotes: ["Anak pemalu, lebih nyaman kerja berpasangan"],
-  },
-  {
-    id: "s-11",
-    nis: "2025011",
-    name: "Raka Dwi Saputra",
-    gender: "L",
-    phone: "081200000011",
-    parentName: "Bpk. Andri",
-    warning: "Sering terlambat (koordinasi dengan wali)",
-  },
-  {
-    id: "s-12",
-    nis: "2025012",
-    name: "Nayla Khairunnisa",
-    gender: "P",
-    phone: "081200000012",
-    parentName: "Ibu Sari",
-    financeNote: "Pembayaran via transfer setiap tgl 5",
-  },
-  {
-    id: "s-13",
-    nis: "2025013",
-    name: "Ilham Saputra",
-    gender: "L",
-    phone: "081200000013",
-    parentName: "Bpk. Hendra",
-    importantNotes: ["Butuh duduk di depan (minus -3)"],
-  },
-  {
-    id: "s-14",
-    nis: "2025014",
-    name: "Aurel Maharani",
-    gender: "P",
-    phone: "081200000014",
-    parentName: "Ibu Lilis",
-    notes: ["Perlu ijin bila pulang lebih awal (terapi jam 15:30)"],
-  },
-  {
-    id: "s-15",
-    nis: "2025015",
-    name: "Daffa Alvaro",
-    gender: "L",
-    phone: "081200000015",
-    parentName: "Bpk. Raka",
-    flags: ["Alergi debu (masker cadangan)"],
-  },
-];
-
-/* =========================================================
-   UTIL
+   UTIL CATATAN
 ========================================================= */
 function extractImportantNotes(s: StudentSummary): string[] {
   const x = s as AnyRec;
@@ -211,27 +99,97 @@ function extractImportantNotes(s: StudentSummary): string[] {
     new Set(notes.map((n) => String(n).trim()).filter(Boolean))
   );
 }
+
 function hasImportant(s: StudentSummary) {
   return extractImportantNotes(s).length > 0;
 }
 
 /* =========================================================
-   DUMMY QUERY HOOK
+   API: AMBIL SISWA BERDASARKAN CLASS_SECTION_ID
 ========================================================= */
-function buildDummyMapFor(key?: string): ClassStudentsMap {
-  const k = key || "dummy-class";
-  return { [k]: DUMMY_STUDENTS_15 as StudentSummary[] };
+
+async function fetchStudentsByClassSection(
+  sectionId?: string
+): Promise<StudentSummary[]> {
+  if (!sectionId) {
+    console.warn(
+      "[TeacherCSSTStudentList] fetchStudentsByClassSection dipanggil tanpa sectionId"
+    );
+    return [];
+  }
+
+  console.log(
+    "[TeacherCSSTStudentList] Fetch students for class_section_id =",
+    sectionId
+  );
+
+  // NOTE: baseURL api kemungkinan sudah /api
+  const res = await api.get<ApiResponse>("/u/class-sections/list", {
+    params: {
+      id: sectionId,
+      with_student_class_sections: true,
+    },
+  });
+
+  console.log(
+    "[TeacherCSSTStudentList] API /u/class-sections/list response:",
+    res.data
+  );
+
+  const sections = res.data?.data ?? [];
+  const result: StudentSummary[] = [];
+  const seen = new Set<string>();
+
+  for (const sec of sections) {
+    const students = sec.class_sections_student_class_sections || [];
+    for (const sc of students) {
+      const sid = sc.student_class_section_school_student_id;
+      if (!sid || seen.has(sid)) continue;
+      seen.add(sid);
+
+      const name =
+        sc.student_class_section_user_profile_name_snapshot ||
+        "Siswa tanpa nama";
+
+      const waUrl =
+        sc.student_class_section_user_profile_whatsapp_url_snapshot || "";
+
+      let phoneFromWa = "";
+      if (typeof waUrl === "string" && waUrl.includes("wa.me")) {
+        // https://wa.me/6285xxxx → ambil angka belakang
+        const parts = waUrl.split("wa.me/");
+        phoneFromWa = parts[1] ?? "";
+      }
+
+      result.push({
+        id: sid,
+        name,
+        // nis dihapus, belum ada di payload
+        gender: "", // belum ada di payload
+        phone: phoneFromWa,
+        parentName: "",
+        _waUrl: waUrl,
+        _sectionId: sc.student_class_section_section_id,
+      });
+    }
+  }
+
+  console.log(
+    "[TeacherCSSTStudentList] mapped StudentSummary count =",
+    result.length,
+    "items:",
+    result
+  );
+
+  return result;
 }
 
-function useClassStudentsSingle(key?: string) {
-  return useQuery({
-    queryKey: ["class-students", key, USE_DUMMY ? "dummy" : "live"],
-    queryFn: async (): Promise<ClassStudentsMap> => {
-      if (USE_DUMMY) return buildDummyMapFor(key);
-      return buildDummyMapFor(key);
-    },
-    enabled: true,
-    staleTime: Infinity,
+function useClassStudentsSingle(sectionId?: string) {
+  return useQuery<StudentSummary[]>({
+    queryKey: ["class-students", sectionId],
+    queryFn: () => fetchStudentsByClassSection(sectionId),
+    enabled: !!sectionId, // ⬅️ jangan fetch kalau belum ada id
+    staleTime: 60_000,
   });
 }
 
@@ -241,24 +199,38 @@ function useClassStudentsSingle(key?: string) {
 const TeacherCSSTStudentList: React.FC = () => {
   const navigate = useNavigate();
 
-  // ambil berbagai param biar slug apapun aman
-  const { classId, classSlug, kelasId, id } = useParams<{
-    classId?: string;
-    classSlug?: string;
-    kelasId?: string;
-    id?: string;
-  }>();
-  const classKey = classId || classSlug || kelasId || id || "dummy-class";
+  // ambil berbagai param; yang penting: segment yang berisi class_section_id
+  const { id, classSectionId, sectionId, classId, classSlug, kelasId } =
+    useParams<{
+      id?: string;
+      classSectionId?: string;
+      sectionId?: string;
+      classId?: string;
+      classSlug?: string;
+      kelasId?: string;
+    }>();
+
+  // prioritas: param yang memang untuk class_section_id
+  const sectionKey =
+    classSectionId || sectionId || id || classId || classSlug || kelasId;
+
+  console.log("[TeacherCSSTStudentList] route params =", {
+    id,
+    classSectionId,
+    sectionId,
+    classId,
+    classSlug,
+    kelasId,
+    sectionKey,
+  });
 
   const {
-    data: map = {},
+    data: students = [],
     isLoading,
     isError,
-  } = useClassStudentsSingle(classKey);
+  } = useClassStudentsSingle(sectionKey);
 
-  const rawStudents: StudentSummary[] = USE_DUMMY
-    ? (DUMMY_STUDENTS_15 as StudentSummary[])
-    : (map as ClassStudentsMap)[classKey] ?? [];
+  const rawStudents: StudentSummary[] = students;
 
   const [q] = useState("");
   const deferredQ = useDeferredValue(q);
@@ -270,7 +242,6 @@ const TeacherCSSTStudentList: React.FC = () => {
     const k = deferredQ.trim().toLowerCase();
     let list = rawStudents.map((s) => {
       const anyS = s as AnyRec;
-      const nis = anyS.nis || "-";
       const gender = anyS.gender || "";
       const phone = anyS.phone || "";
       const guardian = anyS.parentName || "";
@@ -278,7 +249,6 @@ const TeacherCSSTStudentList: React.FC = () => {
       const __notes = notesArr.join(" ");
       return {
         ...s,
-        nis,
         gender,
         phone,
         guardian,
@@ -291,9 +261,9 @@ const TeacherCSSTStudentList: React.FC = () => {
       list = list.filter(
         (s) =>
           s.name.toLowerCase().includes(k) ||
-          s.nis.toLowerCase().includes(k) ||
           s.guardian.toLowerCase().includes(k) ||
-          s.__notes.toLowerCase().includes(k)
+          s.__notes.toLowerCase().includes(k) ||
+          String(s.id).toLowerCase().includes(k)
       );
     }
 
@@ -304,13 +274,19 @@ const TeacherCSSTStudentList: React.FC = () => {
     list = [...list].sort(
       (a, b) => Number(b.__hasImportant) - Number(a.__hasImportant)
     );
+
+    console.log(
+      "[TeacherCSSTStudentList] normalized rows =",
+      list.length,
+      "items"
+    );
+
     return list;
   }, [rawStudents, deferredQ, onlyImportant]);
 
   /* =========================================================
      Builder path detail
   ========================================================= */
-  // menjadi ini:
   const toStudentDetailPath = (studentId: string) =>
     `${encodeURIComponent(studentId)}`;
 
@@ -319,7 +295,6 @@ const TeacherCSSTStudentList: React.FC = () => {
   ========================================================= */
   const columns: ColumnDef<
     StudentSummary & {
-      nis: string;
       gender: string;
       phone: string;
       guardian: string;
@@ -327,95 +302,104 @@ const TeacherCSSTStudentList: React.FC = () => {
       __hasImportant: boolean;
     }
   >[] = [
-      {
-        id: "name",
-        header: "Nama",
-        minW: "220px",
-        cell: (s) => (
-          <div className="flex items-center gap-2">
-            <span className="font-medium">{s.name}</span>
-            {s.__hasImportant && (
-              <Badge variant="destructive" className="gap-1">
-                <AlertTriangle size={12} />
-                Penting
-              </Badge>
-            )}
-          </div>
-        ),
-      },
-      {
-        id: "nis",
-        header: "NIS",
-        align: "center" as Align,
-        cell: (s) => s.nis,
-      },
-      {
-        id: "gender",
-        header: "JK",
-        align: "center" as Align,
-        cell: (s) =>
-          s.gender ? (
-            <Badge variant="outline" className="uppercase">
-              {s.gender}
+    {
+      id: "name",
+      header: "Nama",
+      minW: "220px",
+      cell: (s) => (
+        <div className="flex items-center gap-2">
+          <span className="font-medium">{s.name}</span>
+          {s.__hasImportant && (
+            <Badge variant="destructive" className="gap-1">
+              <AlertTriangle size={12} />
+              Penting
             </Badge>
-          ) : (
-            "-"
-          ),
-      },
-      {
-        id: "guardian",
-        header: "Wali",
-        minW: "180px",
-        cell: (s) =>
-          s.guardian ? (
-            <span className="inline-flex items-center gap-1">
-              <Users size={12} />
-              {s.guardian}
-            </span>
-          ) : (
-            "-"
-          ),
-      },
-      {
-        id: "notes",
-        header: "Catatan",
-        minW: "320px",
-        cell: (s) => {
-          const items = extractImportantNotes(s);
-          if (!items.length)
-            return <span className="text-muted-foreground">—</span>;
-          const [first, ...rest] = items;
-          return (
-            <div className="text-sm">
-              <div className="flex items-center gap-2 font-medium mb-0.5">
-                <NotebookPen size={14} />
-                <span>Keterangan penting</span>
-              </div>
-              <div className="text-muted-foreground">
-                {first}
-                {rest.length ? ` (+${rest.length} lagi)` : ""}
-              </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      id: "gender",
+      header: "JK",
+      align: "center" as Align,
+      cell: (s) =>
+        s.gender ? (
+          <Badge variant="outline" className="uppercase">
+            {s.gender}
+          </Badge>
+        ) : (
+          "-"
+        ),
+    },
+    {
+      id: "guardian",
+      header: "Wali",
+      minW: "180px",
+      cell: (s) =>
+        s.guardian ? (
+          <span className="inline-flex items-center gap-1">
+            <Users size={12} />
+            {s.guardian}
+          </span>
+        ) : (
+          "-"
+        ),
+    },
+    {
+      id: "notes",
+      header: "Catatan",
+      minW: "320px",
+      cell: (s) => {
+        const items = extractImportantNotes(s);
+        if (!items.length)
+          return <span className="text-muted-foreground">—</span>;
+        const [first, ...rest] = items;
+        return (
+          <div className="text-sm">
+            <div className="flex items-center gap-2 font-medium mb-0.5">
+              <NotebookPen size={14} />
+              <span>Keterangan penting</span>
             </div>
-          );
-        },
+            <div className="text-muted-foreground">
+              {first}
+              {rest.length ? ` (+${rest.length} lagi)` : ""}
+            </div>
+          </div>
+        );
       },
-      {
-        id: "phone",
-        header: "Kontak",
-        align: "center" as Align,
-        cell: (s) =>
-          s.phone ? (
-            <a href={`tel:${s.phone}`}>
+    },
+    {
+      id: "phone",
+      header: "Kontak",
+      align: "center" as Align,
+      cell: (s) => {
+        const anyS = s as AnyRec;
+        const waUrl = anyS._waUrl as string | undefined;
+
+        if (waUrl) {
+          return (
+            <a href={waUrl} target="_blank" rel="noreferrer">
               <Button variant="secondary" size="sm" className="gap-1">
                 <Phone size={14} />
-                Telp
+                WhatsApp
               </Button>
             </a>
-          ) : (
-            <span className="text-muted-foreground">—</span>
-          ),
+          );
+        }
+
+        return s.phone ? (
+          <a href={`tel:${s.phone}`}>
+            <Button variant="secondary" size="sm" className="gap-1">
+              <Phone size={14} />
+              Telp
+            </Button>
+          </a>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        );
       },
-    ];
+    },
+  ];
 
   /* =========================================================
      Stats di atas tabel
@@ -461,13 +445,19 @@ const TeacherCSSTStudentList: React.FC = () => {
             title="Daftar Murid"
             onBack={() => navigate(-1)}
             controlsPlacement="above"
-            searchPlaceholder="Cari nama/NIS/wali/keterangan…"
+            searchPlaceholder="Cari nama/wali/keterangan…"
             statsSlot={statsSlot}
-            loading={isLoading}
-            error={isError ? "Gagal memuat data murid." : null}
+            loading={isLoading && !!sectionKey}
+            error={
+              isError
+                ? "Gagal memuat data murid."
+                : !sectionKey
+                ? "Class section ID tidak ditemukan di URL."
+                : null
+            }
             columns={columns}
             rows={normalized}
-            getRowId={(s: AnyRec) => s.id ?? s.nis ?? s.name}
+            getRowId={(s: AnyRec) => s.id ?? s.name}
             pageSize={20}
             onRowClick={(row) => navigate(toStudentDetailPath(row.id))}
           />

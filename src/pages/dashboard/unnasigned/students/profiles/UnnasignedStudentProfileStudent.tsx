@@ -1,6 +1,6 @@
 // src/pages/sekolahislamku/pages/user/UserPendaftaranStudent.tsx
 import { useMemo, useState, useEffect } from "react";
-import { useLocation, useParams } from "react-router-dom";
+import { useLocation, useParams, useNavigate } from "react-router-dom";
 import {
   GraduationCap,
   ShieldCheck,
@@ -116,7 +116,11 @@ function formatDateForAPI(d: Date): string {
 export default function UnnasignedStudentProfileStudent() {
   const { school_slug } = useParams<{ school_slug: string }>();
   const location = useLocation();
+  const navigate = useNavigate();
   const state = (location.state || {}) as LocationState;
+
+  // 🔍 mode khusus: kalau URL mengandung "-new"
+  const isNewFlow = location.pathname.includes("profil-new");
 
   // error & success messages
   const [error, setError] = useState<string>("");
@@ -318,6 +322,14 @@ export default function UnnasignedStudentProfileStudent() {
         },
       });
 
+      // ✅ Kalau mode -new → setelah save langsung redirect ke /pendaftaran
+      if (isNewFlow) {
+        const base = school_slug ? `/${school_slug}` : "";
+        navigate(`${base}/user-murid/pendaftaran`, { replace: true });
+        return;
+      }
+
+      // mode biasa → cukup tampilkan success
       setSuccess("Profil berhasil diperbarui. ✅");
     } catch (err: any) {
       console.error(err);
@@ -340,8 +352,13 @@ export default function UnnasignedStudentProfileStudent() {
     !studentCity ||
     !studentPhone;
 
+  // 🧱 Container: kalau -new → max-width & center
+  const containerClass = isNewFlow
+    ? "w-full max-w-3xl mx-auto px-4 md:px-6 lg:px-8 py-8 space-y-6"
+    : "w-full px-4 md:px-6 lg:px-8 py-8 space-y-6";
+
   return (
-    <div className="w-full px-4 md:px-6 lg:px-8 py-8 space-y-6">
+    <div className={containerClass}>
       {/* Header brand */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -503,14 +520,12 @@ export default function UnnasignedStudentProfileStudent() {
                     </Button>
                   </PopoverTrigger>
 
-                  {/* ⬇️ di sini */}
                   <PopoverContent className="p-0" align="start">
                     <Calendar
                       mode="single"
                       selected={studentBirthDate}
                       onSelect={setStudentBirthDate}
                       initialFocus
-                      // bikin bisa pilih tahun
                       captionLayout="dropdown"
                       fromYear={1950}
                       toYear={new Date().getFullYear()}

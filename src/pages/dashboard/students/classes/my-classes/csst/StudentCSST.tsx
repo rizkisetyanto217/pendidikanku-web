@@ -18,7 +18,7 @@ import {
   ArrowLeft,
   ClipboardList,
   UserSquare2,
-  MapPin, // ⬅️ NEW
+  MapPin,
 } from "lucide-react";
 
 /* dashboard header */
@@ -44,7 +44,6 @@ type ApiCSSTEmbedded = {
   class_section_subject_teacher_class_section_code_snapshot?: string | null;
   class_section_subject_teacher_class_section_slug_snapshot?: string | null;
 
-  // ⬅️ NEW: snapshot nama ruangan (kalau ada di API)
   class_section_subject_teacher_room_name_snapshot?: string | null;
 
   class_section_subject_teacher_delivery_mode?: DeliveryMode | null;
@@ -111,7 +110,6 @@ type CsstView = {
   enrolledCount: number;
   minPassingScore?: number | null;
 
-  // ⬅️ NEW
   roomName?: string | null;
 };
 
@@ -149,14 +147,11 @@ const StudentCSST: React.FC = () => {
   const navigate = useNavigate();
   const { setHeader } = useDashboardHeader();
 
-  // dummy laporan kehadiran
-  // State untuk absensi
+  // ⭐ State untuk absensi & pertemuan (sementara masih dummy/local)
   const [hasCheckedIn, setHasCheckedIn] = useState(false);
   const [checkInTime, setCheckInTime] = useState<string | null>(null);
-
-  // laporan kehadiran 0/10 -> berubah menjadi 1/10
-  const [attendanceReports, setAttendanceReports] = useState(0);
-  const totalMeetingsDummy = 10;
+  const [attendanceReports, setAttendanceReports] = useState(0); // jumlah pertemuan yang sudah tercatat hadir
+  const totalMeetingsDummy = 10; // target total pertemuan
 
   /* ===== Query detail CSST via pivot murid ===== */
   const csstQ = useQuery<ApiStudentCSSTItem | undefined, AxiosError>({
@@ -181,8 +176,6 @@ const StudentCSST: React.FC = () => {
   const csstError: string | null = csstQ.isError
     ? extractErrorMessage(csstQ.error)
     : null;
-
-
 
   /* ===== Derive view models dari API ===== */
   const sectionView: SectionView | null = useMemo(() => {
@@ -288,26 +281,23 @@ const StudentCSST: React.FC = () => {
     );
   }
 
-  /* ===== Render utama ===== */
+  /* ===== Derive info untuk kartu absensi ===== */
 
-  // total pertemuan dummy untuk tampilan 0/10
+  // ⭐ Dummy materi hari ini — nanti bisa di-wire ke API jadwal/materi
+  const todayMaterialTitle = "Pengenalan Balaghoh Dasar";
+
+  // pertemuan ke-berapa (minimal 1 supaya nggak kelihatan 0)
+  const currentMeetingNumber = Math.max(attendanceReports, 1);
+
+  // label status absensi
+  const attendanceStatusLabel = hasCheckedIn ? "Sudah absen" : "Belum absen";
+  const attendanceStatusVariant = hasCheckedIn ? "default" : "outline";
+
   const totalStudents = csstView.enrolledCount ?? 0;
-  // placeholder: belum ada field khusus di response
-  const totalAttendanceToday = 0; // ⬅️ bisa di-wire ke API absensi nanti
-
-  // Dummy Data
   const totalBooks = 0;
   const totalAssessmentsGraded = 0;
   const totalAssessmentsUngraded = 0;
-
   const whatsappGroupLink = "https://chat.whatsapp.com/xxxxInviteCodexxxx";
-
-  const attendanceTodayLabel =
-    totalAttendanceToday > 0 && totalStudents > 0
-      ? `${totalAttendanceToday}/${totalStudents} hadir`
-      : "Belum ada data";
-
-  const roomLabel = csstView.roomName || "Belum diatur";
 
   return (
     <div className="w-full bg-background text-foreground">
@@ -376,26 +366,55 @@ const StudentCSST: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Quick links (versi murid) */}
-
-          {/* Row khusus: Absensi & Ruangan (card memanjang) */}
+          {/* Row khusus: Absensi & Ruangan */}
           <div className="grid gap-3 md:grid-cols-2">
-            {/* Absensi hari ini */}
-            {/* Absensi hari ini */}
+            {/* ⭐ Absensi hari ini */}
             <Card className="transition hover:shadow-md">
               <CardContent className="p-4 md:p-5">
-                <div className="flex flex-col gap-3 h-full">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div className="space-y-2 flex-1">
+                    <div className="text-sm text-muted-foreground flex items-center gap-2">
+                      <CalendarDays className="h-4 w-4" />
+                      <span>Absensi Pertemuan Hari Ini</span>
+                    </div>
 
-                  {/* Kiri: Info absensi */}
-                  {/* Jika sudah absen */}
-                  {hasCheckedIn && checkInTime ? (
-                    <div className="space-y-1">
-                      <div className="text-sm text-muted-foreground flex items-center gap-2">
-                        <CalendarDays className="h-4 w-4" />
-                        <span>Absensi Hari Ini</span>
+                    {/* Tiga info utama */}
+                    <div className="space-y-1 text-sm">
+                      {/* 1. Materi hari ini */}
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-muted-foreground">
+                          Materi hari ini
+                        </span>
+                        <span className="font-medium text-right truncate max-w-[220px]">
+                          {todayMaterialTitle}
+                        </span>
                       </div>
 
-                      <div className="text-xl font-semibold leading-tight">
+                      {/* 2. Pertemuan ke berapa */}
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-muted-foreground">
+                          Pertemuan ke
+                        </span>
+                        <span className="font-medium">
+                          {currentMeetingNumber}/{totalMeetingsDummy}
+                        </span>
+                      </div>
+
+                      {/* 3. Status absensi */}
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-muted-foreground">
+                          Status absensi
+                        </span>
+                        <Badge variant={attendanceStatusVariant}>
+                          {attendanceStatusLabel}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Info waktu absen terakhir */}
+                    {hasCheckedIn && checkInTime && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Terakhir absen:{" "}
                         {new Date(checkInTime).toLocaleString("id-ID", {
                           weekday: "long",
                           day: "numeric",
@@ -404,40 +423,29 @@ const StudentCSST: React.FC = () => {
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="text-xl font-semibold leading-tight">
-                        {attendanceTodayLabel}
-                      </div>
-
-                      <p className="text-xs text-muted-foreground">
-                        Lakukan absensi untuk pertemuan hari ini.
                       </p>
+                    )}
+                  </div>
 
-                      <div className="flex justify-center md:justify-end mt-3">
-                        <Button
-                          size="sm"
-                          className="w-full md:w-auto"
-                          onClick={() => {
-                            const now = new Date();
-                            setHasCheckedIn(true);
-                            setCheckInTime(now.toISOString());
-                            setAttendanceReports(1);
-                          }}
-                        >
-                          Absen Sekarang
-                        </Button>
-                      </div>
-                    </>
-                  )}
-
-
+                  {/* Tombol di kanan */}
+                  <div className="flex-shrink-0 flex justify-end">
+                    <Button
+                      size="sm"
+                      className="w-full md:w-auto"
+                      onClick={() => {
+                        // sementara masih dummy: anggap setiap klik = sudah absen
+                        const now = new Date();
+                        setHasCheckedIn(true);
+                        setCheckInTime(now.toISOString());
+                        setAttendanceReports((prev) => (prev === 0 ? 1 : prev));
+                      }}
+                    >
+                      {hasCheckedIn ? "Ubah Absensi" : "Absen Sekarang"}
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
-
 
             {/* Ruangan */}
             <Card className="cursor-pointer transition hover:shadow-md">
@@ -449,7 +457,7 @@ const StudentCSST: React.FC = () => {
                   </div>
 
                   <div className="text-xl font-semibold leading-tight">
-                    {roomLabel}
+                    {csstView.roomName || "Belum diatur"}
                   </div>
 
                   <p className="text-xs text-muted-foreground">
@@ -465,9 +473,9 @@ const StudentCSST: React.FC = () => {
               </CardContent>
             </Card>
           </div>
-          {/* Grid lainnya */}
-          <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
 
+          {/* Grid lainnya (murid, laporan kehadiran, materi, dst) */}
+          <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {/* Jumlah Murid */}
             <Card className="cursor-pointer transition hover:shadow-md">
               <CardContent className="p-4 flex items-center justify-between">
@@ -483,7 +491,8 @@ const StudentCSST: React.FC = () => {
             </Card>
 
             {/* Laporan Kehadiran */}
-            <Card className="cursor-pointer transition hover:shadow-md"
+            <Card
+              className="cursor-pointer transition hover:shadow-md"
               onClick={() => navigate("daily-progress")}
             >
               <CardContent className="p-4 flex items-center justify-between">
@@ -522,7 +531,9 @@ const StudentCSST: React.FC = () => {
                     <ClipboardList className="h-4 w-4" />
                     <span>Latihan</span>
                   </div>
-                  <div className="text-xl font-semibold">{totalAssessmentsUngraded}</div>
+                  <div className="text-xl font-semibold">
+                    {totalAssessmentsUngraded}
+                  </div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </CardContent>
@@ -536,7 +547,9 @@ const StudentCSST: React.FC = () => {
                     <ClipboardList className="h-4 w-4" />
                     <span>Ujian</span>
                   </div>
-                  <div className="text-xl font-semibold">{totalAssessmentsGraded}</div>
+                  <div className="text-xl font-semibold">
+                    {totalAssessmentsGraded}
+                  </div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </CardContent>
@@ -567,12 +580,15 @@ const StudentCSST: React.FC = () => {
                     <Users className="h-4 w-4" />
                     <span>Grup WhatsApp Mapel</span>
                   </div>
-                  <div className="text-md font-semibold underline">Link Group</div>
+                  <div className="text-md font-semibold underline">
+                    Link Group
+                  </div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </CardContent>
             </Card>
           </div>
+
           {hasCheckedIn && checkInTime && (
             <div className="w-full text-center text-destructive text-sm font-medium mt-2">
               Anda absen pada{" "}

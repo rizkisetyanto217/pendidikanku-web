@@ -112,9 +112,10 @@ type ApiCSSTListResponse = {
 ===================== */
 
 type TeacherSubject = {
-  id: string;
-  name: string; // nama mapel
-  sectionName: string; // nama rombel/kelas
+  id: string; // id CSST
+  classSectionId: string; // ⬅️ baru: id rombel untuk route siswa
+  name: string;
+  sectionName: string;
   room: string;
   day: string;
   time: string;
@@ -189,18 +190,18 @@ async function fetchTeacherSubjectsFromApi(): Promise<TeacherSubject[]> {
 
     return {
       id: it.class_section_subject_teacher_id,
+      classSectionId: it.class_section_subject_teacher_class_section_id, // ⬅️ ini dikirim ke route siswa
       name: subjectName,
       sectionName,
-      // Belum ada room/day/time/term dari API ini → tampilkan sederhana dulu
       room:
         it.class_section_subject_teacher_class_section_code_snapshot ??
         sectionName,
       day: "-",
       time: "-",
-      level: "-", // bisa diisi dari level rombel kalau nanti ada field-nya
+      level: "-",
       studentsCount: it.class_section_subject_teacher_enrolled_count ?? 0,
-      academicTerm: "—", // bisa di-bind dari snapshot academic term kalau ada
-      nextTopic: "-", // nanti bisa isi dari jadwal / materi terdekat
+      academicTerm: "—",
+      nextTopic: "-",
     };
   });
 
@@ -220,10 +221,7 @@ function useTeacherSubjects() {
 ===================== */
 type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
-export default function TeacherCSST({
-  showBack = false,
-  backTo
-}: Props) {
+export default function TeacherCSST({ showBack = false, backTo }: Props) {
   const navigate = useNavigate();
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
@@ -321,7 +319,9 @@ export default function TeacherCSST({
               <ArrowLeft size={20} />
             </Button>
           )}
-          <h1 className="md:text-xl text-lg font-semibold">Mata Pelajaran Saya</h1>
+          <h1 className="md:text-xl text-lg font-semibold">
+            Mata Pelajaran Saya
+          </h1>
         </div>
       </div>
       <div className="flex items-center gap-2 border rounded-xl px-4 py-2 bg-background shadow-sm w-full sm:w-auto">
@@ -400,10 +400,11 @@ export default function TeacherCSST({
 
       {/* Cards */}
       <div
-        className={`grid gap-6 ${viewMode === "simple"
-          ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
-          : "grid-cols-1 lg:grid-cols-2"
-          }`}
+        className={`grid gap-6 ${
+          viewMode === "simple"
+            ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
+            : "grid-cols-1 lg:grid-cols-2"
+        }`}
       >
         {filtered.map((s) => (
           <Card
@@ -446,16 +447,16 @@ export default function TeacherCSST({
 
               <div className="pt-3 flex justify-end">
                 <Link
-                  to={`${s.id}`}
+                  to={`${s.classSectionId}`} // ⬅️ sekarang yang dikirim class_section_id
                   state={{
                     clsOverride: {
-                      id: s.id,
+                      id: s.id, // ini tetap CSST id buat header dll
                       name: s.name,
                       room: s.room,
                       academicTerm: s.academicTerm,
                       cohortYear: Number(
                         s.academicTerm.match(/^\d{4}/)?.[0] ??
-                        new Date().getFullYear()
+                          new Date().getFullYear()
                       ),
                       studentsCount: s.studentsCount,
                       todayAttendance: {
@@ -464,7 +465,7 @@ export default function TeacherCSST({
                         sakit: 0,
                         izin: 0,
                         alpa: 0,
-                      }, // dummy dulu
+                      },
                       materialsCount: 0,
                       assignmentsCount: 0,
                     },
