@@ -1,5 +1,5 @@
-// src/pages/sekolahislamku/pages/user/UserPendaftaranTeacher.tsx
-import { useMemo, useState } from "react";
+// src/pages/sekolahislamku/pages/user/UnnasignedStudentProfileTeacher.tsx
+import { useMemo, useState, useEffect } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import {
   GraduationCap,
@@ -40,20 +40,93 @@ type LocationState = {
   identifier?: string;
 };
 
-export default function UnnasignedStudentProfileTeacher() {
+type UserTeacherResponse = {
+  user_teacher_id: string;
+  user_teacher_user_id: string;
+
+  user_teacher_name_snapshot?: string;
+  user_teacher_field?: string;
+  user_teacher_short_bio?: string;
+  user_teacher_long_bio?: string;
+  user_teacher_greeting?: string;
+  user_teacher_education?: string;
+  user_teacher_activity?: string;
+  user_teacher_gender?: string; // "male" | "female" | ""
+  user_teacher_location?: string;
+  user_teacher_city?: string;
+  user_teacher_instagram_url?: string;
+  user_teacher_whatsapp_url?: string;
+  user_teacher_youtube_url?: string;
+  user_teacher_linkedin_url?: string;
+  user_teacher_github_url?: string;
+  user_teacher_telegram_username?: string;
+  user_teacher_title_prefix?: string;
+  user_teacher_title_suffix?: string;
+  user_teacher_avatar_url?: string;
+  user_teacher_avatar_object_key?: string;
+  user_teacher_avatar_url_old?: string;
+  user_teacher_avatar_object_key_old?: string;
+  user_teacher_is_verified?: boolean;
+  user_teacher_is_active?: boolean;
+  user_teacher_is_completed?: boolean;
+  user_teacher_created_at?: string;
+  user_teacher_updated_at?: string;
+};
+
+// helper: konversi nomor ke URL WA (biar konsisten dengan student)
+function toWhatsappUrl(raw: string): string | null {
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return null;
+
+  // 08xxxxxxxxx → 62xxxxxxxxx
+  if (digits.startsWith("0")) {
+    return `https://wa.me/62${digits.slice(1)}`;
+  }
+  // 62xxxxxxxxx → oke
+  if (digits.startsWith("62")) {
+    return `https://wa.me/${digits}`;
+  }
+  // fallback: langsung pakai digits
+  return `https://wa.me/${digits}`;
+}
+
+// helper: dari URL WA → nomor lokal (08xxxx)
+function fromWhatsappUrl(url: string | null | undefined): string {
+  if (!url) return "";
+  try {
+    const u = new URL(url);
+    if (u.hostname !== "wa.me") return url; // bukan pattern standar
+    const path = u.pathname.replace(/\//g, ""); // "62xxxx"
+    if (!path) return "";
+    if (path.startsWith("62")) {
+      return "0" + path.slice(2);
+    }
+    return path;
+  } catch {
+    return url;
+  }
+}
+
+export default function UnnasignedTeacherProfile() {
   const { school_slug } = useParams<{ school_slug: string }>();
   const location = useLocation();
   const state = (location.state || {}) as LocationState;
+
+  // 🔍 mode khusus: kalau URL mengandung "-new"
+  const isNewFlow = location.pathname.includes("profil-new");
 
   // error & success messages
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
 
   const [loadingTeacher, setLoadingTeacher] = useState(false);
+  const [loadingInitial, setLoadingInitial] = useState(false);
 
   // ====== Form state: Guru ======
-  const [teacherName, setTeacherName] = useState(""); // user_teacher_name
-  const [teacherPhone, setTeacherPhone] = useState(""); // user_teacher_whatsapp_url
+  const [teacherName, setTeacherName] = useState(""); // user_teacher_name_snapshot
+  const [teacherTitlePrefix, setTeacherTitlePrefix] = useState(""); // user_teacher_title_prefix
+  const [teacherTitleSuffix, setTeacherTitleSuffix] = useState(""); // user_teacher_title_suffix
+  const [teacherPhone, setTeacherPhone] = useState(""); // nomor WA (nanti dikonversi ke URL)
   const [teacherField, setTeacherField] = useState(""); // user_teacher_field
   const [teacherExperienceYears, setTeacherExperienceYears] = useState(""); // user_teacher_experience_years (string → int)
 
@@ -67,7 +140,11 @@ export default function UnnasignedStudentProfileTeacher() {
   const [teacherActivity, setTeacherActivity] = useState(""); // user_teacher_activity
   const [teacherInstagram, setTeacherInstagram] = useState(""); // user_teacher_instagram_url
 
-  // Nama sekolah dari slug (mirip di login)
+  // Avatar guru (mirip murid)
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+
+  // Nama sekolah dari slug (mirip di login & student)
   const schoolTitle = useMemo(() => {
     if (!school_slug) return "Madinah Salam";
 
@@ -81,6 +158,108 @@ export default function UnnasignedStudentProfileTeacher() {
     return parts.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
   }, [school_slug]);
 
+  // handle perubahan file avatar
+  function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarFile(file);
+    const url = URL.createObjectURL(file);
+    setAvatarPreview(url);
+  }
+
+  // 🔄 Fetch user_teachers awal (prefill)
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchUserTeacher() {
+      setLoadingInitial(true);
+      try {
+        const res = await api.get<{
+          success: boolean;
+          message: string;
+          data: any;
+        }>("/u/user-teachers");
+
+        if (!isMounted) return;
+
+        const raw = res.data?.data;
+        if (!raw) return;
+
+        // support 2 bentuk:
+        // 1) { data: { ...fields } }
+        // 2) { data: { item: { ...fields }, meta: {...} } }
+        const item: UserTeacherResponse =
+          (raw.item as UserTeacherResponse) || (raw as UserTeacherResponse);
+
+        if (!item) return;
+
+        if (item.user_teacher_name_snapshot) {
+          setTeacherName(item.user_teacher_name_snapshot);
+        }
+
+        if (item.user_teacher_title_prefix) {
+          setTeacherTitlePrefix(item.user_teacher_title_prefix);
+        }
+
+        if (item.user_teacher_title_suffix) {
+          setTeacherTitleSuffix(item.user_teacher_title_suffix);
+        }
+
+        if (
+          item.user_teacher_gender === "male" ||
+          item.user_teacher_gender === "female"
+        ) {
+          setTeacherGender(item.user_teacher_gender);
+        }
+
+        if (item.user_teacher_city) {
+          setTeacherCity(item.user_teacher_city);
+        }
+
+        if (item.user_teacher_field) {
+          setTeacherField(item.user_teacher_field);
+        }
+
+        if (item.user_teacher_short_bio) {
+          setTeacherShortBio(item.user_teacher_short_bio);
+        }
+
+        if (item.user_teacher_education) {
+          setTeacherEducation(item.user_teacher_education);
+        }
+
+        if (item.user_teacher_activity) {
+          setTeacherActivity(item.user_teacher_activity);
+        }
+
+        if (item.user_teacher_instagram_url) {
+          setTeacherInstagram(item.user_teacher_instagram_url);
+        }
+
+        if (item.user_teacher_whatsapp_url) {
+          setTeacherPhone(fromWhatsappUrl(item.user_teacher_whatsapp_url));
+        }
+
+        if (item.user_teacher_avatar_url) {
+          setAvatarPreview(item.user_teacher_avatar_url);
+        }
+      } catch (err) {
+        console.warn(
+          "[UnnasignedTeacherProfile] gagal fetch /u/user-teachers",
+          err
+        );
+      } finally {
+        if (isMounted) setLoadingInitial(false);
+      }
+    }
+
+    fetchUserTeacher();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   async function handleSubmitTeacher(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -88,41 +267,73 @@ export default function UnnasignedStudentProfileTeacher() {
     setLoadingTeacher(true);
 
     try {
-      const slug = school_slug?.trim();
-      if (!slug) throw new Error("school_slug tidak ditemukan.");
+      // konversi nomor WA ke URL (https://wa.me/...)
+      const waUrl = teacherPhone ? toWhatsappUrl(teacherPhone) : null;
 
-      await api.post(`/${slug}/user/pendaftaran/teacher`, {
-        // mapping ke user_teachers
-        name: teacherName, // user_teacher_name
-        whatsapp: teacherPhone || null, // user_teacher_whatsapp_url
-        field: teacherField || null, // user_teacher_field
-        experience_years: teacherExperienceYears
+      // === siapkan FormData (multipart) ===
+      const formData = new FormData();
+
+      // payload JSON, disesuaikan dengan UpdateUserTeacherRequest / DTO backend
+      const payload = {
+        // mapping ke user_teachers / DTO backend
+        user_teacher_name_snapshot: teacherName || null,
+        user_teacher_title_prefix: teacherTitlePrefix || null,
+        user_teacher_title_suffix: teacherTitleSuffix || null,
+        user_teacher_whatsapp_url: waUrl,
+
+        user_teacher_field: teacherField || null,
+        user_teacher_experience_years: teacherExperienceYears
           ? Number(teacherExperienceYears)
-          : null, // user_teacher_experience_years
-        gender: teacherGender || null, // user_teacher_gender
-        city: teacherCity || null, // user_teacher_city
-        short_bio: teacherShortBio || null, // user_teacher_short_bio
-        education: teacherEducation || null, // user_teacher_education
-        activity: teacherActivity || null, // user_teacher_activity
-        instagram_url: teacherInstagram || null, // user_teacher_instagram_url
+          : null,
+
+        user_teacher_gender: teacherGender || null,
+        user_teacher_city: teacherCity || null,
+        user_teacher_short_bio: teacherShortBio || null,
+        user_teacher_education: teacherEducation || null,
+        user_teacher_activity: teacherActivity || null,
+        user_teacher_instagram_url: teacherInstagram || null,
+      };
+
+      // backend PatchMe baca field "payload" (JSON string) sama persis seperti profile
+      formData.append("payload", JSON.stringify(payload));
+
+      // file avatar (disamakan dengan getImageFormFile di backend, biasanya field "avatar")
+      if (avatarFile) {
+        formData.append("avatar", avatarFile);
+      }
+
+      // ⬅️ ini yang penting: pakai PATCH /u/user-teachers
+      await api.patch("/u/user-teachers", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       });
 
-      setSuccess(
-        "Pendaftaran sebagai guru berhasil dikirim. Tunggu konfirmasi dari pihak sekolah."
-      );
+      setSuccess("Profil guru berhasil diperbarui.");
     } catch (err: any) {
       console.error(err);
       const backendMsg = err?.response?.data?.message as string | undefined;
-      setError(
-        backendMsg || err?.message || "Gagal mengirim pendaftaran guru."
-      );
+      setError(backendMsg || err?.message || "Gagal menyimpan profil guru.");
     } finally {
       setLoadingTeacher(false);
     }
   }
 
+  const submitDisabled =
+    loadingTeacher ||
+    loadingInitial ||
+    !teacherName ||
+    !teacherPhone ||
+    !teacherField ||
+    !teacherExperienceYears;
+
+  // 🧱 Container: kalau -new → max-width & center (sama seperti student)
+  const containerClass = isNewFlow
+    ? "w-full max-w-3xl mx-auto px-4 md:px-6 lg:px-8 py-8 space-y-6"
+    : "w-full px-4 md:px-6 lg:px-8 py-8 space-y-6";
+
   return (
-    <div className="w-full px-4 md:px-6 lg:px-8 py-8 space-y-6">
+    <div className={containerClass}>
       {/* Header brand */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -181,7 +392,8 @@ export default function UnnasignedStudentProfileTeacher() {
           <h2 className="text-lg font-semibold">Data pendaftaran guru</h2>
           <p className="text-sm text-muted-foreground">
             Isi data berikut untuk memperkenalkan profil mengajar dan latar
-            belakangmu kepada pihak sekolah.
+            belakangmu kepada pihak sekolah. Nomor WA akan dikonversi otomatis
+            menjadi tautan WhatsApp (https://wa.me/...).
           </p>
         </CardHeader>
 
@@ -189,28 +401,96 @@ export default function UnnasignedStudentProfileTeacher() {
 
         <CardContent className="pt-6">
           <form className="space-y-6" onSubmit={handleSubmitTeacher}>
-            {/* FIELD PENTING */}
+            {/* AVATAR + IDENTITAS UTAMA */}
+            <div className="grid gap-4 sm:grid-cols-[auto,1fr] items-start">
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-20 h-20 rounded-full overflow-hidden bg-muted flex items-center justify-center text-xs text-muted-foreground">
+                  {avatarPreview ? (
+                    <img
+                      src={avatarPreview}
+                      alt="Foto guru"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span>Foto</span>
+                  )}
+                </div>
+
+                <input
+                  id="teacher_avatar_upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  className="hidden"
+                />
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="text-[11px]"
+                  onClick={() =>
+                    document.getElementById("teacher_avatar_upload")?.click()
+                  }
+                >
+                  Pilih / ganti foto
+                </Button>
+                <p className="text-[10px] text-muted-foreground text-center max-w-[160px]">
+                  Format JPG/PNG, maksimal sekitar 2MB.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="teacher_name">Nama lengkap *</Label>
+                  <Input
+                    id="teacher_name"
+                    value={teacherName}
+                    onChange={(e) => setTeacherName(e.target.value)}
+                    placeholder="Sesuai identitas"
+                    required
+                  />
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="teacher_title_prefix">Gelar depan</Label>
+                    <Input
+                      id="teacher_title_prefix"
+                      value={teacherTitlePrefix}
+                      onChange={(e) => setTeacherTitlePrefix(e.target.value)}
+                      placeholder="Contoh: Ustadz, Dr."
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="teacher_title_suffix">Gelar belakang</Label>
+                    <Input
+                      id="teacher_title_suffix"
+                      value={teacherTitleSuffix}
+                      onChange={(e) => setTeacherTitleSuffix(e.target.value)}
+                      placeholder="Contoh: Lc, MA"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="teacher_phone">Nomor WA aktif *</Label>
+                  <Input
+                    id="teacher_phone"
+                    value={teacherPhone}
+                    onChange={(e) => setTeacherPhone(e.target.value)}
+                    placeholder="08xxxxxxxxxx"
+                    required
+                  />
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Nomor ini akan dikonversi otomatis ke tautan WhatsApp
+                    (https://wa.me/...). Pastikan nomor benar.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* FIELD PENTING LAINNYA */}
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="teacher_name">Nama lengkap *</Label>
-                <Input
-                  id="teacher_name"
-                  value={teacherName}
-                  onChange={(e) => setTeacherName(e.target.value)}
-                  placeholder="Sesuai identitas"
-                  required
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="teacher_phone">Nomor WA aktif *</Label>
-                <Input
-                  id="teacher_phone"
-                  value={teacherPhone}
-                  onChange={(e) => setTeacherPhone(e.target.value)}
-                  placeholder="08xxxxxxxxxx"
-                  required
-                />
-              </div>
               <div className="space-y-1.5">
                 <Label htmlFor="teacher_field">Bidang keahlian utama *</Label>
                 <Input
@@ -327,19 +607,13 @@ export default function UnnasignedStudentProfileTeacher() {
               </CollapsibleContent>
             </Collapsible>
 
-            <CardFooter className="px-0 pt-4">
+            <CardFooter className="px-0 pt-4 justify-end">
               <Button
                 type="submit"
-                disabled={
-                  loadingTeacher ||
-                  !teacherName ||
-                  !teacherPhone ||
-                  !teacherField ||
-                  !teacherExperienceYears
-                }
+                disabled={submitDisabled}
                 className="w-full sm:w-auto ring-inset"
               >
-                {loadingTeacher
+                {loadingTeacher || loadingInitial
                   ? "Mengirim..."
                   : "Kirim pendaftaran sebagai Guru"}
               </Button>

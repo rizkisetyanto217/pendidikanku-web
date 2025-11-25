@@ -6,8 +6,6 @@ import axios from "@/lib/axios";
 import {
   ArrowLeft,
   Building2,
-  MapPin,
-  Users,
   Layers,
 } from "lucide-react";
 
@@ -220,37 +218,16 @@ export default function SchoolRoomDetail() {
           />
         )}
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Card>
-            <CardContent className="flex items-center gap-3 p-4">
-              <div className="grid h-10 w-10 place-items-center rounded-lg bg-primary/10 text-primary">
-                <Users className="size-5" />
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground">
-                  Kapasitas
-                </div>
-                <div className="text-lg font-semibold">{capacity}</div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="flex items-center gap-3 p-4">
-              <div className="grid h-10 w-10 place-items-center rounded-lg bg-primary/10 text-primary">
-                <MapPin className="size-5" />
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground">Lokasi</div>
-                <div className="text-sm font-medium">{location}</div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
         {/* Main grid */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {/* Main grid */}
+        <div
+          className={
+            isVirtual
+              ? "grid grid-cols-1 gap-4 md:grid-cols-2" // 2 kolom: Info Dasar + Virtual Room
+              : "grid grid-cols-1 gap-4" // 1 kolom full width
+          }
+        >
+
           {/* Informasi Dasar */}
           <Card>
             <CardHeader className="pb-3">
@@ -259,7 +236,7 @@ export default function SchoolRoomDetail() {
             </CardHeader>
             <CardContent className="pt-0">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <InfoRow label="Nama Ruangan" value={room.class_room_name} />
+                <InfoRow label="Nama" value={room.class_room_name} />
                 <InfoRow
                   label="Kode"
                   value={room.class_room_code ?? "—"}
@@ -278,7 +255,7 @@ export default function SchoolRoomDetail() {
                   value={<StatusBadge active={isActive} />}
                 />
                 <InfoRow
-                  label="Tipe Ruangan"
+                  label="Tipe"
                   value={isVirtual ? "Virtual / Online" : "Fisik / Offline"}
                 />
               </div>
@@ -393,6 +370,7 @@ export default function SchoolRoomDetail() {
         )}
 
         {/* Rombongan belajar yang memakai ruangan ini */}
+
         {sectionsCount > 0 && (
           <Card>
             <CardHeader className="pb-3">
@@ -403,48 +381,50 @@ export default function SchoolRoomDetail() {
                 <Badge variant="outline">Total: {sectionsCount}</Badge>
               </div>
             </CardHeader>
-            <CardContent className="space-y-2 pt-0">
-              <Separator className="mb-3" />
-              {sections.map((sec) => (
-                <div
-                  key={sec.id}
-                  className="flex items-start gap-3 rounded-lg border bg-card p-3 text-xs"
-                >
-                  <div className="mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground">
-                    <Layers className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="truncate text-sm font-semibold">
-                        {sec.name}
+            <div className="grid gap-3 grid-cols-2 md:grid-cols-2 lg:grid-cols-3">
+              <CardContent className="space-y-2 pt-0">
+                <Separator className="mb-3" />
+                {sections.map((sec) => (
+                  <div
+                    key={sec.id}
+                    className="flex items-start gap-3 rounded-lg border bg-card p-3 text-xs"
+                  >
+                    <div className="mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground">
+                      <Layers className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="truncate text-sm font-semibold">
+                          {sec.name}
+                        </div>
+                        <Badge
+                          variant={sec.is_active ? "default" : "outline"}
+                          className="text-[10px]"
+                        >
+                          {sec.is_active ? "Aktif" : "Nonaktif"}
+                        </Badge>
                       </div>
-                      <Badge
-                        variant={sec.is_active ? "default" : "outline"}
-                        className="text-[10px]"
-                      >
-                        {sec.is_active ? "Aktif" : "Nonaktif"}
-                      </Badge>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
-                      <span className="rounded-full border px-2 py-0.5">
-                        {sec.slug}
-                      </span>
-                      {sec.code && (
-                        <span className="rounded-full border px-2 py-0.5 font-mono">
-                          {sec.code}
+                      <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+                        <span className="rounded-full border px-2 py-0.5">
+                          {sec.slug}
                         </span>
-                      )}
-                    </div>
-                    <div className="text-[11px] text-muted-foreground">
-                      Siswa terdaftar:{" "}
-                      <span className="font-medium">
-                        {sec.total_students ?? 0}
-                      </span>
+                        {sec.code && (
+                          <span className="rounded-full border px-2 py-0.5 font-mono">
+                            {sec.code}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        Siswa terdaftar:{" "}
+                        <span className="font-medium">
+                          {sec.total_students ?? 0}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </CardContent>
+                ))}
+              </CardContent>
+            </div>
           </Card>
         )}
 
@@ -476,39 +456,7 @@ export default function SchoolRoomDetail() {
             </CardContent>
           </Card>
         )}
-
-        {/* Metadata */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Metadata</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <Separator className="mb-3" />
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <InfoRow
-                label="Dibuat pada"
-                value={
-                  room.class_room_created_at
-                    ? new Date(
-                      room.class_room_created_at
-                    ).toLocaleString("id-ID")
-                    : "—"
-                }
-              />
-              <InfoRow
-                label="Diperbarui pada"
-                value={
-                  room.class_room_updated_at
-                    ? new Date(
-                      room.class_room_updated_at
-                    ).toLocaleString("id-ID")
-                    : "—"
-                }
-              />
-            </div>
-          </CardContent>
-        </Card>
       </div>
-    </main>
+    </main >
   );
 }

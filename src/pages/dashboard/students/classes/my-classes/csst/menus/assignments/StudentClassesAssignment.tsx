@@ -295,7 +295,7 @@ const StudentClassesAssignment: React.FC<Props> = ({ showBack = false, backTo })
   return (
     <div className="w-full bg-background text-foreground">
       <main className="w-full">
-        <div className="mx-auto flex flex-col gap-6">
+        <div className="mx-auto w-full flex flex-col gap-6">
           {/* Header */}
           <div className="md:flex hidden gap-3 items-center">
             {showBack && (
@@ -308,12 +308,12 @@ const StudentClassesAssignment: React.FC<Props> = ({ showBack = false, backTo })
                 <ArrowLeft size={20} />
               </Button>
             )}
-            <h1 className="text-lg font-semibold">Daftar Tugas</h1>
+            <h1 className="text-lg font-semibold md:text-xl">Daftar Tugas</h1>
           </div>
 
           {/* Search + Segmented Tabs */}
 
-          <CardContent className="p-4 md:p-5 flex flex-col gap-3">
+          <div className="flex flex-col gap-3">
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -337,7 +337,7 @@ const StudentClassesAssignment: React.FC<Props> = ({ showBack = false, backTo })
             <div className="mt-4 space-y-6">
               {/* Pending */}
               <Card className="overflow-hidden">
-                <CardContent className="p-4 md:p-5 space-y-3">
+                <CardContent className="space-y-3">
                   <div className="flex items-center gap-2">
                     <BookOpen className="h-4 w-4" />
                     <h2 className="text-base md:text-lg font-semibold">
@@ -367,7 +367,7 @@ const StudentClassesAssignment: React.FC<Props> = ({ showBack = false, backTo })
 
               {/* Done */}
               <Card className="overflow-hidden">
-                <CardContent className="p-4 md:p-5 space-y-3">
+                <CardContent className=" space-y-3">
                   <div className="flex items-center gap-2">
                     <BookOpen className="h-4 w-4" />
                     <h2 className="text-base md:text-lg font-semibold">
@@ -395,7 +395,7 @@ const StudentClassesAssignment: React.FC<Props> = ({ showBack = false, backTo })
                 </CardContent>
               </Card>
             </div>
-          </CardContent>
+          </div>
 
         </div>
       </main>

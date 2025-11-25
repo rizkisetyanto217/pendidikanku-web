@@ -109,7 +109,7 @@ export default function StudentClassSection() {
               <Button variant="ghost" size="icon" onClick={handleBack}>
                 <ArrowLeft className="h-5 w-5" />
               </Button>
-              <h1 className="text-lg font-semibold">Detail Kelas</h1>
+              <h1 className="text-lg font-semibold md:text-xl">Detail Kelas</h1>
             </div>
             <Card>
               <CardContent className="p-6 text-sm text-destructive">

@@ -313,10 +313,28 @@ export default function Login() {
       }
       setProfileCompletion(completion);
 
+      console.log("[login] normalizedRoles", normalizedRoles);
+      console.log("[login] completion", completion);
+
       // ==== Branching utama ====
 
       // CASE 0: tidak punya peran di sekolah ini → unassigned (user/pendaftaran)
       if (normalizedRoles.length === 0) {
+        // 🔥 PRIORITAS: kalau sudah punya entitas guru tapi profil guru BELUM lengkap
+        if (
+          completion &&
+          completion.has_teacher &&
+          !completion.is_teacher_completed
+        ) {
+          // anggap dia login sebagai guru
+          setActiveschoolContext(schoolId, "teacher");
+
+          // arahkan ke: /:school_slug/user-guru/profil-new
+          navigateToUnassigned("teacher", "profil");
+          return;
+        }
+
+        // fallback lama: infer role dari profil umum
         const inferredRole: schoolRole =
           completion?.has_teacher && completion?.is_teacher_completed
             ? "teacher"
@@ -343,12 +361,29 @@ export default function Login() {
       if (normalizedRoles.length === 1) {
         const singleRole: schoolRole = normalizedRoles[0];
 
+        // admin/dkm → tetap langsung ke dashboard sekolah
         if (singleRole === "admin" || singleRole === "dkm") {
           navigateByRole(schoolId, singleRole);
           return;
         }
 
-        // teacher/student tunggal → cek kelengkapan profil dulu
+        // 🔥 PRIORITAS BARU:
+        // kalau user sudah punya entitas guru,
+        // tapi profil guru BELUM lengkap → paksa ke /user-guru/profil-new
+        if (
+          completion &&
+          completion.has_teacher &&
+          !completion.is_teacher_completed
+        ) {
+          // konteks aktif sebagai guru
+          setActiveschoolContext(schoolId, "teacher");
+          // ini akan resolve ke:
+          // /:school_slug/user-guru/profil-new
+          navigateToUnassigned("teacher", "profil");
+          return;
+        }
+
+        // teacher/student tunggal → cek kelengkapan profil umum (user profile)
         if (
           completion &&
           (!completion.has_profile || !completion.is_profile_completed)
@@ -357,10 +392,11 @@ export default function Login() {
             singleRole === "teacher" ? "teacher" : "student";
 
           setActiveschoolContext(schoolId, initialRole);
-          navigateToUnassigned(initialRole);
+          navigateToUnassigned(initialRole, "profil");
           return;
         }
 
+        // profil umum & (kalau ada) profil guru sudah beres → langsung ke dashboard
         navigateByRole(schoolId, singleRole);
         return;
       }

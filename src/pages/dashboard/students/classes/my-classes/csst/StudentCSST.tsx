@@ -18,7 +18,7 @@ import {
   ArrowLeft,
   ClipboardList,
   UserSquare2,
-  MapPin,
+  MapPin, // ⬅️ NEW
 } from "lucide-react";
 
 /* dashboard header */
@@ -39,11 +39,17 @@ type ApiCSSTEmbedded = {
 
   class_section_subject_teacher_school_teacher_name_snapshot?: string | null;
 
+  class_section_subject_teacher_join_url?: string | null;
+  class_section_subject_teacher_meeting_id?: string | null;
+  class_section_subject_teacher_passcode?: string | null;
+
+
   class_section_subject_teacher_class_section_id: string;
   class_section_subject_teacher_class_section_name_snapshot?: string | null;
   class_section_subject_teacher_class_section_code_snapshot?: string | null;
   class_section_subject_teacher_class_section_slug_snapshot?: string | null;
 
+  // ⬅️ NEW: snapshot nama ruangan (kalau ada di API)
   class_section_subject_teacher_room_name_snapshot?: string | null;
 
   class_section_subject_teacher_delivery_mode?: DeliveryMode | null;
@@ -110,6 +116,7 @@ type CsstView = {
   enrolledCount: number;
   minPassingScore?: number | null;
 
+  // ⬅️ NEW
   roomName?: string | null;
 };
 
@@ -147,11 +154,14 @@ const StudentCSST: React.FC = () => {
   const navigate = useNavigate();
   const { setHeader } = useDashboardHeader();
 
-  // ⭐ State untuk absensi & pertemuan (sementara masih dummy/local)
+  // dummy laporan kehadiran
+  // State untuk absensi
   const [hasCheckedIn, setHasCheckedIn] = useState(false);
   const [checkInTime, setCheckInTime] = useState<string | null>(null);
-  const [attendanceReports, setAttendanceReports] = useState(0); // jumlah pertemuan yang sudah tercatat hadir
-  const totalMeetingsDummy = 10; // target total pertemuan
+
+  // laporan kehadiran 0/10 -> berubah menjadi 1/10
+  const [attendanceReports, setAttendanceReports] = useState(0);
+  const totalMeetingsDummy = 10;
 
   /* ===== Query detail CSST via pivot murid ===== */
   const csstQ = useQuery<ApiStudentCSSTItem | undefined, AxiosError>({
@@ -176,6 +186,8 @@ const StudentCSST: React.FC = () => {
   const csstError: string | null = csstQ.isError
     ? extractErrorMessage(csstQ.error)
     : null;
+
+
 
   /* ===== Derive view models dari API ===== */
   const sectionView: SectionView | null = useMemo(() => {
@@ -275,29 +287,31 @@ const StudentCSST: React.FC = () => {
         <div className="text-xs text-muted-foreground break-all">{msg}</div>
         <Button variant="outline" onClick={() => navigate(-1)}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Kembali
         </Button>
       </div>
     );
   }
 
-  /* ===== Derive info untuk kartu absensi ===== */
+  /* ===== Render utama ===== */
 
-  // ⭐ Dummy materi hari ini — nanti bisa di-wire ke API jadwal/materi
-  const todayMaterialTitle = "Pengenalan Balaghoh Dasar";
-
-  // pertemuan ke-berapa (minimal 1 supaya nggak kelihatan 0)
-  const currentMeetingNumber = Math.max(attendanceReports, 1);
-
-  // label status absensi
-  const attendanceStatusLabel = hasCheckedIn ? "Sudah absen" : "Belum absen";
-  const attendanceStatusVariant = hasCheckedIn ? "default" : "outline";
-
+  // total pertemuan dummy untuk tampilan 0/10
   const totalStudents = csstView.enrolledCount ?? 0;
+  // placeholder: belum ada field khusus di response
+  const totalAttendanceToday = 0; // ⬅️ bisa di-wire ke API absensi nanti
+
+  // Dummy Data
   const totalBooks = 0;
   const totalAssessmentsGraded = 0;
   const totalAssessmentsUngraded = 0;
+
   const whatsappGroupLink = "https://chat.whatsapp.com/xxxxInviteCodexxxx";
+
+  const attendanceTodayLabel =
+    totalAttendanceToday > 0 && totalStudents > 0
+      ? `${totalAttendanceToday}/${totalStudents} hadir`
+      : "Belum ada data";
+
+  const roomLabel = csstView.roomName || "Belum diatur";
 
   return (
     <div className="w-full bg-background text-foreground">
@@ -305,7 +319,10 @@ const StudentCSST: React.FC = () => {
         <div className="mx-auto flex flex-col gap-6">
           {/* Top bar */}
           <div className="hidden md:flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(-1)}>
               <ArrowLeft size={20} />
             </Button>
             <h1 className="text-lg font-semibold md:text-xl">
@@ -366,115 +383,130 @@ const StudentCSST: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Row khusus: Absensi & Ruangan */}
+          {/* Quick links (versi murid) */}
+
+          {/* Row khusus: Absensi & Ruangan (card memanjang) */}
           <div className="grid gap-3 md:grid-cols-2">
-            {/* ⭐ Absensi hari ini */}
+            {/* Absensi hari ini */}
+            {/* Absensi hari ini */}
             <Card className="transition hover:shadow-md">
               <CardContent className="p-4 md:p-5">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div className="space-y-2 flex-1">
-                    <div className="text-sm text-muted-foreground flex items-center gap-2">
-                      <CalendarDays className="h-4 w-4" />
-                      <span>Absensi Pertemuan Hari Ini</span>
-                    </div>
+                <div className="flex flex-col gap-3 h-full">
 
-                    {/* Tiga info utama */}
-                    <div className="space-y-1 text-sm">
-                      {/* 1. Materi hari ini */}
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-muted-foreground">
-                          Materi hari ini
-                        </span>
-                        <span className="font-medium text-right truncate max-w-[220px]">
-                          {todayMaterialTitle}
-                        </span>
+                  {/* Kiri: Info absensi */}
+                  {/* Jika sudah absen */}
+                  {hasCheckedIn && checkInTime ? (
+                    <div className="space-y-1">
+                      <div className="text-sm text-muted-foreground flex items-center gap-2">
+                        <CalendarDays className="h-4 w-4" />
+                        <span>Absensi Hari Ini</span>
                       </div>
 
-                      {/* 2. Pertemuan ke berapa */}
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-muted-foreground">
-                          Pertemuan ke
-                        </span>
-                        <span className="font-medium">
-                          {currentMeetingNumber}/{totalMeetingsDummy}
-                        </span>
+                      {/* Tampilkan Pertemuan */}
+                      <div className="text-xl font-semibold leading-tight">
+                        {checkInTime}
                       </div>
-
-                      {/* 3. Status absensi */}
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-muted-foreground">
-                          Status absensi
-                        </span>
-                        <Badge variant={attendanceStatusVariant}>
-                          {attendanceStatusLabel}
-                        </Badge>
+                      {/* Teks tambahan ukuran XS */}
+                      <div className="text-xs text-muted-foreground">
+                        Pengenalan Ilmu Balaghah
                       </div>
                     </div>
+                  ) : (
+                    <>
+                      <div className="text-xl font-semibold leading-tight">
+                        {attendanceTodayLabel}
+                      </div>
 
-                    {/* Info waktu absen terakhir */}
-                    {hasCheckedIn && checkInTime && (
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Terakhir absen:{" "}
-                        {new Date(checkInTime).toLocaleString("id-ID", {
-                          weekday: "long",
-                          day: "numeric",
-                          month: "long",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                      <p className="text-xs text-muted-foreground">
+                        Lakukan absensi untuk pertemuan hari ini.
                       </p>
-                    )}
-                  </div>
 
-                  {/* Tombol di kanan */}
-                  <div className="flex-shrink-0 flex justify-end">
-                    <Button
-                      size="sm"
-                      className="w-full md:w-auto"
-                      onClick={() => {
-                        // sementara masih dummy: anggap setiap klik = sudah absen
-                        const now = new Date();
-                        setHasCheckedIn(true);
-                        setCheckInTime(now.toISOString());
-                        setAttendanceReports((prev) => (prev === 0 ? 1 : prev));
-                      }}
-                    >
-                      {hasCheckedIn ? "Ubah Absensi" : "Absen Sekarang"}
-                    </Button>
-                  </div>
+                      <div className="flex justify-center md:justify-end mt-3">
+                        <Button
+                          size="sm"
+                          className="w-full md:w-auto"
+                          onClick={() => {
+                            const newMeeting = attendanceReports + 1;
+                            setAttendanceReports(newMeeting);
+                            setHasCheckedIn(true);
+                            setCheckInTime(`Pertemuan ${newMeeting}`);
+                          }}
+
+                        >
+                          Absen Sekarang
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>
 
+
+
             {/* Ruangan */}
-            <Card className="cursor-pointer transition hover:shadow-md">
-              <CardContent className="p-4 md:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                <div className="space-y-1">
-                  <div className="text-sm text-muted-foreground flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    <span>Ruangan</span>
-                  </div>
-
-                  <div className="text-xl font-semibold leading-tight">
-                    {csstView.roomName || "Belum diatur"}
-                  </div>
-
-                  <p className="text-xs text-muted-foreground">
-                    Lokasi pembelajaran utama untuk mata pelajaran ini.
-                  </p>
+            <Card className="cursor-pointer transition hover:shadow-md"
+              onClick={() => navigate("ruangan")}
+            >
+              <CardContent className="p-4 md:p-5 flex flex-col gap-3">
+                {/* Judul + Icon */}
+                <div className="text-sm text-muted-foreground flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  <span>Ruangan</span>
                 </div>
 
-                <div className="self-start md:self-center">
-                  <Badge variant="outline" className="text-[11px]">
-                    {formatDeliveryMode(csstView.deliveryMode)}
-                  </Badge>
-                </div>
+                {/* Jika OFFLINE → Belum diatur */}
+                {csstView.deliveryMode !== "online" ? (
+                  <>
+                    <div className="text-xl font-semibold leading-tight">
+                      {roomLabel}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Lokasi pembelajaran utama untuk mata pelajaran ini.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    {/* ONLINE MODE (Zoom / Meet / Teams) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                      {/* Meeting ID */}
+                      <div>
+                        <span className="font-medium">Meeting ID: </span>
+                        <span className="font-mono">
+                          {csstQ.data?.class_section_subject_teacher?.class_section_subject_teacher_meeting_id ?? "-"}
+                        </span>
+                      </div>
+                      {/* Passcode */}
+                      <div>
+                        <span className="font-medium">Passcode: </span>
+                        <span className="font-mono">
+                          {csstQ.data?.class_section_subject_teacher?.class_section_subject_teacher_passcode ?? "-"}
+                        </span>
+                      </div>
+                      {/* Link Zoom (biarkan 1 kolom, otomatis melebar di mobile) */}
+                      <div className="md:col-span-2">
+                        <span className="font-medium">Link Zoom: </span>
+                        {csstQ.data?.class_section_subject_teacher?.class_section_subject_teacher_join_url ? (
+                          <a
+                            href={csstQ.data.class_section_subject_teacher.class_section_subject_teacher_join_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary underline break-all"
+                          >
+                            {csstQ.data.class_section_subject_teacher.class_section_subject_teacher_join_url}
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground">Tidak tersedia</span>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>
 
-          {/* Grid lainnya (murid, laporan kehadiran, materi, dst) */}
+          {/* Grid lainnya */}
           <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {/* Jumlah Murid */}
             <Card className="cursor-pointer transition hover:shadow-md">
@@ -491,8 +523,7 @@ const StudentCSST: React.FC = () => {
             </Card>
 
             {/* Laporan Kehadiran */}
-            <Card
-              className="cursor-pointer transition hover:shadow-md"
+            <Card className="cursor-pointer transition hover:shadow-md"
               onClick={() => navigate("daily-progress")}
             >
               <CardContent className="p-4 flex items-center justify-between">
@@ -524,16 +555,16 @@ const StudentCSST: React.FC = () => {
             </Card>
 
             {/* Latihan */}
-            <Card className="cursor-pointer transition hover:shadow-md">
+            <Card className="cursor-pointer transition hover:shadow-md"
+              onClick={() => navigate("tugas")}
+            >
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="space-y-1">
                   <div className="text-sm text-muted-foreground flex items-center gap-2">
                     <ClipboardList className="h-4 w-4" />
                     <span>Latihan</span>
                   </div>
-                  <div className="text-xl font-semibold">
-                    {totalAssessmentsUngraded}
-                  </div>
+                  <div className="text-xl font-semibold">{totalAssessmentsUngraded}</div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </CardContent>
@@ -541,22 +572,24 @@ const StudentCSST: React.FC = () => {
 
             {/* Ujian */}
             <Card className="cursor-pointer transition hover:shadow-md">
-              <CardContent className="p-4 flex items-center justify-between">
+              <CardContent className="p-4 flex items-center justify-between"
+                onClick={() => navigate("ujian")}
+              >
                 <div className="space-y-1">
                   <div className="text-sm text-muted-foreground flex items-center gap-2">
                     <ClipboardList className="h-4 w-4" />
                     <span>Ujian</span>
                   </div>
-                  <div className="text-xl font-semibold">
-                    {totalAssessmentsGraded}
-                  </div>
+                  <div className="text-xl font-semibold">{totalAssessmentsGraded}</div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </CardContent>
             </Card>
 
             {/* Profil Mapel */}
-            <Card className="cursor-pointer transition hover:shadow-md">
+            <Card className="cursor-pointer transition hover:shadow-md"
+              onClick={() => navigate("detail")}
+            >
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="space-y-1">
                   <div className="text-sm text-muted-foreground flex items-center gap-2">
@@ -580,15 +613,12 @@ const StudentCSST: React.FC = () => {
                     <Users className="h-4 w-4" />
                     <span>Grup WhatsApp Mapel</span>
                   </div>
-                  <div className="text-md font-semibold underline">
-                    Link Group
-                  </div>
+                  <div className="text-md font-semibold underline">Link Group</div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </CardContent>
             </Card>
           </div>
-
           {hasCheckedIn && checkInTime && (
             <div className="w-full text-center text-destructive text-sm font-medium mt-2">
               Anda absen pada{" "}

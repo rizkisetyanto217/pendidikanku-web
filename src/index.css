@@ -7,6 +7,18 @@
   :root {
     --radius: 0.5rem;
 
+    --info-bg: 199 89% 60%;
+    --info-text: 199 89% 60%;
+    --info-ring: 199 89% 60%;
+
+    --neutral-bg: 0 0% 50%;
+    --neutral-text: 0 0% 70%;
+    --neutral-ring: 0 0% 50%;
+
+    --warn-bg: 48 100% 90%;
+    --warn-text: 48 100% 50%;
+    --warn-ring: 48 100% 50%;
+
     /* Neutrals */
     --background: 0 0% 100%;
     --foreground: 222 47% 11%;
@@ -71,6 +83,19 @@
     --primary: 142 71% 36%;
     --primary-foreground: 0 0% 10%;
 
+    --info-bg: 199 89% 60%;
+    --info-text: 199 89% 60%;
+    --info-ring: 199 89% 60%;
+
+    --neutral-bg: 0 0% 50%;
+    --neutral-text: 0 0% 70%;
+    --neutral-ring: 0 0% 50%;
+
+    --warn-bg: 48 100% 90%;
+    --warn-text: 48 100% 50%;
+    --warn-ring: 48 100% 50%;
+
+
     /* Secondary (kuning) dibikin sedikit turun biar gak silau di dark */
     --secondary: 48 100% 60%;
     --secondary-foreground: 24 20% 12%;
@@ -109,8 +134,19 @@
 /* Aktifkan via <html data-theme="green"> */
 @layer base {
   [data-theme="green"] {
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+
+    --info-bg: 199 89% 60%;
+    --info-text: 199 89% 60%;
+    --info-ring: 199 89% 60%;
+
+    --neutral-bg: 0 0% 50%;
+    --neutral-text: 0 0% 70%;
+    --neutral-ring: 0 0% 50%;
+
+    --warn-bg: 48 100% 90%;
+    --warn-text: 48 100% 50%;
+    --warn-ring: 48 100% 50%;
+
 
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
@@ -154,8 +190,19 @@
   }
 
   .dark[data-theme="green"] {
-    --background: 220 14% 7%;
-    --foreground: 0 0% 95%;
+
+    --info-bg: 199 89% 60%;
+    --info-text: 199 89% 60%;
+    --info-ring: 199 89% 60%;
+
+    --neutral-bg: 0 0% 50%;
+    --neutral-text: 0 0% 70%;
+    --neutral-ring: 0 0% 50%;
+
+    --warn-bg: 48 100% 90%;
+    --warn-text: 48 100% 50%;
+    --warn-ring: 48 100% 50%;
+
 
     --card: 220 14% 10%;
     --card-foreground: 0 0% 95%;
@@ -203,8 +250,18 @@
 /* Aktifkan via <html data-theme="yellow"> */
 @layer base {
   [data-theme="yellow"] {
-    --background: 0 0% 100%;
-    --foreground: 24 15% 16%;
+
+    --info-bg: 199 89% 60%;
+    --info-text: 199 89% 60%;
+    --info-ring: 199 89% 60%;
+
+    --neutral-bg: 0 0% 50%;
+    --neutral-text: 0 0% 70%;
+    --neutral-ring: 0 0% 50%;
+
+    --warn-bg: 48 100% 90%;
+    --warn-text: 48 100% 50%;
+    --warn-ring: 48 100% 50%;
 
     --card: 0 0% 100%;
     --card-foreground: 24 15% 16%;
@@ -249,8 +306,18 @@
   }
 
   .dark[data-theme="yellow"] {
-    --background: 24 15% 10%;
-    --foreground: 0 0% 95%;
+
+    --info-bg: 199 89% 60%;
+    --info-text: 199 89% 60%;
+    --info-ring: 199 89% 60%;
+
+    --neutral-bg: 0 0% 50%;
+    --neutral-text: 0 0% 70%;
+    --neutral-ring: 0 0% 50%;
+
+    --warn-bg: 48 100% 90%;
+    --warn-text: 48 100% 50%;
+    --warn-ring: 48 100% 50%;
 
     --card: 24 15% 12%;
     --card-foreground: 0 0% 95%;
@@ -300,6 +367,7 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }
