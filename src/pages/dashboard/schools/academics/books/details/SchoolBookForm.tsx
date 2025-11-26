@@ -4,14 +4,13 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "@/lib/axios";
-import { ArrowLeft, ImageOff, Info, Loader2 } from "lucide-react";
+import { ArrowLeft, Info, Loader2 } from "lucide-react";
 
 /* Breadcrumb header */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* shadcn/ui */
 import { Button } from "@/components/ui/button";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,9 +22,10 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 
-/* =========================================================
-   Types — sama dengan SchoolBooks.tsx
-========================================================= */
+/* 👉 Import komponen upload */
+import CPicturePreview from "@/components/costum/common/CPicturePreview";
+
+/* Types */
 export type BookAPI = {
   book_id: string;
   book_school_id: string;
@@ -45,9 +45,7 @@ type BookDetailResponse = {
   [key: string]: any;
 };
 
-/* =========================================================
-   Helpers
-========================================================= */
+/* Helpers */
 function extractErrorMessage(err: any) {
   const d = err?.response?.data;
   if (!d) return err?.message || "Request error";
@@ -65,9 +63,6 @@ function extractErrorMessage(err: any) {
   }
 }
 
-/* =========================================================
-   Page Add/Edit Buku
-========================================================= */
 const SchoolBookForm: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -79,7 +74,6 @@ const SchoolBookForm: React.FC = () => {
   const qc = useQueryClient();
   const { setHeader } = useDashboardHeader();
 
-  // data dari state (kalau datang dari list)
   const stateBook = (location.state as { book?: BookAPI } | undefined)?.book;
 
   useEffect(() => {
@@ -88,24 +82,18 @@ const SchoolBookForm: React.FC = () => {
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Akademik" },
-        {
-          label: "Buku",
-          href: `/${schoolId}/sekolah/buku`,
-        },
+        { label: "Buku", href: "akademik/buku" },
         { label: isEditMode ? "Edit" : "Tambah" },
       ],
       showBack: true,
     });
   }, [setHeader, isEditMode, schoolId]);
 
-  /* ========== Query detail (kalau edit & tidak bawa state) ========== */
   const detailQ = useQuery<BookAPI, Error>({
     queryKey: ["book-detail", bookId],
     enabled: isEditMode && !!bookId && !stateBook,
     queryFn: async () => {
-      const res = await axios.get<BookDetailResponse>(`/u/books/${bookId}`, {
-        withCredentials: true,
-      });
+      const res = await axios.get<BookDetailResponse>(`/u/books/${bookId}`);
       const data = (res.data as any).data ?? (res.data as any);
       return data as BookAPI;
     },
@@ -117,53 +105,59 @@ const SchoolBookForm: React.FC = () => {
     return detailQ.data;
   }, [stateBook, detailQ.data, isEditMode]);
 
-  /* ========== Form state ========== */
-  const [title, setTitle] = useState<string>(stateBook?.book_title ?? "");
-  const [author, setAuthor] = useState<string>(stateBook?.book_author ?? "");
-  const [desc, setDesc] = useState<string>(stateBook?.book_desc ?? "");
+  /* ================= FORM STATE ================= */
+  const [title, setTitle] = useState(stateBook?.book_title ?? "");
+  const [author, setAuthor] = useState(stateBook?.book_author ?? "");
+  const [desc, setDesc] = useState(stateBook?.book_desc ?? "");
+
   const [file, setFile] = useState<File | null>(null);
+
+  /** 
+   * PREVIEW:
+   * - jika edit mode → tampilkan gambar lama dari book_image_url
+   * - jika upload baru → tampilkan gambar baru
+   */
   const [preview, setPreview] = useState<string | null>(
     stateBook?.book_image_url ?? null
   );
-  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // sinkron ketika detail book datang
+  // Ambil data detail jika datang dari API
   useEffect(() => {
     if (!book) return;
     setTitle(book.book_title ?? "");
     setAuthor(book.book_author ?? "");
     setDesc(book.book_desc ?? "");
+
+    // Jika belum pilih file baru → gunakan gambar lama
     if (!file) {
       setPreview(book.book_image_url ?? null);
     }
   }, [book]);
 
-  // handle preview file baru
-  useEffect(() => {
-    if (!file) return;
-    const u = URL.createObjectURL(file);
-    setPreview(u);
-    return () => URL.revokeObjectURL(u);
-  }, [file]);
+  /** Handle file upload dari komponen CPicturePreview */
+  const handleFileChange = (newFile: File | null) => {
+    setFile(newFile);
 
-  const canSubmit = title.trim().length > 0 && !!schoolId;
+    if (newFile) {
+      setPreview(URL.createObjectURL(newFile));
+    }
+  };
 
-  /* ========== Mutations ========== */
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const canSubmit = title.trim().length > 0;
+
+  /* ================= MUTATIONS ================= */
   const createMutation = useMutation({
     mutationFn: async (fd: FormData) => {
       const { data } = await axios.post(
         `/api/a/${encodeURIComponent(schoolId)}/books`,
         fd,
-        {
-          withCredentials: true,
-          headers: { "Content-Type": "multipart/form-data" },
-        }
+        { headers: { "Content-Type": "multipart/form-data" } }
       );
       return data;
     },
-    onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ["books-list-public"] });
-    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["books-list-public"] }),
   });
 
   const updateMutation = useMutation({
@@ -171,87 +165,59 @@ const SchoolBookForm: React.FC = () => {
       const { data } = await axios.patch(
         `/api/a/books/${encodeURIComponent(bookId!)}`,
         fd,
-        {
-          withCredentials: true,
-          headers: { "Content-Type": "multipart/form-data" },
-        }
+        { headers: { "Content-Type": "multipart/form-data" } }
       );
       return data;
     },
-    onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ["books-list-public"] });
-    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["books-list-public"] }),
   });
 
-  const isSubmitting = createMutation.isPending || updateMutation.isPending;
-  const loadingDetail = isEditMode && !book && detailQ.isLoading;
-  const detailError = isEditMode && !book && detailQ.isError;
-
-  const handleBack = () => {
-    navigate(`/${schoolId}/sekolah/buku`);
-  };
+  const handleBack = () => navigate(-1);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
       if (!canSubmit) return;
+
       setSubmitError(null);
 
       const fd = new FormData();
       fd.set("book_title", title.trim());
       fd.set("book_author", author ?? "");
       fd.set("book_desc", desc ?? "");
+
       if (file) {
         fd.set("file", file);
       }
 
       if (isEditMode && bookId) {
         updateMutation.mutate(fd, {
-          onSuccess: () => {
-            navigate(`/${schoolId}/sekolah/buku`, { replace: true });
-          },
-          onError: (err: any) => {
-            setSubmitError(extractErrorMessage(err));
-          },
+          onSuccess: () =>
+            navigate(`/${schoolId}/sekolah/buku`, { replace: true }),
+          onError: (err: any) => setSubmitError(extractErrorMessage(err)),
         });
       } else {
         createMutation.mutate(fd, {
-          onSuccess: () => {
-            navigate(`/${schoolId}/sekolah/buku`, { replace: true });
-          },
-          onError: (err: any) => {
-            setSubmitError(extractErrorMessage(err));
-          },
+          onSuccess: () =>
+            navigate(`/${schoolId}/sekolah/buku`, { replace: true }),
+          onError: (err: any) => setSubmitError(extractErrorMessage(err)),
         });
       }
     },
-    [
-      canSubmit,
-      title,
-      author,
-      desc,
-      file,
-      isEditMode,
-      bookId,
-      schoolId,
-      updateMutation,
-      createMutation,
-      navigate,
-    ]
+    [canSubmit, title, author, desc, file, isEditMode, bookId, schoolId]
   );
 
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+  const loadingDetail = isEditMode && !book && detailQ.isLoading;
+  const detailError = isEditMode && !book && detailQ.isError;
+
   return (
-    <div className="w-full overflow-x-hidden bg-background text-foreground">
+    <div className="w-full">
       <main className="w-full">
-        <div className="mx-auto max-w-3xl flex flex-col gap-4 lg:gap-6 py-4">
-          {/* Header dengan tombol back */}
+        <div className="mx-auto flex flex-col gap-6">
+          {/* Header */}
           <div className="flex items-center gap-3">
-            <Button
-              onClick={handleBack}
-              variant="ghost"
-              size="icon"
-              className="cursor-pointer"
-            >
+            <Button onClick={handleBack} variant="ghost" size="icon">
               <ArrowLeft size={20} />
             </Button>
             <div>
@@ -266,10 +232,10 @@ const SchoolBookForm: React.FC = () => {
             </div>
           </div>
 
+          {/* Loading / Error */}
           {loadingDetail && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Memuat data buku…
+              <Loader2 className="h-4 w-4 animate-spin" /> Memuat data buku…
             </div>
           )}
 
@@ -281,12 +247,10 @@ const SchoolBookForm: React.FC = () => {
               <pre className="text-xs opacity-70 overflow-auto">
                 {extractErrorMessage(detailQ.error)}
               </pre>
-              <Button size="sm" onClick={() => detailQ.refetch()}>
-                Coba lagi
-              </Button>
             </div>
           )}
 
+          {/* FORM */}
           <Card className="border">
             <form onSubmit={handleSubmit}>
               <CardHeader>
@@ -297,42 +261,22 @@ const SchoolBookForm: React.FC = () => {
 
               <CardContent className="space-y-6">
                 <div className="grid md:grid-cols-12 gap-4">
-                  {/* Cover */}
+                  {/* ================= COVER UPLOAD ================= */}
                   <div className="md:col-span-4 space-y-3">
-                    <div className="rounded-xl border bg-card">
-                      <AspectRatio
-                        ratio={3 / 4}
-                        className="grid place-items-center"
-                      >
-                        {preview ? (
-                          <img
-                            src={preview}
-                            alt="Preview"
-                            className="h-full w-full rounded-xl object-cover"
-                          />
-                        ) : (
-                          <div className="flex flex-col items-center text-xs text-muted-foreground">
-                            <ImageOff className="h-4 w-4" />
-                            <span>Preview cover</span>
-                          </div>
-                        )}
-                      </AspectRatio>
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="book_file">Cover Buku</Label>
-                      <Input
-                        id="book_file"
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Kosongkan bila tidak ingin mengubah cover.
-                      </p>
-                    </div>
+                    <Label>Cover Buku</Label>
+
+                    <CPicturePreview
+                      file={file}
+                      preview={preview}
+                      onFileChange={handleFileChange}
+                    />
+
+                    <p className="text-xs text-muted-foreground">
+                      Kosongkan bila tidak ingin mengubah cover.
+                    </p>
                   </div>
 
-                  {/* Title, author, desc */}
+                  {/* ================= DETAIL BUKU ================= */}
                   <div className="md:col-span-8 grid gap-3">
                     <div className="grid gap-1.5">
                       <Label htmlFor="book_title">Judul *</Label>
@@ -368,7 +312,7 @@ const SchoolBookForm: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Info kecil */}
+                {/* Summary Info */}
                 <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs md:text-sm text-muted-foreground flex gap-2">
                   <Info className="h-4 w-4 mt-[2px]" />
                   <div>
@@ -390,7 +334,7 @@ const SchoolBookForm: React.FC = () => {
                 )}
               </CardContent>
 
-              <CardFooter className="flex justify-between gap-2">
+              <CardFooter className="flex justify-end gap-2">
                 <Button
                   type="button"
                   variant="ghost"
@@ -399,11 +343,11 @@ const SchoolBookForm: React.FC = () => {
                 >
                   Batal
                 </Button>
+
                 <Button type="submit" disabled={!canSubmit || isSubmitting}>
                   {isSubmitting ? (
                     <span className="inline-flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Menyimpan…
+                      <Loader2 className="h-4 w-4 animate-spin" /> Menyimpan…
                     </span>
                   ) : isEditMode ? (
                     "Simpan Perubahan"

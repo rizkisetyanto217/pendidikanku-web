@@ -245,7 +245,7 @@ export default function Login() {
       return;
     }
 
-    // teacher/student → cek dulu profileCompletion
+    // teacher/student → cek dulu profileCompletion (kalau ada)
     if (
       profileCompletion &&
       (!profileCompletion.has_profile ||
@@ -289,6 +289,10 @@ export default function Login() {
         ? user.roles.map((r: string) => r.toLowerCase())
         : [];
 
+      // id entitas (kalau backend sudah kirim)
+      const teacherId: string | null | undefined = user.teacher_id;
+      const studentId: string | null | undefined = user.student_id;
+
       if (!schoolId) {
         navigate("/", { replace: true });
         return;
@@ -298,29 +302,41 @@ export default function Login() {
         ["dkm", "admin", "teacher", "student", "user"].includes(r)
       ) as schoolRole[];
 
-      // cek profile-completion
+      // ================================
+      //  cek profile-completion (conditional)
+      // ================================
       let completion: ProfileCompletionStatus | null = null;
-      try {
-        const pcRes = await api.get<{
-          success: boolean;
-          message: string;
-          data: ProfileCompletionStatus;
-        }>(`/${slug}/auth/me/profile-completion`);
 
-        completion = pcRes.data?.data ?? null;
-      } catch (e) {
-        console.warn("[login] gagal cek profile-completion", e);
+      const needProfileCompletionCheck =
+        normalizedRoles.length === 0 || // tidak ada role sama sekali
+        (normalizedRoles.includes("teacher") && !teacherId) || // role teacher tapi belum ada teacher_id
+        (normalizedRoles.includes("student") && !studentId); // role student tapi belum ada student_id
+
+      if (needProfileCompletionCheck) {
+        try {
+          const pcRes = await api.get<{
+            success: boolean;
+            message: string;
+            data: ProfileCompletionStatus;
+          }>(`/${slug}/auth/me/profile-completion`);
+
+          completion = pcRes.data?.data ?? null;
+        } catch (e) {
+          console.warn("[login] gagal cek profile-completion", e);
+        }
       }
+
       setProfileCompletion(completion);
 
       console.log("[login] normalizedRoles", normalizedRoles);
       console.log("[login] completion", completion);
+      console.log("[login] teacherId/studentId", { teacherId, studentId });
 
       // ==== Branching utama ====
 
       // CASE 0: tidak punya peran di sekolah ini → unassigned (user/pendaftaran)
       if (normalizedRoles.length === 0) {
-        // 🔥 PRIORITAS: kalau sudah punya entitas guru tapi profil guru BELUM lengkap
+        // PRIORITAS: kalau sudah punya entitas guru tapi profil guru BELUM lengkap
         if (
           completion &&
           completion.has_teacher &&
@@ -334,11 +350,17 @@ export default function Login() {
           return;
         }
 
-        // fallback lama: infer role dari profil umum
-        const inferredRole: schoolRole =
-          completion?.has_teacher && completion?.is_teacher_completed
-            ? "teacher"
-            : "student";
+        // fallback infer role:
+        // - kalau sudah ada teacherId → teacher
+        // - kalau sudah ada studentId → student
+        // - else pakai completion (kalau ada)
+        const inferredRole: schoolRole = teacherId
+          ? "teacher"
+          : studentId
+          ? "student"
+          : completion?.has_teacher && completion?.is_teacher_completed
+          ? "teacher"
+          : "student";
 
         setActiveschoolContext(schoolId, inferredRole);
 
@@ -367,7 +389,7 @@ export default function Login() {
           return;
         }
 
-        // 🔥 PRIORITAS BARU:
+        // PRIORITAS:
         // kalau user sudah punya entitas guru,
         // tapi profil guru BELUM lengkap → paksa ke /user-guru/profil-new
         if (

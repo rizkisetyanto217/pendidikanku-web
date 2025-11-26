@@ -92,26 +92,26 @@ export default function CalendarView({
   }, [selectedDay, byDate, data]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
       {/* Kalender kiri */}
-      <Card className="md:col-span-2">
-        <CardContent className="p-4">
+      <Card className="lg:col-span-2">
+        <CardContent className="p-4 lg:p-6">
           {loading ? (
-            <div className="grid grid-cols-7 gap-2">
+            <div className="grid grid-cols-7 gap-2 lg:gap-3">
               {Array.from({ length: 35 }).map((_, i) => (
-                <Skeleton key={i} className="h-16 w-full rounded-lg" />
+                <Skeleton key={i} className="h-16 lg:h-20 w-full rounded-xl" />
               ))}
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-7 gap-2 text-xs text-muted-foreground mb-2">
+              <div className="grid grid-cols-7 gap-2 lg:gap-3 text-xs lg:text-sm text-muted-foreground mb-3">
                 {["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].map((d) => (
                   <div key={d} className="text-center font-medium">
                     {d}
                   </div>
                 ))}
               </div>
-              <div className="grid grid-cols-7 gap-2">
+              <div className="grid grid-cols-7 gap-2 lg:gap-3">
                 {days.map((day, i) => {
                   const dateKey = day && `${y}-${pad2(m)}-${pad2(day)}`;
                   const schedules = dateKey ? byDate.get(dateKey) : [];
@@ -125,19 +125,22 @@ export default function CalendarView({
                       onClick={() => setSelectedDay(dateKey!)}
                       title={dateKey || ""}
                       className={[
-                        "aspect-square border rounded-lg text-left p-1 relative transition",
+                        "aspect-square min-h-[3rem] lg:min-h-[4rem] border rounded-xl text-left p-2 lg:p-3 relative transition",
+                        "bg-background/60",
                         selected ? "bg-primary/10 border-primary" : "",
-                        isToday ? "ring-1 ring-primary/60" : "",
+                        isToday ? "ring-1 ring-primary/70" : "",
                         !dateKey ? "disabled:opacity-30" : "",
                       ].join(" ")}
                     >
-                      <div className="text-xs font-medium">{day ?? ""}</div>
+                      <div className="text-sm lg:text-base font-semibold">
+                        {day ?? ""}
+                      </div>
                       {!!schedules?.length && (
-                        <div className="absolute right-1 top-1 flex gap-0.5">
+                        <div className="absolute right-1.5 top-1.5 flex gap-1">
                           {schedules.slice(0, 3).map((s, idx) => (
                             <span
                               key={idx}
-                              className={`h-1.5 w-1.5 rounded-full ${
+                              className={`h-2 w-2 lg:h-2.5 lg:w-2.5 rounded-full ${
                                 s.type === "exam"
                                   ? "bg-red-500"
                                   : s.type === "event"
@@ -147,14 +150,14 @@ export default function CalendarView({
                             />
                           ))}
                           {schedules.length > 3 && (
-                            <span className="text-[10px] leading-none ml-0.5">
+                            <span className="text-[10px] lg:text-xs leading-none ml-0.5">
                               +{schedules.length - 3}
                             </span>
                           )}
                         </div>
                       )}
                       {isToday && (
-                        <span className="absolute left-1 bottom-1 text-[10px] text-primary/80">
+                        <span className="absolute left-1.5 bottom-1.5 text-[11px] lg:text-xs text-primary/80">
                           hari ini
                         </span>
                       )}
@@ -169,19 +172,19 @@ export default function CalendarView({
 
       {/* Panel kanan */}
       <Card>
-        <CardHeader className="pb-3 flex-row items-center justify-between">
-          <CardTitle className="text-base">
+        <CardHeader className="pb-2 lg:pb-3 flex-row items-center justify-between">
+          <CardTitle className="text-base lg:text-lg">
             {selectedDay
               ? `Aktivitas ${fmtFullDate(selectedDay)}`
               : "Aktivitas Bulan Ini"}
           </CardTitle>
 
-          {/* sembunyikan tombol tambah jika readOnly atau canAdd=false */}
           {!readOnly && canAdd && onAddNew && (
             <Button
               size="sm"
               onClick={() => onAddNew(selectedDay ?? undefined)}
               disabled={updating}
+              className="h-8 lg:h-9 px-3 lg:px-4 text-xs lg:text-sm"
             >
               + <span className="ml-2 hidden sm:inline">Tambah</span>
             </Button>
@@ -190,33 +193,38 @@ export default function CalendarView({
 
         <CardContent className="p-0" ref={panelRef}>
           {loading ? (
-            <div className="p-4 space-y-2">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
+            <div className="p-3 space-y-2.5">
+              <Skeleton className="h-11 w-full rounded-lg" />
+              <Skeleton className="h-11 w-full rounded-lg" />
+              <Skeleton className="h-11 w-full rounded-lg" />
             </div>
           ) : panelList.length ? (
             <ul className="divide-y">
               {panelList.map((s) => (
                 <li
                   key={s.id}
-                  className={`p-3 ${
-                    readOnly ? "" : "hover:bg-muted/50 cursor-pointer"
+                  className={`pl-3 pr-4 lg:pl-4 lg:pr-5 py-2.5 lg:py-3 ${
+                    readOnly ? "" : "hover:bg-muted/60 cursor-pointer"
                   }`}
                   onClick={() => (!readOnly && onEdit ? onEdit(s) : undefined)}
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="w-14 shrink-0 text-right">
-                      <div className="text-xs text-muted-foreground leading-4">
+                  <div className="flex items-start gap-3 lg:gap-4">
+                    {/* kolom tanggal / jam */}
+                    <div className="w-14 lg:w-16 shrink-0 text-left">
+                      <div className="text-xs lg:text-sm text-muted-foreground leading-4">
                         {fmtDayShort(s.date)}
                       </div>
-                      <div className="text-[11px]">{s.time}</div>
+                      <div className="text-[11px] lg:text-xs mt-0.5">
+                        {s.time}
+                      </div>
                     </div>
+
+                    {/* konten utama */}
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium truncate">
+                      <div className="text-sm lg:text-base font-semibold truncate">
                         {s.title}
                       </div>
-                      <div className="text-xs text-muted-foreground flex flex-wrap gap-3 mt-0.5">
+                      <div className="text-[11px] lg:text-sm text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 mt-0.5">
                         {s.room && (
                           <span className="inline-flex items-center gap-1">
                             <MapPin size={12} />
@@ -231,7 +239,7 @@ export default function CalendarView({
                         )}
                         <span className="inline-flex items-center gap-1">
                           <span
-                            className={`h-2 w-2 rounded-full ${
+                            className={`h-2.5 w-2.5 rounded-full ${
                               s.type === "exam"
                                 ? "bg-red-500"
                                 : s.type === "event"
@@ -239,19 +247,21 @@ export default function CalendarView({
                                 : "bg-primary"
                             }`}
                           />
-                          {s.type ?? "class"}
+                          <span className="capitalize">
+                            {s.type ?? "class"}
+                          </span>
                         </span>
                       </div>
                     </div>
 
-                    {/* sembunyikan actions kalau readOnly */}
+                    {/* actions */}
                     {!readOnly && (
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1.5">
                         {onEdit && (
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="h-7 w-7"
+                            className="h-7 w-7 lg:h-8 lg:w-8"
                             onClick={(e) => {
                               e.stopPropagation();
                               onEdit(s);
@@ -266,7 +276,7 @@ export default function CalendarView({
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="h-7 w-7 text-destructive"
+                            className="h-7 w-7 lg:h-8 lg:w-8 text-destructive"
                             onClick={(e) => {
                               e.stopPropagation();
                               onDelete(s.id);
@@ -284,7 +294,7 @@ export default function CalendarView({
               ))}
             </ul>
           ) : (
-            <div className="p-4 text-sm text-muted-foreground">
+            <div className="p-4 text-sm lg:text-base text-muted-foreground">
               {selectedDay
                 ? "Tidak ada aktivitas pada tanggal ini."
                 : "Belum ada aktivitas bulan ini."}

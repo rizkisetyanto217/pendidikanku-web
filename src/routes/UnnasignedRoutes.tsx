@@ -10,7 +10,7 @@ import UnnasignedStudentPaymentResult from "@/pages/dashboard/unnasigned/student
 import UnnasignedStudentProfileStudent from "@/pages/dashboard/unnasigned/students/profiles/UnnasignedStudentProfileStudent";
 
 import UnassignedTeacherJoin from "@/pages/dashboard/unnasigned/teachers/UnnasignedTeacherJoin";
-import UnnasignedStudentProfileTeacher from "@/pages/dashboard/unnasigned/teachers/profiles/UnnasignedStudentProfileTeacher";
+import UnnasignedTeacherProfile from "@/pages/dashboard/unnasigned/teachers/profiles/UnnasignedTeacherProfile";
 
 // Cluster rute untuk PMB / Pendaftaran
 // Base path: /:school_slug
@@ -29,7 +29,7 @@ export const UnnasignedRoutes = (
     {/* /:school_slug/user-guru/profil-new */}
     <Route
       path="user-guru/profil-new"
-      element={<UnnasignedStudentProfileTeacher />}
+      element={<UnnasignedTeacherProfile/>}
     />
 
     {/* =========================
@@ -81,7 +81,7 @@ export const UnnasignedRoutes = (
       <Route path="bergabung" element={<UnassignedTeacherJoin />} />
 
       {/* /:school_slug/user-guru/profil → profil guru di dalam layout */}
-      <Route path="profil" element={<UnnasignedStudentProfileTeacher />} />
+      <Route path="profil" element={<UnnasignedTeacherProfile />} />
     </Route>
   </>
 );

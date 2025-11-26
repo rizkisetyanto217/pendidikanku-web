@@ -346,7 +346,7 @@ const SchoolClassForm: React.FC = () => {
   return (
     <div className="w-full overflow-x-hidden bg-background text-foreground">
       <main className="w-full">
-        <div className="max-w-3xl mx-auto flex flex-col gap-4 lg:gap-6 py-2">
+        <div className="mx-auto flex flex-col gap-4 lg:gap-6">
           {/* Header back + title */}
           <div className="flex items-center gap-3">
             <Button

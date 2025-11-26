@@ -476,7 +476,7 @@ export default function StudentExam({
 
           {/* Header */}
           <Card>
-            <CardContent className="p-4 md:p-5">
+            <CardContent className="pt-4 pb-2">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <div>
                   <div className="text-base md:text-lg font-semibold">
@@ -531,7 +531,7 @@ export default function StudentExam({
 
           {/* Filters */}
           <Separator />
-          <CardContent className="p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="relative flex-1 max-w-xl">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -579,7 +579,7 @@ export default function StudentExam({
                 </SelectContent>
               </Select>
             </div>
-          </CardContent>
+          </div>
 
           {/* ===== Desktop Table ===== */}
           <Card className="hidden md:block mt-4">

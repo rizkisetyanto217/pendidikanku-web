@@ -1,4 +1,4 @@
-// src/pages/sekolahislamku/pages/user/UnnasignedStudentProfileStudent.tsx
+// src/pages/dashboard/unnasigned/students/profiles/UnnasignedStudentProfile.tsx
 import { useMemo, useState, useEffect } from "react";
 import { useLocation, useParams, useNavigate } from "react-router-dom";
 import {
@@ -336,8 +336,8 @@ export default function UnnasignedStudentProfileStudent() {
       const backendMsg = err?.response?.data?.message as string | undefined;
       setError(
         backendMsg ||
-        err?.message ||
-        "Gagal menyimpan data profil. Silakan coba lagi."
+          err?.message ||
+          "Gagal menyimpan data profil. Silakan coba lagi."
       );
     } finally {
       setLoadingStudent(false);

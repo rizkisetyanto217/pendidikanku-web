@@ -28,7 +28,7 @@ function pathOf(u: string): string {
     if (u.startsWith("http://") || u.startsWith("https://")) {
       return new URL(u).pathname || "/";
     }
-  } catch { }
+  } catch {}
   return u;
 }
 function stripApiPrefixOnce(p: string): string {
@@ -180,7 +180,7 @@ export function setTokens(access: string) {
   accessToken = access;
   try {
     sessionStorage.setItem("access_token", access);
-  } catch { }
+  } catch {}
   (api.defaults.headers.common as any).Authorization = `Bearer ${access}`;
   window.dispatchEvent(new CustomEvent("auth:authorized"));
 }
@@ -194,7 +194,7 @@ export function getAccessToken() {
       (api.defaults.headers.common as any).Authorization = `Bearer ${s}`;
       return s;
     }
-  } catch { }
+  } catch {}
   return null;
 }
 
@@ -202,7 +202,7 @@ export function clearTokens() {
   accessToken = null;
   try {
     sessionStorage.removeItem("access_token");
-  } catch { }
+  } catch {}
   delete (api.defaults.headers.common as any).Authorization;
 }
 
@@ -383,7 +383,7 @@ api.interceptors.response.use(
         cfg.headers = cfg.headers ?? {};
         cfg.headers["X-CSRF-Token"] = csrfTokenMem || "";
         return api(cfg);
-      } catch { }
+      } catch {}
     }
 
     // --- Refresh retry ---
@@ -464,5 +464,15 @@ export async function restoreSession(): Promise<boolean> {
       accessToken = saved;
       (api.defaults.headers.common as any).Authorization = `Bearer ${saved}`;
     }
-  } catch { }
+  } catch {}
 })();
+
+/**
+ * Paksa refresh access_token dari refresh-token,
+ * meski access_token lama masih ada.
+ */
+export async function forceRefreshSession(): Promise<boolean> {
+  if (!allowRefresh) return false;
+  const t = await doRefresh();
+  return !!t;
+}

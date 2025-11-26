@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import CPicturePreview from "@/components/costum/common/CPicturePreview";
 
 /* ================= Types (re-use dari table) ================= */
 type SubjectStatus = "active" | "inactive";
@@ -131,6 +132,18 @@ const SchoolSubjectForm: React.FC = () => {
     subjectFromState?.status ? subjectFromState.status === "active" : true
   );
   const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+
+  const handleFileChange = (newFile: File | null) => {
+    setFile(newFile);
+
+    if (newFile) {
+      setPreview(URL.createObjectURL(newFile));
+    } else {
+      setPreview(null);
+    }
+  };
+
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
@@ -192,15 +205,14 @@ const SchoolSubjectForm: React.FC = () => {
   return (
     <div className="w-full">
       <main className="w-full">
-        <div className="max-w-3xl mx-auto flex flex-col gap-6">
+        <div className="mx-auto flex flex-col gap-6">
           {/* Header minimal (back + title) */}
           <div className="flex items-center gap-3">
             <Button
               onClick={handleBack}
               variant="ghost"
               size="icon"
-              className="cursor-pointer"
-            >
+              className="cursor-pointer">
               <ArrowLeft size={20} />
             </Button>
             <div>
@@ -265,20 +277,14 @@ const SchoolSubjectForm: React.FC = () => {
                   />
                 </div>
 
-                <div className="flex flex-col gap-1">
-                  <Label htmlFor="subject_image">
-                    Gambar (opsional{isEdit ? " — menimpa yang lama" : ""})
-                  </Label>
-                  <Input
-                    id="subject_image"
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Disarankan rasio 4:3, ukuran &lt; 1MB.
-                  </p>
-                </div>
+                {/* ================= FILE UPLOAD WITH PREVIEW ================= */}
+                <Label>Gambar (opsional)</Label>
+
+                <CPicturePreview
+                  file={file}
+                  preview={preview}
+                  onFileChange={handleFileChange}
+                />
 
                 {errorMsg && (
                   <div className="text-sm text-destructive whitespace-pre-line">
@@ -291,8 +297,7 @@ const SchoolSubjectForm: React.FC = () => {
                     type="button"
                     variant="ghost"
                     onClick={handleBack}
-                    disabled={loading}
-                  >
+                    disabled={loading}>
                     Batal
                   </Button>
                   <Button type="submit" className="gap-1" disabled={loading}>

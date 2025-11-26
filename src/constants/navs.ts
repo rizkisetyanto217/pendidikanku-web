@@ -1,4 +1,5 @@
 // src/constants/navs.ts
+
 import {
   LayoutDashboard,
   Users,
@@ -37,7 +38,6 @@ export type NavDict = {
   sekolah: NavItem[];
   murid: NavItem[];
   guru: NavItem[];
-  unassigned: NavItem[];
 };
 
 export const NAVS: NavDict = {
@@ -374,59 +374,50 @@ export const NAVS: NavDict = {
       icon: Users, // /guru/profil-guru
     },
   ],
-
-  /* =========================================================
-   * UNASSIGNED (sudah login, punya membership, tapi belum ada role)
-   * base biasanya tetap /:school_slug/sekolah
-   * =======================================================*/
-  unassigned: [
-    {
-      path: "dashboard",
-      label: "Dashboard",
-      icon: LayoutDashboard,
-      end: true, // /sekolah/dashboard
-    },
-    {
-      path: "menu-utama",
-      label: "Menu Utama",
-      icon: ChartBar, // /sekolah/menu-utama
-    },
-    {
-      path: "profil",
-      label: "Profil",
-      icon: Users, // misal: /sekolah/profil (profil user di sekolah)
-    },
-    {
-      path: "administrasi",
-      label: "Administrasi",
-      icon: ClipboardCheck,
-      children: [
-        {
-          // -> /sekolah/pendaftaran
-          path: "pendaftaran",
-          label: "Pendaftaran",
-          to: "pendaftaran",
-        },
-        {
-          // -> /sekolah/keuangan
-          path: "keuangan",
-          label: "Keuangan",
-          to: "keuangan",
-        },
-      ],
-    },
-    {
-      path: "dukungan",
-      label: "Dukungan",
-      icon: HeartHandshake,
-      children: [
-        {
-          // -> /sekolah/dukungan
-          path: "",
-          label: "Donasi",
-          end: true,
-        },
-      ],
-    },
-  ],
 };
+
+// =========================
+// NAVS: UNNASIGNED USER FLOWS (PMB)
+// =========================
+
+export const NAVS_UNNASIGNED_STUDENT: NavItem[] = [
+  {
+    // base: /:school_slug/user-murid/dashboard
+    path: "dashboard",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    end: true,
+  },
+  {
+    // /:school_slug/user-murid/pendaftaran
+    path: "pendaftaran",
+    label: "Pendaftaran",
+    icon: ClipboardCheck,
+    end: true,
+  },
+  {
+    // /:school_slug/user-murid/profil
+    path: "profil",
+    label: "Profil",
+    icon: Users,
+    end: true,
+  },
+];
+
+export const NAVS_UNNASIGNED_TEACHER: NavItem[] = [
+  {
+    // index di route user-guru sudah redirect ke "bergabung"
+    // base: /:school_slug/user-guru/bergabung
+    path: "bergabung",
+    label: "Bergabung",
+    icon: HeartHandshake,
+    end: true,
+  },
+  {
+    // /:school_slug/user-guru/profil
+    path: "profil",
+    label: "Profil Guru",
+    icon: UserCog,
+    end: true,
+  },
+];

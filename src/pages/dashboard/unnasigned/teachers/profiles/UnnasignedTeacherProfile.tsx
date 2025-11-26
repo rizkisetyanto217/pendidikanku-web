@@ -1,6 +1,6 @@
-// src/pages/sekolahislamku/pages/user/UnnasignedStudentProfileTeacher.tsx
+// src/pages/dashboard/unnasigned/teachers/profiles/UnnasignedTeacherProfile.tsx
 import { useMemo, useState, useEffect } from "react";
-import { useLocation, useParams } from "react-router-dom";
+import { useLocation, useParams, useNavigate } from "react-router-dom"; // ⬅️ tambahkan useNavigate
 import {
   GraduationCap,
   ShieldCheck,
@@ -110,6 +110,7 @@ function fromWhatsappUrl(url: string | null | undefined): string {
 export default function UnnasignedTeacherProfile() {
   const { school_slug } = useParams<{ school_slug: string }>();
   const location = useLocation();
+  const navigate = useNavigate(); // ⬅️ inisialisasi
   const state = (location.state || {}) as LocationState;
 
   // 🔍 mode khusus: kalau URL mengandung "-new"
@@ -309,7 +310,15 @@ export default function UnnasignedTeacherProfile() {
         },
       });
 
-      setSuccess("Profil guru berhasil diperbarui.");
+      // ✅ Behavior sesuai permintaan:
+      // - kalau di /profil-new → redirect ke /user-guru/bergabung
+      // - kalau di /profil biasa → cukup tampilkan pesan sukses & stay
+      if (isNewFlow) {
+        const base = school_slug ? `/${school_slug}` : "";
+        navigate(`${base}/user-guru/bergabung`, { replace: true });
+      } else {
+        setSuccess("Profil guru berhasil diperbarui.");
+      }
     } catch (err: any) {
       console.error(err);
       const backendMsg = err?.response?.data?.message as string | undefined;
@@ -325,7 +334,7 @@ export default function UnnasignedTeacherProfile() {
     !teacherName ||
     !teacherPhone ||
     !teacherField ||
-    !teacherExperienceYears;
+    !teacherGender; // gender wajib
 
   // 🧱 Container: kalau -new → max-width & center (sama seperti student)
   const containerClass = isNewFlow
@@ -472,6 +481,25 @@ export default function UnnasignedTeacherProfile() {
                   </div>
                 </div>
 
+                {/* JENIS KELAMIN - WAJIB & DIPINDAH KE ATAS */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="teacher_gender">Jenis kelamin *</Label>
+                  <Select
+                    value={teacherGender}
+                    onValueChange={(v: "male" | "female") =>
+                      setTeacherGender(v)
+                    }
+                  >
+                    <SelectTrigger id="teacher_gender">
+                      <SelectValue placeholder="Pilih jenis kelamin" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">Laki-laki</SelectItem>
+                      <SelectItem value="female">Perempuan</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="space-y-1.5">
                   <Label htmlFor="teacher_phone">Nomor WA aktif *</Label>
                   <Input
@@ -490,32 +518,15 @@ export default function UnnasignedTeacherProfile() {
             </div>
 
             {/* FIELD PENTING LAINNYA */}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="teacher_field">Bidang keahlian utama *</Label>
-                <Input
-                  id="teacher_field"
-                  value={teacherField}
-                  onChange={(e) => setTeacherField(e.target.value)}
-                  placeholder="Contoh: Balaghah, Nahwu, Tahfizh, Fiqih, dll."
-                  required
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="teacher_experience_years">
-                  Pengalaman mengajar (tahun) *
-                </Label>
-                <Input
-                  id="teacher_experience_years"
-                  type="number"
-                  min={0}
-                  max={80}
-                  value={teacherExperienceYears}
-                  onChange={(e) => setTeacherExperienceYears(e.target.value)}
-                  placeholder="Contoh: 3"
-                  required
-                />
-              </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="teacher_field">Bidang keahlian utama *</Label>
+              <Input
+                id="teacher_field"
+                value={teacherField}
+                onChange={(e) => setTeacherField(e.target.value)}
+                placeholder="Contoh: Balaghah, Nahwu, Tahfizh, Fiqih, dll."
+                required
+              />
             </div>
 
             {/* OPSIONAL (COLLAPSIBLE) */}
@@ -530,23 +541,23 @@ export default function UnnasignedTeacherProfile() {
                 </button>
               </CollapsibleTrigger>
               <CollapsibleContent className="pt-3 space-y-4">
+                {/* Experience years + kota sekarang opsional */}
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <Label htmlFor="teacher_gender">Jenis kelamin</Label>
-                    <Select
-                      value={teacherGender}
-                      onValueChange={(v: "male" | "female") =>
-                        setTeacherGender(v)
+                    <Label htmlFor="teacher_experience_years">
+                      Pengalaman mengajar (tahun)
+                    </Label>
+                    <Input
+                      id="teacher_experience_years"
+                      type="number"
+                      min={0}
+                      max={80}
+                      value={teacherExperienceYears}
+                      onChange={(e) =>
+                        setTeacherExperienceYears(e.target.value)
                       }
-                    >
-                      <SelectTrigger id="teacher_gender">
-                        <SelectValue placeholder="Pilih jenis kelamin" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="male">Laki-laki</SelectItem>
-                        <SelectItem value="female">Perempuan</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      placeholder="Contoh: 3"
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="teacher_city">Kota / Domisili</Label>

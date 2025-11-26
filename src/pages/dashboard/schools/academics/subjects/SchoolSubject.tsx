@@ -414,7 +414,7 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
   return (
     <div className="w-full">
       <main className="w-full">
-        <div className="mx-auto flex flex-col gap-6">
+        <div className="flex flex-col gap-6">
           {/* Header minimal (back + title) */}
           <div className="flex items-center justify-between">
             <div className="md:flex hidden items-center gap-3">
@@ -453,6 +453,7 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
           {/* DataTable */}
           {!mergedQ.isLoading && !mergedQ.isError && (
             <DataTable<SubjectRow>
+              className="px-0"
               defaultQuery={query}
               onQueryChange={setQuery}
               searchByKeys={["name", "code"]}

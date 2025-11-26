@@ -611,7 +611,7 @@ const SchoolAcademicTermForm: React.FC = () => {
                   </div>
                 )}
               </CardContent>
-              <CardFooter className="flex justify-between gap-2">
+              <CardFooter className="flex justify-end gap-2">
                 <Button
                   type="button"
                   variant="ghost"

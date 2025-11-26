@@ -49,6 +49,7 @@ import SchoolSubjectForm from "@/pages/dashboard/schools/academics/subjects/deta
 import SchoolClassParentForm from "@/pages/dashboard/schools/classes/class-parents/details/SchoolClassParentForm";
 import SchoolCSSTForm from "@/pages/dashboard/schools/classes/class-section-subject-teachers/details/SchoolCSSTForm";
 import SchoolClassForm from "@/pages/dashboard/schools/classes/classes/details/SchoolClassForm";
+import SchoolClassSectionForm from "@/pages/dashboard/schools/classes/class-sections/details/SchoolClassSectionForm";
 
 export const SchoolRoutes = (
   <Route path="sekolah" element={<DashboardLayout />}>
@@ -117,7 +118,7 @@ export const SchoolRoutes = (
         path="semua-kelas/:classSectionId"
         element={<SchoolClassSectionDetail />}
       />
-      <Route path="semua-kelas/new" element={<SchoolClassSectionDetail />} />
+      <Route path="semua-kelas/new" element={<SchoolClassSectionForm />} />
       <Route path="semua-kelas/edit/:classSectionId"
         element={<SchoolClassSectionDetail />}
       />

@@ -10,6 +10,7 @@ import {
   Users,
   Link as LinkIcon,
   ShieldCheck,
+  Loader2,
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -144,10 +145,7 @@ export default function SchoolSectionFormPage() {
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Kelas" },
-        {
-          label: "Semua Kelas",
-          href: classId ? `../${classId}` : "semua-kelas",
-        },
+        { label: "Semua Kelas", href: "kelas/semua-kelas" },
         { label: isEdit ? "Edit" : "Tambah" },
       ],
       actions: null,
@@ -219,11 +217,7 @@ export default function SchoolSectionFormPage() {
 
       // Kembali ke list
       setTimeout(() => {
-        if (classId) {
-          navigate("..");
-        } else {
-          navigate(-1);
-        }
+        navigate("/sekolah/kelas/semua-kelas");
       }, 800);
     },
     onError: (err: any) => {
@@ -237,13 +231,7 @@ export default function SchoolSectionFormPage() {
 
   const isBusy = mutation.isPending || (isEdit && isLoadingDetail);
 
-  const handleBack = () => {
-    if (classId) {
-      navigate(-1);
-    } else {
-      navigate("/"); // fallback
-    }
-  };
+   const handleBack = () => navigate(-1);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -260,15 +248,14 @@ export default function SchoolSectionFormPage() {
 
   return (
     <div className="w-full overflow-x-hidden bg-background text-foreground">
-      <main className="mx-auto flex max-w-4xl flex-col gap-6 py-4">
+      <main className="mx-auto flex flex-col gap-6">
         {/* Header lokal */}
         <div className="flex items-center gap-3">
           <Button
             onClick={handleBack}
             variant="ghost"
             size="icon"
-            className="hidden md:inline-flex"
-          >
+            className="hidden md:inline-flex">
             <ArrowLeft size={20} />
           </Button>
           <div>
@@ -396,8 +383,7 @@ export default function SchoolSectionFormPage() {
                             ? "border-primary bg-primary/5"
                             : "border-border/60 hover:bg-muted/40"
                         }`}
-                        disabled={isBusy}
-                      >
+                        disabled={isBusy}>
                         <span className="font-medium">{opt.label}</span>
                       </button>
                     ))}
@@ -480,28 +466,34 @@ export default function SchoolSectionFormPage() {
           )}
 
           {/* Actions */}
-          <div className="flex items-center justify-between gap-3">
+          {/* Actions — sama seperti SchoolClassParentForm */}
+          <div className="flex justify-end gap-2 pt-2">
             <Button
-              type="button"
-              variant="ghost"
               onClick={handleBack}
-              disabled={isBusy}
-            >
-              <ArrowLeft className="mr-1 h-4 w-4" />
+              variant="ghost"
+              size="icon">
               Batal
             </Button>
 
-            <div className="flex items-center gap-2">
-              <Button type="submit" disabled={isBusy} className="min-w-[140px]">
-                {isBusy
-                  ? isEdit
-                    ? "Menyimpan..."
-                    : "Membuat..."
-                  : isEdit
-                  ? "Simpan Perubahan"
-                  : "Buat Kelas"}
-              </Button>
-            </div>
+            <Button type="submit" disabled={isBusy} className="min-w-[140px]">
+              {isBusy ? (
+                isEdit ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Menyimpan...
+                  </>
+                ) : (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Membuat...
+                  </>
+                )
+              ) : isEdit ? (
+                "Simpan Perubahan"
+              ) : (
+                "Simpan"
+              )}
+            </Button>
           </div>
         </form>
       </main>

@@ -282,7 +282,7 @@ const SchoolRoomForm: React.FC = () => {
   return (
     <div className="w-full overflow-x-hidden bg-background text-foreground">
       <main className="w-full">
-        <div className="mx-auto max-w-3xl flex flex-col gap-4 lg:gap-6 py-4">
+        <div className="mx-auto flex flex-col gap-4 lg:gap-6">
           {/* Header + Back */}
           <div className="flex items-center gap-3">
             <Button
@@ -439,7 +439,7 @@ const SchoolRoomForm: React.FC = () => {
                 )}
               </CardContent>
 
-              <CardFooter className="flex justify-between gap-2">
+              <CardFooter className="flex justify-end gap-2">
                 <Button
                   type="button"
                   variant="ghost"

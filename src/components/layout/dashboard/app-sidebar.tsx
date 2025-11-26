@@ -1,4 +1,5 @@
-// src/components/layout/dashboard/AppSidebar.tsx
+// src/components/layout/dashboard/app-sidebar.tsx
+
 import * as React from "react";
 import { useLocation } from "react-router-dom";
 import {
@@ -14,7 +15,13 @@ import { NavProjects } from "@/components/layout/dashboard/nav-projects";
 import { NavUser } from "@/components/layout/dashboard/nav-user";
 import { TeamHeader } from "@/components/layout/dashboard/team-switcher";
 
-import { NAVS, type NavDict } from "@/constants/navs";
+import {
+  NAVS,
+  type NavDict,
+  type NavItem,
+  NAVS_UNNASIGNED_STUDENT,
+  NAVS_UNNASIGNED_TEACHER,
+} from "@/constants/navs";
 import { Frame, PieChart, Map } from "lucide-react";
 
 /* 🔐 Ambil context user + school dari JWT */
@@ -51,42 +58,25 @@ const ROLE_ALIASES: Record<string, keyof NavDict> = {
   guru: "guru",
   teacher: "guru",
   pengajar: "guru",
-
-  // area generic user (tanpa role khusus) -> NAVS.unassigned
-  user: "unassigned",
-  "user-murid": "unassigned",
-  "user-guru": "unassigned",
 };
 
 /** Cari role & base langsung dari path apapun bentuknya */
-function useRoleAndBaseFromPath(): { role: keyof NavDict; base: string } {
+function useRoleAndBaseFromPath(): {
+  role: keyof NavDict;
+  base: string;
+  roleSegment: string;
+} {
   const location = useLocation();
   const segs = location.pathname.split("/").filter(Boolean);
 
-  // cari segmen yang match alias role
-  const roleIdx = segs.findIndex((s) => ROLE_ALIASES[s] !== undefined);
-  if (roleIdx >= 0) {
-    const role = ROLE_ALIASES[segs[roleIdx]];
-    const base = "/" + segs.slice(0, roleIdx + 1).join("/");
-    return { role, base };
-  }
+  const slug = segs[0] ?? "sekolah";
+  const roleSegment = segs[1] ?? "sekolah";
 
-  // fallback lama: coba segs[1] atau segs[0]
-  const candidate = (segs[1] ?? segs[0]) as keyof NavDict | undefined;
-  if (
-    candidate === "sekolah" ||
-    candidate === "murid" ||
-    candidate === "guru" ||
-    candidate === "unassigned"
-  ) {
-    return {
-      role: candidate,
-      base: "/" + segs.slice(0, (segs[0] ? 1 : 0) + 1).join("/"),
-    };
-  }
+  const base = "/" + [slug, roleSegment].filter(Boolean).join("/");
 
-  // fallback terakhir
-  return { role: "sekolah", base: "/sekolah" };
+  const mappedRole = ROLE_ALIASES[roleSegment] ?? "sekolah";
+
+  return { role: mappedRole, base, roleSegment };
 }
 
 /** Resolve nav key berdasarkan membership (role di JWT) */
@@ -94,43 +84,19 @@ function resolveNavKey(
   membership: CurrentUserMembership | null,
   pathRole: keyof NavDict
 ): keyof NavDict {
-  // 1️⃣ Kalau URL sudah jelas area-nya, langsung pakai itu apa adanya.
-  if (
-    pathRole === "guru" ||
-    pathRole === "murid" ||
-    pathRole === "unassigned"
-  ) {
+  // Kalau di URL sudah jelas area guru/murid → pakai saja
+  if (pathRole === "guru" || pathRole === "murid") {
     return pathRole;
   }
 
-  // 2️⃣ Kalau ga ada membership → pakai dari path saja
+  // Tidak ada membership → default sekolah
   if (!membership) {
-    return pathRole;
+    return "sekolah";
   }
 
   const roles = membership.roles ?? [];
 
-  // 3️⃣ Khusus area sekolah: bedakan admin vs non-admin
-  if (pathRole === "sekolah") {
-    if (!roles.length) {
-      return "unassigned";
-    }
-
-    if (
-      roles.includes("admin") ||
-      roles.includes("dkm") ||
-      roles.includes("staff")
-    ) {
-      return "sekolah";
-    }
-
-    if (roles.includes("teacher")) return "guru";
-    if (roles.includes("student")) return "murid";
-
-    return "unassigned";
-  }
-
-  // 4️⃣ Fallback terakhir: deduksi pure dari role saja
+  // Admin/dkm/staff → sekolah
   if (
     roles.includes("admin") ||
     roles.includes("dkm") ||
@@ -138,15 +104,19 @@ function resolveNavKey(
   ) {
     return "sekolah";
   }
+
   if (roles.includes("teacher")) return "guru";
   if (roles.includes("student")) return "murid";
 
-  return "unassigned";
+  return "sekolah";
 }
 
 export function AppSidebar(props: AppSidebarProps) {
-  const { role: pathRole, base } = useRoleAndBaseFromPath();
+  const { role: pathRole, base, roleSegment } = useRoleAndBaseFromPath();
   const { setOpenMobile } = useSidebar();
+
+  const isUserStudentArea = roleSegment === "user-murid";
+  const isUserTeacherArea = roleSegment === "user-guru";
 
   // 🔐 Ambil user + membership dari simple-context
   const { data: currentUser } = useCurrentUser();
@@ -179,8 +149,17 @@ export function AppSidebar(props: AppSidebarProps) {
     !!completion &&
     (!completion.has_profile || !completion.is_profile_completed);
 
-  // 🔑 Nav key murni berdasarkan membership + path (tak ada konsep "locked")
-  const navKey: keyof NavDict = resolveNavKey(membership, pathRole);
+  // 🔑 Tentukan sumber nav items
+  let rawNavItems: NavItem[];
+
+  if (isUserStudentArea) {
+    rawNavItems = NAVS_UNNASIGNED_STUDENT;
+  } else if (isUserTeacherArea) {
+    rawNavItems = NAVS_UNNASIGNED_TEACHER;
+  } else {
+    const navKey: keyof NavDict = resolveNavKey(membership, pathRole);
+    rawNavItems = NAVS[navKey];
+  }
 
   // Data untuk NavMain
   const schoolName = membership?.school_name ?? "Pendidikanku";
@@ -188,8 +167,8 @@ export function AppSidebar(props: AppSidebarProps) {
   const userName = currentUser?.user_name ?? "User";
   const userEmail = currentUser?.email ?? "user@example.com";
 
-  // Susun items dari NAVS, tanpa disabled/locked
-  const items = NAVS[navKey]
+  // Susun items dari nav terpilih
+  const items = rawNavItems
     // filter dashboard kalau perlu
     .filter((it) => {
       if (!hideDashboard) return true;
