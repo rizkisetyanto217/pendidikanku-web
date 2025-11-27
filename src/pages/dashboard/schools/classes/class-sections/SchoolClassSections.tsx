@@ -4,14 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "@/lib/axios";
 
-import {
-  ArrowLeft,
-  Layers,
-  Users,
-  BookOpen,
-  Hash,
-  ShieldCheck,
-} from "lucide-react";
+import { ArrowLeft, Layers, Users, BookOpen, Hash } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -144,22 +137,6 @@ const MODE_FILTER_OPTIONS: { value: ModeFilter; label: string }[] = [
 
 /* ========= Helpers ========= */
 
-function enrollmentModeLabel(
-  mode: EnrollmentMode | undefined,
-  needApproval: boolean | undefined
-): string {
-  if (!mode) return "Belum diatur";
-
-  if (mode === "self_select") {
-    return needApproval
-      ? "Siswa pilih sendiri (perlu approval)"
-      : "Siswa pilih sendiri";
-  }
-  if (mode === "assigned") return "Mapel & pengajar ditentukan admin";
-  if (mode === "closed") return "Tutup / tidak menerima penugasan baru";
-  return mode;
-}
-
 /* ========= Query: ambil semua sections (API user-scope) ========= */
 
 function useSections(classId?: string | undefined | null) {
@@ -233,7 +210,6 @@ function LoadingGrid() {
 function SectionCard({
   section,
   onOpenDetail,
-  onEdit,
 }: {
   section: ApiClassSection;
   onOpenDetail: () => void;
@@ -252,18 +228,9 @@ function SectionCard({
   const csstCount = section.class_sections_csst_count ?? csstList.length;
   const csstActiveCount = section.class_sections_csst_active_count ?? 0;
 
-  const totalSubjects =
-    section.class_section_total_class_class_section_subject_teachers ??
-    csstCount;
-  const totalSubjectsActive =
-    section.class_section_total_class_class_section_subject_teachers_active ??
-    csstActiveCount;
-
   const isActive = section.class_section_is_active;
-  const modeLabel = enrollmentModeLabel(
-    section.class_section_subject_teachers_enrollment_mode,
-    section.class_section_subject_teachers_self_select_requires_approval
-  );
+  const className = section.class_section_class_name_snapshot;
+  const classSlug = section.class_section_class_slug_snapshot;
 
   const cardClassName = `group relative flex cursor-pointer flex-col overflow-hidden border transition-all duration-150 ${
     isActive
@@ -377,11 +344,25 @@ function SectionCard({
                 <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
                   Level / Parent &amp; Tahun Ajaran
                 </div>
+
+                {/* Parent / level utama */}
                 <div className="font-medium">{parentName}</div>
                 <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                   <span>{parentSlug}</span>
                   {parentLevel != null && <span>Level {parentLevel}</span>}
                 </div>
+
+                {/* ⬇️ Tambahan: nama level / classes (kelas induk / program) */}
+                {(className || classSlug) && (
+                  <div className="mt-1 text-[11px] text-muted-foreground">
+                    Program / Kelas:{" "}
+                    <span className="font-medium">
+                      {className ?? classSlug}
+                    </span>
+                  </div>
+                )}
+
+                {/* Tahun ajaran & term */}
                 {(academicYear || termName) && (
                   <div className="mt-1 text-[11px] text-muted-foreground">
                     {academicYear && <span>TA {academicYear}</span>}
@@ -431,51 +412,6 @@ function SectionCard({
                     </div>
                   )}
                 </div>
-              </div>
-            </div>
-
-            {/* Mode + agregat mapel/pengajar */}
-            <div className="flex flex-col gap-2 rounded-lg border bg-background/40 p-3 md:flex-row md:items-center md:justify-between">
-              <div className="flex flex-1 flex-col gap-1 text-[11px]">
-                <div className="flex items-start gap-2">
-                  <ShieldCheck className="mt-0.5 h-3.5 w-3.5 text-emerald-500" />
-                  <div>
-                    <div className="font-medium">Mode mapel &amp; pengajar</div>
-                    <div className="text-muted-foreground">{modeLabel}</div>
-                  </div>
-                </div>
-                <div className="pl-5 text-[11px] text-muted-foreground">
-                  Total mapel/pengajar: {totalSubjects} (aktif:{" "}
-                  {totalSubjectsActive})
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-1 md:pt-0">
-                {onEdit && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 text-xs"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEdit();
-                    }}
-                  >
-                    Edit Info
-                  </Button>
-                )}
-
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8 text-xs"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onOpenDetail();
-                  }}
-                >
-                  Kelola Mapel &amp; Pengajar
-                </Button>
               </div>
             </div>
 
