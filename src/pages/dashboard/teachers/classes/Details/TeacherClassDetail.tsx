@@ -19,6 +19,7 @@ import {
 
 /* Tambahan untuk breadcrumb sistem dashboard */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
 
 /* ========== Types ========== */
 type AttendanceStatus = "hadir" | "sakit" | "izin" | "alpa" | "online";
@@ -159,7 +160,7 @@ export default function TeacherClassDetail() {
         { label: "Wali Kelas" },
         { label: "Detail Kelas" },
       ],
-      actions: null,
+      showBack: true,
     });
   }, [setHeader]);
 
@@ -169,8 +170,11 @@ export default function TeacherClassDetail() {
         <div className="mx-auto flex flex-col gap-6">
           {/* Top bar */}
           <div className="hidden md:flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-              <ArrowLeft className="h-5 w-5" />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(-1)}>
+              <ArrowLeft size={20} />
             </Button>
             <h1 className="text-lg font-semibold">Detail Kelas</h1>
           </div>
@@ -263,12 +267,11 @@ export default function TeacherClassDetail() {
                           Guru: {m.teacher}
                         </div>
                       </div>
-                      <Badge
-                        variant={m.isActive ? "default" : "outline"}
+                      <CBadgeStatus
+                        status={m.isActive ? "active" : "inactive"}
                         className="text-[10px]"
-                      >
-                        {m.isActive ? "Aktif" : "Nonaktif"}
-                      </Badge>
+                      />
+
                     </div>
 
                     <div className="mt-2 text-xs text-muted-foreground flex items-center gap-2">

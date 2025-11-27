@@ -7,13 +7,13 @@ import { ArrowLeft, Loader2, Users, MapPin } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   CDataTable as DataTable,
   type ColumnDef,
 } from "@/components/costum/table/CDataTable";
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 import type { AxiosError } from "axios";
+import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
 
 /* ========== Types dari API /u/class-sections/list ========== */
 
@@ -393,14 +393,13 @@ const SchoolClassDetail: React.FC = () => {
         align: "center",
         minW: "100px",
         cell: (r) => (
-          <Badge
+          <CBadgeStatus
+            status={r.isActive ? "active" : "inactive"}
             className="justify-center"
-            variant={r.isActive ? "default" : "secondary"}
-          >
-            {r.isActive ? "Aktif" : "Nonaktif"}
-          </Badge>
+          />
         ),
       },
+
       {
         id: "actions",
         header: "",

@@ -25,6 +25,7 @@ import {
 /* dashboard header */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 import type { AxiosError } from "axios";
+import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
 
 /* ========= Types dari API /u/class-section-subject-teachers/list ========= */
 
@@ -180,14 +181,27 @@ const formatDeliveryMode = (m: DeliveryMode | undefined) => {
 
 /* ========== Page ========== */
 
+
 const TeacherCSSTDetail: React.FC = () => {
+  const navigate = useNavigate();
+
   const { csstId, teacherId } = useParams<{
     csstId: string;
     teacherId?: string;
   }>();
 
-  const navigate = useNavigate();
   const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Detail Mapel",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Guru Mapel" },
+        { label: "Detail Mapel" },
+      ],
+      showBack: true,
+    });
+  }, [setHeader]);
 
   /* ===== Query detail CSST (pakai API terbaru) ===== */
   const csstQ = useQuery<ApiCSSTItem | null, AxiosError>({
@@ -304,20 +318,6 @@ const TeacherCSSTDetail: React.FC = () => {
     };
   }, [csstQ.data]);
 
-  /* ===== Set header dashboard ===== */
-  useEffect(() => {
-    if (!csstView) return;
-    setHeader({
-      title: `Detail Mapel`,
-      breadcrumbs: [
-        { label: "Dashboard", href: "dashboard" },
-        { label: "Guru Mapel" },
-        { label: "Detail Mapel" },
-      ],
-      actions: null,
-    });
-  }, [csstView, setHeader]);
-
   /* ===== Loading & error ===== */
   if (csstQ.isLoading) {
     return (
@@ -370,14 +370,21 @@ const TeacherCSSTDetail: React.FC = () => {
     <div className="w-full bg-background text-foreground">
       <main className="w-full">
         <div className="mx-auto flex flex-col gap-6">
-          {/* Top bar */}
-          <div className="hidden md:flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-              <ArrowLeft size={20} />
-            </Button>
-            <h1 className="text-lg font-semibold md:text-xl">Detail Mapel</h1>
+          {/* Header minimal (back + title) */}
+          <div className="flex items-center justify-between">
+            <div className="md:flex hidden items-center gap-3">
+              <Button
+                onClick={() => navigate(-1)}
+                variant="ghost"
+                size="icon"
+              >
+                <ArrowLeft size={20} />
+              </Button>
+              <h1 className="font-semibold text-lg md:text-xl">
+                Detail Kelas
+              </h1>
+            </div>
           </div>
-
           {/* Header mapel */}
           <Card>
             <CardContent className="p-4 md:p-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -405,12 +412,11 @@ const TeacherCSSTDetail: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-2 flex-wrap justify-end">
-                <Badge
-                  variant={csstView.isActive ? "default" : "outline"}
+                <CBadgeStatus
+                  status={csstView.isActive ? "active" : "inactive"}
                   className="text-[11px]"
-                >
-                  {csstView.isActive ? "Aktif" : "Nonaktif"}
-                </Badge>
+                />
+
                 <Badge variant="outline" className="text-[11px]">
                   {formatDeliveryMode(csstView.deliveryMode)}
                 </Badge>

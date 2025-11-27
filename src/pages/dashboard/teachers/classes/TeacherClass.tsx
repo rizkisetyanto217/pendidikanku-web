@@ -1,4 +1,4 @@
-// src/pages/sekolahislamku/teacher/TeacherClassFromSections.tsx
+// src/pages/sekolahislamku/teacher/TeacherClass.tsx
 import { useMemo, useState, useDeferredValue, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -29,6 +29,7 @@ import axios, { getAccessToken } from "@/lib/axios";
 
 /* Tambahan untuk breadcrumb sistem dashboard */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
 
 /* ==========================================================
    Types API
@@ -319,12 +320,11 @@ function SectionCard({ s }: { s: SectionRow }) {
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <h3 className="font-semibold text-base truncate">{s.name}</h3>
-            <Badge
-              variant={s.isActive ? "default" : "outline"}
+            <CBadgeStatus
+              status={s.isActive ? "active" : "inactive"}
               className="text-xs"
-            >
-              {s.isActive ? "Aktif" : "Nonaktif"}
-            </Badge>
+            />
+
           </div>
           <div className="mt-1 text-sm text-muted-foreground">
             <UserSquare2 className="inline mr-1 h-4 w-4" />
@@ -372,7 +372,7 @@ function SectionCard({ s }: { s: SectionRow }) {
 ========================================================== */
 type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
-export default function TeacherClassFromSections({
+export default function TeacherClass({
   showBack = false,
   backTo
 }: Props) {

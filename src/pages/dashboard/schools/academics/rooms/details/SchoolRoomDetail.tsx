@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
 
 /* ===================== API TYPES ===================== */
 type ApiClassSection = {
@@ -92,12 +93,6 @@ function InfoSection({
   );
 }
 
-function StatusBadge({ active }: { active: boolean }) {
-  if (active) {
-    return <Badge variant="default">Aktif</Badge>;
-  }
-  return <Badge variant="outline">Nonaktif</Badge>;
-}
 
 /* ===================== HOOK: FETCH DETAIL ===================== */
 function useRoomDetail(id?: string) {
@@ -200,10 +195,8 @@ export default function SchoolRoomDetail() {
             variant="ghost"
             size="icon"
             onClick={() => navigate(-1)}
-            title="Kembali"
-            className="shrink-0"
           >
-            <ArrowLeft className="size-5" />
+            <ArrowLeft className="20" />
           </Button>
           <h1 className="font-semibold text-lg md:text-xl">Detail Ruangan</h1>
         </div>
@@ -218,7 +211,6 @@ export default function SchoolRoomDetail() {
           />
         )}
 
-        {/* Main grid */}
         {/* Main grid */}
         <div
           className={
@@ -252,8 +244,13 @@ export default function SchoolRoomDetail() {
                 <InfoRow label="Lokasi" value={location} />
                 <InfoRow
                   label="Status"
-                  value={<StatusBadge active={isActive} />}
+                  value={
+                    <CBadgeStatus
+                      status={isActive ? "active" : "inactive"}
+                    />
+                  }
                 />
+
                 <InfoRow
                   label="Tipe"
                   value={isVirtual ? "Virtual / Online" : "Fisik / Offline"}
@@ -397,12 +394,10 @@ export default function SchoolRoomDetail() {
                         <div className="truncate text-sm font-semibold">
                           {sec.name}
                         </div>
-                        <Badge
-                          variant={sec.is_active ? "default" : "outline"}
-                          className="text-[10px]"
-                        >
-                          {sec.is_active ? "Aktif" : "Nonaktif"}
-                        </Badge>
+                        <CBadgeStatus
+                          status={sec.is_active ? "active" : "inactive"}
+                        />
+
                       </div>
                       <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
                         <span className="rounded-full border px-2 py-0.5">

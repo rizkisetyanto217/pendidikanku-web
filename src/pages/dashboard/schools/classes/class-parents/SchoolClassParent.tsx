@@ -7,7 +7,6 @@ import axios, { getActiveschoolId } from "@/lib/axios";
 
 /* shadcn/ui */
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { Select } from "@/components/ui/select";
 
 /* Layout header hook */
@@ -22,6 +21,7 @@ import {
 
 /* ✅ Current user context (ambil school_id dari token) */
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
 
 /* ================= Types ================= */
 export interface Level {
@@ -214,18 +214,16 @@ const SchoolClassParent: React.FC = () => {
         header: "Status",
         minW: "110px",
         align: "center",
-        cell: (r) => (
-          <span
-            className={cn(
-              "inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ring-1",
-              r.is_active
-                ? "bg-emerald-500/10 text-emerald-500 ring-emerald-500/20"
-                : "bg-zinc-500/10 text-zinc-500 ring-zinc-500/20"
-            )}
-          >
-            {r.is_active ? "Aktif" : "Nonaktif"}
-          </span>
-        ),
+        cell: (r) => {
+          const status =
+            r.is_active === true
+              ? "active"
+              : r.is_active === false
+                ? "inactive"
+                : "pending"; // untuk nilai null / kondisi pending
+
+          return <CBadgeStatus status={status} />;
+        },
       },
     ],
     []

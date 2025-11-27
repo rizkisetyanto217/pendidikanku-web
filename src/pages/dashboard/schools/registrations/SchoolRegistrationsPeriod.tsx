@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
   Select,
@@ -50,6 +49,7 @@ import {
   type ColumnDef,
 } from "@/components/costum/table/CDataTable";
 import { useNavigate } from "react-router-dom";
+import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
 
 /* utils */
 const fmtIDR = (n: number) =>
@@ -393,12 +393,12 @@ export default function SchoolRegistrationsPeriod({
       id: "general_billing_is_active",
       header: "Status",
       minW: "120px",
-      cell: (r) =>
-        r.general_billing_is_active ? (
-          <Badge>Aktif</Badge>
-        ) : (
-          <Badge variant="outline">Nonaktif</Badge>
-        ),
+      cell: (r) => (
+        <CBadgeStatus
+          status={r.general_billing_is_active ? "active" : "inactive"}
+        />
+      ),
+
     },
   ];
 
@@ -531,9 +531,10 @@ export default function SchoolRegistrationsPeriod({
           <InfoItem
             label="Status"
             value={
-              <Badge>
-                {term.academic_term_is_active ? "Aktif" : "Nonaktif"}
-              </Badge>
+              <CBadgeStatus
+                status={term.academic_term_is_active ? "active" : "inactive"}
+              />
+
             }
           />
         </CardContent>

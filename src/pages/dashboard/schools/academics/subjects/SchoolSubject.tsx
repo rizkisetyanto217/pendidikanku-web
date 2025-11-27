@@ -16,7 +16,6 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 /* shadcn/ui */
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectTrigger,
@@ -39,6 +38,7 @@ import {
   DataTable,
   type ColumnDef,
 } from "@/components/costum/table/CDataTable";
+import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
 
 /* ================= Types ================= */
 export type SubjectStatus = "active" | "inactive";
@@ -359,15 +359,19 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
       id: "status",
       header: "Status",
       minW: "120px",
-      cell: (r) =>
-        r.status === "active" ? (
-          <Badge className="justify-center">Aktif</Badge>
-        ) : (
-          <Badge variant="secondary" className="justify-center">
-            Nonaktif
-          </Badge>
-        ),
+      cell: (r) => (
+        <CBadgeStatus
+          status={
+            r.status === "active"
+              ? "active"
+              : r.status === "inactive"
+                ? "inactive"
+                : "pending"
+          }
+        />
+      ),
     },
+
     {
       id: "class_count",
       header: "Kelas",
@@ -489,11 +493,16 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
                 <div className="rounded-xl border p-4 space-y-1">
                   <div className="flex items-center justify-between">
                     <div className="font-semibold">{r.name}</div>
-                    {r.status === "active" ? (
-                      <Badge>Aktif</Badge>
-                    ) : (
-                      <Badge variant="secondary">Nonaktif</Badge>
-                    )}
+                    <CBadgeStatus
+                      status={
+                        r.status === "active"
+                          ? "active"
+                          : r.status === "inactive"
+                            ? "inactive"
+                            : "pending"
+                      }
+                    />
+
                   </div>
                   <div className="text-xs text-muted-foreground">
                     Kode: {r.code || "-"}

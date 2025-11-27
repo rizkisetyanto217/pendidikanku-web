@@ -83,43 +83,43 @@ const normalizeISOToLocalNoon = (iso?: string) =>
 const dateLong = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        weekday: "long",
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      })
+      weekday: "long",
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    })
     : "-";
 const hijriLong = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID-u-ca-islamic-umalqura", {
-        weekday: "long",
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      })
+      weekday: "long",
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    })
     : "-";
 const idr = (n?: number) =>
   n == null
     ? "-"
     : new Intl.NumberFormat("id-ID", {
-        style: "currency",
-        currency: "IDR",
-        maximumFractionDigits: 0,
-      }).format(n);
+      style: "currency",
+      currency: "IDR",
+      maximumFractionDigits: 0,
+    }).format(n);
 const dateFmt = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      })
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    })
     : "-";
 const timeFmt = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleTimeString("id-ID", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
+      hour: "2-digit",
+      minute: "2-digit",
+    })
     : "-";
 
 // ================= Dummy Data =================
@@ -355,14 +355,14 @@ export default function SchoolDetailBill() {
   };
 
   const getPaymentMethodIcon = (method?: string) =>
-    ({ "Transfer Bank": "🏦", Tunai: "💵", "E-Wallet": "📱" }[method || ""] ||
+  ({ "Transfer Bank": "🏦", Tunai: "💵", "E-Wallet": "📱" }[method || ""] ||
     "💳");
 
   if (invoiceQuery.isLoading) {
     return (
-      <div className="min-h-screen w-full">
-        <main className="w-full px-4 md:px-6 md:py-8">
-          <div className="max-w-screen-2xl mx-auto">
+      <div className="w-full">
+        <main className="w-full">
+          <div className="mx-auto">
             <LoadingSpinner text="Memuat detail tagihan..." />
           </div>
         </main>
@@ -515,9 +515,8 @@ export default function SchoolDetailBill() {
                 <div className="flex justify-between items-center py-2">
                   <span className="font-medium">Sisa Tagihan:</span>
                   <span
-                    className={`font-bold text-xl ${
-                      remainingAmount > 0 ? "text-red-600" : "text-primary"
-                    }`}
+                    className={`font-bold text-xl ${remainingAmount > 0 ? "text-red-600" : "text-primary"
+                      }`}
                   >
                     {idr(remainingAmount)}
                   </span>
@@ -634,9 +633,8 @@ export default function SchoolDetailBill() {
             onOpenChange={setOpenReceipt}
             payments={invoice.payment_history.map((p) => ({
               value: p.id,
-              label: `${idr(p.amount)} — ${
-                p.method ?? "Metode tidak diketahui"
-              }`,
+              label: `${idr(p.amount)} — ${p.method ?? "Metode tidak diketahui"
+                }`,
             }))}
             onSubmit={(data) => handleExportReceipt(data)}
           />

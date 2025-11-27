@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 /* Data fetching */
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/axios";
+import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
 
 /* ===== Helpers ===== */
 const dateLong = (iso?: string | null) =>
@@ -27,6 +28,21 @@ const dateLong = (iso?: string | null) =>
       year: "numeric",
     })
     : "-";
+
+const mapEnrollmentToBadge = (s: StudentClassEnrollmentStatus): "active" | "inactive" | "pending" => {
+  switch (s) {
+    case "accepted":
+      return "active";
+    case "pending":
+    case "waitlisted":
+      return "pending";
+    case "rejected":
+    case "canceled":
+    default:
+      return "inactive";
+  }
+};
+
 
 /* ============ Types dari API ============ */
 
@@ -454,9 +470,11 @@ function ActiveEnrollmentCard({ row }: { row: StudentClassEnrollmentRow }) {
             <h3 className="text-base md:text-lg font-semibold truncate">
               {name}
             </h3>
-            <Badge variant="secondary" className="h-6 text-xs">
-              AKTIF
-            </Badge>
+            <CBadgeStatus
+              status="active"
+              className="h-6 text-xs"
+            />
+
             {sectionName && (
               <Badge variant="outline" className="h-6 text-xs">
                 {sectionName}
@@ -544,9 +562,11 @@ function NeedSectionCard({ row }: { row: StudentClassEnrollmentRow }) {
       <CardHeader className="pb-2">
         <CardTitle className="text-base md:text-lg flex items-center gap-2 flex-wrap">
           <span className="truncate">{name}</span>
-          <Badge variant="outline" className="h-6">
-            DITERIMA
-          </Badge>
+          <CBadgeStatus
+            status="active"
+            className="h-6"
+          />
+
         </CardTitle>
       </CardHeader>
       <CardContent className="px-4 md:px-5 pb-4">
@@ -588,16 +608,16 @@ function OtherEnrollmentCard({ row }: { row: StudentClassEnrollmentRow }) {
   const term = row.student_class_enrollments_term_name_snapshot;
   const year = row.student_class_enrollments_term_academic_year_snapshot;
 
-  const statusLabel = row.student_class_enrollments_status.toUpperCase();
-
   return (
     <Card className="p-0 overflow-hidden border-dashed">
       <CardHeader className="pb-2">
         <CardTitle className="text-base md:text-lg flex items-center gap-2 flex-wrap">
           <span className="truncate">{name}</span>
-          <Badge variant="outline" className="h-6">
-            {statusLabel}
-          </Badge>
+          <CBadgeStatus
+            status={mapEnrollmentToBadge(row.student_class_enrollments_status)}
+            className="h-6"
+          />
+
         </CardTitle>
       </CardHeader>
       <CardContent className="px-4 md:px-5 pb-4">

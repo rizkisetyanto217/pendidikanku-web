@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 /* UI */
 import { Button } from "@/components/ui/button";
@@ -133,6 +133,7 @@ export const dummySchedules: ScheduleRow[] = [
 export default function TeacherCSSTDailyReport() {
   const navigate = useNavigate();
   const { setHeader } = useDashboardHeader();
+  const { csstId } = useParams();
 
   // Set header via effect, bukan di body
   useEffect(() => {
@@ -141,11 +142,11 @@ export default function TeacherCSSTDailyReport() {
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Guru Mapel" },
-        { label: "Detail Mapel", href: "guru mapel/detail mapel" },
+        { label: "Detail Mapel", href: `guru-mapel/${csstId}` },
         { label: "Laporan Harian" },
       ],
       // kalau DashboardLayout biasa pakai actions/null, sekalian aja:
-      actions: null,
+      showBack: true,
     });
   }, [setHeader]);
 

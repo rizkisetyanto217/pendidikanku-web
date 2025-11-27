@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import {
     ArrowLeft,
     CalendarDays,
@@ -25,7 +25,7 @@ import type { ScheduleRow } from "@/pages/dashboard/components/calender/types/ty
 
 export default function TeacherScheduleDetail() {
     const navigate = useNavigate();
-    const { id } = useParams();
+    const { csstId, id } = useParams();
     const { setHeader } = useDashboardHeader();
 
     const data = useMemo(
@@ -34,19 +34,20 @@ export default function TeacherScheduleDetail() {
     );
 
     // Set Header
-    useMemo(() => {
+    useEffect(() => {
         setHeader({
-            title: "Detail Jadwal",
+            title: "Detail Laporan Harian",
             breadcrumbs: [
-                { label: "Dashboard", href: "/dashboard" },
-                { label: "Guru Mapel" },
-                { label: "Detail Jadwal" },
-                { label: "Laporan Harian" },
-
+                { label: "Dashboard", href: "dashboard" },
+                { label: "Guru Mapel", href: "guru-mapel" },
+                { label: "Detail Mapel", href: `guru-mapel/${csstId}` },
+                { label: "Laporan Harian", href: `guru-mapel/${csstId}/daily-progress` },
+                { label: "Detail Laporan Harian" },
             ],
-            actions: null,
+            showBack: true,
         });
-    }, [setHeader]);
+    }, [setHeader, csstId]);
+
 
     if (!data) {
         return (
@@ -57,7 +58,7 @@ export default function TeacherScheduleDetail() {
     }
 
     return (
-        <div className="w-full mx-auto">
+        <div className="w-full">
             <div className="md:flex hidden gap-3 items-center">
                 <Button
                     variant="ghost"

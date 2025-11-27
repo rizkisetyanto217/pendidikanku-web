@@ -17,14 +17,16 @@ import {
     BookOpen,
     ChevronRight,
     ArrowLeft,
-    CheckCircle2,
+
     Loader2,
     UserSquare2,
+    MapPin,
 } from "lucide-react";
 
 /* dashboard header */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 import type { AxiosError } from "axios";
+import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
 
 /* ========= Types dari API /u/class-section-subject-teachers/list ========= */
 
@@ -60,20 +62,34 @@ type ApiClassSubjectBookSnapshot = {
     subject?: ApiSubjectSnapshot | null;
 };
 
+type ApiRoomSnapshot = {
+    name?: string | null;
+    slug?: string | null;
+    join_url?: string | null;
+    platform?: string | null;
+    is_virtual?: boolean | null;
+};
+
 type ApiCSSTItem = {
     class_section_subject_teacher_id: string;
     class_section_subject_teacher_school_id: string;
     class_section_subject_teacher_slug: string;
+
     class_section_subject_teacher_total_attendance: number;
     class_section_subject_teacher_enrolled_count: number;
+
     class_section_subject_teacher_delivery_mode: DeliveryMode;
+
     class_section_subject_teacher_class_section_id: string;
     class_section_subject_teacher_class_section_slug_snapshot: string;
     class_section_subject_teacher_class_section_name_snapshot: string;
     class_section_subject_teacher_class_section_code_snapshot: string;
+
     class_section_subject_teacher_school_teacher_id: string;
     class_section_subject_teacher_school_teacher_snapshot?: ApiTeacherSnapshot | null;
     class_section_subject_teacher_school_teacher_name_snapshot?: string | null;
+
+    // Buku / subject
     class_section_subject_teacher_class_subject_book_id: string | null;
     class_section_subject_teacher_class_subject_book_snapshot?: ApiClassSubjectBookSnapshot | null;
     class_section_subject_teacher_book_title_snapshot?: string | null;
@@ -83,6 +99,14 @@ type ApiCSSTItem = {
     class_section_subject_teacher_subject_name_snapshot?: string | null;
     class_section_subject_teacher_subject_code_snapshot?: string | null;
     class_section_subject_teacher_subject_slug_snapshot?: string | null;
+
+    // Ruangan (optional – kalau API support)
+    class_section_subject_teacher_class_room_id?: string | null;
+    class_section_subject_teacher_class_room_slug_snapshot?: string | null;
+    class_section_subject_teacher_class_room_snapshot?: ApiRoomSnapshot | null;
+    class_section_subject_teacher_class_room_name_snapshot?: string | null;
+    class_section_subject_teacher_class_room_slug_snapshot_gen?: string | null;
+
     class_section_subject_teacher_is_active: boolean;
     class_section_subject_teacher_created_at: string;
     class_section_subject_teacher_updated_at: string;
@@ -111,6 +135,15 @@ type SectionView = {
     sectionName: string;
     sectionSlug: string;
     sectionCode: string;
+};
+
+type RoomView = {
+    roomId?: string | null;
+    roomName?: string | null;
+    roomSlug?: string | null;
+    joinUrl?: string | null;
+    platform?: string | null;
+    isVirtual?: boolean | null;
 };
 
 type CsstView = {
@@ -168,20 +201,18 @@ const SchoolCSSTDetail: React.FC = () => {
     const { setHeader } = useDashboardHeader();
 
     /* ===== Query detail CSST ===== */
-    const csstQ = useQuery<ApiCSSTItem | undefined, AxiosError>({
-        queryKey: ["csst-detail", csstId],
+    const csstQ = useQuery<ApiCSSTItem | null, AxiosError>({
+        queryKey: ["school-csst-detail", schoolId, csstId],
         enabled: !!csstId,
         queryFn: async () => {
             const res = await axios.get<ApiCSSTDetailResponse>(
                 "/u/class-section-subject-teachers/list",
                 {
-                    params: {
-                        id: csstId,
-                    },
+                    params: { id: csstId },
                 }
             );
             const items = res.data?.data ?? [];
-            return items[0];
+            return items.length ? items[0] : null;
         },
         staleTime: 60_000,
     });
@@ -199,6 +230,29 @@ const SchoolCSSTDetail: React.FC = () => {
             sectionName: it.class_section_subject_teacher_class_section_name_snapshot,
             sectionSlug: it.class_section_subject_teacher_class_section_slug_snapshot,
             sectionCode: it.class_section_subject_teacher_class_section_code_snapshot,
+        };
+    }, [csstQ.data]);
+
+    const roomView: RoomView | null = useMemo(() => {
+        const it = csstQ.data;
+        if (!it) return null;
+
+        const room = it.class_section_subject_teacher_class_room_snapshot;
+
+        return {
+            roomId: it.class_section_subject_teacher_class_room_id,
+            roomName:
+                it.class_section_subject_teacher_class_room_name_snapshot ||
+                room?.name ||
+                null,
+            roomSlug:
+                it.class_section_subject_teacher_class_room_slug_snapshot_gen ||
+                it.class_section_subject_teacher_class_room_slug_snapshot ||
+                room?.slug ||
+                null,
+            joinUrl: room?.join_url || null,
+            platform: room?.platform || null,
+            isVirtual: room?.is_virtual ?? null,
         };
     }, [csstQ.data]);
 
@@ -316,12 +370,23 @@ const SchoolCSSTDetail: React.FC = () => {
         );
     }
 
-    /* ===== Render utama ===== */
+    /* ===== Render utama (desain mirip TeacherCSSTDetail) ===== */
 
     const totalStudents = csstView.enrolledCount ?? 0;
     const totalMeetings = csstView.totalAttendance ?? 0;
 
-    // Quick links seperti di TeacherCSSTDetail
+    const attendanceTodayLabel =
+        totalMeetings > 0
+            ? `${totalMeetings} kehadiran tercatat`
+            : "Belum ada data";
+
+    const roomLabel =
+        roomView?.roomName ||
+        (roomView?.isVirtual
+            ? roomView.platform || "Kelas virtual"
+            : "Belum diatur");
+
+    // Quick links (sekolah) – pakai route versi School
     const quick = [
         {
             key: "peserta",
@@ -350,7 +415,7 @@ const SchoolCSSTDetail: React.FC = () => {
         {
             key: "profil",
             label: "Profil Mapel",
-            metric: "-",
+            metric: "Detail",
             icon: <UserSquare2 className="h-4 w-4" />,
             to: `/${schoolId}/sekolah/kelas/pelajaran/${csstView.id}/profil`,
             aria: "Lihat profil mapel ini",
@@ -419,12 +484,10 @@ const SchoolCSSTDetail: React.FC = () => {
                             </div>
 
                             <div className="flex items-center gap-2 flex-wrap justify-end">
-                                <Badge
-                                    variant={csstView.isActive ? "default" : "outline"}
+                                <CBadgeStatus
+                                    status={csstView.isActive ? "active" : "inactive"}
                                     className="text-[11px]"
-                                >
-                                    {csstView.isActive ? "Aktif" : "Nonaktif"}
-                                </Badge>
+                                />
                                 <Badge variant="outline" className="text-[11px]">
                                     {formatDeliveryMode(csstView.deliveryMode)}
                                 </Badge>
@@ -432,8 +495,76 @@ const SchoolCSSTDetail: React.FC = () => {
                         </CardContent>
                     </Card>
 
-                    {/* Quick Links – mirip layout TeacherCSSTDetail */}
-                    <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                    {/* =========================
+              Quick links (layout mirip guru)
+             ========================= */}
+
+                    {/* Row khusus: Absensi & Ruangan (card memanjang) */}
+                    <div className="grid gap-3 md:grid-cols-2">
+                        {/* Absensi hari ini - wide card */}
+                        <Card
+                            className="cursor-pointer transition hover:shadow-md"
+                            onClick={() =>
+                                navigate(
+                                    `/${schoolId}/sekolah/kelas/pelajaran/${csstView.id}/kehadiran`
+                                )
+                            }
+                        >
+                            <CardContent className="p-4 md:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                                <div className="space-y-1">
+                                    <div className="text-sm text-muted-foreground flex items-center gap-2">
+                                        <CalendarDays className="h-4 w-4" />
+                                        <span>Absensi & Rekap</span>
+                                    </div>
+                                    <div className="text-xl font-semibold leading-tight">
+                                        {attendanceTodayLabel}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Rekap kehadiran siswa untuk pertemuan-pertemuan mapel ini.
+                                    </p>
+                                </div>
+                                <div className="self-start md:self-center">
+                                    <Badge variant="outline" className="text-[11px]">
+                                        {totalStudents} siswa terdaftar
+                                    </Badge>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Ruangan - wide card */}
+                        <Card
+                            className={`cursor-pointer transition hover:shadow-md ${roomView?.joinUrl ? "" : "opacity-80"
+                                }`}
+                            onClick={() => {
+                                if (roomView?.joinUrl) {
+                                    window.open(roomView.joinUrl, "_blank");
+                                }
+                            }}
+                        >
+                            <CardContent className="p-4 md:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                                <div className="space-y-1">
+                                    <div className="text-sm text-muted-foreground flex items-center gap-2">
+                                        <MapPin className="h-4 w-4" />
+                                        <span>Ruangan</span>
+                                    </div>
+                                    <div className="text-xl font-semibold leading-tight">
+                                        {roomLabel}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Lokasi atau platform utama untuk pertemuan mapel ini.
+                                    </p>
+                                </div>
+                                <div className="self-start md:self-center">
+                                    <Badge variant="outline" className="text-[11px]">
+                                        {formatDeliveryMode(csstView.deliveryMode)}
+                                    </Badge>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Grid lainnya – 4 card (Peserta, Rekap, Buku, Profil) */}
+                    <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
                         {quick.map((q) => (
                             <Card
                                 key={q.key}
@@ -455,7 +586,7 @@ const SchoolCSSTDetail: React.FC = () => {
                         ))}
                     </div>
 
-                    {/* Ringkasan angka – analog "Ringkasan" di teacher */}
+                    {/* Ringkasan angka – sama seperti sebelumnya */}
                     <Card>
                         <CardHeader className="pb-3">
                             <CardTitle className="text-sm font-medium">
@@ -488,18 +619,17 @@ const SchoolCSSTDetail: React.FC = () => {
                                 <p className="text-xs text-muted-foreground">Mode & Status</p>
                                 <div className="mt-1 flex flex-col gap-1 text-sm">
                                     <span>{formatDeliveryMode(csstView.deliveryMode)}</span>
-                                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                                        <CheckCircle2 className="h-3 w-3" />
-                                        {csstView.isActive
-                                            ? "Mapel sedang berjalan"
-                                            : "Mapel nonaktif / arsip"}
-                                    </span>
+                                    <CBadgeStatus
+                                        status={csstView.isActive ? "active" : "inactive"}
+                                        className="w-fit text-[10px]"
+                                    />
+
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
 
-                    {/* Buku yang digunakan – tetap, tapi selaras dengan gaya teacher */}
+                    {/* Buku yang digunakan – tetap seperti versi sekolah */}
                     <Card>
                         <CardHeader className="pb-2">
                             <CardTitle className="text-sm font-medium flex items-center gap-2">

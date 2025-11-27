@@ -16,7 +16,6 @@ import {
 
 /* ---------- shadcn/ui ---------- */
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,6 +46,7 @@ import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayou
 
 /* 🔐 Context user dari simple-context (JWT) */
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
 
 /* ===================== Types ===================== */
 type AcademicTerm = {
@@ -103,10 +103,10 @@ const TERMS_QKEY = (schoolId?: string) =>
 const dateShort = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
     : "-";
 
 function extractErrorMessage(err: any) {
@@ -307,12 +307,28 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
       id: "status",
       header: "Status",
       minW: "120px",
-      cell: (t) => (
-        <Badge variant={t.is_active ? "default" : "outline"}>
-          {t.is_active ? "Aktif" : "Nonaktif"}
-        </Badge>
-      ),
+      cell: (t) => {
+        let status: "active" | "inactive" | "pending" = "inactive";
+
+        // ======== RULE PENDING ========
+        // Pending jika tanggal belum lengkap
+        if (!t.start_date || !t.end_date) {
+          status = "pending";
+        }
+        // Active
+        else if (t.is_active) {
+          status = "active";
+        }
+        // Nonaktif
+        else {
+          status = "inactive";
+        }
+
+        return <CBadgeStatus status={status} />;
+      },
     },
+
+
   ];
 
   const statsSlot = termsQ.isLoading ? (

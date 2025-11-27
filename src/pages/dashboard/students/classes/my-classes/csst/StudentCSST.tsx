@@ -24,6 +24,7 @@ import {
 /* dashboard header */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 import type { AxiosError } from "axios";
+import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
 
 /* ========= Types dari API /u/student-class-section-subject-teachers/list ========= */
 
@@ -370,12 +371,11 @@ const StudentCSST: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-2 flex-wrap justify-end">
-                <Badge
-                  variant={csstView.isActive ? "default" : "outline"}
+                <CBadgeStatus
+                  status={csstView.isActive ? "active" : "inactive"}
                   className="text-[11px]"
-                >
-                  {csstView.isActive ? "Aktif" : "Nonaktif"}
-                </Badge>
+                />
+
                 <Badge variant="outline" className="text-[11px]">
                   {formatDeliveryMode(csstView.deliveryMode)}
                 </Badge>

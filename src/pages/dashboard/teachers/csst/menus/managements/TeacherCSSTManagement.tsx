@@ -33,6 +33,7 @@ import ModalEditManagementClass from "@/pages/dashboard/teachers/csst/menus/mana
 import type { ClassInfo } from "@/pages/dashboard/teachers/csst/menus/managements/components/CTeacherModalEditManagementClass";
 
 import AddStudent from "@/pages/dashboard/teachers/csst/menus/managements/components/CTeacherAddStudent";
+import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
 
 const TeacherCSSTManagement = () => {
   const { className } = useParams();
@@ -131,8 +132,8 @@ const TeacherCSSTManagement = () => {
         </DialogContent>
       </Dialog>
 
-      <main className="w-full px-4 md:px-6 md:py-8">
-        <div className="max-w-screen-2xl mx-auto flex flex-col lg:flex-row gap-4 lg:gap-6">
+      <main className="w-full ">
+        <div className="mx-auto flex flex-col lg:flex-row gap-4 lg:gap-6">
           {/* Konten utama */}
           <section className="flex-1 flex flex-col space-y-6 min-w-0">
             {/* Header tombol kembali */}
@@ -273,10 +274,9 @@ const TeacherCSSTManagement = () => {
                       <span className="text-sm text-muted-foreground">
                         Status Kelas
                       </span>
-                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                        Aktif
-                      </span>
+                      <CBadgeStatus status="active" className="text-xs" />
                     </div>
+
                     <div className="flex justify-between items-center py-2">
                       <span className="text-sm text-muted-foreground">
                         Kehadiran Hari Ini

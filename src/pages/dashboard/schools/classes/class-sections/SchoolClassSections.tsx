@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 
 /* ✅ Breadcrumb header */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
 
 /* ========= Types dari API /u/class-sections/list?with_csst=true ========= */
 
@@ -46,7 +47,7 @@ type ApiCsstItem = {
   stats?: CsstStats | null;
 };
 
-type ApiClassSection = {
+export type ApiClassSection = {
   // agregat siswa
   class_section_total_students?: number | null;
   class_section_total_students_active?: number | null;
@@ -64,8 +65,8 @@ type ApiClassSection = {
   // agregat mapel/pengajar
   class_section_total_class_class_section_subject_teachers?: number | null;
   class_section_total_class_class_section_subject_teachers_active?:
-    | number
-    | null;
+  | number
+  | null;
   class_sections_csst_count?: number | null;
   class_sections_csst_active_count?: number | null;
 
@@ -134,8 +135,6 @@ const MODE_FILTER_OPTIONS: { value: ModeFilter; label: string }[] = [
   { value: "assigned", label: "Ditentukan admin" },
   { value: "closed", label: "Tutup" },
 ];
-
-/* ========= Helpers ========= */
 
 /* ========= Query: ambil semua sections (API user-scope) ========= */
 
@@ -232,19 +231,16 @@ function SectionCard({
   const className = section.class_section_class_name_snapshot;
   const classSlug = section.class_section_class_slug_snapshot;
 
-  const cardClassName = `group relative flex cursor-pointer flex-col overflow-hidden border transition-all duration-150 ${
-    isActive
-      ? "border-emerald-500/60 hover:border-emerald-400 hover:bg-emerald-950/10"
-      : "border-border/70 hover:border-primary/50 hover:bg-muted/10"
-  }`;
+  const cardClassName = `group relative flex cursor-pointer flex-col overflow-hidden border transition-all duration-150 ${isActive
+    ? "border-emerald-500/60 hover:border-emerald-400 hover:bg-emerald-950/10"
+    : "border-border/70 hover:border-primary/50 hover:bg-muted/10"
+    }`;
 
-  const stripClassName = `absolute inset-y-0 left-0 w-1 rounded-r-full ${
-    isActive ? "bg-emerald-500" : "bg-muted-foreground/40"
-  }`;
+  const stripClassName = `absolute inset-y-0 left-0 w-1 rounded-r-full ${isActive ? "bg-emerald-500" : "bg-muted-foreground/40"
+    }`;
 
-  const statusBadgeClassName = `pointer-events-auto border px-2 py-0.5 text-[10px] font-semibold ${
-    isActive ? "bg-emerald-500 text-emerald-950" : "bg-black/40"
-  }`;
+  const statusBadgeClassName = `pointer-events-auto border px-2 py-0.5 text-[10px] font-semibold ${isActive ? "bg-emerald-500 text-emerald-950" : "bg-black/40"
+    }`;
 
   const academicYear = section.class_section_academic_year_snapshot;
   const termName = section.class_section_academic_term_name_snapshot;
@@ -294,12 +290,11 @@ function SectionCard({
                   section.class_section_name}
               </div>
             </div>
-            <Badge
-              variant={isActive ? "default" : "outline"}
+            <CBadgeStatus
+              status={isActive ? "active" : "inactive"}
               className={statusBadgeClassName}
-            >
-              {isActive ? "Aktif" : "Nonaktif"}
-            </Badge>
+            />
+
           </div>
         </div>
 
@@ -314,8 +309,7 @@ function SectionCard({
                 <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
                   <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5">
                     <BookOpen className="h-3 w-3" />
-                    {section.class_section_class_slug_snapshot ??
-                      section.class_section_class_id}
+                    {classSlug ?? section.class_section_class_id}
                   </span>
                   <span className="inline-flex items-center gap-1 rounded-full bg-muted/60 px-2 py-0.5">
                     <Hash className="h-3 w-3" />
@@ -352,7 +346,6 @@ function SectionCard({
                   {parentLevel != null && <span>Level {parentLevel}</span>}
                 </div>
 
-                {/* ⬇️ Tambahan: nama level / classes (kelas induk / program) */}
                 {(className || classSlug) && (
                   <div className="mt-1 text-[11px] text-muted-foreground">
                     Program / Kelas:{" "}
@@ -362,7 +355,6 @@ function SectionCard({
                   </div>
                 )}
 
-                {/* Tahun ajaran & term */}
                 {(academicYear || termName) && (
                   <div className="mt-1 text-[11px] text-muted-foreground">
                     {academicYear && <span>TA {academicYear}</span>}
@@ -453,12 +445,11 @@ function SectionCard({
                                 {subjectName}
                               </div>
                             </div>
-                            <Badge
+                            <CBadgeStatus
+                              status={isCsstActive ? "active" : "inactive"}
                               className="h-6 rounded-full px-3 text-[10px] font-semibold"
-                              variant={isCsstActive ? "default" : "outline"}
-                            >
-                              {isCsstActive ? "Aktif" : "Nonaktif"}
-                            </Badge>
+                            />
+
                           </div>
 
                           <div className="mt-1 text-[10px] text-muted-foreground">
@@ -624,8 +615,8 @@ export default function SchoolClassSection({
                       value === "all"
                         ? "rounded-l-md"
                         : value === "inactive"
-                        ? "rounded-r-md"
-                        : "";
+                          ? "rounded-r-md"
+                          : "";
 
                     return (
                       <Button
@@ -683,8 +674,15 @@ export default function SchoolClassSection({
               <SectionCard
                 key={section.class_section_id}
                 section={section}
-                onOpenDetail={() => navigate(`${section.class_section_id}`)}
-                onEdit={() => navigate(`edit/${section.class_section_id}`)}
+                // ⬇️ detail rombel = pakai class_section_id
+                onOpenDetail={() =>
+                  navigate(`${section.class_section_id}`, {
+                    state: {
+                      sections, // kirim semua rombel kelas ini
+                      selectedSectionId: section.class_section_id, // rombel yang diklik
+                    },
+                  })
+                }
               />
             ))}
           </div>

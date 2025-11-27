@@ -46,6 +46,7 @@ import {
   type ColumnDef,
   type ViewMode,
 } from "@/components/costum/table/CDataTable";
+import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
 
 /* ===================== TYPES ===================== */
 export type Room = {
@@ -249,19 +250,18 @@ export default function SchoolRoom({ showBack = false, backTo }: Props) {
         id: "status",
         header: "Status",
         minW: "110px",
-        cell: (r) => (
-          <span
-            className={[
-              "inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ring-1",
-              r.is_active
-                ? "bg-sky-500/15 text-sky-400 ring-sky-500/25"
-                : "bg-zinc-500/10 text-zinc-400 ring-zinc-500/20",
-            ].join(" ")}
-          >
-            {r.is_active ? "Aktif" : "Nonaktif"}
-          </span>
-        ),
+        cell: (r) => {
+          let status: "active" | "inactive" | "pending" = "inactive";
+
+          // Tentukan kondisi pending (silakan sesuaikan rule API kamu di sini)
+          if (r.is_active === true) status = "active";
+          else if (r.is_active === false && r.is_virtual === true) status = "pending";
+          else status = "inactive";
+
+          return <CBadgeStatus status={status} />;
+        },
       },
+
     ],
     []
   );

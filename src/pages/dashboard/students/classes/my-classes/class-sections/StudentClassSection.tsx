@@ -14,6 +14,7 @@ import type {
   StudentClassEnrollmentRow,
   ClassSectionRow,
 } from "../StudentMyClass";
+import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
 
 // kalau API punya field group_url, kita tampung di sini
 type SectionWithMeta = ClassSectionRow & {
@@ -242,9 +243,8 @@ export default function StudentClassSection() {
                             </div>
                           )}
                         </div>
-                        <Badge variant="default" className="text-[10px]">
-                          Aktif
-                        </Badge>
+                        <CBadgeStatus status={m.isActive ? "active" : "inactive"} className="text-[10px]" />
+
                       </div>
 
                       <div className="mt-2 text-xs text-muted-foreground flex items-center gap-2">

@@ -802,7 +802,7 @@ function OnceListAdmin({
   return (
     <div className="rounded-xl border">
       <div className="p-3 flex items-center gap-2">
-        <div className="font-semibold">Jadwal Sekali / Acara</div>
+
         <div className="ml-auto flex items-center gap-2">
           <Button onClick={onAdd}>
             <Plus className="mr-2 h-4 w-4" /> Tambah
@@ -1186,7 +1186,7 @@ export default function SchoolScheduleRoutine({
 
   return (
     <div className="w-full bg-background text-foreground">
-      <div className="mx-auto flex flex-col gap-4 max-w-5xl px-3 sm:px-4 lg:px-0">
+      <div className="mx-auto flex flex-col gap-4">
         {/* Header */}
         <div className="md:flex hidden gap-3 items-center">
           {showBack && (

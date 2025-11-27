@@ -15,6 +15,7 @@ import {
 } from "@/components/costum/table/CDataTable";
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 import type { AxiosError } from "axios";
+import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
 
 /* ========== Types ========== */
 
@@ -257,14 +258,11 @@ const SchoolClassParentDetail: React.FC = () => {
             breadcrumbs: [
                 { label: "Dashboard", href: "dashboard" },
                 { label: "Kelas" },
-                {
-                    label: "Level",
-                    href: `/${schoolId}/sekolah/kelas/level`,
-                },
-                { label: parent.class_parent_name },
+                { label: "Level", href: "kelas/level" },
+                { label: "Detail Level" },
             ],
         });
-    }, [parent, schoolId, setHeader]);
+    }, [parent, setHeader]);
 
     /* ========== Kolom tabel KELAS ========== */
 
@@ -350,14 +348,13 @@ const SchoolClassParentDetail: React.FC = () => {
                 minW: "110px",
                 align: "center",
                 cell: (r) => (
-                    <Badge
+                    <CBadgeStatus
+                        status={r.class_status === "active" ? "active" : "inactive"}
                         className="justify-center"
-                        variant={r.class_status === "active" ? "default" : "secondary"}
-                    >
-                        {capitalize(r.class_status)}
-                    </Badge>
+                    />
                 ),
             },
+
         ],
         []
     );
@@ -530,11 +527,10 @@ const SchoolClassParentDetail: React.FC = () => {
                         </p>
                     </div>
                 </div>
-                <Badge
-                    variant={parent.class_parent_is_active ? "default" : "secondary"}
-                >
-                    {parent.class_parent_is_active ? "Aktif" : "Nonaktif"}
-                </Badge>
+                <CBadgeStatus
+                    status={parent.class_parent_is_active ? "active" : "inactive"}
+                />
+
             </div>
 
             {/* Ringkasan kecil */}
@@ -639,7 +635,11 @@ const SchoolClassParentDetail: React.FC = () => {
                             </div>
                             <div>
                                 <span className="font-medium">Status:</span>{" "}
-                                {parent.class_parent_is_active ? "Aktif" : "Nonaktif"}
+                                <CBadgeStatus
+                                    status={parent.class_parent_is_active ? "active" : "inactive"}
+                                    className="inline-block ml-1"
+                                />
+
                             </div>
                             <div>
                                 Informasi tambahan tentang level ini bisa ditaruh di sini

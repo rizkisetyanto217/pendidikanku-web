@@ -14,6 +14,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
 
 export default function StudentCSSTDetail() {
     const navigate = useNavigate();
@@ -81,13 +82,13 @@ export default function StudentCSSTDetail() {
                                 <span className="text-xs text-muted-foreground">KKM: {data.kkm}</span>
 
                                 <div className="flex items-center gap-2 mt-1">
-                                    {data.is_active ? (
-                                        <Badge className="bg-green-600 hover:bg-green-600">
-                                            Aktif
-                                        </Badge>
-                                    ) : (
-                                        <Badge variant="destructive">Offline</Badge>
-                                    )}
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <CBadgeStatus
+                                            status={data.is_active ? "active" : "inactive"}
+                                            className="text-[11px]"
+                                        />
+                                    </div>
+
                                 </div>
                             </CardTitle>
                         </CardHeader>

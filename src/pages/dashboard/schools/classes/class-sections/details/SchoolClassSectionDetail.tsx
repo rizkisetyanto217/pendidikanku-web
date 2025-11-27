@@ -1,9 +1,9 @@
-// src/pages/dashboard/school/classes/details/SchoolClassDetail.tsx
+// src/pages/dashboard/school/classes/details/SchoolClassSectionDetail.tsx
 import { useEffect, useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "@/lib/axios";
-import { ArrowLeft, Loader2, Users, MapPin, Info } from "lucide-react";
+import { ArrowLeft, Loader2, Phone } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,9 @@ import {
 } from "@/components/costum/table/CDataTable";
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 import type { AxiosError } from "axios";
+
+// Reuse type dari list kelas
+import type { ApiClassSection as ApiClassSectionFromList } from "../SchoolClassSections";
 
 /* ========== Types dari API /u/class-sections/list ========== */
 
@@ -28,44 +31,50 @@ type RoomSnapshot = {
   is_virtual?: boolean;
 };
 
-type ApiClassSection = {
-  class_section_id: string;
-  class_section_school_id: string;
-  class_section_class_id: string;
-  class_section_slug: string;
-  class_section_name: string;
-  class_section_code: string;
-  class_section_schedule: any | null;
-  class_section_capacity: number | null;
-  class_section_total_students: number;
-  class_section_group_url: string | null;
-  class_section_image_url: string | null;
-  class_section_image_object_key: string | null;
-  class_section_image_url_old: string | null;
-  class_section_image_object_key_old: string | null;
-  class_section_image_delete_pending_until: string | null;
-  class_section_is_active: boolean;
-  class_section_created_at: string;
-  class_section_updated_at: string;
+// Sesuai payload class_sections_student_class_sections
+type ApiStudentClassSection = {
+  student_class_section_id: string;
+  student_class_section_school_student_id: string;
+  student_class_section_section_id: string;
+  student_class_section_school_id: string;
 
-  class_section_class_name_snapshot: string;
-  class_section_class_slug_snapshot: string;
-  class_section_class_parent_id: string;
-  class_section_class_parent_name_snapshot: string;
-  class_section_class_parent_slug_snapshot: string;
-  class_section_class_parent_level_snapshot: number;
+  student_class_section_section_slug_snapshot: string;
+  student_class_section_student_code_snapshot?: string | null;
 
-  class_section_academic_term_id: string | null;
-  class_section_snapshot_updated_at: string;
+  student_class_section_status: string; // "active", "inactive", "completed"
+  student_class_section_result?: string | null;
 
-  class_section_subject_teachers_enrollment_mode: string;
-  class_section_subject_teachers_self_select_requires_approval: boolean;
+  student_class_section_user_profile_name_snapshot?: string | null;
+  student_class_section_user_profile_avatar_url_snapshot?: string | null;
+  student_class_section_user_profile_whatsapp_url_snapshot?: string | null;
+  student_class_section_user_profile_gender_snapshot?: string | null;
 
-  class_section_class_room_id?: string | null;
-  class_section_class_room_slug_snapshot?: string | null;
-  class_section_class_room_name_snapshot?: string | null;
-  class_section_class_room_location_snapshot?: string | null;
+  student_class_section_assigned_at: string;
+  student_class_section_unassigned_at?: string | null;
+  student_class_section_completed_at?: string | null;
+
+  student_class_section_created_at: string;
+  student_class_section_updated_at: string;
+  student_class_section_deleted_at?: string | null;
+};
+
+// extend dikit dari type list
+type ApiClassSection = ApiClassSectionFromList & {
+  class_section_schedule?: any | null;
+  class_section_group_url?: string | null;
+  class_section_image_object_key?: string | null;
+  class_section_image_url_old?: string | null;
+  class_section_image_object_key_old?: string | null;
+  class_section_image_delete_pending_until?: string | null;
+  class_section_created_at?: string;
+  class_section_updated_at?: string;
+  class_section_snapshot_updated_at?: string;
   class_section_class_room_snapshot?: RoomSnapshot | null;
+
+  // tambahan dari with_student_class_sections
+  class_sections_student_class_sections?: ApiStudentClassSection[];
+  class_sections_student_class_sections_count?: number;
+  class_sections_student_class_sections_active_count?: number;
 };
 
 type ClassSectionListResp = {
@@ -82,23 +91,7 @@ type ClassSectionListResp = {
   };
 };
 
-/* Row untuk DataTable */
-type SectionRow = {
-  id: string;
-  name: string;
-  slug: string;
-  code: string;
-  roomName?: string | null;
-  roomLocation?: string | null;
-  isVirtual?: boolean;
-  capacity?: number | null;
-  totalStudents: number;
-  enrollmentMode: string;
-  requiresApproval: boolean;
-  isActive: boolean;
-};
-
-/* View model kelas (diambil dari snapshot baris pertama) */
+/* View model kelas (diambil dari snapshot) */
 type ClassView = {
   classId: string;
   className: string;
@@ -108,49 +101,24 @@ type ClassView = {
   parentLevel: number;
 };
 
-/* ========== Types API /a/class-enrollments/list (view=compact) ========== */
-
-type ApiClassEnrollment = {
-  student_class_enrollments_id: string;
-  student_class_enrollments_status: "accepted" | "pending" | "rejected";
-  student_class_enrollments_total_due_idr: number;
-  student_class_enrollments_school_student_id: string;
-  student_class_enrollments_student_name: string;
-  student_class_enrollments_class_id: string;
-  student_class_enrollments_class_name: string;
-  student_class_enrollments_term_id: string;
-  student_class_enrollments_term_name_snapshot: string;
-  student_class_enrollments_term_academic_year_snapshot: string;
-  student_class_enrollments_term_angkatan_snapshot: number;
-  payment_status: "paid" | "unpaid" | "pending";
-  payment_checkout_url: string | null;
-  student_class_enrollments_applied_at: string;
-};
-
-type ClassEnrollmentsListResp = {
-  success: boolean;
-  message: string;
-  data: ApiClassEnrollment[];
-  pagination: {
-    page: number;
-    per_page: number;
-    total: number;
-    total_pages: number;
-    has_next: boolean;
-    has_prev: boolean;
-    count: number;
-    per_page_options: number[];
-  };
-};
-
-type EnrollmentRow = {
+/* ========== CSST (mapel & pengajar) ========== */
+type CsstRow = {
   id: string;
-  studentName: string;
-  totalDueIdr: number;
-  status: ApiClassEnrollment["student_class_enrollments_status"];
-  paymentStatus: ApiClassEnrollment["payment_status"];
-  checkoutUrl: string | null;
-  appliedAt: string;
+  subjectName: string;
+  isActive: boolean;
+  totalAttendance: number;
+  teacherId?: string | null;
+};
+
+/* ========== Row untuk DataTable siswa ========== */
+type StudentRow = {
+  id: string;
+  name: string;
+  code: string;
+  gender?: string | null;
+  avatarUrl?: string | null;
+  whatsappUrl?: string | null;
+  assignedAt?: string | null;
 };
 
 /* ========== Utils kecil ========== */
@@ -166,9 +134,10 @@ const extractErrorMessage = (err: unknown): string => {
   return "Terjadi kesalahan saat memuat data.";
 };
 
-const formatDateTime = (iso: string) => {
+const formatDateTime = (iso?: string | null) => {
   if (!iso) return "-";
   const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "-";
   return d.toLocaleString("id-ID", {
     day: "2-digit",
     month: "short",
@@ -178,347 +147,130 @@ const formatDateTime = (iso: string) => {
   });
 };
 
-const formatRupiah = (amount: number) =>
-  amount.toLocaleString("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0,
-  });
-
 /* ========================================================================
-   Child: Card daftar enrollment kelas (filter by class_id saja)
+   Page utama (detail per class_section)
    ======================================================================== */
 
-type ClassEnrollmentsCardProps = {
-  classId: string;
+type LocationState = {
+  sections?: ApiClassSection[];
+  selectedSectionId?: string;
 };
 
-const ClassEnrollmentsCard: React.FC<ClassEnrollmentsCardProps> = ({
-  classId,
-}) => {
-  const enabled = !!classId;
-
-  console.log("[ClassEnrollmentsCard] props", { classId, enabled });
-
-  const enrollmentsQ = useQuery<ClassEnrollmentsListResp, AxiosError>({
-    queryKey: ["class-enrollments", classId],
-    enabled,
-    queryFn: async () => {
-      console.log("[class-enrollments] fetching with params", {
-        class_id: classId,
-      });
-
-      const res = await axios.get<ClassEnrollmentsListResp>(
-        "/a/class-enrollments/list",
-        {
-          params: {
-            view: "compact",
-            class_id: classId,
-          },
-        }
-      );
-
-      console.log(
-        "[class-enrollments] response",
-        res.status,
-        Array.isArray(res.data?.data) ? res.data.data.length : "no data"
-      );
-
-      return res.data;
-    },
-    staleTime: 60_000,
-  });
-
-  const rows: EnrollmentRow[] = useMemo(() => {
-    const data = enrollmentsQ.data?.data ?? [];
-    console.log("[class-enrollments] map rows, count =", data.length);
-    console.log(
-      "[class-enrollments] sample names =",
-      data.map((d) => d.student_class_enrollments_student_name)
-    );
-
-    return data.map((it) => ({
-      id: it.student_class_enrollments_id,
-      studentName:
-        it.student_class_enrollments_student_name ||
-        "(Tanpa nama / belum sinkron)",
-      totalDueIdr: it.student_class_enrollments_total_due_idr,
-      status: it.student_class_enrollments_status,
-      paymentStatus: it.payment_status,
-      checkoutUrl: it.payment_checkout_url,
-      appliedAt: it.student_class_enrollments_applied_at,
-    }));
-  }, [enrollmentsQ.data]);
-
-  const totalPaid = rows
-    .filter((r) => r.paymentStatus === "paid")
-    .reduce((acc, r) => acc + r.totalDueIdr, 0);
-
-  const columns: ColumnDef<EnrollmentRow>[] = useMemo(
-    () => [
-      {
-        id: "student",
-        header: "Siswa",
-        minW: "220px",
-        cell: (r) => (
-          <div className="space-y-1">
-            <div className="font-medium truncate">{r.studentName}</div>
-            <div className="text-[11px] text-muted-foreground">
-              ID Enroll:{" "}
-              <span className="font-mono">
-                {r.id.slice(0, 8)}…{r.id.slice(-4)}
-              </span>
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: "amount",
-        header: "Total Tagihan",
-        align: "right",
-        minW: "140px",
-        cell: (r) => (
-          <span className="tabular-nums">{formatRupiah(r.totalDueIdr)}</span>
-        ),
-      },
-      {
-        id: "status",
-        header: "Status Enroll",
-        align: "center",
-        minW: "120px",
-        cell: (r) => (
-          <Badge variant={r.status === "accepted" ? "default" : "secondary"}>
-            {r.status === "accepted"
-              ? "Diterima"
-              : r.status === "pending"
-              ? "Menunggu"
-              : "Ditolak"}
-          </Badge>
-        ),
-      },
-      {
-        id: "payment",
-        header: "Status Pembayaran",
-        align: "center",
-        minW: "160px",
-        cell: (r) => {
-          let color =
-            "inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ring-1";
-          if (r.paymentStatus === "paid") {
-            color += " bg-emerald-500/10 text-emerald-500 ring-emerald-500/30";
-          } else if (r.paymentStatus === "pending") {
-            color += " bg-amber-500/10 text-amber-500 ring-amber-500/30";
-          } else {
-            color += " bg-zinc-500/10 text-zinc-500 ring-zinc-500/30";
-          }
-
-          return (
-            <div className="space-y-1 text-xs">
-              <span className={color}>
-                {r.paymentStatus === "paid"
-                  ? "Lunas"
-                  : r.paymentStatus === "pending"
-                  ? "Menunggu"
-                  : "Belum dibayar"}
-              </span>
-              {r.checkoutUrl && (
-                <a
-                  href={r.checkoutUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="block text-[11px] text-sky-500 hover:underline truncate max-w-[200px]"
-                >
-                  Link pembayaran
-                </a>
-              )}
-            </div>
-          );
-        },
-      },
-      {
-        id: "appliedAt",
-        header: "Tanggal Daftar",
-        align: "center",
-        minW: "160px",
-        cell: (r) => (
-          <span className="text-xs">{formatDateTime(r.appliedAt)}</span>
-        ),
-      },
-    ],
-    []
-  );
-
-  const errorText = enrollmentsQ.isError
-    ? extractErrorMessage(enrollmentsQ.error)
-    : null;
-
-  return (
-    <Card>
-      <CardHeader className="py-3 flex flex-row items-center justify-between gap-3">
-        <div>
-          <CardTitle className="text-base">
-            Pendaftar / Enrollment Kelas
-          </CardTitle>
-          <p className="text-[11px] text-muted-foreground">
-            Data dari endpoint: <code>/a/class-enrollments/list</code> (view=
-            <code>compact</code>, filter by <code>class_id</code>)
-          </p>
-        </div>
-        {enabled && enrollmentsQ.isLoading && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Loader2 className="h-3 w-3 animate-spin" />
-            Memuat enrollment…
-          </div>
-        )}
-      </CardHeader>
-      <CardContent className="pb-4 space-y-3">
-        {errorText && (
-          <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive flex items-start gap-2">
-            <Info className="h-4 w-4 mt-0.5" />
-            <div>
-              <div className="font-medium mb-0.5">
-                Gagal memuat data enrollment.
-              </div>
-              <div className="break-all">{errorText}</div>
-            </div>
-          </div>
-        )}
-
-        {/* Ringkasan kecil */}
-        {rows.length > 0 && (
-          <div className="grid gap-3 md:grid-cols-3 text-xs">
-            <div className="rounded-lg border p-3">
-              <div className="text-[11px] text-muted-foreground">
-                Total Pendaftar
-              </div>
-              <div className="text-lg font-semibold tabular-nums">
-                {rows.length}
-              </div>
-            </div>
-            <div className="rounded-lg border p-3">
-              <div className="text-[11px] text-muted-foreground">
-                Total Dibayar
-              </div>
-              <div className="text-lg font-semibold tabular-nums">
-                {formatRupiah(totalPaid)}
-              </div>
-            </div>
-            <div className="rounded-lg border p-3">
-              <div className="text-[11px] text-muted-foreground">
-                Lunas / Belum
-              </div>
-              <div className="text-sm mt-1">
-                Lunas:{" "}
-                <span className="font-semibold">
-                  {rows.filter((r) => r.paymentStatus === "paid").length}
-                </span>{" "}
-                • Belum:{" "}
-                <span className="font-semibold">
-                  {rows.filter((r) => r.paymentStatus !== "paid").length}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <DataTable<EnrollmentRow>
-          rows={rows}
-          columns={columns}
-          loading={enrollmentsQ.isLoading && enabled}
-          getRowId={(r) => r.id}
-          searchByKeys={["studentName"]}
-          searchPlaceholder="Cari nama siswa…"
-          pageSize={20}
-          pageSizeOptions={[10, 20, 50]}
-          stickyHeader
-          zebra
-        />
-      </CardContent>
-    </Card>
-  );
-};
-
-/* ========================================================================
-   Page utama
-   ======================================================================== */
-
-const SchoolClassDetail: React.FC = () => {
+const SchoolClassSectionDetail: React.FC = () => {
   const navigate = useNavigate();
-  const { schoolId, classId } = useParams<{
+  const { schoolId, classSectionId } = useParams<{
     schoolId: string;
-    classId: string;
+    classSectionId: string; // class_section_id
   }>();
 
-  const { setHeader } = useDashboardHeader();
-  const safeClassId = classId ?? "";
+  const safeSectionId = classSectionId ?? "";
 
-  /* ===== Fetch class sections untuk 1 class_id ===== */
+  const { setHeader } = useDashboardHeader();
+  const location = useLocation();
+  const state = (location.state || {}) as LocationState;
+  const sectionsFromState = state.sections;
+
+  console.log("[CLASS DETAIL] useParams:", { schoolId, classSectionId });
+  console.log("[CLASS DETAIL] location.state:", state);
+
+  /* ===== Fetch class section detail (with_csst + with_student_class_sections) ===== */
   const sectionsQ = useQuery<ClassSectionListResp, AxiosError>({
-    queryKey: ["class-sections", safeClassId],
-    enabled: !!safeClassId,
+    queryKey: [
+      "class-sections-detail",
+      safeSectionId,
+      "with_csst",
+      "with_student_class_sections",
+    ],
+    enabled: !!safeSectionId,
     queryFn: async () => {
-      console.log("[class-sections] fetching for class_id", safeClassId);
       const res = await axios.get<ClassSectionListResp>(
         "/u/class-sections/list",
         {
           params: {
-            class_id: safeClassId,
+            id: safeSectionId,
+            with_csst: true,
+            with_student_class_sections: true,
             page: 1,
-            per_page: 100,
+            per_page: 1,
           },
         }
       );
       console.log(
-        "[class-sections] response",
-        res.status,
-        Array.isArray(res.data?.data) ? res.data.data.length : "no data"
+        "[CLASS DETAIL] /u/class-sections/list response.raw:",
+        res.data
       );
       return res.data;
     },
     staleTime: 60_000,
   });
 
-  const sections: ApiClassSection[] = useMemo(
-    () => sectionsQ.data?.data ?? [],
-    [sectionsQ.data]
-  );
+  const allSections: ApiClassSection[] = useMemo(() => {
+    const fromApi = sectionsQ.data?.data ?? [];
+    const fromState = sectionsFromState ?? [];
 
-  /* ===== Ambil info kelas dari snapshot baris pertama ===== */
+    console.log("[CLASS DETAIL] allSections computed:", {
+      fromApiLength: fromApi.length,
+      fromStateLength: fromState.length,
+      source:
+        fromApi.length > 0 ? "api" : fromState.length > 0 ? "state" : "none",
+    });
+
+    if (fromApi.length > 0) return fromApi;
+    if (fromState.length > 0) return fromState;
+    return [];
+  }, [sectionsQ.data, sectionsFromState]);
+
+  // rombel yang sedang di-detail-kan (by class_section_id di URL)
+  const currentSection: ApiClassSection | null = useMemo(() => {
+    if (allSections.length === 0) {
+      console.log("[CLASS DETAIL] currentSection: allSections empty");
+      return null;
+    }
+    if (!safeSectionId) {
+      console.log(
+        "[CLASS DETAIL] currentSection: no safeSectionId, use first element"
+      );
+      return allSections[0];
+    }
+
+    const found = allSections.find((s) => s.class_section_id === safeSectionId);
+    console.log("[CLASS DETAIL] currentSection resolved:", {
+      safeSectionId,
+      found,
+    });
+    return found ?? allSections[0];
+  }, [allSections, safeSectionId]);
+
+  /* ===== Ambil info kelas dari snapshot ===== */
   const classView: ClassView = useMemo(() => {
-    const first = sections[0];
+    const first = currentSection ?? allSections[0];
 
     if (first) {
-      const view: ClassView = {
-        classId: safeClassId,
+      const view = {
+        classId: first.class_section_class_id,
         className: first.class_section_class_name_snapshot || "Tanpa Nama",
         classSlug: first.class_section_class_slug_snapshot || "-",
         parentName: first.class_section_class_parent_name_snapshot || "-",
         parentSlug: first.class_section_class_parent_slug_snapshot || "-",
         parentLevel: first.class_section_class_parent_level_snapshot ?? 0,
       };
-      console.log("[classView] from first section", view);
+      console.log("[CLASS DETAIL] classView:", view);
       return view;
     }
 
-    const fallback: ClassView = {
-      classId: safeClassId,
+    const fallback = {
+      classId: "",
       className: "Detail Kelas",
-      classSlug: safeClassId || "-",
+      classSlug: safeSectionId || "-",
       parentName: "-",
       parentSlug: "-",
       parentLevel: 0,
     };
-    console.log("[classView] fallback (no sections)", fallback);
+    console.log("[CLASS DETAIL] classView fallback:", fallback);
     return fallback;
-  }, [sections, safeClassId]);
+  }, [currentSection, allSections, safeSectionId]);
 
-  const {
-    classId: viewClassId,
-    className,
-    classSlug,
-    parentName,
-    parentLevel,
-  } = classView;
+  const { className, classSlug, parentName, parentLevel } = classView;
 
   /* ===== Set header top bar ===== */
   useEffect(() => {
@@ -528,158 +280,68 @@ const SchoolClassDetail: React.FC = () => {
         { label: "Dashboard", href: "dashboard" },
         { label: "Kelas" },
         {
-          label: "Data Kelas",
-          href: `/${schoolId}/sekolah/kelas/daftar-kelas`,
+          label: "Semua Rombel",
+          href: `/${schoolId}/sekolah/kelas/semua-kelas`,
         },
         { label: className },
       ],
     });
   }, [setHeader, schoolId, className]);
 
-  /* ===== Map ke row DataTable ===== */
-  const rows: SectionRow[] = useMemo(() => {
-    const mapped = sections.map((s) => {
-      const roomSnap = s.class_section_class_room_snapshot ?? null;
+  /* ===== CSST rows ===== */
+  const csstRows: CsstRow[] = useMemo(() => {
+    const list = (currentSection?.class_sections_csst ?? []) as any[];
+    const mapped = list.map((item) => ({
+      id: item.id,
+      subjectName:
+        item.class_subject?.subject?.name ??
+        item.class_subject?.id ??
+        "Tanpa nama mapel",
+      isActive: Boolean(item.is_active),
+      totalAttendance: item.stats?.total_attendance ?? 0,
+      teacherId: item.teacher?.id ?? null,
+    }));
 
-      const roomName =
-        s.class_section_class_room_name_snapshot || roomSnap?.name || null;
-      const roomLocation =
-        s.class_section_class_room_location_snapshot ||
-        roomSnap?.location ||
-        null;
-      const isVirtual =
-        roomSnap?.is_virtual ?? (roomSnap?.platform ? true : undefined);
-
-      const capacity = s.class_section_capacity ?? roomSnap?.capacity ?? null;
-
-      return {
-        id: s.class_section_id,
-        name: s.class_section_name,
-        slug: s.class_section_slug,
-        code: s.class_section_code,
-        roomName,
-        roomLocation,
-        isVirtual,
-        capacity,
-        totalStudents: s.class_section_total_students,
-        enrollmentMode: s.class_section_subject_teachers_enrollment_mode,
-        requiresApproval:
-          s.class_section_subject_teachers_self_select_requires_approval,
-        isActive: s.class_section_is_active,
-      };
+    console.log("[CLASS DETAIL] csstRows:", {
+      rawLength: list.length,
+      mappedLength: mapped.length,
+      rows: mapped,
     });
 
-    console.log("[class-sections] mapped rows", mapped.length);
     return mapped;
-  }, [sections]);
+  }, [currentSection]);
 
-  /* ===== Stats kecil di atas tabel ===== */
-  const totalSections = rows.length;
-  const totalStudents = rows.reduce(
-    (acc, r) => acc + (r.totalStudents || 0),
-    0
-  );
-  const virtualCount = rows.filter((r) => r.isVirtual).length;
-
-  /* ===== Columns DataTable ===== */
-  const columns: ColumnDef<SectionRow>[] = useMemo(
+  const csstColumns: ColumnDef<CsstRow>[] = useMemo(
     () => [
       {
-        id: "name",
-        header: "Nama Rombel",
-        minW: "260px",
+        id: "subjectName",
+        header: "Mata Pelajaran",
+        minW: "240px",
+        align: "left",
         cell: (r) => (
-          <div className="space-y-1">
-            <div className="font-medium">{r.name}</div>
-            <div className="text-[11px] text-muted-foreground">
-              Slug: <span className="font-mono">{r.slug}</span>
-            </div>
-            <div className="text-[11px] text-muted-foreground">
-              Kode: <span className="font-mono">{r.code}</span>
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: "room",
-        header: "Ruang / Platform",
-        minW: "220px",
-        cell: (r) => {
-          if (!r.roomName && !r.isVirtual) {
-            return (
-              <span className="text-xs text-muted-foreground">
-                Belum diatur
-              </span>
-            );
-          }
-
-          return (
-            <div className="space-y-1 text-xs">
-              <div className="flex items-center gap-1">
-                <MapPin className="h-3 w-3" />
-                {r.isVirtual ? <span>Virtual</span> : <span>Ruang fisik</span>}
-              </div>
-              {r.roomName && <div className="font-medium">{r.roomName}</div>}
-              {r.roomLocation && (
-                <div className="text-[11px] text-muted-foreground">
-                  {r.roomLocation}
-                </div>
-              )}
-            </div>
-          );
-        },
-      },
-      {
-        id: "capacity",
-        header: "Kapasitas",
-        align: "center",
-        minW: "110px",
-        cell: (r) =>
-          r.capacity != null ? (
-            <span className="tabular-nums">{r.capacity}</span>
-          ) : (
-            <span className="text-xs text-muted-foreground">
-              Tidak dibatasi
-            </span>
-          ),
-      },
-      {
-        id: "students",
-        header: "Jumlah Siswa",
-        align: "center",
-        minW: "120px",
-        cell: (r) => (
-          <span className="inline-flex items-center gap-1 tabular-nums">
-            <Users className="h-3 w-3" />
-            {r.totalStudents}
-          </span>
-        ),
-      },
-      {
-        id: "enrollment",
-        header: "Mode Pendaftaran",
-        align: "center",
-        minW: "160px",
-        cell: (r) => (
-          <div className="text-xs space-y-1">
-            <div className="capitalize">
-              {r.enrollmentMode.replace(/_/g, " ")}
-            </div>
-            {r.enrollmentMode === "self_select" && (
+          <div className="text-left">
+            <div className="font-medium">{r.subjectName}</div>
+            {r.teacherId && (
               <div className="text-[11px] text-muted-foreground">
-                {r.requiresApproval
-                  ? "Perlu persetujuan admin"
-                  : "Otomatis masuk"}
+                Guru (school_teacher_id):{" "}
+                <span className="font-mono">{r.teacherId}</span>
               </div>
             )}
           </div>
         ),
       },
       {
-        id: "status",
-        header: "Status",
+        id: "totalAttendance",
+        header: "Total Pertemuan",
+        minW: "140px",
         align: "center",
-        minW: "100px",
+        cell: (r) => <span className="tabular-nums">{r.totalAttendance}</span>,
+      },
+      {
+        id: "isActive",
+        header: "Status",
+        minW: "120px",
+        align: "center",
         cell: (r) => (
           <Badge
             className="justify-center"
@@ -693,40 +355,216 @@ const SchoolClassDetail: React.FC = () => {
     []
   );
 
-  /* ===== Precompute error string ===== */
+  const totalCsst =
+    currentSection?.class_sections_csst_count ?? csstRows.length;
+  const activeCsst =
+    currentSection?.class_sections_csst_active_count ??
+    csstRows.filter((c) => c.isActive).length;
+
+  /* ===== STUDENT LIST dari currentSection.class_sections_student_class_sections ===== */
+
+  const studentList: ApiStudentClassSection[] = useMemo(() => {
+    const raw = (currentSection?.class_sections_student_class_sections ??
+      []) as ApiStudentClassSection[];
+
+    console.log("[CLASS DETAIL] studentList raw:", {
+      length: raw.length,
+      items: raw,
+    });
+
+    return raw;
+  }, [currentSection]);
+
+  // total siswa: pakai aggregate dari class_section kalau ada, kalau tidak fallback ke length array
+  const totalStudents =
+    currentSection?.class_section_total_students ??
+    currentSection?.class_sections_student_class_sections_count ??
+    studentList.length;
+
+  const totalStudentsActive =
+    currentSection?.class_section_total_students_active ??
+    currentSection?.class_sections_student_class_sections_active_count ??
+    studentList.filter((s) => s.student_class_section_status === "active")
+      .length;
+
+  const totalAttendanceSum = csstRows.reduce(
+    (acc, row) => acc + (row.totalAttendance || 0),
+    0
+  );
+
+  console.log("[CLASS DETAIL] aggregates:", {
+    totalCsst,
+    activeCsst,
+    totalStudents,
+    totalStudentsActive,
+    totalAttendanceSum,
+  });
+
+  /* ===== Student rows untuk DataTable ===== */
+  const studentRows: StudentRow[] = useMemo(() => {
+    const filtered = studentList.filter(
+      (s) => s.student_class_section_status === "active"
+    );
+
+    const mapped = filtered.map((s) => ({
+      id: s.student_class_section_id,
+      name:
+        s.student_class_section_user_profile_name_snapshot || "(Tanpa nama)",
+      code: s.student_class_section_student_code_snapshot ?? "-",
+      gender: s.student_class_section_user_profile_gender_snapshot,
+      avatarUrl:
+        s.student_class_section_user_profile_avatar_url_snapshot ?? null,
+      whatsappUrl:
+        s.student_class_section_user_profile_whatsapp_url_snapshot ?? null,
+      assignedAt: s.student_class_section_assigned_at,
+    }));
+
+    console.log("[CLASS DETAIL] studentRows (active only):", {
+      rawLength: studentList.length,
+      activeLength: filtered.length,
+      mappedLength: mapped.length,
+      rows: mapped,
+    });
+
+    return mapped;
+  }, [studentList]);
+
+  /* ===== Columns DataTable siswa ===== */
+  const studentColumns: ColumnDef<StudentRow>[] = useMemo(
+    () => [
+      {
+        id: "name",
+        header: "Nama Siswa",
+        minW: "220px",
+        align: "left",
+        cell: (r) => (
+          <div className="flex items-center gap-3 text-left">
+            <div className="h-8 w-8 rounded-full overflow-hidden bg-muted flex items-center justify-center text-[10px] font-semibold uppercase">
+              {r.avatarUrl ? (
+                <img
+                  src={r.avatarUrl}
+                  alt={r.name}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                (r.name || "?")
+                  .split(" ")
+                  .map((p) => p[0])
+                  .join("")
+                  .slice(0, 2)
+              )}
+            </div>
+            <div className="min-w-0">
+              <div className="font-medium truncate">{r.name}</div>
+              <div className="text-[11px] text-muted-foreground">
+                Gender: {r.gender || "-"}
+              </div>
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: "code",
+        header: "NIS",
+        minW: "120px",
+        align: "left",
+        cell: (r) => <span className="font-mono text-xs">{r.code || "-"}</span>,
+      },
+      {
+        id: "assignedAt",
+        header: "Masuk Rombel",
+        minW: "160px",
+        align: "center",
+        cell: (r) => (
+          <span className="text-xs">{formatDateTime(r.assignedAt)}</span>
+        ),
+      },
+      {
+        id: "whatsapp",
+        header: "Kontak",
+        minW: "120px",
+        align: "center",
+        cell: (r) =>
+          r.whatsappUrl ? (
+            <a
+              href={r.whatsappUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-emerald-500 hover:underline"
+            >
+              <Phone className="h-3 w-3" />
+              Chat WhatsApp
+            </a>
+          ) : (
+            <span className="text-[11px] text-muted-foreground">-</span>
+          ),
+      },
+    ],
+    []
+  );
+
   const sectionsError: string | null = sectionsQ.isError
     ? extractErrorMessage(sectionsQ.error)
     : null;
 
   /* ===== State: loading / error ===== */
 
-  if (sectionsQ.isLoading) {
+  if (sectionsQ.isLoading && !currentSection) {
+    console.log("[CLASS DETAIL] loading initial state");
     return (
       <div className="flex h-full items-center justify-center text-muted-foreground gap-2">
-        <Loader2 className="animate-spin" /> Memuat detail kelas…
+        <Loader2 className="animate-spin" /> Memuat detail rombel…
       </div>
     );
   }
 
   if (sectionsError) {
-    const msg = sectionsError ?? "Data kelas tidak ditemukan.";
+    const msg = sectionsError ?? "Data rombel tidak ditemukan.";
+    console.log("[CLASS DETAIL] sectionsError:", msg);
 
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-6 space-y-3 text-center">
         <div className="text-destructive text-sm">
-          Gagal memuat detail kelas.
+          Gagal memuat detail rombel.
         </div>
         <div className="text-xs text-muted-foreground break-all">{msg}</div>
         <Button
           variant="outline"
-          onClick={() => navigate(`/${schoolId}/sekolah/kelas/daftar-kelas`)}
+          onClick={() => navigate(`/${schoolId}/sekolah/kelas/semua-kelas`)}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Kembali ke daftar kelas
+          Kembali ke semua rombel
         </Button>
       </div>
     );
   }
+
+  if (!currentSection) {
+    console.log(
+      "[CLASS DETAIL] no currentSection after fetch, allSections:",
+      allSections
+    );
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-6 space-y-3 text-center">
+        <div className="text-sm text-muted-foreground">
+          Data rombel tidak ditemukan.
+        </div>
+        <Button
+          variant="outline"
+          onClick={() => navigate(`/${schoolId}/sekolah/kelas/semua-kelas`)}
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Kembali ke semua rombel
+        </Button>
+      </div>
+    );
+  }
+
+  const currentSectionId = currentSection.class_section_id;
+  console.log("[CLASS DETAIL] render final view for section:", {
+    currentSectionId,
+    currentSection,
+  });
 
   /* ===== Render utama ===== */
 
@@ -738,15 +576,20 @@ const SchoolClassDetail: React.FC = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate(`/${schoolId}/sekolah/kelas/daftar-kelas`)}
+            onClick={() => navigate(`/${schoolId}/sekolah/kelas/semua-kelas`)}
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
             <h1 className="font-semibold text-lg">{className}</h1>
             <p className="text-xs text-muted-foreground">
-              Slug: <span className="font-mono">{classSlug}</span> • Tingkat:{" "}
-              {parentName} {parentLevel != null && `(Level ${parentLevel})`}
+              Slug kelas: <span className="font-mono">{classSlug}</span> •
+              Tingkat: {parentName}{" "}
+              {parentLevel != null && `(Level ${parentLevel})`}
+              {" • Rombel: "}
+              <span className="font-mono">
+                {currentSection.class_section_slug}
+              </span>
             </p>
           </div>
         </div>
@@ -757,13 +600,15 @@ const SchoolClassDetail: React.FC = () => {
         <Card>
           <CardHeader className="py-3">
             <CardTitle className="text-xs text-muted-foreground">
-              Total Rombel
+              Total Mapel / Pengajar (rombel ini)
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="text-xl font-semibold">{totalSections}</div>
+            <div className="text-xl font-semibold tabular-nums">
+              {totalCsst}
+            </div>
             <p className="text-[11px] text-muted-foreground mt-1">
-              Rombel di kelas {className}
+              Aktif: <span className="font-semibold">{activeCsst}</span>
             </p>
           </CardContent>
         </Card>
@@ -771,7 +616,7 @@ const SchoolClassDetail: React.FC = () => {
         <Card>
           <CardHeader className="py-3">
             <CardTitle className="text-xs text-muted-foreground">
-              Total Siswa (semua rombel)
+              Total Siswa (rombel ini)
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
@@ -779,7 +624,8 @@ const SchoolClassDetail: React.FC = () => {
               {totalStudents}
             </div>
             <p className="text-[11px] text-muted-foreground mt-1">
-              Akumulasi dari seluruh rombel
+              Aktif:{" "}
+              <span className="font-semibold">{totalStudentsActive}</span>
             </p>
           </CardContent>
         </Card>
@@ -787,51 +633,86 @@ const SchoolClassDetail: React.FC = () => {
         <Card>
           <CardHeader className="py-3">
             <CardTitle className="text-xs text-muted-foreground">
-              Rombel Virtual
+              Total Pertemuan (semua mapel)
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
             <div className="text-xl font-semibold tabular-nums">
-              {virtualCount}
+              {totalAttendanceSum}
             </div>
             <p className="text-[11px] text-muted-foreground mt-1">
-              Menggunakan ruang/platform online
+              Akumulasi dari <span className="font-semibold">{totalCsst}</span>{" "}
+              mapel di rombel ini.
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Tabel rombel */}
+      {/* Tabel CSST */}
       <Card>
         <CardHeader className="py-3">
           <CardTitle className="text-base">
-            Daftar Rombel / Kelas Paralel
+            Mapel &amp; Pengajar (CSST) di Rombel Ini
           </CardTitle>
         </CardHeader>
         <CardContent className="pb-4">
-          {sectionsError && (
-            <div className="mb-2 text-xs text-destructive">{sectionsError}</div>
-          )}
-
-          <DataTable<SectionRow>
-            rows={rows}
-            columns={columns}
-            loading={sectionsQ.isLoading}
+          <DataTable<CsstRow>
+            rows={csstRows}
+            columns={csstColumns}
+            loading={sectionsQ.isLoading && csstRows.length === 0}
             getRowId={(r) => r.id}
-            searchByKeys={["name", "slug", "code", "roomName"]}
-            searchPlaceholder="Cari rombel, kode, atau ruang…"
-            pageSize={20}
+            searchByKeys={["subjectName"]}
+            searchPlaceholder="Cari nama mapel…"
+            pageSize={10}
             pageSizeOptions={[10, 20, 50]}
             stickyHeader
             zebra
+            viewModes={["table"]}
           />
         </CardContent>
       </Card>
 
-      {/* Card daftar enrollment kelas (filter by class_id) */}
-      <ClassEnrollmentsCard classId={viewClassId} />
+      {/* Tabel siswa aktif di rombel */}
+      <Card>
+        <CardHeader className="py-3 flex flex-row items-center justify-between gap-3">
+          <div>
+            <CardTitle className="text-base">
+              Siswa Aktif di Rombel Ini
+            </CardTitle>
+            <p className="text-[11px] text-muted-foreground">
+              Data dari endpoint:{" "}
+              <code>
+                /u/class-sections/list?id={currentSectionId}
+                &with_student_class_sections=true&with_csst=true
+              </code>
+              .
+            </p>
+          </div>
+          {sectionsQ.isLoading && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Memuat siswa aktif…
+            </div>
+          )}
+        </CardHeader>
+        <CardContent className="pb-4 space-y-3">
+          <DataTable<StudentRow>
+            rows={studentRows}
+            columns={studentColumns}
+            loading={sectionsQ.isLoading && studentRows.length === 0}
+            getRowId={(r) => r.id}
+            searchByKeys={["name", "code"]}
+            searchPlaceholder="Cari nama atau NIS…"
+            pageSize={20}
+            pageSizeOptions={[10, 20, 50]}
+            stickyHeader
+            zebra
+            viewModes={["table"]}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 };
 
-export default SchoolClassDetail;
+export default SchoolClassSectionDetail;

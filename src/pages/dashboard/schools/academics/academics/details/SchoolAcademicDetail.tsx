@@ -47,6 +47,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 /* === header layout hook === */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
 
 /* ===== Types dari API baru ===== */
 
@@ -307,26 +308,6 @@ export default function SchoolAcademicDetail() {
           {term && (
             <Card>
               <CardContent className="p-0">
-                <div className="flex items-center gap-3 border-b border-border px-5 py-4">
-                  <div className="grid h-10 w-10 place-items-center rounded-lg bg-accent text-accent-foreground">
-                    <School size={20} />
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold">
-                      Periode Akademik
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {term.academic_term_slug} · Angkatan{" "}
-                      {term.academic_term_angkatan}
-                    </div>
-                  </div>
-                  {term.academic_term_is_active && (
-                    <Badge className="ml-auto" variant="default">
-                      Aktif
-                    </Badge>
-                  )}
-                </div>
-
                 <div className="grid gap-4 p-5 md:grid-cols-2">
                   <InfoRow
                     icon={<CalendarDays size={18} />}
@@ -336,8 +317,13 @@ export default function SchoolAcademicDetail() {
                   <InfoRow
                     icon={<CheckCircle2 size={18} />}
                     label="Status"
-                    value={term.academic_term_is_active ? "Aktif" : "Nonaktif"}
+                    value={
+                      <CBadgeStatus
+                        status={term.academic_term_is_active ? "active" : "inactive"}
+                      />
+                    }
                   />
+
                   <InfoRow
                     icon={<Flag size={18} />}
                     label="Angkatan"
@@ -422,16 +408,11 @@ export default function SchoolAcademicDetail() {
                           <div className="truncate text-sm font-semibold">
                             {cls.class_name}
                           </div>
-                          <Badge
-                            variant={
-                              cls.class_status === "active"
-                                ? "default"
-                                : "outline"
-                            }
+                          <CBadgeStatus
+                            status={cls.class_status === "active" ? "active" : "inactive"}
                             className="text-[10px]"
-                          >
-                            {cls.class_status}
-                          </Badge>
+                          />
+
                         </div>
                         <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
                           <span className="rounded-full bg-muted px-2 py-0.5">
@@ -522,16 +503,11 @@ export default function SchoolAcademicDetail() {
                           <div className="truncate text-sm font-semibold">
                             {sec.class_section_name}
                           </div>
-                          <Badge
-                            variant={
-                              sec.class_section_is_active
-                                ? "default"
-                                : "outline"
-                            }
+                          <CBadgeStatus
+                            status={sec.class_section_is_active ? "active" : "inactive"}
                             className="text-[10px]"
-                          >
-                            {sec.class_section_is_active ? "Aktif" : "Nonaktif"}
-                          </Badge>
+                          />
+
                         </div>
 
                         <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">

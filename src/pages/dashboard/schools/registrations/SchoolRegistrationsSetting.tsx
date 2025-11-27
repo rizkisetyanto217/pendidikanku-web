@@ -23,6 +23,7 @@ import {
 /* icons */
 import { Copy, Save, Globe2, Link as LinkIcon, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
 
 /* utils */
 const fmtIDR = (n: number) =>
@@ -216,15 +217,20 @@ export default function SchoolRegistrationsSetting({
               </div>
             </div>
             <div className="rounded-xl border p-3">
-              <div className="text-xs text-muted-foreground">Status</div>
+              <div className="text-xs text-muted-foreground mb-1">Status</div>
               <div className="text-sm font-medium">
-                {defaultGb?.active ? (
-                  <Badge>Aktif</Badge>
-                ) : (
-                  <Badge variant="outline">Nonaktif</Badge>
-                )}
+                <CBadgeStatus
+                  status={
+                    defaultGb?.active === true
+                      ? "active"
+                      : defaultGb?.active === false
+                        ? "inactive"
+                        : "pending"
+                  }
+                />
               </div>
             </div>
+
           </div>
         </CardContent>
       </Card>

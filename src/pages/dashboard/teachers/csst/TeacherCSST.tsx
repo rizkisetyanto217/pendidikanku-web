@@ -400,11 +400,10 @@ export default function TeacherCSST({ showBack = false, backTo }: Props) {
 
       {/* Cards */}
       <div
-        className={`grid gap-6 ${
-          viewMode === "simple"
-            ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
-            : "grid-cols-1 lg:grid-cols-2"
-        }`}
+        className={`grid gap-6 ${viewMode === "simple"
+          ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
+          : "grid-cols-1 lg:grid-cols-2"
+          }`}
       >
         {filtered.map((s) => (
           <Card
@@ -447,7 +446,7 @@ export default function TeacherCSST({ showBack = false, backTo }: Props) {
 
               <div className="pt-3 flex justify-end">
                 <Link
-                  to={`${s.classSectionId}`} // ⬅️ sekarang yang dikirim class_section_id
+                  to={`${s.id}`} //  sekarang yang dikirim class_section_id
                   state={{
                     clsOverride: {
                       id: s.id, // ini tetap CSST id buat header dll
@@ -456,7 +455,7 @@ export default function TeacherCSST({ showBack = false, backTo }: Props) {
                       academicTerm: s.academicTerm,
                       cohortYear: Number(
                         s.academicTerm.match(/^\d{4}/)?.[0] ??
-                          new Date().getFullYear()
+                        new Date().getFullYear()
                       ),
                       studentsCount: s.studentsCount,
                       todayAttendance: {

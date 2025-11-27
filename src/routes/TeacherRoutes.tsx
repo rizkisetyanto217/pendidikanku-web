@@ -7,7 +7,7 @@ import TeacherDashboard from "@/pages/dashboard/teachers/TeacherMainDashboard";
 
 // Menu utama guru
 import TeacherMenuGrids from "@/pages/dashboard/teachers/menus/TeacherMenuGrids";
-import TeacherClass from "@/pages/dashboard/teachers/classes/TeacherClassFromSections";
+import TeacherClass from "@/pages/dashboard/teachers/classes/TeacherClass";
 import TeacherCSST from "@/pages/dashboard/teachers/csst/TeacherCSST";
 import TeacherScheduleAgenda from "@/pages/dashboard/teachers/schedules/agendas/TeacherScheduleAgenda";
 import TeacherProfil from "@/pages/dashboard/teachers/profiles/TeacherProfil";

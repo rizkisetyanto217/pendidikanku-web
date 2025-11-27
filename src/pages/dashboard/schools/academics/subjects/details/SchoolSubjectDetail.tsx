@@ -6,7 +6,6 @@ import axios from "@/lib/axios";
 
 /* ui */
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle, ArrowLeft, Loader2 } from "lucide-react";
 
@@ -18,6 +17,7 @@ import {
   DataTable,
   type ColumnDef,
 } from "@/components/costum/table/CDataTable";
+import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
 
 /* ====== Types ====== */
 type SubjectStatus = "active" | "inactive";
@@ -112,18 +112,18 @@ const SchoolSubjectDetail: React.FC = () => {
   const [qBooks, setQBooks] = useState("");
 
   const { setHeader } = useDashboardHeader();
-    useEffect(() => {
-      setHeader({
-        title: "Detail Mapel",
-        breadcrumbs: [
-          { label: "Dashboard", href: "dashboard" },
-          { label: "Akademik" },
-          { label: "Mapel", href: "akademik/pelajaran" },
-          { label: "Detail" },
-        ],
-        showBack: true,
-      });
-    }, [setHeader]);
+  useEffect(() => {
+    setHeader({
+      title: "Detail Mapel",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Akademik" },
+        { label: "Mapel", href: "akademik/pelajaran" },
+        { label: "Detail" },
+      ],
+      showBack: true,
+    });
+  }, [setHeader]);
 
   /* =========================
      REAL QUERIES (dipakai bila USE_DUMMY=false)
@@ -228,9 +228,8 @@ const SchoolSubjectDetail: React.FC = () => {
         class_subject_book_book_id: `b-${i}`,
         class_subject_book_slug: `mat-${i}`,
         class_subject_book_is_active: i % 4 !== 0,
-        class_subject_book_book_title_snapshot: `Buku Matematika Jilid ${
-          i + 1
-        }`,
+        class_subject_book_book_title_snapshot: `Buku Matematika Jilid ${i + 1
+          }`,
         class_subject_book_book_author_snapshot:
           i % 3 === 0 ? "Tim Penulis" : "A. Sutanto",
         class_subject_book_book_slug_snapshot: `buku-matematika-jilid-${i + 1}`,
@@ -313,8 +312,13 @@ const SchoolSubjectDetail: React.FC = () => {
       id: "class_subject_is_active",
       header: "Aktif",
       minW: "90px",
-      cell: (r) => (r.class_subject_is_active ? "Aktif" : "Nonaktif"),
-    },
+      cell: (r) => (
+        <CBadgeStatus
+          status={r.class_subject_is_active ? "active" : "inactive"}
+        />
+      ),
+    }
+
   ];
 
   /* === columns: books === */
@@ -344,8 +348,13 @@ const SchoolSubjectDetail: React.FC = () => {
       id: "class_subject_book_is_active",
       header: "Aktif",
       minW: "90px",
-      cell: (r) => (r.class_subject_book_is_active ? "Aktif" : "Nonaktif"),
-    },
+      cell: (r) => (
+        <CBadgeStatus
+          status={r.class_subject_book_is_active ? "active" : "inactive"}
+        />
+      ),
+    }
+
   ];
 
   return (
@@ -358,9 +367,9 @@ const SchoolSubjectDetail: React.FC = () => {
               <Button
                 variant="ghost"
                 onClick={() => navigate(-1)}
-                className="gap-1.5"
+                size="icon"
               >
-                <ArrowLeft size={18} />
+                <ArrowLeft size={20} />
               </Button>
               <h1 className="font-semibold text-lg md:text-xl">Detail Mapel</h1>
             </div>
@@ -398,11 +407,10 @@ const SchoolSubjectDetail: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {subjectStatus === "active" ? (
-                        <Badge>Aktif</Badge>
-                      ) : (
-                        <Badge variant="secondary">Nonaktif</Badge>
-                      )}
+                      <CBadgeStatus
+                        status={subjectStatus === "active" ? "active" : "inactive"}
+                      />
+
                     </div>
                   </div>
 
@@ -436,55 +444,55 @@ const SchoolSubjectDetail: React.FC = () => {
               </Card>
 
               {/* Tabel Penugasan */}
-             <div className="space-y-2">
-              <h2 className="text-base font-semibold">Penugasan Per Kelas</h2>
-              <DataTable<ClassSubjectItem>
-                defaultQuery={qAssign}
-                onQueryChange={setQAssign}
-                searchByKeys={
-                  [
-                    "class_subject_slug",
-                    "class_subject_subject_name_snapshot",
-                    "class_subject_subject_code_snapshot",
-                  ] as any
-                }
-                rows={assignRows}
-                columns={assignCols}
-                getRowId={(r) => r.class_subject_id}
-                pageSize={30}
-                pageSizeOptions={[20, 30, 50]}
-                stickyHeader
-                zebra
-                minTableWidth={980}
-                onRowClick={undefined}
-              />
-            </div>
+              <div className="space-y-2">
+                <h2 className="text-base font-semibold">Penugasan Per Kelas</h2>
+                <DataTable<ClassSubjectItem>
+                  defaultQuery={qAssign}
+                  onQueryChange={setQAssign}
+                  searchByKeys={
+                    [
+                      "class_subject_slug",
+                      "class_subject_subject_name_snapshot",
+                      "class_subject_subject_code_snapshot",
+                    ] as any
+                  }
+                  rows={assignRows}
+                  columns={assignCols}
+                  getRowId={(r) => r.class_subject_id}
+                  pageSize={30}
+                  pageSizeOptions={[20, 30, 50]}
+                  stickyHeader
+                  zebra
+                  minTableWidth={980}
+                  onRowClick={undefined}
+                />
+              </div>
 
               {/* Tabel Buku */}
-            <div className="space-y-2">
-              <h2 className="text-base font-semibold">Buku Terkait</h2>
-              <DataTable<ClassSubjectBookItem>
-                defaultQuery={qBooks}
-                onQueryChange={setQBooks}
-                searchByKeys={
-                  [
-                    "class_subject_book_book_title_snapshot",
-                    "class_subject_book_book_author_snapshot",
-                    "class_subject_book_book_slug_snapshot",
-                  ] as any
-                }
-                rows={bookRows}
-                columns={bookCols}
-                getRowId={(r) => r.class_subject_book_id}
-                pageSize={30}
-                pageSizeOptions={[20, 30, 50]}
-                stickyHeader
-                zebra
-                minTableWidth={960}
-              />
-            </div>
+              <div className="space-y-2">
+                <h2 className="text-base font-semibold">Buku Terkait</h2>
+                <DataTable<ClassSubjectBookItem>
+                  defaultQuery={qBooks}
+                  onQueryChange={setQBooks}
+                  searchByKeys={
+                    [
+                      "class_subject_book_book_title_snapshot",
+                      "class_subject_book_book_author_snapshot",
+                      "class_subject_book_book_slug_snapshot",
+                    ] as any
+                  }
+                  rows={bookRows}
+                  columns={bookCols}
+                  getRowId={(r) => r.class_subject_book_id}
+                  pageSize={30}
+                  pageSizeOptions={[20, 30, 50]}
+                  stickyHeader
+                  zebra
+                  minTableWidth={960}
+                />
+              </div>
             </>
-            
+
           )}
         </div>
       </main>

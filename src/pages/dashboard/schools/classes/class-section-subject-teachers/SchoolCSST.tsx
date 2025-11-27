@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
 
 /* ========= Types dari API baru ========= */
 
@@ -389,21 +390,16 @@ export default function SchoolCSST({ showBack = false, backTo }: Props) {
                                   "Mata pelajaran tanpa nama"}
                               </div>
                             </div>
-                            <Badge
-                              variant={
+                            <CBadgeStatus
+                              status={
                                 row.class_section_subject_teacher_is_active
-                                  ? "default"
-                                  : "outline"
+                                  ? "active"
+                                  : row.class_section_subject_teacher_deleted_at
+                                    ? "pending"
+                                    : "inactive"
                               }
-                              className={`ml-1 text-[10px] ${row.class_section_subject_teacher_is_active
-                                ? "bg-emerald-600"
-                                : ""
-                                }`}
-                            >
-                              {row.class_section_subject_teacher_is_active
-                                ? "Aktif"
-                                : "Nonaktif"}
-                            </Badge>
+                            />
+
                           </div>
 
                           {/* meta info */}
