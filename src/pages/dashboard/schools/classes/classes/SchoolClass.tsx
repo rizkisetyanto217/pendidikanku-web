@@ -378,13 +378,31 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
             viewModes={["table", "card"] as ViewMode[]}
             defaultView="table"
             storageKey={`classes:${schoolId ?? "unknown"}`}
-            onRowClick={(r) => navigate(`${r.id}`)} // ➜ /sekolah/kelas/daftar-kelas/:classId
+            // ⬇️ kirim state ke detail kelas
+            onRowClick={(r) =>
+              navigate(`${r.id}`, {
+                state: {
+                  className: r.name,
+                  classSlug: r.slug,
+                  parentName: r.parentName,
+                  parentLevel: r.parentLevel,
+                },
+              })
+            }
             pageSize={perPage}
             pageSizeOptions={[10, 20, 50, 100, 200]}
             enableActions
             actions={{
               mode: "menu",
-              onView: (row) => navigate(`${row.id}`),
+              onView: (row) =>
+                navigate(`${row.id}`, {
+                  state: {
+                    className: row.name,
+                    classSlug: row.slug,
+                    parentName: row.parentName,
+                    parentLevel: row.parentLevel,
+                  },
+                }),
               onEdit: (row) =>
                 navigate(`edit/${row.id}`, {
                   state: { classRow: row }, // bisa dipakai buat prefill SchoolClassForm

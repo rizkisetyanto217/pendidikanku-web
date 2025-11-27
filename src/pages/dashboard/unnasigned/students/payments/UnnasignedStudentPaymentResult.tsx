@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 
 import { useQuery } from "@tanstack/react-query";
-import api from "@/lib/axios";
+import api, { forceRefreshSession } from "@/lib/axios"; // ⬅️ tambah forceRefreshSession
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -155,6 +155,22 @@ export default function UnnasignedStudentPaymentFinish() {
   const totalAmount =
     payment?.payment_amount_idr ?? bundle?.total_amount_idr ?? 0;
 
+  // ⬇️ Handler: ambil refresh token dulu baru ke dashboard murid
+  const handleGoDashboard = async () => {
+    try {
+      // Paksa refresh session → hit /auth/refresh-token
+      await forceRefreshSession();
+    } catch (err) {
+      console.error(
+        "[UnnasignedPaymentFinish] forceRefreshSession error:",
+        err
+      );
+      // kalau gagal, tetap kita lanjut navigate biar UX-nya nggak mentok
+    } finally {
+      navigate(`/${slug}/murid/dashboard`);
+    }
+  };
+
   return (
     <div className="max-w-xl mx-auto py-10 px-4 md:py-14 md:px-6">
       <div className="mb-4">
@@ -298,7 +314,7 @@ export default function UnnasignedStudentPaymentFinish() {
           <div className="flex flex-col gap-2 pt-2">
             <Button
               className="w-full md:w-auto"
-              onClick={() => navigate(`/${slug}/user/dashboard`)}
+              onClick={handleGoDashboard} // ⬅️ pakai handler baru
             >
               Pergi ke Dashboard
               <ArrowRight className="w-4 h-4 ml-2" />

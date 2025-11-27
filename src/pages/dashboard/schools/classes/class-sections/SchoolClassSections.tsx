@@ -10,7 +10,6 @@ import {
   Users,
   BookOpen,
   Hash,
-  Link as LinkIcon,
   ShieldCheck,
 } from "lucide-react";
 
@@ -21,39 +20,92 @@ import { Button } from "@/components/ui/button";
 /* ✅ Breadcrumb header */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
-/* ========= Types dari API /u/class-sections/list ========= */
+/* ========= Types dari API /u/class-sections/list?with_csst=true ========= */
 
 type EnrollmentMode = "self_select" | "assigned" | "closed" | string;
 
+type CsstStats = {
+  total_attendance?: number | null;
+};
+
+type CsstSubject = {
+  id: string;
+  subject?: {
+    id: string;
+    name: string;
+  } | null;
+};
+
+type CsstTeacher = {
+  id: string;
+};
+
+type CsstRoom = {
+  id: string;
+};
+
+type ApiCsstItem = {
+  id: string;
+  is_active: boolean;
+  teacher?: CsstTeacher | null;
+  class_subject?: CsstSubject | null;
+  room?: CsstRoom | null;
+  stats?: CsstStats | null;
+};
+
 type ApiClassSection = {
+  // agregat siswa
+  class_section_total_students?: number | null;
+  class_section_total_students_active?: number | null;
+  class_section_total_students_male?: number | null;
+  class_section_total_students_female?: number | null;
+  class_section_total_students_male_active?: number | null;
+  class_section_total_students_female_active?: number | null;
+
+  // info akademik
+  class_section_academic_term_id?: string | null;
+  class_section_academic_year_snapshot?: string | null;
+  class_section_academic_term_name_snapshot?: string | null;
+  class_section_academic_term_slug_snapshot?: string | null;
+
+  // agregat mapel/pengajar
+  class_section_total_class_class_section_subject_teachers?: number | null;
+  class_section_total_class_class_section_subject_teachers_active?:
+    | number
+    | null;
+  class_sections_csst_count?: number | null;
+  class_sections_csst_active_count?: number | null;
+
+  // CSST detail
+  class_sections_csst?: ApiCsstItem[];
+
+  // info guru/ruang (opsional)
+  class_section_school_teacher_id?: string | null;
+  class_section_class_room_id?: string | null;
+  class_section_class_room_name_snapshot?: string | null;
+  class_section_class_room_slug_snapshot?: string | null;
+  class_section_class_room_location_snapshot?: string | null;
+
+  // existing fields yang mungkin tetap ada
   class_section_id: string;
-  class_section_school_id: string;
   class_section_class_id: string;
   class_section_slug: string;
   class_section_name: string;
-  class_section_code: string | null;
-  class_section_schedule: any | null;
-  class_section_capacity: number | null;
-  class_section_total_students: number | null;
-  class_section_group_url: string | null;
-  class_section_image_url: string | null;
-  class_section_image_object_key: string | null;
-  class_section_image_url_old: string | null;
-  class_section_image_object_key_old: string | null;
-  class_section_image_delete_pending_until: string | null;
+  class_section_code?: string | null;
+  class_section_image_url?: string | null;
   class_section_is_active: boolean;
-  class_section_created_at: string;
-  class_section_updated_at: string;
-  class_section_class_name_snapshot: string;
-  class_section_class_slug_snapshot: string;
-  class_section_class_parent_id: string;
-  class_section_class_parent_name_snapshot: string;
-  class_section_class_parent_slug_snapshot: string;
-  class_section_class_parent_level_snapshot: number;
-  class_section_academic_term_id: string;
-  class_section_snapshot_updated_at: string;
-  class_section_subject_teachers_enrollment_mode: EnrollmentMode;
-  class_section_subject_teachers_self_select_requires_approval: boolean;
+
+  // optional snapshots lama (kalau ada)
+  class_section_class_name_snapshot?: string;
+  class_section_class_slug_snapshot?: string;
+  class_section_class_parent_id?: string;
+  class_section_class_parent_name_snapshot?: string;
+  class_section_class_parent_slug_snapshot?: string;
+  class_section_class_parent_level_snapshot?: number;
+
+  // enrollment mode (kalau di-join)
+  class_section_subject_teachers_enrollment_mode?: EnrollmentMode;
+  class_section_subject_teachers_self_select_requires_approval?: boolean;
 };
 
 type ApiSectionList = {
@@ -93,9 +145,11 @@ const MODE_FILTER_OPTIONS: { value: ModeFilter; label: string }[] = [
 /* ========= Helpers ========= */
 
 function enrollmentModeLabel(
-  mode: EnrollmentMode,
-  needApproval: boolean
+  mode: EnrollmentMode | undefined,
+  needApproval: boolean | undefined
 ): string {
+  if (!mode) return "Belum diatur";
+
   if (mode === "self_select") {
     return needApproval
       ? "Siswa pilih sendiri (perlu approval)"
@@ -109,12 +163,13 @@ function enrollmentModeLabel(
 /* ========= Query: ambil semua sections (API user-scope) ========= */
 
 function useSections(classId?: string | undefined | null) {
-  return useQuery({
-    queryKey: ["sections-user-all", classId ?? null],
+  return useQuery<ApiClassSection[]>({
+    queryKey: ["sections-user-all", classId ?? null, "with_csst"],
     queryFn: async () => {
       const params: Record<string, any> = {
         page: 1,
         per_page: 100,
+        with_csst: true,
       };
       if (classId) params.class_id = classId;
 
@@ -184,8 +239,25 @@ function SectionCard({
   onOpenDetail: () => void;
   onEdit?: () => void;
 }) {
+  // agregat siswa
   const totalStudents = section.class_section_total_students ?? 0;
-  const capacity = section.class_section_capacity ?? null;
+  const totalStudentsActive = section.class_section_total_students_active ?? 0;
+  const male = section.class_section_total_students_male ?? 0;
+  const female = section.class_section_total_students_female ?? 0;
+  const maleActive = section.class_section_total_students_male_active ?? 0;
+  const femaleActive = section.class_section_total_students_female_active ?? 0;
+
+  // agregat CSST
+  const csstList = section.class_sections_csst ?? [];
+  const csstCount = section.class_sections_csst_count ?? csstList.length;
+  const csstActiveCount = section.class_sections_csst_active_count ?? 0;
+
+  const totalSubjects =
+    section.class_section_total_class_class_section_subject_teachers ??
+    csstCount;
+  const totalSubjectsActive =
+    section.class_section_total_class_class_section_subject_teachers_active ??
+    csstActiveCount;
 
   const isActive = section.class_section_is_active;
   const modeLabel = enrollmentModeLabel(
@@ -206,6 +278,20 @@ function SectionCard({
   const statusBadgeClassName = `pointer-events-auto border px-2 py-0.5 text-[10px] font-semibold ${
     isActive ? "bg-emerald-500 text-emerald-950" : "bg-black/40"
   }`;
+
+  const academicYear = section.class_section_academic_year_snapshot;
+  const termName = section.class_section_academic_term_name_snapshot;
+  const termSlug = section.class_section_academic_term_slug_snapshot;
+
+  const parentName =
+    section.class_section_class_parent_name_snapshot ?? "Tanpa level";
+  const parentSlug = section.class_section_class_parent_slug_snapshot ?? "-";
+  const parentLevel =
+    section.class_section_class_parent_level_snapshot ?? undefined;
+
+  const roomName = section.class_section_class_room_name_snapshot;
+  const roomLocation = section.class_section_class_room_location_snapshot;
+  const roomSlug = section.class_section_class_room_slug_snapshot;
 
   return (
     <Card className={cardClassName} onClick={onOpenDetail}>
@@ -234,10 +320,11 @@ function SectionCard({
             <div className="space-y-0.5">
               <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-wide text-white/80">
                 <Layers className="h-3 w-3" />
-                {section.class_section_class_parent_name_snapshot}
+                {parentName}
               </div>
               <div className="text-xs font-semibold leading-tight">
-                {section.class_section_class_name_snapshot}
+                {section.class_section_class_name_snapshot ??
+                  section.class_section_name}
               </div>
             </div>
             <Badge
@@ -260,7 +347,8 @@ function SectionCard({
                 <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
                   <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5">
                     <BookOpen className="h-3 w-3" />
-                    {section.class_section_class_slug_snapshot}
+                    {section.class_section_class_slug_snapshot ??
+                      section.class_section_class_id}
                   </span>
                   <span className="inline-flex items-center gap-1 rounded-full bg-muted/60 px-2 py-0.5">
                     <Hash className="h-3 w-3" />
@@ -287,24 +375,30 @@ function SectionCard({
             <div className="grid gap-3 md:grid-cols-2">
               <div className="rounded-lg border bg-background/40 p-3">
                 <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Level / Parent
+                  Level / Parent &amp; Tahun Ajaran
                 </div>
-                <div className="font-medium">
-                  {section.class_section_class_parent_name_snapshot}
-                </div>
+                <div className="font-medium">{parentName}</div>
                 <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                  <span>
-                    {section.class_section_class_parent_slug_snapshot}
-                  </span>
-                  <span>
-                    Level {section.class_section_class_parent_level_snapshot}
-                  </span>
+                  <span>{parentSlug}</span>
+                  {parentLevel != null && <span>Level {parentLevel}</span>}
                 </div>
+                {(academicYear || termName) && (
+                  <div className="mt-1 text-[11px] text-muted-foreground">
+                    {academicYear && <span>TA {academicYear}</span>}
+                    {academicYear && termName && " • "}
+                    {termName && (
+                      <span>
+                        {termName}
+                        {termSlug && ` (${termSlug})`}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="rounded-lg border bg-background/40 p-3">
                 <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Siswa & Kapasitas
+                  Siswa, Kapasitas &amp; Ruang
                 </div>
                 <div className="flex items-center justify-between text-[13px]">
                   <span className="inline-flex items-center gap-1.5">
@@ -317,37 +411,46 @@ function SectionCard({
                     </span>
                   </span>
                   <span className="text-[11px] text-muted-foreground">
-                    Kapasitas:{" "}
-                    {capacity !== null && capacity > 0 ? capacity : "-"}
+                    Aktif: {totalStudentsActive}
                   </span>
+                </div>
+                <div className="mt-1 space-y-0.5 text-[11px] text-muted-foreground">
+                  <div>
+                    Laki-laki / Perempuan: {male} / {female}
+                  </div>
+                  <div>
+                    Aktif Lk / Pr: {maleActive} / {femaleActive}
+                  </div>
+                  {(roomName || roomLocation || roomSlug) && (
+                    <div className="pt-1 text-[11px]">
+                      Ruang:{" "}
+                      <span className="font-medium">
+                        {roomName ?? roomSlug ?? "-"}
+                      </span>
+                      {roomLocation && ` • ${roomLocation}`}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* Mode + link + tombol kelola */}
+            {/* Mode + agregat mapel/pengajar */}
             <div className="flex flex-col gap-2 rounded-lg border bg-background/40 p-3 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-start gap-2 text-[11px]">
-                <ShieldCheck className="mt-0.5 h-3.5 w-3.5 text-emerald-500" />
-                <div>
-                  <div className="font-medium">Mode mapel &amp; pengajar</div>
-                  <div className="text-muted-foreground">{modeLabel}</div>
+              <div className="flex flex-1 flex-col gap-1 text-[11px]">
+                <div className="flex items-start gap-2">
+                  <ShieldCheck className="mt-0.5 h-3.5 w-3.5 text-emerald-500" />
+                  <div>
+                    <div className="font-medium">Mode mapel &amp; pengajar</div>
+                    <div className="text-muted-foreground">{modeLabel}</div>
+                  </div>
+                </div>
+                <div className="pl-5 text-[11px] text-muted-foreground">
+                  Total mapel/pengajar: {totalSubjects} (aktif:{" "}
+                  {totalSubjectsActive})
                 </div>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-1 md:pt-0">
-                {section.class_section_group_url && (
-                  <a
-                    href={section.class_section_group_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] text-primary hover:bg-primary/5"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <LinkIcon className="h-3 w-3" />
-                    Link Grup
-                  </a>
-                )}
-
                 {onEdit && (
                   <Button
                     size="sm"
@@ -375,6 +478,64 @@ function SectionCard({
                 </Button>
               </div>
             </div>
+
+            {/* Mapel & pengajar – grid card 2 kolom */}
+            <Card className="rounded-2xl border bg-background/40">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 py-3 pb-2">
+                <CardTitle className="text-sm">Mapel &amp; pengajar</CardTitle>
+                <div className="text-[11px] text-muted-foreground">
+                  Total: <span className="font-semibold">{csstCount}</span> •{" "}
+                  Aktif:{" "}
+                  <span className="font-semibold">{csstActiveCount}</span>
+                </div>
+              </CardHeader>
+
+              <CardContent className="pt-1 pb-3">
+                {csstList.length === 0 ? (
+                  <div className="text-[11px] text-muted-foreground">
+                    Belum ada mapel/pengajar di rombel ini.
+                  </div>
+                ) : (
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {csstList.map((csst) => {
+                      const subjectName =
+                        csst.class_subject?.subject?.name ??
+                        csst.class_subject?.id ??
+                        "Tanpa nama mapel";
+
+                      const isCsstActive = csst.is_active;
+                      const attendance = csst.stats?.total_attendance ?? 0;
+
+                      return (
+                        <div
+                          key={csst.id}
+                          className="flex h-full flex-col justify-between rounded-2xl border bg-background/70 px-4 py-3 text-[11px]"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="space-y-1">
+                              <div className="text-sm font-semibold">
+                                {subjectName}
+                              </div>
+                            </div>
+                            <Badge
+                              className="h-6 rounded-full px-3 text-[10px] font-semibold"
+                              variant={isCsstActive ? "default" : "outline"}
+                            >
+                              {isCsstActive ? "Aktif" : "Nonaktif"}
+                            </Badge>
+                          </div>
+
+                          <div className="mt-1 text-[10px] text-muted-foreground">
+                            Kehadiran:{" "}
+                            <span className="font-semibold">{attendance}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </CardContent>
         </div>
       </div>
@@ -414,6 +575,22 @@ export default function SchoolClassSection({
   const [modeFilter, setModeFilter] = useState<ModeFilter>("all");
 
   const activeCount = sections.filter((s) => s.class_section_is_active).length;
+  const totalStudentsAll = sections.reduce(
+    (acc, s) => acc + (s.class_section_total_students ?? 0),
+    0
+  );
+  const totalStudentsActiveAll = sections.reduce(
+    (acc, s) => acc + (s.class_section_total_students_active ?? 0),
+    0
+  );
+  const totalCsstAll = sections.reduce(
+    (acc, s) => acc + (s.class_sections_csst_count ?? 0),
+    0
+  );
+  const totalCsstActiveAll = sections.reduce(
+    (acc, s) => acc + (s.class_sections_csst_active_count ?? 0),
+    0
+  );
 
   const filteredSections = useMemo(() => {
     return sections.filter((s) => {
@@ -421,7 +598,10 @@ export default function SchoolClassSection({
       if (statusFilter === "inactive" && s.class_section_is_active)
         return false;
       if (modeFilter !== "all") {
-        if (s.class_section_subject_teachers_enrollment_mode !== modeFilter) {
+        if (
+          s.class_section_subject_teachers_enrollment_mode !== undefined &&
+          s.class_section_subject_teachers_enrollment_mode !== modeFilter
+        ) {
           return false;
         }
       }
@@ -430,6 +610,11 @@ export default function SchoolClassSection({
   }, [sections, statusFilter, modeFilter]);
 
   const isFiltered = statusFilter !== "all" || modeFilter !== "all";
+
+  const programName =
+    sections[0]?.class_section_class_name_snapshot ??
+    sections[0]?.class_section_name ??
+    "yang dipilih";
 
   return (
     <div className="w-full overflow-x-hidden bg-background text-foreground">
@@ -451,16 +636,12 @@ export default function SchoolClassSection({
               <h1 className="text-lg font-semibold md:text-xl">Semua Rombel</h1>
               <p className="text-xs text-muted-foreground md:text-sm">
                 Rombongan belajar dari program{" "}
-                <span className="font-medium">
-                  {sections[0]?.class_section_class_name_snapshot ??
-                    "yang dipilih"}
-                </span>
-                .
+                <span className="font-medium">{programName}</span>.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-xs md:text-sm">
+          <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm">
             <Button size="sm" onClick={() => navigate("new")} className="mr-1">
               + Tambah Rombel
             </Button>
@@ -470,6 +651,18 @@ export default function SchoolClassSection({
             </Badge>
             <Badge variant="outline" className="font-normal">
               Aktif: <span className="ml-1 font-semibold">{activeCount}</span>
+            </Badge>
+            <Badge variant="outline" className="font-normal">
+              Siswa:{" "}
+              <span className="ml-1 font-semibold">
+                {totalStudentsAll} / {totalStudentsActiveAll} aktif
+              </span>
+            </Badge>
+            <Badge variant="outline" className="font-normal">
+              Mapel/Pengajar:{" "}
+              <span className="ml-1 font-semibold">
+                {totalCsstAll} / {totalCsstActiveAll} aktif
+              </span>
             </Badge>
           </div>
         </div>
@@ -554,12 +747,8 @@ export default function SchoolClassSection({
               <SectionCard
                 key={section.class_section_id}
                 section={section}
-                onOpenDetail={
-                  () => navigate(`${section.class_section_id}`) // detail rombel (Kelola Mapel & Pengajar)
-                }
-                onEdit={
-                  () => navigate(`edit/${section.class_section_id}`) // ➜ form edit rombel
-                }
+                onOpenDetail={() => navigate(`${section.class_section_id}`)}
+                onEdit={() => navigate(`edit/${section.class_section_id}`)}
               />
             ))}
           </div>

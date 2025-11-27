@@ -24,7 +24,7 @@ import SchoolBookDetail from "@/pages/dashboard/schools/academics/books/details/
 
 import SchoolSchedule from "@/pages/dashboard/schools/schedules/agendas/SchoolScheduleAgenda";
 import SchoolRegistrationsPeriod from "@/pages/dashboard/schools/registrations/SchoolRegistrationsPeriod";
-import SchoolRegistrationsListStudent from "@/pages/dashboard/schools/registrations/SchoolRegistrationsStudent";
+import SchoolRegistrationsListStudent from "@/pages/dashboard/schools/registrations/student-list/SchoolRegistrationsStudent";
 import SchoolRegistrationsSetting from "@/pages/dashboard/schools/registrations/SchoolRegistrationsSetting";
 import SchoolScheduleAgenda from "@/pages/dashboard/schools/schedules/agendas/SchoolScheduleAgenda";
 import SchoolScheduleRoutine from "@/pages/dashboard/schools/schedules/routines/SchoolScheduleRoutine";
@@ -50,6 +50,8 @@ import SchoolClassParentForm from "@/pages/dashboard/schools/classes/class-paren
 import SchoolCSSTForm from "@/pages/dashboard/schools/classes/class-section-subject-teachers/details/SchoolCSSTForm";
 import SchoolClassForm from "@/pages/dashboard/schools/classes/classes/details/SchoolClassForm";
 import SchoolClassSectionForm from "@/pages/dashboard/schools/classes/class-sections/details/SchoolClassSectionForm";
+import SchoolClassStudentList from "@/pages/dashboard/schools/classes/classes/menus/student-list/SchoolClassStudentList";
+import SchoolRegistrationPaymentDetail from "@/pages/dashboard/schools/registrations/student-list/SchoolRegistrationsStudentDetail";
 
 export const SchoolRoutes = (
   <Route path="sekolah" element={<DashboardLayout />}>
@@ -111,6 +113,10 @@ export const SchoolRoutes = (
       <Route path="level/edit/:id" element={<SchoolClassParentForm />} />
       <Route path="daftar-kelas" element={<SchoolClass />} />
       <Route path="daftar-kelas/:classId" element={<SchoolClassDetail />} />
+      <Route
+        path="daftar-kelas/:classId/murid"
+        element={<SchoolClassStudentList />}
+      />
       <Route path="daftar-kelas/new" element={<SchoolClassForm />} />
       <Route path="daftar-kelas/edit/:classId" element={<SchoolClassForm />} />
       <Route path="semua-kelas" element={<SchoolClassesSection />} />
@@ -119,7 +125,8 @@ export const SchoolRoutes = (
         element={<SchoolClassSectionDetail />}
       />
       <Route path="semua-kelas/new" element={<SchoolClassSectionForm />} />
-      <Route path="semua-kelas/edit/:classSectionId"
+      <Route
+        path="semua-kelas/edit/:classSectionId"
         element={<SchoolClassSectionDetail />}
       />
       <Route path="pelajaran" element={<SchoolCSST />} />
@@ -137,7 +144,15 @@ export const SchoolRoutes = (
 
     <Route path="pendaftaran">
       <Route index element={<SchoolRegistrationsPeriod />} />
-      <Route path="murid" element={<SchoolRegistrationsListStudent />} />
+
+      <Route path="murid">
+        <Route index element={<SchoolRegistrationsListStudent />} />
+        <Route
+          path="pembayaran"
+          element={<SchoolRegistrationPaymentDetail />}
+        />
+      </Route>
+
       <Route path="pengaturan" element={<SchoolRegistrationsSetting />} />
     </Route>
 
@@ -224,6 +239,10 @@ export const SchoolRoutes = (
       <Route
         path="pendaftaran/murid"
         element={<SchoolRegistrationsListStudent showBack />}
+      />
+      <Route
+        path="pendaftaran/murid/pembayaran"
+        element={<SchoolRegistrationPaymentDetail showBack />}
       />
       <Route
         path="pendaftaran/pengaturan"
