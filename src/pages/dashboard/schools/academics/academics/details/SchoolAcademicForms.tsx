@@ -157,7 +157,7 @@ function mapPayloadToApi(p: TermPayload) {
 
 /* ===================== Halaman Add/Edit ===================== */
 
-const SchoolAcademicTermForm: React.FC = () => {
+const SchoolAcademicForms: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const params = useParams<{ id?: string }>();
@@ -369,14 +369,13 @@ const SchoolAcademicTermForm: React.FC = () => {
   return (
     <div className="w-full overflow-x-hidden bg-background text-foreground">
       <main className="w-full">
-        <div className="mx-auto flex flex-col gap-4 lg:gap-6 py-4">
+        <div className="mx-auto flex flex-col gap-4 lg:gap-6">
           {/* Header minimal di dalam page */}
-          <div className="flex items-center gap-3">
+          <div className="md:flex hidden items-center gap-3">
             <Button
               onClick={handleBack}
               variant="ghost"
               size="icon"
-              className="cursor-pointer"
             >
               <ArrowLeft size={20} />
             </Button>
@@ -641,4 +640,4 @@ const SchoolAcademicTermForm: React.FC = () => {
   );
 };
 
-export default SchoolAcademicTermForm;
+export default SchoolAcademicForms;

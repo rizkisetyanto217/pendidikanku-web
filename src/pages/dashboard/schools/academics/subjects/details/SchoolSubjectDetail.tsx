@@ -118,7 +118,7 @@ const SchoolSubjectDetail: React.FC = () => {
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Akademik" },
-        { label: "Mapel", href: "akademik/pelajaran" },
+        { label: "Mapel", href: "akademik/mata-pelajaran" },
         { label: "Detail" },
       ],
       showBack: true,

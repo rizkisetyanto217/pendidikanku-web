@@ -1,14 +1,11 @@
 // src/pages/sekolahislamku/teacher/TeacherCSSTMaterialList.tsx
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Download,
   ExternalLink,
-  Search,
-  Filter,
-  Plus,
   CalendarDays,
   Copy,
   Check,
@@ -28,15 +25,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,6 +42,7 @@ import {
   DataTable,
   type ColumnDef,
 } from "@/components/costum/table/CDataTable";
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* =========================================================
    TYPES
@@ -199,11 +189,11 @@ const bytesToHuman = (n?: number) => {
 const dateLong = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
     : "-";
 
 function extractYouTubeId(url?: string) {
@@ -218,7 +208,7 @@ function extractYouTubeId(url?: string) {
       const idx = segs.findIndex((s) => s === "embed");
       if (idx >= 0 && segs[idx + 1]) return segs[idx + 1];
     }
-  } catch { }
+  } catch {}
   return null;
 }
 
@@ -241,6 +231,20 @@ export default function TeacherCSSTMaterialList() {
   const navigate = useNavigate();
   const qc = useQueryClient();
 
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Materi Kelas",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Guru Mapel" },
+        { label: "Detail Mapel" },
+        { label: "Materi Kelas" },
+      ],
+      showBack: true,
+    });
+  }, [setHeader]);
+
   // kelas
   const { data: classes = [] } = useQuery({
     queryKey: QK.CLASSES,
@@ -259,7 +263,7 @@ export default function TeacherCSSTMaterialList() {
 
   // filter & search
   const [q, setQ] = useState("");
-  const [type, setType] = useState<"all" | MaterialType>("all");
+  const [type] = useState<"all" | MaterialType>("all");
 
   const filtered = useMemo(() => {
     let list = materials;
@@ -332,8 +336,7 @@ export default function TeacherCSSTMaterialList() {
               }
               target="_blank"
               rel="noreferrer"
-              data-no-row-click
-            >
+              data-no-row-click>
               {m.url}
             </a>
           )}
@@ -418,8 +421,7 @@ export default function TeacherCSSTMaterialList() {
                 href={m.url}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-2 underline break-all"
-              >
+                className="inline-flex items-center gap-2 underline break-all">
                 Buka {m.type === "file" ? "file" : "tautan"}{" "}
                 <ExternalLink className="h-4 w-4" />
               </a>
@@ -444,14 +446,12 @@ export default function TeacherCSSTMaterialList() {
               href={m.url}
               target="_blank"
               rel="noreferrer"
-              className="break-all"
-            >
+              className="break-all">
               <Button
                 variant="outline"
                 size="sm"
                 className="gap-2"
-                data-no-row-click
-              >
+                data-no-row-click>
                 {m.type === "file" ? (
                   <Download className="h-4 w-4" />
                 ) : (
@@ -470,8 +470,7 @@ export default function TeacherCSSTMaterialList() {
               copyShare(m);
             }}
             data-no-row-click
-            title="Salin tautan materi"
-          >
+            title="Salin tautan materi">
             {copiedId === m.id ? (
               <Check className="h-4 w-4" />
             ) : (
@@ -486,8 +485,7 @@ export default function TeacherCSSTMaterialList() {
               e.stopPropagation();
               navigate(`edit/${m.id}`);
             }}
-            data-no-row-click
-          >
+            data-no-row-click>
             <Pencil className="h-4 w-4" />
             Edit
           </Button>
@@ -499,8 +497,7 @@ export default function TeacherCSSTMaterialList() {
               e.stopPropagation();
               setDeleteTarget(m);
             }}
-            data-no-row-click
-          >
+            data-no-row-click>
             <Trash2 className="h-4 w-4" />
             Hapus
           </Button>
@@ -513,35 +510,98 @@ export default function TeacherCSSTMaterialList() {
      Render
   ========================= */
   return (
-    <div className="w-full bg-background text-foreground py-6">
+    <div className="w-full bg-background text-foreground">
       <main className="mx-auto space-y-6">
         {/* Header actions */}
         <div className="flex items-center justify-between">
-          <div className="w-full flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+          <div className="w-full md:flex hidden items-center gap-2">
+            <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => navigate(-1)}>
               <ArrowLeft size={20} />
             </Button>
             <h1 className="text-lg font-semibold tracking-tight">
               {cls ? `Materi: ${cls.name}` : "Materi Kelas"}
             </h1>
-            <div className="ml-auto flex items-center gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate("new")}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Tambah Materi
-              </Button>
-            </div>
           </div>
+        </div>
+
+{/* DATATABLE */}
+        <div className="px-4 md:px-6 pb-8">
+          <DataTable<Material>
+            onAdd={() => navigate("new")}
+            addLabel="Tambah Materi"
+            defaultQuery={q}
+            onQueryChange={setQ}
+            searchByKeys={["title", "description", "author"]}
+            columns={columns}
+            rows={filtered}
+            getRowId={(m: Material) => m.id}
+            stickyHeader
+            zebra
+            viewModes={["table", "card"]}
+            defaultView="table"
+            renderCard={renderCard}
+            onRowClick={(m: Material) => navigate(`edit/${m.id}`)}
+            rightSlot={
+              isFetching ? (
+                <span className="text-xs text-muted-foreground">Memuat…</span>
+              ) : null
+            }
+            renderActions={(m: Material) => (
+              <div className="flex items-center justify-center gap-2">
+                {m.url && (
+                  <a href={m.url} target="_blank" rel="noreferrer">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      data-no-row-click
+                      title={m.type === "file" ? "Unduh file" : "Buka tautan"}>
+                      {m.type === "file" ? (
+                        <Download className="h-4 w-4" />
+                      ) : (
+                        <ExternalLink className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </a>
+                )}
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  data-no-row-click
+                  onClick={() => navigate(`edit/${m.id}`)}
+                  title="Edit materi">
+                  <Pencil className="h-4 w-4" />
+                </Button>
+
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="gap-2"
+                  data-no-row-click
+                  onClick={() => setDeleteTarget(m)}
+                  title="Hapus materi">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            rowHover
+            emptySlot={
+              <div className="text-sm text-muted-foreground">
+                Belum ada materi untuk kelas ini.
+              </div>
+            }
+          />
         </div>
 
         {/* AlertDialog Hapus */}
         <AlertDialog
           open={!!deleteTarget}
-          onOpenChange={(v) => !v && setDeleteTarget(null)}
-        >
+          onOpenChange={(v) => !v && setDeleteTarget(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Hapus materi?</AlertDialogTitle>
@@ -555,8 +615,7 @@ export default function TeacherCSSTMaterialList() {
               <AlertDialogCancel>Batal</AlertDialogCancel>
               <AlertDialogAction
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                onClick={confirmDelete}
-              >
+                onClick={confirmDelete}>
                 Hapus
               </AlertDialogAction>
             </AlertDialogFooter>
@@ -564,7 +623,7 @@ export default function TeacherCSSTMaterialList() {
         </AlertDialog>
 
         {/* FILTERS */}
-        <div className="w-full px-4 md:px-6">
+        {/* <div className="w-full px-4 md:px-6">
           <Card className="mb-6">
             <CardContent className="p-4 md:p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
@@ -605,80 +664,7 @@ export default function TeacherCSSTMaterialList() {
               </div>
             </CardContent>
           </Card>
-        </div>
-
-        {/* DATATABLE */}
-        <div className="px-4 md:px-6 pb-8">
-          <DataTable<Material>
-            title="Daftar Materi"
-            defaultQuery={q}
-            onQueryChange={setQ}
-            searchByKeys={["title", "description", "author"]}
-            columns={columns}
-            rows={filtered}
-            getRowId={(m: Material) => m.id}
-            stickyHeader
-            zebra
-            viewModes={["table", "card"]}
-            defaultView="table"
-            renderCard={renderCard}
-            onRowClick={(m: Material) => navigate(`edit/${m.id}`)}
-            rightSlot={
-              isFetching ? (
-                <span className="text-xs text-muted-foreground">Memuat…</span>
-              ) : null
-            }
-            renderActions={(m: Material) => (
-              <div className="flex items-center justify-center gap-2">
-                {m.url && (
-                  <a href={m.url} target="_blank" rel="noreferrer">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-2"
-                      data-no-row-click
-                      title={m.type === "file" ? "Unduh file" : "Buka tautan"}
-                    >
-                      {m.type === "file" ? (
-                        <Download className="h-4 w-4" />
-                      ) : (
-                        <ExternalLink className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </a>
-                )}
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  data-no-row-click
-                  onClick={() => navigate(`edit/${m.id}`)}
-                  title="Edit materi"
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="gap-2"
-                  data-no-row-click
-                  onClick={() => setDeleteTarget(m)}
-                  title="Hapus materi"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
-            rowHover
-            emptySlot={
-              <div className="text-sm text-muted-foreground">
-                Belum ada materi untuk kelas ini.
-              </div>
-            }
-          />
-        </div>
+        </div> */}
       </main>
     </div>
   );

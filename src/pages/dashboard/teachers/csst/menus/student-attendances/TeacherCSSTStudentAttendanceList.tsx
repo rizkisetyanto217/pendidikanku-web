@@ -1,5 +1,5 @@
 // src/pages/dasboard/teacher/TeacherCSSTStudentAttendanceList.tsx
-import React, { useMemo, useState, useDeferredValue } from "react";
+import React, { useMemo, useState, useDeferredValue, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
@@ -36,6 +36,7 @@ import {
   Hand,
   MonitorSmartphone,
 } from "lucide-react";
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* =========================================================
    KONFIG + TIPE
@@ -288,6 +289,19 @@ function toCSV(rows: AttendanceRow[]) {
 ========================================================= */
 const TeacherCSSTStudentAttendanceList: React.FC = () => {
   const navigate = useNavigate();
+   const { setHeader } = useDashboardHeader();
+    useEffect(() => {
+      setHeader({
+        title: "Kehadiran Murid",
+        breadcrumbs: [
+          { label: "Dashboard", href: "dashboard" },
+          { label: "Guru Mapel" },
+          { label: "Detail Mapel" },
+           { label: "Kehadiran Murid" },
+        ],
+        showBack: true,
+      });
+    }, [setHeader]);
   const { classId = "" } = useParams<{ classId: string }>();
 
   // Mode & kontrol tanggal
@@ -380,7 +394,7 @@ const TeacherCSSTStudentAttendanceList: React.FC = () => {
               <ArrowLeft size={20} />
             </Button>
             <div>
-              <h1 className="text-xl font-semibold">Kehadiran Siswa</h1>
+              <h1 className="font-semibold text-lg md:text-xl">Kehadiran Murid</h1>
               <p className="text-sm text-muted-foreground">
                 Kelas: {classId || "-"}
               </p>

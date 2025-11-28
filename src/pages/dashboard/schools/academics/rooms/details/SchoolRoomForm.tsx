@@ -284,7 +284,7 @@ const SchoolRoomForm: React.FC = () => {
       <main className="w-full">
         <div className="mx-auto flex flex-col gap-4 lg:gap-6">
           {/* Header + Back */}
-          <div className="flex items-center gap-3">
+          <div className="md:flex hidden items-center gap-3">
             <Button
               onClick={handleBack}
               variant="ghost"

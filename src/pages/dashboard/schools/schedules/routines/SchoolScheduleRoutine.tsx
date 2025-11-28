@@ -249,8 +249,7 @@ function EditRoutineDialog({
               value={String(draft.weekday)}
               onValueChange={(v) =>
                 setDraft((d) => ({ ...d, weekday: Number(v) as RoutineDay }))
-              }
-            >
+              }>
               <SelectTrigger>
                 <SelectValue placeholder="Pilih hari" />
               </SelectTrigger>
@@ -296,8 +295,7 @@ function EditRoutineDialog({
               value={draft.type ?? "class"}
               onValueChange={(v: "class" | "exam" | "event") =>
                 setDraft((d) => ({ ...d, type: v }))
-              }
-            >
+              }>
               <SelectTrigger>
                 <SelectValue placeholder="Pilih tipe" />
               </SelectTrigger>
@@ -330,8 +328,7 @@ function EditRoutineDialog({
                   classId: v,
                   className: classesStore.find((c) => c.id === v)?.name,
                 }))
-              }
-            >
+              }>
               <SelectTrigger>
                 <SelectValue placeholder="Pilih kelas" />
               </SelectTrigger>
@@ -355,8 +352,7 @@ function EditRoutineDialog({
                   teacherId: v,
                   teacher: teachersStore.find((t) => t.id === v)?.name,
                 }))
-              }
-            >
+              }>
               <SelectTrigger>
                 <SelectValue placeholder="Pilih guru" />
               </SelectTrigger>
@@ -417,8 +413,7 @@ function EditRoutineDialog({
             onClick={() => {
               if (!draft.title.trim()) return;
               onSubmit(draft);
-            }}
-          >
+            }}>
             Simpan
           </Button>
         </DialogFooter>
@@ -473,15 +468,13 @@ function FilterBar({
           <Button
             size="icon"
             variant={view === "calendar" ? "secondary" : "ghost"}
-            onClick={() => setView("calendar")}
-          >
+            onClick={() => setView("calendar")}>
             <LayoutGrid className="h-4 w-4" />
           </Button>
           <Button
             size="icon"
             variant={view === "list" ? "secondary" : "ghost"}
-            onClick={() => setView("list")}
-          >
+            onClick={() => setView("list")}>
             <ListIcon className="h-4 w-4" />
           </Button>
         </div>
@@ -491,8 +484,7 @@ function FilterBar({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
         <Select
           value={classId ?? "all"}
-          onValueChange={(v) => setClassId(v === "all" ? undefined : v)}
-        >
+          onValueChange={(v) => setClassId(v === "all" ? undefined : v)}>
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Kelas" />
           </SelectTrigger>
@@ -508,8 +500,7 @@ function FilterBar({
 
         <Select
           value={teacherId ?? "all"}
-          onValueChange={(v) => setTeacherId(v === "all" ? undefined : v)}
-        >
+          onValueChange={(v) => setTeacherId(v === "all" ? undefined : v)}>
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Guru" />
           </SelectTrigger>
@@ -535,48 +526,42 @@ function FilterBar({
           </SelectContent>
         </Select>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+        <div className="grid grid-cols-2 gap-2 mt-[2px]">
+
           <Input
             type="date"
             value={from ?? ""}
             onChange={(e) => setFrom(e.target.value || undefined)}
-            className="w-full"
           />
-          <span className="hidden sm:inline text-sm text-muted-foreground">
-            s/d
-          </span>
+
           <Input
             type="date"
             value={to ?? ""}
             onChange={(e) => setTo(e.target.value || undefined)}
-            className="w-full"
           />
         </div>
       </div>
 
       {/* Bar bawah: Reset + view toggle versi full button */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end mt-1 pt-1">
         <Button
           variant="outline"
           onClick={onReset}
-          className="w-full sm:w-auto"
-        >
+          className="w-full sm:w-auto">
           <RefreshCw className="mr-2 h-4 w-4" />
           Reset
         </Button>
         <Button
           variant={view === "calendar" ? "secondary" : "ghost"}
           onClick={() => setView("calendar")}
-          className="w-full sm:w-auto"
-        >
+          className="w-full sm:w-auto">
           <LayoutGrid className="mr-2 h-4 w-4" />
           Kalender
         </Button>
         <Button
           variant={view === "list" ? "secondary" : "ghost"}
           onClick={() => setView("list")}
-          className="w-full sm:w-auto"
-        >
+          className="w-full sm:w-auto">
           <ListIcon className="mr-2 h-4 w-4" />
           List
         </Button>
@@ -612,8 +597,7 @@ function QuickStats({
       {stats.map((s) => (
         <div
           key={s.label}
-          className="rounded-xl border bg-card p-3 flex flex-col gap-1"
-        >
+          className="rounded-xl border bg-card p-3 flex flex-col gap-1">
           <div className="text-xs text-muted-foreground">{s.label}</div>
           <div className="text-xl font-semibold">{s.value}</div>
         </div>
@@ -679,8 +663,7 @@ function RoutineBoardAdmin({
           }
           onClick={() =>
             onBulkDelete(Object.keys(checked).filter((k) => checked[k]))
-          }
-        >
+          }>
           <Trash2 className="mr-2 h-4 w-4" /> Hapus Terpilih
         </Button>
       </div>
@@ -696,15 +679,13 @@ function RoutineBoardAdmin({
               className={[
                 "rounded-xl border bg-card text-card-foreground",
                 isToday ? "ring-2 ring-primary/40 bg-primary/5" : "",
-              ].join(" ")}
-            >
+              ].join(" ")}>
               <div className="p-3 flex items-center justify-between">
                 <div className="font-medium">{weekdayShort[d]}</div>
                 <Button
                   size="icon"
                   variant="ghost"
-                  onClick={() => onAdd({ weekday: d })}
-                >
+                  onClick={() => onAdd({ weekday: d })}>
                   <Plus size={16} />
                 </Button>
               </div>
@@ -719,8 +700,7 @@ function RoutineBoardAdmin({
                         "rounded-lg border p-2 bg-background",
                         it.active === false ? "opacity-60" : "",
                         isToday ? "border-primary/50" : "",
-                      ].join(" ")}
-                    >
+                      ].join(" ")}>
                       <div className="flex items-center gap-2">
                         <Checkbox
                           checked={Boolean(isChecked)}
@@ -745,8 +725,7 @@ function RoutineBoardAdmin({
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => onEdit(it)}
-                          >
+                            onClick={() => onEdit(it)}>
                             <Edit size={16} />
                           </Button>
                         </div>
@@ -802,7 +781,6 @@ function OnceListAdmin({
   return (
     <div className="rounded-xl border">
       <div className="p-3 flex items-center gap-2">
-
         <div className="ml-auto flex items-center gap-2">
           <Button onClick={onAdd}>
             <Plus className="mr-2 h-4 w-4" /> Tambah
@@ -815,8 +793,7 @@ function OnceListAdmin({
             }
             onClick={() =>
               onBulkDelete(Object.keys(checked).filter((k) => checked[k]))
-            }
-          >
+            }>
             <Trash2 className="mr-2 h-4 w-4" /> Hapus Terpilih
           </Button>
         </div>
@@ -938,15 +915,15 @@ function SimpleWeekCalendar({
                 className={[
                   "min-h-[180px] bg-background p-2",
                   d === today ? "ring-2 ring-primary/40" : "",
-                ].join(" ")}
-              >
+                ].join(" ")}>
                 <div className="space-y-1">
                   {groupedR[d].map((r) => (
                     <div
                       key={r.id}
                       className="text-[11px] rounded border p-1 bg-card cursor-pointer hover:bg-accent"
-                      onClick={() => onClickItem({ kind: "routine", id: r.id })}
-                    >
+                      onClick={() =>
+                        onClickItem({ kind: "routine", id: r.id })
+                      }>
                       <div className="flex items-center gap-1">
                         <Badge variant="secondary" className="capitalize">
                           {r.type ?? "class"}
@@ -972,8 +949,7 @@ function SimpleWeekCalendar({
                     <div
                       key={o.id}
                       className="text-[11px] rounded border p-1 bg-card cursor-pointer hover:bg-accent"
-                      onClick={() => onClickItem({ kind: "once", id: o.id })}
-                    >
+                      onClick={() => onClickItem({ kind: "once", id: o.id })}>
                       <div className="flex items-center gap-1">
                         <Badge variant="secondary" className="capitalize">
                           {o.type ?? "event"}
@@ -1194,8 +1170,7 @@ export default function SchoolScheduleRoutine({
               onClick={handleBack}
               variant="ghost"
               size="icon"
-              className="cursor-pointer self-start"
-            >
+              className="cursor-pointer self-start">
               <ArrowLeft size={20} />
             </Button>
           )}
@@ -1241,8 +1216,7 @@ export default function SchoolScheduleRoutine({
         <Tabs
           value={tab}
           onValueChange={(v) => setTab(v as any)}
-          className="w-full"
-        >
+          className="w-full">
           <TabsList className="w-fit flex-wrap">
             <TabsTrigger value="calendar">Kalender</TabsTrigger>
             <TabsTrigger value="routine">Rutin (Mingguan)</TabsTrigger>

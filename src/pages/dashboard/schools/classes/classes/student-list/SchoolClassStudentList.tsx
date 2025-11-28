@@ -194,7 +194,7 @@ const SchoolClassStudentList: React.FC<Props> = ({
         { label: className },
         { label: "Murid" },
       ],
-      showBack,
+      showBack: true,
     });
   }, [setHeader, showBack, schoolId, className]);
 

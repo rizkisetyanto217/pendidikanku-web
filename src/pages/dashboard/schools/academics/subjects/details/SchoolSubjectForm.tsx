@@ -118,7 +118,7 @@ const SchoolSubjectForm: React.FC = () => {
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Akademik" },
-        { label: "Mapel", href: "akademik/mapel" },
+        { label: "Mapel", href: "akademik/mata-pelajaran" },
         { label: isEdit ? "Edit" : "Tambah" },
       ],
       showBack: true,
@@ -207,12 +207,12 @@ const SchoolSubjectForm: React.FC = () => {
       <main className="w-full">
         <div className="mx-auto flex flex-col gap-6">
           {/* Header minimal (back + title) */}
-          <div className="flex items-center gap-3">
+          <div className="md:flex hidden items-center gap-3">
             <Button
               onClick={handleBack}
               variant="ghost"
               size="icon"
-              className="cursor-pointer">
+            >
               <ArrowLeft size={20} />
             </Button>
             <div>

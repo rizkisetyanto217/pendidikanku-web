@@ -148,7 +148,7 @@ export default function SchoolSectionFormPage() {
         { label: "Semua Kelas", href: "kelas/semua-kelas" },
         { label: isEdit ? "Edit" : "Tambah" },
       ],
-      actions: null,
+      showBack: true,
     });
   }, [setHeader, isEdit, classId]);
 
@@ -250,7 +250,7 @@ export default function SchoolSectionFormPage() {
     <div className="w-full overflow-x-hidden bg-background text-foreground">
       <main className="mx-auto flex flex-col gap-6">
         {/* Header lokal */}
-        <div className="flex items-center gap-3">
+        <div className="md:flex hidden items-center gap-3">
           <Button
             onClick={handleBack}
             variant="ghost"

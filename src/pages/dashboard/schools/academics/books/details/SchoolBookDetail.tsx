@@ -102,7 +102,7 @@ export default function SchoolBookDetail() {
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Akademik" },
-        { label: "Tahun Akademik", href: "akademik/buku" },
+        { label: "Buku", href: "akademik/buku" },
         { label: "Detail" },
       ],
       showBack: true,
@@ -127,16 +127,16 @@ export default function SchoolBookDetail() {
   const isLoading = q.isLoading && !book;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="bg-background text-foreground">
       <main className="w-full">
-        <div className="max-w-screen-2xl mx-auto flex flex-col gap-6">
+        <div className="mx-auto flex flex-col gap-6">
           {/* Header */}
           <div className="flex items-center gap-3">
             <div className="md:flex hidden gap-3 items-center">
               <Button
                 variant="ghost"
                 onClick={() => navigate(-1)}
-                className="hidden md:inline-flex items-center gap-1.5"
+                size="icon"
               >
                 <ArrowLeft size={20} />
               </Button>

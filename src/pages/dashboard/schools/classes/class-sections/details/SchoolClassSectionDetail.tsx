@@ -285,6 +285,7 @@ const SchoolClassSectionDetail: React.FC = () => {
         },
         { label: className },
       ],
+      showBack: true,
     });
   }, [setHeader, schoolId, className]);
 
@@ -572,7 +573,7 @@ const SchoolClassSectionDetail: React.FC = () => {
     <div className="space-y-4">
       {/* Header lokal halaman */}
       <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+        <div className="md:flex hidden items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
@@ -679,14 +680,14 @@ const SchoolClassSectionDetail: React.FC = () => {
             <CardTitle className="text-base">
               Siswa Aktif di Rombel Ini
             </CardTitle>
-            <p className="text-[11px] text-muted-foreground">
+            {/* <p className="text-[11px] text-muted-foreground">
               Data dari endpoint:{" "}
               <code>
                 /u/class-sections/list?id={currentSectionId}
                 &with_student_class_sections=true&with_csst=true
               </code>
               .
-            </p>
+            </p> */}
           </div>
           {sectionsQ.isLoading && (
             <div className="flex items-center gap-1 text-xs text-muted-foreground">

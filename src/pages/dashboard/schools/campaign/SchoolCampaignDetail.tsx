@@ -1,5 +1,5 @@
 // src/pages/sekolahislamku/campaign/SchoolCampaignDetailPage.tsx
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "@/lib/axios";
@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 
 import type { CampaignItem } from "./SchoolCampaign";
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* =========================================================
    DEMO TOGGLE
@@ -301,8 +302,7 @@ function DonorList({ donors }: { donors: DonorItem[] }) {
       {donors.slice(0, 5).map((d) => (
         <div
           key={d.id}
-          className="rounded-lg border p-2.5 flex items-start justify-between gap-2"
-        >
+          className="rounded-lg border p-2.5 flex items-start justify-between gap-2">
           <div className="min-w-0">
             <div className="text-xs font-medium truncate">
               {d.isAnonymous ? "Hamba Allah" : d.name}
@@ -334,6 +334,19 @@ const SchoolCampaignDetail: React.FC = () => {
     campaignSlugOrId: string;
   }>();
   const navigate = useNavigate();
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Detail Donasi",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Dukungan" },
+        { label: "Donasi", href: "dukungan/donasi" },
+        { label: "Detail Donasi" },
+      ],
+      showBack: true,
+    });
+  }, [setHeader]);
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: QK.CAMPAIGN_DETAIL(schoolId || "default", campaignSlugOrId),
@@ -372,10 +385,8 @@ const SchoolCampaignDetail: React.FC = () => {
           variant="ghost"
           size="sm"
           className="inline-flex items-center gap-1"
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Kembali
+          onClick={() => navigate(-1)}>
+          <ArrowLeft size={20} />
         </Button>
         <Card>
           <CardContent className="p-6 text-center text-sm text-muted-foreground">
@@ -390,23 +401,26 @@ const SchoolCampaignDetail: React.FC = () => {
 
   return (
     <div className="w-full bg-background text-foreground">
-      <main className="max-w-screen-2xl mx-auto py-6 px-4 space-y-6">
-        {/* Breadcrumb / Back */}
-        <div className="flex items-center justify-between gap-2">
+      <main className="mx-auto space-y-6">
+        {/* Header mirip Detail Mapel */}
+        <div className="md:flex hidden items-center gap-3">
           <Button
             variant="ghost"
-            size="sm"
-            className="inline-flex items-center gap-1"
+            size="icon"
             onClick={() => navigate(-1)}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Kembali
+            className="cursor-pointer">
+            <ArrowLeft size={20} />
           </Button>
-          {isFetching && (
-            <div className="text-[11px] text-muted-foreground">
-              Menyegarkan data…
-            </div>
-          )}
+
+          <div>
+            <h1 className="text-lg md:text-xl font-semibold">Detail Donasi</h1>
+
+            {isFetching && (
+              <p className="text-xs text-muted-foreground">
+                Menyegarkan data...
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Header & Hero */}
@@ -503,8 +517,7 @@ const SchoolCampaignDetail: React.FC = () => {
                       (window.location.href = `/campaigns/${
                         c.slug ?? c.id
                       }/donate`)
-                    }
-                  >
+                    }>
                     <Heart className="h-4 w-4" />
                     {isOpen ? "Donasi Sekarang" : "Donasi Ditutup"}
                   </Button>
@@ -514,8 +527,7 @@ const SchoolCampaignDetail: React.FC = () => {
                     className="inline-flex items-center gap-1 text-xs"
                     onClick={() =>
                       (window.location.href = "/campaigns/history")
-                    }
-                  >
+                    }>
                     Lihat riwayat donasi sekolah
                     <ArrowRight className="h-3.5 w-3.5" />
                   </Button>
@@ -580,8 +592,7 @@ const SchoolCampaignDetail: React.FC = () => {
                   {c.bankInfo.map((b) => (
                     <div
                       key={b.bankName + b.accountNumber}
-                      className="rounded-lg border p-2.5"
-                    >
+                      className="rounded-lg border p-2.5">
                       <div className="font-semibold">{b.bankName}</div>
                       <div>{b.accountNumber}</div>
                       <div className="text-muted-foreground">

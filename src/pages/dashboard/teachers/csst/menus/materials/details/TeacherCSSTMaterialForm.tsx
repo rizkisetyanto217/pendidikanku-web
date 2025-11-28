@@ -24,6 +24,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 
 import type { Material } from "../TeacherCSSTMaterialList";
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* =============================
    Types & Helpers
@@ -67,6 +68,20 @@ export default function TeacherCSSTMaterialForm() {
 
   const navigate = useNavigate();
   const qc = useQueryClient();
+
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Tambah Materi",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Guru Mapel" },
+        { label: "Detail mapel", href: "akademik/ruangan" },
+        { label: "Tambah Materi" },
+      ],
+      showBack: true,
+    });
+  }, [setHeader]);
 
   const [form, setForm] = useState<FormValues>({
     title: "",
@@ -255,15 +270,14 @@ export default function TeacherCSSTMaterialForm() {
 
   return (
     <div className="w-full bg-background text-foreground py-6">
-      <main className="mx-auto max-w-3xl space-y-6 px-4 md:px-0">
+      <main className="mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-3">
+        <div className="md:flex hidden items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
             onClick={handleBack}
-            className="shrink-0"
-          >
+            className="shrink-0">
             <ArrowLeft size={20} />
           </Button>
           <div>
@@ -319,8 +333,7 @@ export default function TeacherCSSTMaterialForm() {
                   <Select
                     value={form.type}
                     onValueChange={handleTypeChange}
-                    disabled={isBusy}
-                  >
+                    disabled={isBusy}>
                     <SelectTrigger className="w-full max-w-xs">
                       <SelectValue placeholder="Pilih jenis" />
                     </SelectTrigger>
@@ -462,18 +475,16 @@ export default function TeacherCSSTMaterialForm() {
           )}
 
           {/* Actions */}
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center justify-end gap-3">
             <Button
               type="button"
               variant="ghost"
               onClick={handleBack}
-              disabled={isBusy}
-            >
-              <ArrowLeft className="mr-1 h-4 w-4" />
+              disabled={isBusy}>
               Batal
             </Button>
             <Button type="submit" disabled={isBusy} className="min-w-[150px]">
-              {isEdit ? "Simpan Perubahan" : "Simpan Materi"}
+              {isEdit ? "Simpan Perubahan" : "Simpan"}
             </Button>
           </div>
         </form>

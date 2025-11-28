@@ -234,7 +234,7 @@ export default function SchoolCSSTForm({ showBack = false, backTo }: Props) {
         { label: "Pelajaran" },
         { label: isEdit ? "Edit" : "Tambah" },
       ],
-      actions: null,
+      showBack: true,
     });
   }, [setHeader, isEdit]);
 
@@ -338,9 +338,9 @@ export default function SchoolCSSTForm({ showBack = false, backTo }: Props) {
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-background text-foreground">
-      <main className="mx-auto flex max-w-5xl flex-col gap-4 lg:gap-6 py-2">
+      <main className="mx-auto flex flex-col gap-4 lg:gap-6">
         {/* Header inline */}
-        <div className="flex items-center gap-3">
+        <div className="md:flex hidden items-center gap-3">
           {showBack && (
             <Button
               onClick={handleBack}

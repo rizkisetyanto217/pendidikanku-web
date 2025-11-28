@@ -117,10 +117,10 @@ type TermListResp = {
 const dateShort = (iso?: string | null) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    })
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
     : "-";
 
 function deliveryModeLabel(mode: string) {
@@ -173,23 +173,32 @@ export default function SchoolAcademicDetail() {
   const qc = useQueryClient();
 
   const { setHeader } = useDashboardHeader();
-  useEffect(() => {
-    setHeader({
-      title: "Detail Akademik",
-      breadcrumbs: [
-        { label: "Dashboard", href: "dashboard" },
-        { label: "Akademik" },
-        { label: "Tahun Akademik", href: "akademik/tahun-akademik" },
-        { label: "Detail" },
-      ],
-      showBack: true,
-    });
-  }, [setHeader]);
 
   const { data: bundle, isLoading } = useAcademicTermDetail(termId);
   const term = bundle?.term ?? null;
   const classes = bundle?.classes ?? [];
   const sections = bundle?.class_sections ?? [];
+
+  useEffect(() => {
+  // ⛔ Jangan jalankan sebelum data term ada
+  if (!term) return;
+
+  const schoolId = term.academic_term_school_id;
+
+  setHeader({
+    title: "Detail Akademik",
+    breadcrumbs: [
+      { label: "Dashboard", href: "dashboard" },
+      { label: "Akademik" },
+      {
+        label: "Tahun Akademik",
+        href: `/${schoolId}/sekolah/akademik/tahun-akademik`,
+      },
+      { label: "Detail" },
+    ],
+    showBack: true,
+  });
+}, [term, setHeader]);
 
   /* === PATCH (edit) === */
   const patchMut = useMutation({
@@ -260,8 +269,7 @@ export default function SchoolAcademicDetail() {
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:opacity-90"
               onClick={() => deleteMut.mutate()}
-              disabled={deleteMut.isPending}
-            >
+              disabled={deleteMut.isPending}>
               {deleteMut.isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : null}
@@ -276,14 +284,12 @@ export default function SchoolAcademicDetail() {
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="md:flex hidden items-center gap-3">
-              <Button
-                variant="ghost"
-                onClick={() => navigate(-1)}
-                className="gap-1.5"
-              >
+              <Button variant="ghost" onClick={() => navigate(-1)}>
                 <ArrowLeft size={20} />
               </Button>
-              <h1 className="font-semibold text-lg md:text-xl">Detail akademik</h1>
+              <h1 className="font-semibold text-lg md:text-xl">
+                Detail akademik
+              </h1>
             </div>
           </div>
           {/* Loading / kosong */}
@@ -319,7 +325,9 @@ export default function SchoolAcademicDetail() {
                     label="Status"
                     value={
                       <CBadgeStatus
-                        status={term.academic_term_is_active ? "active" : "inactive"}
+                        status={
+                          term.academic_term_is_active ? "active" : "inactive"
+                        }
                       />
                     }
                   />
@@ -342,16 +350,14 @@ export default function SchoolAcademicDetail() {
                   <Button
                     variant="outline"
                     onClick={() => setOpenEdit(true)}
-                    disabled={patchMut.isPending || deleteMut.isPending}
-                  >
+                    disabled={patchMut.isPending || deleteMut.isPending}>
                     <Pencil size={16} className="mr-2" />
                     Edit
                   </Button>
                   <Button
                     variant="destructive"
                     onClick={() => setConfirmDelete(true)}
-                    disabled={deleteMut.isPending}
-                  >
+                    disabled={deleteMut.isPending}>
                     <Trash2 size={16} className="mr-2" />
                     {deleteMut.isPending ? "Menghapus..." : "Hapus"}
                   </Button>
@@ -388,8 +394,7 @@ export default function SchoolAcademicDetail() {
                   {classes.map((cls) => (
                     <div
                       key={cls.class_id}
-                      className="flex gap-3 rounded-lg border bg-background/50 p-3 text-xs"
-                    >
+                      className="flex gap-3 rounded-lg border bg-background/50 p-3 text-xs">
                       {cls.class_image_url ? (
                         <img
                           src={cls.class_image_url}
@@ -409,10 +414,13 @@ export default function SchoolAcademicDetail() {
                             {cls.class_name}
                           </div>
                           <CBadgeStatus
-                            status={cls.class_status === "active" ? "active" : "inactive"}
+                            status={
+                              cls.class_status === "active"
+                                ? "active"
+                                : "inactive"
+                            }
                             className="text-[10px]"
                           />
-
                         </div>
                         <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
                           <span className="rounded-full bg-muted px-2 py-0.5">
@@ -483,8 +491,7 @@ export default function SchoolAcademicDetail() {
                   {sections.map((sec) => (
                     <div
                       key={sec.class_section_id}
-                      className="flex gap-3 rounded-lg border bg-background/50 p-3 text-xs"
-                    >
+                      className="flex gap-3 rounded-lg border bg-background/50 p-3 text-xs">
                       {sec.class_section_image_url ? (
                         <img
                           src={sec.class_section_image_url}
@@ -504,10 +511,13 @@ export default function SchoolAcademicDetail() {
                             {sec.class_section_name}
                           </div>
                           <CBadgeStatus
-                            status={sec.class_section_is_active ? "active" : "inactive"}
+                            status={
+                              sec.class_section_is_active
+                                ? "active"
+                                : "inactive"
+                            }
                             className="text-[10px]"
                           />
-
                         </div>
 
                         <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
@@ -716,8 +726,7 @@ function EditTermDialog({
                 academic_terms_is_active: isActive,
               })
             }
-            disabled={loading}
-          >
+            disabled={loading}>
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Simpan
           </Button>

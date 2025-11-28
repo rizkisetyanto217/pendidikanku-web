@@ -240,7 +240,7 @@ const SchoolClassParentForm: React.FC = () => {
       <main className="w-full">
         <div className="mx-auto flex flex-col gap-4 lg:gap-6">
           {/* Header kecil (back + title) */}
-          <div className="flex items-center gap-3">
+          <div className="md:flex hidden items-center gap-3">
             <Button
               type="button"
               variant="ghost"
@@ -248,7 +248,7 @@ const SchoolClassParentForm: React.FC = () => {
               onClick={() => navigate(-1)}
               className="hidden md:inline-flex"
             >
-              <ArrowLeft size={18} />
+              <ArrowLeft size={20} />
             </Button>
             <div>
               <h1 className="font-semibold text-lg md:text-xl">

@@ -141,7 +141,7 @@ const SchoolFinance: React.FC<Props> = ({
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Keuangan" },
-        { label: "Keuangan" },
+        { label: "Lainnya (Non-SPP)" },
       ],
     });
   }, [setHeader]);
@@ -343,7 +343,7 @@ const SchoolFinance: React.FC<Props> = ({
                           key={inv.id}
                           className="rounded-xl border p-4 cursor-pointer hover:bg-muted/50 transition"
                           onClick={() =>
-                          navigate(`/${schoolId}/sekolah/keuangan/lainnya/${inv.id}`, {
+                          navigate(`/${schoolId}/sekolah/keuangan/non-spp/${inv.id}`, {
                             state: { invoice: inv },
                           })
                         }
@@ -386,7 +386,7 @@ const SchoolFinance: React.FC<Props> = ({
                               key={x.id}
                               className="cursor-pointer hover:bg-muted/50 transition"
                               onClick={() =>
-                              navigate(`/${schoolId}/sekolah/keuangan/lainnya/${x.id}`, {
+                              navigate(`/${schoolId}/sekolah/keuangan/non-spp/${x.id}`, {
                                 state: { invoice: x },
                               })
                             }

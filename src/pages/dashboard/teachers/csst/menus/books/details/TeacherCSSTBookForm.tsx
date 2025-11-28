@@ -63,7 +63,7 @@ export default function TeacherCSSTBookForm() {
         },
         { label: isEdit ? "Edit" : "Tambah" },
       ],
-      actions: null,
+      showBack: true,
     });
   }, [setHeader, isEdit]);
 
@@ -200,9 +200,9 @@ export default function TeacherCSSTBookForm() {
 
   return (
     <div className="w-full overflow-x-hidden bg-background text-foreground">
-      <main className="mx-auto flex max-w-3xl flex-col gap-4 py-4">
+      <main className="mx-auto flex flex-col gap-4 py-4">
         {/* Header lokal */}
-        <div className="flex items-center gap-3">
+        <div className="md:flex hidden items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
@@ -368,14 +368,13 @@ export default function TeacherCSSTBookForm() {
           </Card>
 
           {/* Actions */}
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center justify-end gap-3">
             <Button
               type="button"
               variant="ghost"
               onClick={handleBack}
               disabled={submitting}
             >
-              <ArrowLeft className="mr-1 h-4 w-4" />
               Batal
             </Button>
 
@@ -388,7 +387,7 @@ export default function TeacherCSSTBookForm() {
               ) : isEdit ? (
                 "Simpan Perubahan"
               ) : (
-                "Tambah Buku"
+                "Simpan"
               )}
             </Button>
           </div>

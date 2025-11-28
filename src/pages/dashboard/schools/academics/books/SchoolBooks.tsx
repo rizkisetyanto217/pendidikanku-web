@@ -159,8 +159,7 @@ function ActionsMenu({
         {onDelete && (
           <DropdownMenuItem
             onClick={onDelete}
-            className="gap-2 text-destructive focus:text-destructive"
-          >
+            className="gap-2 text-destructive focus:text-destructive">
             <Trash2 size={14} /> Hapus
           </DropdownMenuItem>
         )}
@@ -312,8 +311,7 @@ export default function SchoolBooks({ showBack = false, backTo }: Props) {
                 onClick={handleBack}
                 variant="ghost"
                 size="icon"
-                className="cursor-pointer self-start"
-              >
+                className="cursor-pointer self-start">
                 <ArrowLeft size={20} />
               </Button>
             )}
@@ -357,7 +355,13 @@ export default function SchoolBooks({ showBack = false, backTo }: Props) {
             }
             /* Renderer kartu */
             renderCard={(r) => (
-              <div className="rounded-xl border space-y-3 p-3">
+              <div
+                className="rounded-xl border space-y-3 p-3 cursor-pointer transition hover:border-primary hover:bg-primary/5"
+                onClick={() =>
+                  navigate(`${r.book_id}`, {
+                    state: { book: r },
+                  })
+                }>
                 <div className="flex gap-3">
                   <div className="w-16">
                     {r.book_image_url ? (
@@ -372,6 +376,7 @@ export default function SchoolBooks({ showBack = false, backTo }: Props) {
                       </div>
                     )}
                   </div>
+
                   <div className="flex-1 space-y-1">
                     <div className="font-medium">{r.book_title}</div>
                     <div className="text-sm text-muted-foreground">
@@ -382,7 +387,13 @@ export default function SchoolBooks({ showBack = false, backTo }: Props) {
                     </div>
                   </div>
                 </div>
-                <div className="flex justify-end">{renderActions(r)}</div>
+
+                {/* tombol menu, tidak boleh trigger onClick parent */}
+                <div
+                  className="flex justify-end"
+                  onClick={(e) => e.stopPropagation()}>
+                  {renderActions(r)}
+                </div>
               </div>
             )}
           />
@@ -407,8 +418,7 @@ export default function SchoolBooks({ showBack = false, backTo }: Props) {
                 if (!deleteTarget) return;
                 await deleteBook.mutateAsync(deleteTarget.book_id);
                 setDeleteOpen(false);
-              }}
-            >
+              }}>
               {deleteBook.isPending ? "Menghapus…" : "Hapus"}
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -152,8 +152,8 @@ export const NAVS: NavDict = {
         },
         {
           // index keuangan -> /sekolah/keuangan
-          path: "lainnya",
-          label: "Lainnya",
+          path: "non-spp",
+          label: "Lainnya (Non-SPP)",
           end: true,
         },
         // kalau nanti ada /sekolah/keuangan/pengaturan:

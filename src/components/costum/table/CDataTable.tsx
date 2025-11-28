@@ -278,8 +278,9 @@ export function CDataTable<T>(props: DataTableProps<T>) {
 
   /* ========== Hover classes ========== */
   const hoverCls = rowHover
-    ? "hover:bg-muted/60 dark:hover:bg-muted/30 transition-colors"
+    ? "transition cursor-pointer hover:bg-primary/5 hover:border-primary"
     : "";
+
   const cellHoverCls = rowHover
     ? "transition-colors group-hover/row:bg-muted/60 dark:group-hover/row:bg-muted/30"
     : "";
@@ -311,8 +312,7 @@ export function CDataTable<T>(props: DataTableProps<T>) {
                 "rounded-none",
                 view === "table" && "bg-muted text-foreground"
               )}
-              onClick={() => changeView("table")}
-            >
+              onClick={() => changeView("table")}>
               <TableIcon className="h-4 w-4" />
             </Button>
             <Button
@@ -325,8 +325,7 @@ export function CDataTable<T>(props: DataTableProps<T>) {
                 "rounded-none",
                 view === "card" && "bg-muted text-foreground"
               )}
-              onClick={() => changeView("card")}
-            >
+              onClick={() => changeView("card")}>
               <LayoutGrid className="h-4 w-4" />
             </Button>
           </div>
@@ -338,8 +337,7 @@ export function CDataTable<T>(props: DataTableProps<T>) {
             <span className="hidden sm:inline">Baris/hal</span>
             <Select
               value={String(limit)}
-              onValueChange={(v) => setLimit(Number(v))}
-            >
+              onValueChange={(v) => setLimit(Number(v))}>
               <SelectTrigger className="h-9 w-[84px] text-sm" data-interactive>
                 <SelectValue placeholder={String(limit)} />
               </SelectTrigger>
@@ -405,9 +403,9 @@ export function CDataTable<T>(props: DataTableProps<T>) {
       onClick={
         onRowClick
           ? (e) => {
-            if (shouldIgnoreRowInteraction(e)) return;
-            onRowClick(row);
-          }
+              if (shouldIgnoreRowInteraction(e)) return;
+              onRowClick(row);
+            }
           : undefined
       }
       className={cn(
@@ -420,20 +418,18 @@ export function CDataTable<T>(props: DataTableProps<T>) {
       onKeyDown={
         onRowClick
           ? (e) => {
-            if (shouldIgnoreRowInteraction(e)) return;
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              onRowClick?.(row);
+              if (shouldIgnoreRowInteraction(e)) return;
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onRowClick?.(row);
+              }
             }
-          }
           : undefined
-      }
-    >
+      }>
       {columns.map((c) => (
         <div
           key={c.id}
-          className="flex items-start justify-between gap-3 text-sm"
-        >
+          className="flex items-start justify-between gap-3 text-sm">
           <div className="text-muted-foreground">{c.header}</div>
           <div className="font-medium text-right">
             {c.cell ? c.cell(row, meta) : String((row as any)[c.id] ?? "")}
@@ -467,8 +463,7 @@ export function CDataTable<T>(props: DataTableProps<T>) {
 
   return (
     <div
-      className={cn("w-full flex flex-col gap-4 lg:gap-6 min-w-0", className)}
-    >
+      className={cn("w-full flex flex-col gap-4 lg:gap-6 min-w-0", className)}>
       {/* Header / Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="hidden md:flex items-center gap-2 font-semibold">
@@ -477,8 +472,7 @@ export function CDataTable<T>(props: DataTableProps<T>) {
               variant="ghost"
               size="icon"
               onClick={onBack}
-              aria-label="Kembali"
-            >
+              aria-label="Kembali">
               <ChevronLeft size={18} />
             </Button>
           )}
@@ -521,20 +515,17 @@ export function CDataTable<T>(props: DataTableProps<T>) {
                 scrollX && "overflow-x-auto [-webkit-overflow-scrolling:touch]"
               )}
               // hilangkan gutter kanan di desktop
-              style={{ scrollbarGutter: "stable both-edges" as any }}
-            >
+              style={{ scrollbarGutter: "stable both-edges" as any }}>
               {/* Spacer: FULL width, tapi masih punya minWidth untuk trigger scroll bila perlu */}
               <div
                 className="block w-full align-top"
-                style={scrollX ? { minWidth: tableMinW } : undefined}
-              >
+                style={scrollX ? { minWidth: tableMinW } : undefined}>
                 <Table className="w-full table-fixed text-center align-middle">
                   <TableHeader
                     className={cn(
                       stickyHeader &&
-                      "sticky top-0 z-10 backdrop-blur supports-[backdrop-filter]:bg-transparent"
-                    )}
-                  >
+                        "sticky top-0 z-10 backdrop-blur supports-[backdrop-filter]:bg-transparent"
+                    )}>
                     <TableRow className="bg-primary/10">
                       {columns.map((col) => (
                         <TableHead
@@ -544,8 +535,7 @@ export function CDataTable<T>(props: DataTableProps<T>) {
                             col.headerClassName,
                             alignToHeader(col.align ?? defaultAlign)
                           )}
-                          style={col.minW ? { minWidth: col.minW } : undefined}
-                        >
+                          style={col.minW ? { minWidth: col.minW } : undefined}>
                           {col.header}
                         </TableHead>
                       ))}
@@ -554,8 +544,7 @@ export function CDataTable<T>(props: DataTableProps<T>) {
                           className={cn(
                             "min-w-[80px] text-primary font-semibold",
                             alignToHeader(defaultAlign)
-                          )}
-                        >
+                          )}>
                           {actionsHeaderLabel}
                         </TableHead>
                       )}
@@ -577,16 +566,16 @@ export function CDataTable<T>(props: DataTableProps<T>) {
                           onClick={
                             onRowClick
                               ? (e) => {
-                                if (shouldIgnoreRowInteraction(e)) return;
-                                onRowClick(row);
-                              }
+                                  if (shouldIgnoreRowInteraction(e)) return;
+                                  onRowClick(row);
+                                }
                               : undefined
                           }
                           className={cn(
-                            "group/row",
+                            "group/row border-b border-border",
                             zebra &&
-                            idx % 2 === 1 &&
-                            "bg-muted/30 dark:bg-muted/20",
+                              idx % 2 === 1 &&
+                              "bg-muted/30 dark:bg-muted/20",
                             hoverCls,
                             onRowClick && "cursor-pointer"
                           )}
@@ -595,15 +584,14 @@ export function CDataTable<T>(props: DataTableProps<T>) {
                           onKeyDown={
                             onRowClick
                               ? (e) => {
-                                if (shouldIgnoreRowInteraction(e)) return;
-                                if (e.key === "Enter" || e.key === " ") {
-                                  e.preventDefault();
-                                  onRowClick?.(row);
+                                  if (shouldIgnoreRowInteraction(e)) return;
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    onRowClick?.(row);
+                                  }
                                 }
-                              }
                               : undefined
-                          }
-                        >
+                          }>
                           {columns.map((col) => (
                             <TableCell
                               key={col.id}
@@ -611,8 +599,7 @@ export function CDataTable<T>(props: DataTableProps<T>) {
                                 col.className,
                                 alignToCell(col.align ?? defaultAlign),
                                 cellHoverCls
-                              )}
-                            >
+                              )}>
                               {col.cell
                                 ? col.cell(row, meta)
                                 : String((row as any)[col.id] ?? "")}
@@ -624,8 +611,7 @@ export function CDataTable<T>(props: DataTableProps<T>) {
                               className={cn(
                                 alignToCell(defaultAlign),
                                 cellHoverCls
-                              )}
-                            >
+                              )}>
                               {actions ? (
                                 <RowActions
                                   row={row}
@@ -722,8 +708,7 @@ function PaginationFooter(props: {
           variant="outline"
           size="icon"
           disabled={!canPrev}
-          onClick={onPrev}
-        >
+          onClick={onPrev}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <Button
@@ -731,8 +716,7 @@ function PaginationFooter(props: {
           variant="outline"
           size="icon"
           disabled={!canNext}
-          onClick={onNext}
-        >
+          onClick={onNext}>
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
@@ -782,7 +766,7 @@ function safeLSSet(key: string, value: string) {
   try {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(key, value);
-  } catch { }
+  } catch {}
 }
 
 /* Re-export */

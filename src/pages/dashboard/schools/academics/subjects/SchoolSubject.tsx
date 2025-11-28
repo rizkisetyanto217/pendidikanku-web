@@ -365,8 +365,8 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
             r.status === "active"
               ? "active"
               : r.status === "inactive"
-                ? "inactive"
-                : "pending"
+              ? "inactive"
+              : "pending"
           }
         />
       ),
@@ -427,8 +427,7 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
                   onClick={handleBack}
                   variant="ghost"
                   size="icon"
-                  className="cursor-pointer self-start"
-                >
+                  className="cursor-pointer self-start">
                   <ArrowLeft size={20} />
                 </Button>
               )}
@@ -490,7 +489,9 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
               storageKey="subjects.table.view"
               minTableWidth={880}
               renderCard={(r) => (
-                <div className="rounded-xl border p-4 space-y-1">
+                <div
+                  className="rounded-xl border p-4 space-y-1 cursor-pointer transition hover:bg-primary/5 hover:border-primary"
+                  onClick={() => navigate(`${r.id}`)}>
                   <div className="flex items-center justify-between">
                     <div className="font-semibold">{r.name}</div>
                     <CBadgeStatus
@@ -498,11 +499,10 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
                         r.status === "active"
                           ? "active"
                           : r.status === "inactive"
-                            ? "inactive"
-                            : "pending"
+                          ? "inactive"
+                          : "pending"
                       }
                     />
-
                   </div>
                   <div className="text-xs text-muted-foreground">
                     Kode: {r.code || "-"}

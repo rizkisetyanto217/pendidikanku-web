@@ -1,5 +1,5 @@
 // src/pages/teacher/classes/TeacherCSSTStudentList.tsx
-import React, { useMemo, useState, useDeferredValue } from "react";
+import React, { useMemo, useState, useDeferredValue, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 
 /* ---------- Icons ---------- */
-import { Phone, Users, AlertTriangle, NotebookPen } from "lucide-react";
+import { Phone, Users, AlertTriangle, NotebookPen, ArrowLeft } from "lucide-react";
 
 /* ---------- DataTable ---------- */
 import {
@@ -25,6 +25,7 @@ import {
 } from "@/components/costum/table/CDataTable";
 
 import api from "@/lib/axios";
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* =========================================================
    TIPE
@@ -198,6 +199,20 @@ function useClassStudentsSingle(sectionId?: string) {
 ========================================================= */
 const TeacherCSSTStudentList: React.FC = () => {
   const navigate = useNavigate();
+
+  const { setHeader } = useDashboardHeader();
+    useEffect(() => {
+      setHeader({
+        title: "Daftar Murid",
+        breadcrumbs: [
+          { label: "Dashboard", href: "dashboard" },
+          { label: "Guru Mapel" },
+          { label: "Detail Mapel"},
+          { label: "Daftar Murid" },
+        ],
+        showBack: true,
+      });
+    }, [setHeader]);
 
   // ambil berbagai param; yang penting: segment yang berisi class_section_id
   const { id, classSectionId, sectionId, classId, classSlug, kelasId } =
@@ -420,8 +435,7 @@ const TeacherCSSTStudentList: React.FC = () => {
         <span className="text-muted-foreground">Filter:</span>
         <Select
           value={onlyImportant}
-          onValueChange={(v: "all" | "important") => setOnlyImportant(v)}
-        >
+          onValueChange={(v: "all" | "important") => setOnlyImportant(v)}>
           <SelectTrigger className="w-[220px]">
             <SelectValue placeholder="Filter catatan" />
           </SelectTrigger>
@@ -441,9 +455,17 @@ const TeacherCSSTStudentList: React.FC = () => {
     <div className="w-full overflow-x-hidden bg-background text-foreground">
       <main className="w-full">
         <div className="mx-auto flex flex-col gap-4 lg:gap-6">
+          {/* Top bar */}
+          <div className="md:flex hidden items-center gap-3">
+            <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => navigate(-1)}>
+              <ArrowLeft size={20} />
+            </Button>
+            <h1 className="text-lg font-semibold md:flex-xl">Daftar Murid</h1>
+          </div>
           <CDataTable
-            title="Daftar Murid"
-            onBack={() => navigate(-1)}
             controlsPlacement="above"
             searchPlaceholder="Cari nama/wali/keterangan…"
             statsSlot={statsSlot}

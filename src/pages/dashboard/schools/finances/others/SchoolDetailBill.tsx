@@ -19,6 +19,10 @@ import {
   Download,
   CheckCircle2,
   User,
+  Receipt,
+  Banknote,
+  HandCoins,
+  Wallet,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -41,6 +45,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 // ================= Types =================
 export type InvoiceStatus = "unpaid" | "partial" | "paid" | "overdue";
@@ -83,43 +88,43 @@ const normalizeISOToLocalNoon = (iso?: string) =>
 const dateLong = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-      weekday: "long",
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    })
+        weekday: "long",
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      })
     : "-";
 const hijriLong = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID-u-ca-islamic-umalqura", {
-      weekday: "long",
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    })
+        weekday: "long",
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      })
     : "-";
 const idr = (n?: number) =>
   n == null
     ? "-"
     : new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      maximumFractionDigits: 0,
-    }).format(n);
+        style: "currency",
+        currency: "IDR",
+        maximumFractionDigits: 0,
+      }).format(n);
 const dateFmt = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    })
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      })
     : "-";
 const timeFmt = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleTimeString("id-ID", {
-      hour: "2-digit",
-      minute: "2-digit",
-    })
+        hour: "2-digit",
+        minute: "2-digit",
+      })
     : "-";
 
 // ================= Dummy Data =================
@@ -265,8 +270,7 @@ function ReceiptExportDialog({
           </Button>
           <Button
             onClick={() => onSubmit({ paymentId, format })}
-            className="inline-flex gap-2"
-          >
+            className="inline-flex gap-2">
             <Download className="h-4 w-4" /> Ekspor
           </Button>
         </DialogFooter>
@@ -280,6 +284,20 @@ export default function SchoolDetailBill() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { id } = useParams<{ id: string }>();
+
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Detail Lainnya (Non-SPP)",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Keuangan" },
+        { label: "Lainnya (Non-SPP)", href: "keuangan/non-spp" },
+        { label: "Detail" },
+      ],
+      showBack: true,
+    });
+  }, [setHeader]);
 
   const gregorianISO = toLocalNoonISO(new Date());
 
@@ -306,7 +324,6 @@ export default function SchoolDetailBill() {
       qc.invalidateQueries({ queryKey: ["invoice-detail", id] });
     },
   });
-
 
   // ===== Handlers =====
   const handleGoBack = () => navigate(-1);
@@ -354,9 +371,19 @@ export default function SchoolDetailBill() {
     }
   };
 
-  const getPaymentMethodIcon = (method?: string) =>
-  ({ "Transfer Bank": "🏦", Tunai: "💵", "E-Wallet": "📱" }[method || ""] ||
-    "💳");
+ const getPaymentMethodIcon = (method?: string) => {
+  switch (method) {
+    case "Transfer Bank":
+      return <Banknote className="h-6 w-6 text-primary" />;
+    case "Tunai":
+      return <HandCoins className="h-6 w-6 text-primary" />;
+    case "E-Wallet":
+      return <Wallet className="h-6 w-6 text-primary" />;
+    default:
+      return <CreditCard className="h-6 w-6 text-primary" />;
+  }
+};
+
 
   if (invoiceQuery.isLoading) {
     return (
@@ -372,10 +399,10 @@ export default function SchoolDetailBill() {
 
   if (!invoice) {
     return (
-      <div className="min-h-screen w-full">
-        <main className="w-full px-4 md:px-6 md:py-8">
-          <div className="max-w-screen-2xl mx-auto text-center py-16">
-            <div className="text-4xl mb-3">❌</div>
+      <div className="w-full">
+        <main className="w-full">
+          <div className="mx-auto text-center">
+            <div className="text-4xl mb-3"></div>
             <div className="font-medium mb-1">Tagihan Tidak Ditemukan</div>
             <div className="text-sm text-muted-foreground mb-4">
               Tagihan dengan ID tersebut tidak ada atau telah dihapus
@@ -393,17 +420,15 @@ export default function SchoolDetailBill() {
   const remainingAmount = invoice.amount - (invoice.paid_amount || 0);
 
   return (
-    <div className="min-h-screen w-full">
+    <div className="w-full">
       {/* Header */}
-      <div className="sticky top-0 z-10 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="mx-auto max-w-screen-2xl p-4 md:p-5 flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleGoBack}
-            aria-label="Kembali"
-          >
-            <ArrowLeft className="h-5 w-5" />
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="mx-auto md:flex hidden items-center gap-3">
+          <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={handleGoBack}>
+            <ArrowLeft size={20} />
           </Button>
           <div className="flex-1 min-w-0">
             <h1 className="text-base md:text-lg font-semibold truncate">
@@ -418,7 +443,7 @@ export default function SchoolDetailBill() {
       </div>
 
       <main className="w-full">
-        <div className="max-w-screen-2xl mx-auto p-4 md:p-5 space-y-6">
+        <div className="mx-auto p-4 space-y-6">
           {/* Status Banner */}
           {isOverdue && (
             <div className="p-4 rounded-lg border-l-4 bg-amber-500/10 border-amber-500">
@@ -441,7 +466,7 @@ export default function SchoolDetailBill() {
             {/* Invoice Information */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2 mb-2">
                   <FileText className="h-5 w-5" /> Informasi Tagihan
                 </CardTitle>
               </CardHeader>
@@ -468,19 +493,17 @@ export default function SchoolDetailBill() {
                     <span
                       className={
                         isOverdue ? "text-red-600 font-semibold" : undefined
-                      }
-                    >
+                      }>
                       {dateFmt(dueDate)}
                     </span>
                   }
                 />
                 <InfoRow
-                  icon={
-                    <Badge variant="outline">{invoice.type || "Umum"}</Badge>
-                  }
+                  icon={<Receipt className="h-4 w-4" />}
                   label="Jenis Tagihan"
-                  value={<span />}
+                  value={invoice.type || "Umum"}
                 />
+
                 {invoice.description && (
                   <InfoRow
                     icon={<FileText className="h-4 w-4" />}
@@ -515,9 +538,9 @@ export default function SchoolDetailBill() {
                 <div className="flex justify-between items-center py-2">
                   <span className="font-medium">Sisa Tagihan:</span>
                   <span
-                    className={`font-bold text-xl ${remainingAmount > 0 ? "text-red-600" : "text-primary"
-                      }`}
-                  >
+                    className={`font-bold text-xl ${
+                      remainingAmount > 0 ? "text-red-600" : "text-primary"
+                    }`}>
                     {idr(remainingAmount)}
                   </span>
                 </div>
@@ -529,8 +552,7 @@ export default function SchoolDetailBill() {
                     <Button
                       onClick={handleMarkPaid}
                       disabled={markPaid.isPending}
-                      className="w-full"
-                    >
+                      className="w-full">
                       {markPaid.isPending ? (
                         <span className="inline-flex items-center gap-2">
                           <span className="w-4 h-4 border border-current border-t-transparent rounded-full animate-spin" />{" "}
@@ -613,8 +635,7 @@ export default function SchoolDetailBill() {
                             variant="outline"
                             size="sm"
                             onClick={() => handleDownloadReceipt(payment.id)}
-                            className="inline-flex items-center gap-2"
-                          >
+                            className="inline-flex items-center gap-2">
                             <Download className="h-4 w-4" />
                             <span className="hidden sm:inline">Kuitansi</span>
                           </Button>
@@ -633,8 +654,9 @@ export default function SchoolDetailBill() {
             onOpenChange={setOpenReceipt}
             payments={invoice.payment_history.map((p) => ({
               value: p.id,
-              label: `${idr(p.amount)} — ${p.method ?? "Metode tidak diketahui"
-                }`,
+              label: `${idr(p.amount)} — ${
+                p.method ?? "Metode tidak diketahui"
+              }`,
             }))}
             onSubmit={(data) => handleExportReceipt(data)}
           />
@@ -652,8 +674,7 @@ export default function SchoolDetailBill() {
                 fontFamily: "Arial, sans-serif",
                 border: "1px solid #ddd",
                 borderRadius: 8,
-              }}
-            >
+              }}>
               <h2 className="font-bold text-center mb-2">
                 KUITANSI PEMBAYARAN
               </h2>

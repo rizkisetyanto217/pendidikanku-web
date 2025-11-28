@@ -139,8 +139,8 @@ export const SchoolRoutes = (
 
     <Route path="keuangan">
       <Route path="spp" element={<SchoolSpp />} />
-      <Route path="lainnya" element={<SchoolFinance />} />
-      <Route path="lainnya/:id" element={<SchoolDetailBill />} />
+      <Route path="non-spp" element={<SchoolFinance />} />
+      <Route path="non-spp/:id" element={<SchoolDetailBill />} />
     </Route>
 
     <Route path="pendaftaran">

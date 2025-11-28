@@ -234,6 +234,7 @@ const SchoolClassDetail: React.FC = () => {
         },
         { label: classView.className },
       ],
+      showBack: true,
     });
   }, [classView, schoolId, setHeader]);
 
@@ -475,13 +476,13 @@ const SchoolClassDetail: React.FC = () => {
     <div className="space-y-4">
       {/* Header lokal halaman */}
       <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+        <div className="md:flex hidden items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate(`/${schoolId}/sekolah/kelas/daftar-kelas `)}
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft size={20} />
           </Button>
           <div>
             <h1 className="font-semibold text-lg">{classView.className}</h1>

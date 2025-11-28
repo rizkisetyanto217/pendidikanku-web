@@ -216,7 +216,7 @@ const SchoolBookForm: React.FC = () => {
       <main className="w-full">
         <div className="mx-auto flex flex-col gap-6">
           {/* Header */}
-          <div className="flex items-center gap-3">
+          <div className="md:flex hidden items-center gap-3">
             <Button onClick={handleBack} variant="ghost" size="icon">
               <ArrowLeft size={20} />
             </Button>

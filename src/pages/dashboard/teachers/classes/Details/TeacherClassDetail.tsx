@@ -148,6 +148,8 @@ const DUMMY_CSST: CsstItem[] = [
 /* ========== Component ========== */
 export default function TeacherClassDetail() {
   const navigate = useNavigate();
+ 
+
 
   /* Atur breadcrumb dan title seperti SchoolAcademic */
   const { setHeader } = useDashboardHeader();
@@ -209,7 +211,8 @@ export default function TeacherClassDetail() {
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
 
                 <Card className="p-4 cursor-pointer transition hover:shadow-md"
-                  onClick={() => navigate("murid")}
+                  onClick={() => navigate(`murid`)}
+
                 >
                   <div className="text-xs text-muted-foreground flex items-center gap-2">
                     <Users className="h-3 w-3 text-muted-foreground" />
