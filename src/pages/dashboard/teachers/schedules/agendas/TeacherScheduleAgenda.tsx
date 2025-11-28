@@ -1,6 +1,6 @@
-// src/pages/sekolahislamku/teacher/TeacherScheduleAgenda.tsx
+// src/pages/dashboard/teachers/schedules/agendas/TeacherScheduleAgenda.tsx
 import { useEffect, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
   CalendarDays,
@@ -18,7 +18,6 @@ import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayou
 // ✅ default import untuk default export
 import CalendarView from "@/pages/dashboard/components/calender/CalenderView";
 import ScheduleList from "@/pages/dashboard/components/calender/ScheduleList";
-import EditScheduleDialog from "@/pages/dashboard/components/calender/components/EditSchedule";
 import {
   toMonthStr,
   monthLabel,
@@ -32,135 +31,118 @@ import {
   type SegmentedTabItem,
 } from "@/components/costum/common/CSegmentedTabs";
 
-// ===== Dummy API (sementara tetap di file halaman) =====
-const scheduleStore = new Map<string, ScheduleRow[]>();
-const delay = (ms = 350) => new Promise((r) => setTimeout(r, ms));
+import api from "@/lib/axios";
 
-function uid() {
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-}
+/* =========================================================
+   Types API teacher timeline (struktur mirip student_timeline)
+========================================================= */
 
-function seedMonth(y: number, m: number): ScheduleRow[] {
-  const rooms = ["Aula 1", "Aula Utama", "Ruang 3B", "Ruang 4C", "Ruang 5A"];
-  const teachers = [
-    "Ust. Ahmad",
-    "Bu Sari",
-    "Pak Budi",
-    "Ust. Dina",
-    "Pak Rudi",
-  ];
-  const classes = ["1A", "2B", "3C", "4D", "5A", "6B"];
-  const topics = [
-    ["Tahsin Al-Qur'an", "Fokus makhraj huruf & tajwid"],
-    ["Matematika", "Pecahan, desimal, perbandingan"],
-    ["Bahasa Indonesia", "Teks nonfiksi & ringkasan"],
-    ["IPA", "Siklus air & ekosistem"],
-    ["IPS", "Keragaman sosial budaya"],
-    ["Bahasa Inggris", "Daily conversation & vocab"],
-  ] as const;
+type ApiTimelineSession = {
+  class_attendance_session_id: string;
+  class_attendance_session_school_id: string;
 
-  const rows: ScheduleRow[] = [];
+  class_attendance_session_date: string; // "2025-11-20T00:00:00Z"
+  class_attendance_session_starts_at: string | null;
+  class_attendance_session_ends_at: string | null;
 
-  const push = (
-    d: number,
-    time: string,
-    type: "class" | "exam" | "event",
-    idx: number
-  ) => {
-    const [title, desc] = topics[idx % topics.length];
-    const teacher = teachers[idx % teachers.length];
-    const room = rooms[idx % rooms.length];
-    const cls = classes[idx % classes.length];
+  class_attendance_session_title: string | null;
+  class_attendance_session_display_title: string | null;
+  class_attendance_session_general_info: string | null;
 
-    rows.push({
-      id: uid(),
-      title: type === "class" ? `${title} Kelas ${cls}` : `${title} ${type}`,
-      date: new Date(
-        y,
-        m - 1,
-        d,
-        Number(time.slice(0, 2)),
-        Number(time.slice(3))
-      ).toISOString(),
-      time,
-      room,
-      teacher: type === "class" ? cls : teacher,
-      type,
-      description:
-        type === "exam"
-          ? `Ujian materi ${title.toLowerCase()} — persiapkan alat tulis.`
-          : type === "event"
-          ? `Acara sekolah: ${title} — ${desc}`
-          : desc,
-    });
-  };
+  class_attendance_session_status: string;
+  class_attendance_session_attendance_status: string;
 
-  const plan: Array<[number, string, "class" | "exam" | "event"]> = [
-    [1, "07:30", "class"],
-    [1, "10:15", "class"],
-    [2, "09:00", "event"],
-    [3, "08:00", "class"],
-    [3, "13:00", "class"],
-    [5, "10:00", "exam"],
-    [7, "07:30", "class"],
-    [8, "11:00", "class"],
-    [9, "09:30", "class"],
-    [10, "13:15", "class"],
-    [11, "10:00", "class"],
-    [12, "14:00", "event"],
-    [14, "08:00", "class"],
-    [15, "07:30", "class"],
-    [15, "10:30", "exam"],
-    [19, "09:45", "class"],
-    [19, "07:30", "class"],
-    [20, "12:30", "class"],
-    [22, "10:00", "class"],
-    [22, "15:00", "event"],
-    [24, "08:00", "class"],
-    [25, "07:30", "class"],
-    [25, "10:00", "class"],
-    [26, "09:00", "exam"],
-    [28, "07:30", "class"],
-    [28, "11:30", "class"],
-  ];
+  class_attendance_session_subject_name_snapshot?: string | null;
+  class_attendance_session_subject_code_snapshot?: string | null;
+  class_attendance_session_section_name_snapshot?: string | null;
+  class_attendance_session_room_name_snapshot?: string | null;
+  class_attendance_session_teacher_name_snapshot?: string | null;
 
-  plan.forEach((p, i) => push(p[0], p[1], p[2], i));
-  return rows;
-}
-
-const scheduleApi = {
-  async list(month: string): Promise<ScheduleRow[]> {
-    await delay();
-    if (!scheduleStore.has(month)) {
-      const [y, m] = month.split("-").map(Number);
-      scheduleStore.set(month, seedMonth(y, m));
-    }
-    return structuredClone(scheduleStore.get(month)!);
-  },
-  async create(month: string, payload: Omit<ScheduleRow, "id">) {
-    await delay();
-    const curr = scheduleStore.get(month) || [];
-    const row = { id: uid(), ...payload };
-    scheduleStore.set(month, [...curr, row]);
-    return structuredClone(row);
-  },
-  async update(month: string, payload: ScheduleRow) {
-    await delay();
-    const curr = scheduleStore.get(month) || [];
-    const idx = curr.findIndex((x) => x.id === payload.id);
-    if (idx >= 0) curr[idx] = payload;
-    scheduleStore.set(month, curr);
-    return structuredClone(payload);
-  },
-  async remove(month: string, id: string) {
-    await delay();
-    const curr = scheduleStore.get(month) || [];
-    scheduleStore.set(
-      month,
-      curr.filter((x) => x.id !== id)
-    );
-  },
+  class_attendance_session_csst_snapshot?: any;
+  class_attendance_session_type_snapshot?: any;
 };
+
+type ApiTeacherTimelineItem = {
+  session: ApiTimelineSession;
+  // kemungkinan ada field lain (mis. kehadiran guru), tapi tidak dipakai di UI ini
+  [key: string]: any;
+};
+
+type ApiTeacherTimelineResponse = {
+  success: boolean;
+  message: string;
+  data: ApiTeacherTimelineItem[];
+};
+
+/* =========================================================
+   Helper mapping API → ScheduleRow
+========================================================= */
+
+function toTimeStr(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const hh = d.getHours().toString().padStart(2, "0");
+  const mm = d.getMinutes().toString().padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
+function mapItemToScheduleRow(item: ApiTeacherTimelineItem): ScheduleRow {
+  const s = item.session;
+  const csst = (s.class_attendance_session_csst_snapshot ?? {}) as any;
+
+  const startsAt =
+    s.class_attendance_session_starts_at || s.class_attendance_session_date;
+  const dateIso = startsAt || s.class_attendance_session_date;
+
+  const subjectName =
+    s.class_attendance_session_subject_name_snapshot ??
+    csst.subject_name ??
+    csst.subject?.name;
+
+  const sectionName =
+    s.class_attendance_session_section_name_snapshot ??
+    csst.section_name ??
+    csst.class_section?.name;
+
+  const teacherName =
+    s.class_attendance_session_teacher_name_snapshot ??
+    csst.teacher_name ??
+    csst.school_teacher?.name;
+
+  const roomName =
+    s.class_attendance_session_room_name_snapshot ??
+    csst.room_name ??
+    undefined;
+
+  const baseTitle =
+    s.class_attendance_session_display_title ||
+    s.class_attendance_session_title ||
+    (subjectName
+      ? sectionName
+        ? `${subjectName} — ${sectionName}`
+        : subjectName
+      : "Pertemuan Kelas");
+
+  const baseDesc =
+    (s.class_attendance_session_general_info || "").trim() ||
+    (subjectName
+      ? sectionName
+        ? `Pertemuan ${subjectName} — ${sectionName}`
+        : `Pertemuan ${subjectName}`
+      : "");
+
+  return {
+    id: s.class_attendance_session_id,
+    title: baseTitle,
+    date: dateIso,
+    time: toTimeStr(startsAt),
+    room: roomName,
+    teacher: teacherName,
+    // nanti kalau mau beda warna: bisa mapping dari class_attendance_session_type_snapshot.slug
+    type: "class",
+    description: baseDesc,
+  };
+}
 
 // 🔹 Items untuk segmented tabs
 const TAB_ITEMS: SegmentedTabItem[] = [
@@ -184,7 +166,6 @@ export default function TeacherScheduleAgenda({
   backTo,
 }: Props) {
   const navigate = useNavigate();
-  const qc = useQueryClient();
 
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
@@ -209,7 +190,6 @@ export default function TeacherScheduleAgenda({
 
   const LOCAL_KEY = "teacherScheduleTab";
   const [tab, setTab] = useState<"calendar" | "list">("calendar");
-  const [editing, setEditing] = useState<ScheduleRow | null>(null);
 
   // 🔔 signal untuk memicu re-scroll di List
   const [scrollToTodaySig, setScrollToTodaySig] = useState(0);
@@ -229,30 +209,27 @@ export default function TeacherScheduleAgenda({
     localStorage.setItem(LOCAL_KEY, tab);
   }, [tab]);
 
-  // Query jadwal per bulan
+  // Query jadwal per bulan dari API teacher timeline
   const schedulesQ = useQuery({
     queryKey: ["teacher-schedules", month],
-    queryFn: () => scheduleApi.list(month),
-  });
+    queryFn: async (): Promise<ScheduleRow[]> => {
+      const res = await api.get<ApiTeacherTimelineResponse>(
+        "/u/attendance-sessions/list",
+        {
+          params: {
+            teacher_timeline: 1,
+            mode: "compact",
+            month, // "2025-11"
+            range: "month", // sama seperti student
+            page: 1,
+            per_page: 200,
+          },
+        }
+      );
 
-  // Mutations
-  const createMut = useMutation({
-    mutationFn: (payload: Omit<ScheduleRow, "id">) =>
-      scheduleApi.create(month, payload),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ["teacher-schedules", month] }),
-  });
-
-  const updateMut = useMutation({
-    mutationFn: (payload: ScheduleRow) => scheduleApi.update(month, payload),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ["teacher-schedules", month] }),
-  });
-
-  const deleteMut = useMutation({
-    mutationFn: (id: string) => scheduleApi.remove(month, id),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ["teacher-schedules", month] }),
+      const items = res.data?.data ?? [];
+      return items.map(mapItemToScheduleRow);
+    },
   });
 
   // Navigasi bulan
@@ -270,18 +247,7 @@ export default function TeacherScheduleAgenda({
     }
   }, [month]);
 
-  // Tambah baru
-  const onAddNew = (baseDate?: string) =>
-    setEditing({
-      id: "",
-      title: "",
-      date: new Date(
-        (baseDate ?? toMonthStr()) + (baseDate ? "T07:00:00" : "-01T07:00:00")
-      ).toISOString(),
-      time: "07:00",
-    });
-
-  // 🔹 handler ke halaman detail
+  // 🔹 handler ke halaman detail (klik agenda)
   const goToDetail = (row: ScheduleRow) => {
     navigate(`${row.id}`, {
       state: {
@@ -387,47 +353,21 @@ export default function TeacherScheduleAgenda({
               loading={schedulesQ.isLoading}
               selectedDay={selectedDay}
               setSelectedDay={setSelectedDay}
-              onAddNew={onAddNew}
-              // 🔹 klik agenda di kalender → detail
+              // klik agenda di kalender → detail
               onEdit={(row) => goToDetail(row)}
-              onDelete={(id) => deleteMut.mutate(id)}
-              updating={updateMut.isPending || createMut.isPending}
-              deleting={deleteMut.isPending}
+              // ❌ tidak ada onAddNew/onDelete di sini, karena jadwal dari sistem akademik / attendance
             />
           ) : (
             <ScheduleList
               data={schedulesQ.data ?? []}
               loading={schedulesQ.isLoading}
-              onAddNew={() => onAddNew()}
-              // 🔹 klik agenda di list → detail
+              // klik agenda di list → detail
               onEdit={(row) => goToDetail(row)}
-              onDelete={(id) => deleteMut.mutate(id)}
-              updating={updateMut.isPending || createMut.isPending}
-              deleting={deleteMut.isPending}
               scrollSignal={scrollToTodaySig}
             />
           )}
         </div>
       </div>
-
-      {/* Dialog (khusus tambah baru, bukan detail) */}
-      {editing && (
-        <EditScheduleDialog
-          value={editing}
-          onClose={() => setEditing(null)}
-          onSubmit={(v) => {
-            if (!v.title.trim()) return;
-            if (v.id) {
-              // Secara normal v.id kosong untuk create.
-              // Kalau suatu saat dipakai edit, tetap aman.
-              updateMut.mutate(v, { onSuccess: () => setEditing(null) });
-            } else {
-              const { id, ...payload } = v;
-              createMut.mutate(payload, { onSuccess: () => setEditing(null) });
-            }
-          }}
-        />
-      )}
     </div>
   );
 }

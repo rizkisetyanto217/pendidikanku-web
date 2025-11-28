@@ -30,7 +30,7 @@ import type { CurrentUserMembership } from "@/hooks/useCurrentUser";
 
 /* cek status profile-completion (dipakai cuma buat hide dashboard) */
 import { useQuery } from "@tanstack/react-query";
-import api from "@/lib/axios";
+import api, { getActiveSchoolContext } from "@/lib/axios";
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar>;
 
@@ -165,7 +165,28 @@ export function AppSidebar(props: AppSidebarProps) {
   const schoolName = membership?.school_name ?? "Pendidikanku";
   const schoolIconUrl = membership?.school_icon_url;
   const userName = currentUser?.user_name ?? "User";
-  const userEmail = currentUser?.email ?? "user@example.com";
+
+  // 🎭 Role aktif untuk ditampilkan di NavUser
+  const sidebarRole = React.useMemo(() => {
+    const ctx = getActiveSchoolContext();
+    const activeRole = ctx.role;
+    const roles = membership?.roles ?? [];
+
+    const raw =
+      activeRole && roles.includes(activeRole) ? activeRole : roles[0] ?? "";
+
+    if (!raw) return "Role: -";
+
+    const MAP: Record<string, string> = {
+      admin: "Admin",
+      dkm: "DKM",
+      staff: "Staf",
+      teacher: "Guru",
+      student: "Murid",
+    };
+
+    return MAP[raw] ?? raw;
+  }, [membership]);
 
   // Susun items dari nav terpilih
   const items = rawNavItems
@@ -213,14 +234,14 @@ export function AppSidebar(props: AppSidebarProps) {
     []
   );
 
-  // 👤 Data user untuk NavUser — pakai icon sekolah sebagai avatar
+  // 👤 Data user untuk NavUser — pakai icon sekolah sebagai avatar, + role
   const sidebarUser = React.useMemo(
     () => ({
       name: userName,
-      email: userEmail,
+      role: sidebarRole,
       avatar: schoolIconUrl || "/avatars/shadcn.jpg",
     }),
-    [userName, userEmail, schoolIconUrl]
+    [userName, sidebarRole, schoolIconUrl]
   );
 
   return (

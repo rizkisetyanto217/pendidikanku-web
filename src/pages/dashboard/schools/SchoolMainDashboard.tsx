@@ -1,4 +1,5 @@
-// src/pages/school/SchoolMainDashboard.tsx
+// src/pages/dashboard/schools/SchoolMainDashboard.tsx
+
 import React, { useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Outlet, useNavigate } from "react-router-dom";
@@ -11,7 +12,6 @@ import {
   ArrowLeft,
   Wallet,
   GraduationCap,
-  CalendarDays,
   Megaphone,
   Plus,
 } from "lucide-react";
@@ -20,6 +20,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+
+import {
+  DashboardScheduleCard,
+  type DashboardScheduleItem,
+  type DashboardScheduleParticipantState,
+} from "@/pages/dashboard/components/card/schedule/CCardScheduleDashboard";
 
 /* ================= Types (API & UI) ================ */
 export type AnnouncementUI = {
@@ -42,6 +48,15 @@ type BillItem = {
 
 type AttendanceStatus = "hadir" | "sakit" | "izin" | "alpa" | "online";
 
+export type TodayScheduleItem = {
+  id: string;
+  time: string; // "07:00 - 08:30" atau jam mulai
+  title: string;
+  location?: string;
+  teacher?: string;
+  note?: string;
+};
+
 type SchoolHome = {
   schoolName: string;
   hijriDate: string;
@@ -57,38 +72,54 @@ type SchoolHome = {
   attendanceTodayByStatus: Record<AttendanceStatus, number>;
 };
 
-type SessionsItem = {
-  class_attendance_sessions_id: string;
-  class_attendance_sessions_date: string;
-  class_attendance_sessions_title: string;
-  class_attendance_sessions_general_info?: string;
-  class_attendance_sessions_note?: string;
-};
-type SessionsResponse = {
-  message: string;
-  data: { limit: number; offset: number; count: number; items: SessionsItem[] };
-};
-
 type SchoolDashboardProps = {
   showBack?: boolean;
   backTo?: string;
   backLabel?: string;
 };
 
-export type TodayScheduleItem = {
-  id: string;
-  time: string; // "07:00 - 08:30" atau jam mulai
-  title: string;
-  location?: string;
-  teacher?: string;
-  note?: string;
+/* ============ Types untuk attendance-sessions/list ============ */
+
+type AttendanceSessionListItem = {
+  class_attendance_session_id: string;
+  class_attendance_session_date: string;
+  class_attendance_session_starts_at: string;
+  class_attendance_session_ends_at: string;
+  class_attendance_session_title: string;
+  class_attendance_session_display_title: string;
+  class_attendance_session_teacher_name_snapshot?: string;
+  class_attendance_session_section_name_snapshot?: string;
+  participants?: {
+    participant_id: string;
+    participant_session_id: string;
+    participant_kind: "teacher" | "student" | string;
+    participant_state: DashboardScheduleParticipantState;
+    participant_created_at?: string;
+    participant_updated_at?: string;
+    participant_checkin_at?: string;
+    participant_marked_at?: string;
+  }[];
+};
+
+type AttendanceSessionsListResponse = {
+  success: boolean;
+  message: string;
+  data: AttendanceSessionListItem[];
+  pagination: {
+    page: number;
+    per_page: number;
+    total: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+    count: number;
+  };
 };
 
 /* ============ Query Keys ============ */
 const QK = {
   HOME: ["school-home"] as const,
-  TODAY_SESSIONS: (d: string) =>
-    ["class-attendance-sessions", "today", d] as const,
+  WEEK_SESSIONS: ["attendance-sessions", "week", "teacher"] as const,
 };
 
 /* ================= Utils ================ */
@@ -116,6 +147,60 @@ const formatIDR = (n: number) =>
     currency: "IDR",
     maximumFractionDigits: 0,
   }).format(n);
+
+/* Helper waktu untuk DashboardScheduleItem */
+const toTimeRange = (startIso: string, endIso: string): string => {
+  try {
+    const start = new Date(startIso);
+    const end = new Date(endIso);
+    const opts: Intl.DateTimeFormatOptions = {
+      hour: "2-digit",
+      minute: "2-digit",
+    };
+    return `${start.toLocaleTimeString(
+      "id-ID",
+      opts
+    )} - ${end.toLocaleTimeString("id-ID", opts)}`;
+  } catch {
+    return "-";
+  }
+};
+
+/* Mapper: AttendanceSessionList -> DashboardScheduleItem */
+function mapAttendanceSessionsToDashboardSchedule(
+  items: AttendanceSessionListItem[]
+): DashboardScheduleItem[] {
+  const todayStr = yyyyMmDdLocal();
+
+  return items.map((s) => {
+    const dateObj = new Date(s.class_attendance_session_date);
+    const dateStr = yyyyMmDdLocal(dateObj);
+    const isToday = dateStr === todayStr;
+
+    const firstParticipant = s.participants?.[0];
+    const participantState = firstParticipant?.participant_state;
+
+    return {
+      id: s.class_attendance_session_id,
+      date: s.class_attendance_session_date,
+      time: toTimeRange(
+        s.class_attendance_session_starts_at,
+        s.class_attendance_session_ends_at
+      ),
+      title:
+        s.class_attendance_session_display_title ||
+        s.class_attendance_session_title,
+      location: s.class_attendance_session_section_name_snapshot,
+      teacher: s.class_attendance_session_teacher_name_snapshot,
+      note: undefined,
+
+      isToday,
+      canAttendNow: false, // nanti bisa diisi true kalau jamnya sedang berlangsung
+
+      participantState,
+    };
+  });
+}
 
 /* ============ Dummy Home (sementara, nanti ganti ke API) ============ */
 const mockTodaySchedule: TodayScheduleItem[] = [
@@ -167,34 +252,26 @@ async function fetchSchoolHome(): Promise<SchoolHome> {
   };
 }
 
-function mapSessionsToTodaySchedule(
-  items: SessionsItem[]
-): TodayScheduleItem[] {
-  return items.map((it) => ({
-    id: it.class_attendance_sessions_id,
-    time: new Date(it.class_attendance_sessions_date).toLocaleTimeString(
-      "id-ID",
-      { hour: "2-digit", minute: "2-digit" }
-    ),
-    title: it.class_attendance_sessions_title,
-    note: it.class_attendance_sessions_note || undefined,
-  }));
-}
-
 /* ============ Data hooks ============ */
-function useTodaySessions() {
-  const today = useMemo(() => yyyyMmDdLocal(), []);
-  return useQuery<SessionsItem[]>({
-    queryKey: QK.TODAY_SESSIONS(today),
+
+function useTeacherWeekAttendanceSessions() {
+  return useQuery<AttendanceSessionListItem[]>({
+    queryKey: QK.WEEK_SESSIONS,
     queryFn: async () => {
-      const res = await axios.get<SessionsResponse>(
-        "/api/u/class-attendance-sessions",
+      const res = await axios.get<AttendanceSessionsListResponse>(
+        "/api/u/attendance-sessions/list",
         {
-          params: { date_from: today, date_to: today, limit: 50, offset: 0 },
+          params: {
+            mode: "compact",
+            range: "week",
+            participant_kind: "teacher",
+            include: "participants",
+          },
           withCredentials: true,
         }
       );
-      return res.data?.data?.items ?? [];
+
+      return res.data?.data ?? [];
     },
     refetchOnWindowFocus: false,
   });
@@ -257,7 +334,7 @@ function MiniStat({
   );
 }
 
-/* ============ Shadcn cards untuk header, jadwal, kehadiran, pengumuman ============ */
+/* ============ Shadcn cards untuk header, kehadiran, pengumuman ============ */
 
 function DashboardHeader({ home }: { home?: SchoolHome }) {
   const schoolName = home?.schoolName ?? "Dashboard Sekolah";
@@ -285,74 +362,6 @@ function DashboardHeader({ home }: { home?: SchoolHome }) {
             </p>
           </div>
         </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function TodayScheduleCard({
-  items,
-  title = "Jadwal Hari Ini",
-  maxItems = 3,
-  seeAllPath,
-}: {
-  items: TodayScheduleItem[];
-  title?: string;
-  maxItems?: number;
-  seeAllPath?: string;
-}) {
-  const shown = items.slice(0, maxItems);
-  return (
-    <Card className="shadow-sm h-full flex flex-col">
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <span className="h-9 w-9 rounded-xl grid place-items-center bg-muted text-primary">
-            <CalendarDays className="h-4 w-4" />
-          </span>
-          {title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3 flex-1 flex flex-col">
-        {shown.length === 0 ? (
-          <div className="text-sm text-muted-foreground">Tidak ada jadwal.</div>
-        ) : (
-          <div className="space-y-3">
-            {shown.map((s) => (
-              <div
-                key={s.id}
-                className="rounded-xl border p-3 flex items-start gap-3"
-              >
-                <Badge variant="outline" className="shrink-0">
-                  {s.time}
-                </Badge>
-                <div className="min-w-0">
-                  <div className="font-medium leading-tight truncate">
-                    {s.title}
-                  </div>
-                  {(s.location || s.teacher || s.note) && (
-                    <div className="text-xs text-muted-foreground">
-                      {[s.location, s.teacher, s.note]
-                        .filter(Boolean)
-                        .join(" • ")}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        {seeAllPath && (
-          <>
-            <Separator className="my-2" />
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => (window.location.href = seeAllPath)}
-            >
-              Lihat semua jadwal
-            </Button>
-          </>
-        )}
       </CardContent>
     </Card>
   );
@@ -472,14 +481,13 @@ const SchoolMainDashboard: React.FC<SchoolDashboardProps> = ({
   const navigate = useNavigate();
 
   const homeQ = useQuery({ queryKey: QK.HOME, queryFn: fetchSchoolHome });
-  const todaySessionsQ = useTodaySessions();
+  const teacherWeekSessionsQ = useTeacherWeekAttendanceSessions();
 
-  const scheduleItems: TodayScheduleItem[] = useMemo(() => {
-    const apiItems = todaySessionsQ.data ?? [];
-    return apiItems.length > 0
-      ? mapSessionsToTodaySchedule(apiItems)
-      : homeQ.data?.todaySchedule ?? mockTodaySchedule;
-  }, [todaySessionsQ.data, homeQ.data]);
+  const dashboardScheduleItems: DashboardScheduleItem[] = useMemo(() => {
+    const apiItems = teacherWeekSessionsQ.data ?? [];
+    if (apiItems.length === 0) return [];
+    return mapAttendanceSessionsToDashboardSchedule(apiItems);
+  }, [teacherWeekSessionsQ.data]);
 
   useEffect(() => {
     // kalau mau sync dengan dashboard layout header, bisa taruh di sini
@@ -549,17 +557,24 @@ const SchoolMainDashboard: React.FC<SchoolDashboardProps> = ({
 
             {/* Jadwal • Keuangan */}
             <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-5 items-stretch">
-              {/* Jadwal */}
+              {/* Jadwal pekan ini (dari attendance-sessions/list) */}
               <div className="col-span-1 md:col-span-6 lg:col-span-6">
-                <TodayScheduleCard
-                  items={scheduleItems}
-                  title="Jadwal Hari Ini"
-                  maxItems={3}
-                  seeAllPath="/school/schedule" // sesuaikan kalau beda
+                <DashboardScheduleCard
+                  items={dashboardScheduleItems}
+                  title="Jadwal Mengajar Pekan Ini"
+                  seeAllPath="/school/schedule"
+                  loading={
+                    teacherWeekSessionsQ.isLoading ||
+                    teacherWeekSessionsQ.isFetching
+                  }
+                  // kalau mau, bisa aktifkan ini buat buka detail sesi
+                  // onPrimaryAction={(item) => {
+                  //   navigate(`/school/attendance-sessions/${item.id}`);
+                  // }}
                 />
-                {(todaySessionsQ.isLoading || todaySessionsQ.isFetching) && (
-                  <div className="px-1 pt-2 text-xs text-muted-foreground">
-                    Memuat jadwal hari ini…
+                {teacherWeekSessionsQ.isError && (
+                  <div className="px-1 pt-2 text-xs text-destructive">
+                    Gagal memuat jadwal pekan ini.
                   </div>
                 )}
               </div>

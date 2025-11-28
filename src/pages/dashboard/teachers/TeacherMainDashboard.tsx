@@ -1,4 +1,4 @@
-// src/pages/sekolahislamku/teacher/TeacherMainDashboard.tsx
+// src/pages/dashboard/teachers/TeacherMainDashboard.tsx
 import React, { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import axios from "@/lib/axios";
@@ -20,7 +20,13 @@ import {
   ClipboardList,
   ArrowRight,
 } from "lucide-react";
-import { useNavigate} from "react-router-dom";
+
+/* Dashboard schedule generic component */
+import {
+  DashboardScheduleCard,
+  type DashboardScheduleItem,
+  type DashboardScheduleParticipantState,
+} from "@/pages/dashboard/components/card/schedule/CCardScheduleDashboard";
 
 /* =========================================================
    DEMO TOGGLE
@@ -102,6 +108,33 @@ export type TeacherHome = {
 };
 
 /* =========================================================
+   RAW ATTENDANCE API TYPES (timeline guru)
+========================================================= */
+
+type AttendanceSessionAPIItem = {
+  session: {
+    class_attendance_session_id: string;
+    class_attendance_session_date: string;
+    class_attendance_session_starts_at: string | null;
+    class_attendance_session_ends_at: string | null;
+    class_attendance_session_display_title?: string | null;
+    class_attendance_session_subject_name_snapshot?: string | null;
+    class_attendance_session_section_name_snapshot?: string | null;
+    class_attendance_session_csst_snapshot?: any;
+  };
+  participant?: {
+    participant_id: string;
+    participant_state: string; // "unknown" | "present" | ...
+  };
+};
+
+type AttendanceSessionsResponse = {
+  success: boolean;
+  message: string;
+  data: AttendanceSessionAPIItem[];
+};
+
+/* =========================================================
    UTILS
 ========================================================= */
 const pad2 = (n: number) => String(n).padStart(2, "0");
@@ -145,6 +178,59 @@ const dayName = (iso: string) => {
   }
 };
 
+const formatSchoolTeacherName = (st?: {
+  name?: string | null;
+  title_prefix?: string | null;
+  title_suffix?: string | null;
+}): string | undefined => {
+  if (!st) return undefined;
+
+  const parts: string[] = [];
+
+  if (st.title_prefix) {
+    parts.push(st.title_prefix);
+  }
+
+  if (st.name) {
+    parts.push(st.name);
+  }
+
+  let base = parts.join(" ");
+
+  if (!base && st.name) {
+    base = st.name;
+  }
+
+  if (base && st.title_suffix) {
+    return `${base}, ${st.title_suffix}`;
+  }
+
+  return base || undefined;
+};
+
+const timeFmt = (iso: string | null): string => {
+  if (!iso) return "-";
+  try {
+    return new Date(iso).toLocaleTimeString("id-ID", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+  } catch {
+    return "-";
+  }
+};
+
+const isSameLocalDay = (iso: string, base: Date = new Date()): boolean => {
+  if (!iso) return false;
+  const d = new Date(iso);
+  return (
+    d.getFullYear() === base.getFullYear() &&
+    d.getMonth() === base.getMonth() &&
+    d.getDate() === base.getDate()
+  );
+};
+
 /* =========================================================
    DEMO DATA
 ========================================================= */
@@ -157,7 +243,7 @@ function makeDemoTeacherHome(): TeacherHome {
     return d.toISOString();
   };
 
-  // ↓ TIKETIN lebih ketat biar 'mode' nggak melebar jadi string
+  // ↓ contoh jadwal demo (bukan dari API timeline)
   const rawSchedule = [
     {
       id: "s1",
@@ -305,6 +391,7 @@ function makeDemoTeacherHome(): TeacherHome {
 ========================================================= */
 const QK = {
   TEACHER_HOME: ["teacher-home"] as const,
+  TEACHER_ATTENDANCE_WEEK: ["teacher-attendance-week"] as const,
 };
 
 async function fetchTeacherHome(): Promise<TeacherHome> {
@@ -326,6 +413,120 @@ async function fetchTeacherHome(): Promise<TeacherHome> {
     console.warn("[teacher-home] API error, fallback demo", e);
     return makeDemoTeacherHome();
   }
+}
+
+/**
+ * Fetch attendance sessions (week range) untuk GURU,
+ * mapping ke DashboardScheduleItem, sort berdasarkan waktu,
+ * dan nanti di kartu di-limit max 5 (di DashboardScheduleCard).
+ */
+async function fetchTeacherAttendanceThisWeek(): Promise<
+  DashboardScheduleItem[]
+> {
+  const res = await axios.get<AttendanceSessionsResponse>(
+    "/api/u/attendance-sessions/list",
+    {
+      params: {
+        teacher_timeline: 1,
+        mode: "compact",
+        range: "week",
+      },
+      withCredentials: true,
+    }
+  );
+
+  if (!res.data?.success || !Array.isArray(res.data.data)) {
+    return [];
+  }
+
+  // Sort jadwal pekan ini berdasarkan waktu mulai (terdekat dulu)
+  const sorted = [...res.data.data].sort((a, b) => {
+    const sa =
+      a.session.class_attendance_session_starts_at ??
+      a.session.class_attendance_session_date;
+    const sb =
+      b.session.class_attendance_session_starts_at ??
+      b.session.class_attendance_session_date;
+
+    return new Date(sa).getTime() - new Date(sb).getTime();
+  });
+
+  const today = new Date();
+
+  // Map ke DashboardScheduleItem
+  return sorted.map<DashboardScheduleItem>((row) => {
+    const s = row.session;
+    const csst = s.class_attendance_session_csst_snapshot || {};
+    const teacherName =
+      formatSchoolTeacherName(csst.school_teacher) ||
+      csst.teacher_name ||
+      undefined;
+
+    const subjectName =
+      s.class_attendance_session_subject_name_snapshot ||
+      csst.subject_name ||
+      csst.subject?.name ||
+      "Pertemuan";
+
+    const sectionName =
+      s.class_attendance_session_section_name_snapshot ||
+      csst.section_name ||
+      csst.class_section?.name ||
+      "";
+
+    const title =
+      sectionName && sectionName !== subjectName
+        ? `${subjectName} — ${sectionName}`
+        : subjectName;
+
+    const startLabel = timeFmt(s.class_attendance_session_starts_at);
+    const endLabel = timeFmt(s.class_attendance_session_ends_at);
+    const time =
+      startLabel !== "-" && endLabel !== "-"
+        ? `${startLabel} - ${endLabel}`
+        : startLabel !== "-"
+        ? startLabel
+        : "-";
+
+    const state = (row.participant?.participant_state ||
+      "unknown") as DashboardScheduleParticipantState;
+
+    let stateLabel: string | undefined;
+    switch (state) {
+      case "present":
+        stateLabel = "Sudah absen: Hadir";
+        break;
+      case "absent":
+        stateLabel = "Sudah absen: Tidak hadir";
+        break;
+      case "late":
+        stateLabel = "Sudah absen: Terlambat";
+        break;
+      case "excused":
+        stateLabel = "Izin / sakit";
+        break;
+      case "unknown":
+      default:
+        stateLabel = "Belum ada data absensi";
+        break;
+    }
+
+    const isToday = isSameLocalDay(s.class_attendance_session_date, today);
+    const canAttendNow = false; // untuk guru di dashboard utama, aksi cepat pakai kartu lain
+
+    return {
+      id: s.class_attendance_session_id,
+      date: s.class_attendance_session_date,
+      time,
+      location: undefined,
+      teacher: teacherName, // boleh diisi / dibiarkan, nanti di-join dengan location
+      title,
+      note: stateLabel,
+      isToday,
+      canAttendNow,
+      participantState: state,
+    };
+  });
 }
 
 /* =========================================================
@@ -350,70 +551,6 @@ function KpiTile({
           <div className="text-sm text-muted-foreground">{label}</div>
           <div className="text-xl font-semibold">{value}</div>
         </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function ScheduleCard({
-  items,
-  title = "Jadwal Mengajar Hari Ini",
-  seeAllPath,
-}: {
-  items: TeacherScheduleItem[];
-  title?: string;
-  seeAllPath?: string;
-}) {
-  const navigate = useNavigate();
-
-  const shown = items.slice(0, 5);
-
-  return (
-    <Card className="shadow-sm">
-      <CardHeader className="px-5 py-4">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <span className="h-9 w-9 rounded-xl grid place-items-center bg-muted text-primary">
-            <CalendarDays className="h-4 w-4" />
-          </span>
-          {title}
-        </CardTitle>
-      </CardHeader>
-
-      <CardContent className="space-y-3">
-        {shown.length === 0 ? (
-          <div className="text-sm text-muted-foreground">Tidak ada jadwal.</div>
-        ) : (
-          shown.map((s) => (
-            <div
-              key={s.id}
-              className="rounded-xl border p-3 flex items-start gap-3">
-              <Badge variant="outline">{s.timeText}</Badge>
-
-              <div className="min-w-0">
-                <div className="font-medium leading-tight">
-                  {s.subject} — {s.sectionName}
-                </div>
-
-                <div className="mt-1 text-xs text-muted-foreground flex items-center gap-1">
-                  <CalendarDays className="h-3 w-3" />
-                  {s.day}
-                </div>
-              </div>
-            </div>
-          ))
-        )}
-
-        {seeAllPath && (
-          <>
-            <Separator className="my-1" />
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => navigate(seeAllPath)}>
-              Lihat semua jadwal
-            </Button>
-          </>
-        )}
       </CardContent>
     </Card>
   );
@@ -446,7 +583,8 @@ function AttendanceTodoCard({
           pending.map((t) => (
             <div
               key={t.sessionId}
-              className="rounded-xl border p-3 flex items-center justify-between gap-3">
+              className="rounded-xl border p-3 flex items-center justify-between gap-3"
+            >
               <div className="min-w-0">
                 <div className="font-medium leading-tight truncate">
                   {t.subject} — {t.sectionName}
@@ -461,7 +599,8 @@ function AttendanceTodoCard({
                   onOpen
                     ? onOpen(t.sessionId)
                     : (window.location.href = `/teacher/sessions/${t.sessionId}/attendance`)
-                }>
+                }
+              >
                 Buka Absen
               </Button>
             </div>
@@ -496,7 +635,8 @@ function MyClassesCard({
           items.slice(0, 6).map((c) => (
             <div
               key={c.csstId}
-              className="rounded-xl border p-3 flex items-center justify-between gap-3">
+              className="rounded-xl border p-3 flex items-center justify-between gap-3"
+            >
               <div className="min-w-0">
                 <div className="font-medium leading-tight truncate">
                   {c.subject} — {c.sectionName}
@@ -513,7 +653,8 @@ function MyClassesCard({
                   (window.location.href = c.slug
                     ? `/guru/guru-mapel/${c.slug}`
                     : `/guru/guru-mapel/${c.csstId}`)
-                }>
+                }
+              >
                 Detail <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
             </div>
@@ -525,7 +666,8 @@ function MyClassesCard({
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => (window.location.href = seeAllPath)}>
+              onClick={() => (window.location.href = seeAllPath)}
+            >
               Lihat semua kelas
             </Button>
           </>
@@ -539,10 +681,25 @@ function MyClassesCard({
    PAGE
 ========================================================= */
 const TeacherMainDashboard: React.FC = () => {
-  const { data, isLoading, isFetching } = useQuery({
+  const {
+    data,
+    isLoading,
+    isFetching: isFetchingHome,
+  } = useQuery({
     queryKey: QK.TEACHER_HOME,
     queryFn: fetchTeacherHome,
     staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+
+  const {
+    data: attendanceThisWeek,
+    isLoading: isLoadingAttendance,
+    isFetching: isFetchingAttendance,
+  } = useQuery({
+    queryKey: QK.TEACHER_ATTENDANCE_WEEK,
+    queryFn: fetchTeacherAttendanceThisWeek,
+    staleTime: 30_000,
     refetchOnWindowFocus: false,
   });
 
@@ -550,6 +707,7 @@ const TeacherMainDashboard: React.FC = () => {
     type: "success" | "error";
     msg: string;
   } | null>(null);
+
   useEffect(() => {
     if (!flash) return;
     const t = setTimeout(() => setFlash(null), 3000);
@@ -587,15 +745,40 @@ const TeacherMainDashboard: React.FC = () => {
     t.titleSuffix ? ", " + t.titleSuffix : ""
   }`;
 
+  // Jadwal di kartu: dari attendance timeline guru; kalau kosong, fallback ke todaySchedule backend
+  const scheduleFromTimeline: DashboardScheduleItem[] =
+    attendanceThisWeek && attendanceThisWeek.length > 0
+      ? attendanceThisWeek
+      : [];
+
+  let scheduleItems: DashboardScheduleItem[] = scheduleFromTimeline;
+
+  if (scheduleItems.length === 0 && data.todaySchedule?.length) {
+    scheduleItems = data.todaySchedule.map<DashboardScheduleItem>((s) => {
+      const time = s.timeText ?? timeRangeText(s.startISO, s.endISO);
+      const date = s.startISO;
+      const isToday = isSameLocalDay(s.startISO);
+      return {
+        id: s.id,
+        date,
+        time,
+        title: `${s.subject} — ${s.sectionName}`,
+        location: s.room,
+        teacher: undefined,
+        isToday,
+      };
+    });
+  }
+
   return (
     <div className="w-full bg-background text-foreground">
-      <main className=" mx-auto py-6 space-y-6">
+      <main className="mx-auto py-6 space-y-6">
         {/* Header */}
         <Card className="shadow-sm">
           <CardContent className="p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div className="flex items-center gap-3">
-              <span className=" w-12 rounded-full grid place-items-center bg-primary/10 text-primary">
-                <User className=" w-6" />
+              <span className="w-12 h-12 rounded-full grid place-items-center bg-primary/10 text-primary">
+                <User className="w-6 h-6" />
               </span>
               <div>
                 <div className="text-sm text-muted-foreground">Guru</div>
@@ -607,7 +790,7 @@ const TeacherMainDashboard: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Badge variant="outline">
                 <Users className="h-3.5 w-3.5 mr-1" />
                 Kelas diajar: {data.kpis.classesTaught}
@@ -667,18 +850,23 @@ const TeacherMainDashboard: React.FC = () => {
           </div>
 
           {/* Kanan */}
-          <div className=" col-span-1 md:col-span-6 space-y-6">
-            <ScheduleCard
-              items={data.todaySchedule}
+          <div className="col-span-1 md:col-span-6 space-y-6">
+            <DashboardScheduleCard
+              items={scheduleItems}
               title="Jadwal Mengajar Pekan Ini"
-              seeAllPath={`jadwal/agenda`}
+              seeAllPath="jadwal/agenda"
+              loading={isLoadingAttendance}
+              primaryActionLabel="Buka"
+              onPrimaryAction={(item) => {
+                window.location.href = `/teacher/sessions/${item.id}`;
+              }}
             />
           </div>
         </section>
 
         {/* Footer mini */}
         <div className="text-xs text-muted-foreground text-right">
-          {isFetching ? "Menyegarkan data…" : ""}
+          {isFetchingHome || isFetchingAttendance ? "Menyegarkan data…" : ""}
         </div>
       </main>
     </div>

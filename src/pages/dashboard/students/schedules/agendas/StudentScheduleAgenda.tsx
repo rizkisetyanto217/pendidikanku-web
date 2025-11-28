@@ -1,14 +1,10 @@
-// src/pages/sekolahislamku/student/StudentSchedule.tsx
+// src/pages/dashboard/students/schedules/agendas/StudentScheduleAgenda.tsx
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import {
-  ArrowLeft,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 
-/* ✅ Import untuk breadcrumb header */
+/* ✅ Breadcrumb header */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 import { Button } from "@/components/ui/button";
@@ -23,112 +19,155 @@ import {
 } from "@/pages/dashboard/components/calender/types/types";
 import type { ScheduleRow } from "@/pages/dashboard/components/calender/types/types";
 
-// === dummy store sama seperti di teacher (sementara)
-const scheduleStore = new Map<string, ScheduleRow[]>();
-const delay = (ms = 350) => new Promise((r) => setTimeout(r, ms));
-function uid() {
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-}
-function seedMonth(y: number, m: number): ScheduleRow[] {
-  const rooms = ["Aula 1", "Aula Utama", "Ruang 3B", "Ruang 4C", "Ruang 5A"];
-  const teachers = [
-    "Ust. Ahmad",
-    "Bu Sari",
-    "Pak Budi",
-    "Ust. Dina",
-    "Pak Rudi",
-  ];
-  const classes = ["1A", "2B", "3C", "4D", "5A", "6B"];
-  const topics = [
-    ["Tahsin Al-Qur'an", "Fokus makhraj huruf & tajwid"],
-    ["Matematika", "Pecahan, desimal, perbandingan"],
-    ["Bahasa Indonesia", "Teks nonfiksi & ringkasan"],
-    ["IPA", "Siklus air & ekosistem"],
-    ["IPS", "Keragaman sosial budaya"],
-    ["Bahasa Inggris", "Daily conversation & vocab"],
-  ] as const;
+import api from "@/lib/axios";
 
-  const rows: ScheduleRow[] = [];
-  const push = (
-    d: number,
-    time: string,
-    type: "class" | "exam" | "event",
-    idx: number
-  ) => {
-    const [title, desc] = topics[idx % topics.length];
-    const teacher = teachers[idx % teachers.length];
-    const room = rooms[idx % rooms.length];
-    const cls = classes[idx % classes.length];
-    rows.push({
-      id: uid(),
-      title: type === "class" ? `${title} Kelas ${cls}` : `${title} ${type}`,
-      date: new Date(
-        y,
-        m - 1,
-        d,
-        Number(time.slice(0, 2)),
-        Number(time.slice(3))
-      ).toISOString(),
-      time,
-      room,
-      teacher: type === "class" ? cls : teacher,
-      type,
-      description:
-        type === "exam"
-          ? `Ujian materi ${title.toLowerCase()} — persiapkan alat tulis.`
-          : type === "event"
-            ? `Acara sekolah: ${title} — ${desc}`
-            : desc,
-    });
-  };
+/* =============================
+   Types API student timeline (API terbaru)
+============================= */
 
-  const plan: Array<[number, string, "class" | "exam" | "event"]> = [
-    [1, "07:30", "class"],
-    [1, "10:15", "class"],
-    [2, "09:00", "event"],
-    [3, "08:00", "class"],
-    [3, "13:00", "class"],
-    [5, "10:00", "exam"],
-    [7, "07:30", "class"],
-    [8, "11:00", "class"],
-    [9, "09:30", "class"],
-    [10, "13:15", "class"],
-    [12, "10:00", "class"],
-    [12, "14:00", "event"],
-    [14, "08:00", "class"],
-    [15, "07:30", "class"],
-    [15, "10:30", "exam"],
-    [18, "09:45", "class"],
-    [20, "07:30", "class"],
-    [20, "12:30", "class"],
-    [22, "10:00", "class"],
-    [22, "15:00", "event"],
-    [24, "08:00", "class"],
-    [25, "07:30", "class"],
-    [25, "10:00", "class"],
-    [26, "09:00", "exam"],
-    [28, "07:30", "class"],
-    [28, "11:30", "class"],
-  ];
-  plan.forEach((p, i) => push(p[0], p[1], p[2], i));
-  return rows;
-}
-const scheduleApi = {
-  async list(month: string): Promise<ScheduleRow[]> {
-    await delay();
-    if (!scheduleStore.has(month)) {
-      const [y, m] = month.split("-").map(Number);
-      scheduleStore.set(month, seedMonth(y, m));
-    }
-    return structuredClone(scheduleStore.get(month)!);
-  },
+type ApiStudentTimelineSession = {
+  class_attendance_session_id: string;
+  class_attendance_session_school_id: string;
+
+  class_attendance_session_date: string; // "2025-11-20T00:00:00Z"
+  class_attendance_session_starts_at: string | null;
+  class_attendance_session_ends_at: string | null;
+
+  class_attendance_session_title: string | null;
+  class_attendance_session_display_title: string | null;
+  class_attendance_session_general_info: string | null;
+
+  class_attendance_session_status: string;
+  class_attendance_session_attendance_status: string;
+
+  class_attendance_session_subject_name_snapshot?: string | null;
+  class_attendance_session_subject_code_snapshot?: string | null;
+  class_attendance_session_section_name_snapshot?: string | null;
+  class_attendance_session_room_name_snapshot?: string | null;
+  class_attendance_session_teacher_name_snapshot?: string | null;
+
+  class_attendance_session_csst_snapshot?: any;
+  class_attendance_session_type_snapshot?: any;
 };
+
+type ApiStudentTimelineParticipant = {
+  participant_id: string;
+  participant_state: string;
+  [key: string]: any;
+};
+
+type ApiStudentTimelineItem = {
+  session: ApiStudentTimelineSession;
+  participant?: ApiStudentTimelineParticipant;
+  [key: string]: any;
+};
+
+type ApiPagination = {
+  page: number;
+  per_page: number;
+  total: number;
+  total_pages: number;
+  has_next: boolean;
+  has_prev: boolean;
+  count: number;
+  per_page_options: number[];
+};
+
+type ApiStudentTimelineResponse = {
+  success: boolean;
+  message: string;
+  data: ApiStudentTimelineItem[];
+  pagination?: ApiPagination;
+};
+
+/* =============================
+   Helper mapping API → ScheduleRow
+============================= */
+
+function toTimeStr(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const hh = d.getHours().toString().padStart(2, "0");
+  const mm = d.getMinutes().toString().padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
+function mapItemToScheduleRow(item: ApiStudentTimelineItem): ScheduleRow {
+  const s = item.session;
+  const csst = (s.class_attendance_session_csst_snapshot ?? {}) as any;
+
+  const startsAt =
+    s.class_attendance_session_starts_at || s.class_attendance_session_date;
+  const dateIso = startsAt || s.class_attendance_session_date;
+
+  const subjectName =
+    s.class_attendance_session_subject_name_snapshot ??
+    csst.subject_name ??
+    csst.subject?.name;
+
+  const sectionName =
+    s.class_attendance_session_section_name_snapshot ??
+    csst.section_name ??
+    csst.class_section?.name;
+
+  const teacherName =
+    s.class_attendance_session_teacher_name_snapshot ??
+    csst.teacher_name ??
+    csst.school_teacher?.name;
+
+  const roomName =
+    s.class_attendance_session_room_name_snapshot ??
+    csst.room_name ??
+    undefined;
+
+  const baseTitle =
+    s.class_attendance_session_display_title ||
+    s.class_attendance_session_title ||
+    (subjectName
+      ? sectionName
+        ? `${subjectName} — ${sectionName}`
+        : subjectName
+      : "Pertemuan Kelas");
+
+  const participantState = item.participant?.participant_state ?? "unknown";
+
+  const baseDesc =
+    (s.class_attendance_session_general_info || "").trim() ||
+    (subjectName
+      ? sectionName
+        ? `Pertemuan ${subjectName} — ${sectionName}`
+        : `Pertemuan ${subjectName}`
+      : "");
+
+  const description =
+    participantState === "present"
+      ? `${baseDesc}${baseDesc ? " — " : ""}Status kehadiran: hadir`
+      : participantState === "sick"
+      ? `${baseDesc}${baseDesc ? " — " : ""}Status kehadiran: izin sakit`
+      : baseDesc;
+
+  return {
+    id: s.class_attendance_session_id,
+    title: baseTitle,
+    date: dateIso,
+    time: toTimeStr(startsAt),
+    room: roomName,
+    teacher: teacherName,
+    type: "class", // nanti kalau ada ujian/event bisa dipetakan dari type_snapshot.slug
+    description,
+  };
+}
 
 /* =========================================================
    Page — sama layout & interaksi dengan Academic
 ========================================================= */
+
 type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
-export default function StudentScheduleAgenda({ showBack = false, backTo }: Props) {
+
+export default function StudentScheduleAgenda({
+  showBack = false,
+  backTo,
+}: Props) {
   const navigate = useNavigate();
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
@@ -152,15 +191,34 @@ export default function StudentScheduleAgenda({ showBack = false, backTo }: Prop
   );
   const [tab, setTab] = useState<"calendar" | "list">("calendar");
 
-  const schedulesQ = useQuery({
-    queryKey: ["student-schedules", month],
-    queryFn: () => scheduleApi.list(month),
-  });
-
+  // navigasi bulan (pakai format "YYYY-MM" yang sama dikirim ke API)
   const [y, m] = month.split("-").map(Number);
   const gotoPrev = () => setMonth(toMonthStr(new Date(y, m - 2, 1)));
   const gotoNext = () => setMonth(toMonthStr(new Date(y, m, 1)));
 
+  // 🔗 Ambil data dari API student timeline (API attendance-sessions/list terbaru)
+  const schedulesQ = useQuery({
+    queryKey: ["student-schedules", month],
+    queryFn: async (): Promise<ScheduleRow[]> => {
+      const res = await api.get<ApiStudentTimelineResponse>(
+        "/u/attendance-sessions/list",
+        {
+          params: {
+            student_timeline: 1,
+            mode: "compact",
+            range: "month",
+            month, // "2025-11"
+            // kalau nanti mau pagination, tinggal tambah page/per_page di sini
+          },
+        }
+      );
+
+      const items = res.data?.data ?? [];
+      return items.map(mapItemToScheduleRow);
+    },
+  });
+
+  // kalau ganti bulan, auto highlight hari ini kalau masih di bulan tsb
   useEffect(() => {
     const today = new Date();
     if (toMonthStr(today) === month) setSelectedDay(dateKeyFrom(today));
@@ -245,6 +303,5 @@ export default function StudentScheduleAgenda({ showBack = false, backTo }: Prop
         </Tabs>
       </div>
     </div>
-
   );
 }
