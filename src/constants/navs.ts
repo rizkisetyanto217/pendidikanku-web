@@ -12,6 +12,7 @@ import {
   ChartBar,
   School,
   HeartHandshake,
+  ChartSpline,
   Building2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -234,20 +235,19 @@ export const NAVS: NavDict = {
     },
     {
       path: "menu-utama",
-      label: "Menu Utama",
+      label: "Menu Utama ",
       icon: ChartBar, // /murid/menu-utama
     },
-
     {
-      path: "kelas",
+      path: "kelas-saya",
       label: "Kelas",
-      icon: School,
+      icon: School, // /murid/menu-utama
+    },
+    {
+      path: "Progress",
+      label: "Progress",
+      icon: ChartSpline,
       children: [
-        {
-          // -> /murid/kelas-saya
-          path: "kelas-saya",
-          label: "Kelas Saya",
-        },
         {
           // -> /murid/progress
           path: "progress",

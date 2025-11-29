@@ -28,7 +28,7 @@ import { Frame, PieChart, Map } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import type { CurrentUserMembership } from "@/hooks/useCurrentUser";
 
-/* cek status profile-completion (dipakai cuma buat hide dashboard) */
+/* cek status profile-completion (dipakai cuma buat hide dashboard sekolah) */
 import { useQuery } from "@tanstack/react-query";
 import api, { getActiveSchoolContext } from "@/lib/axios";
 
@@ -129,7 +129,7 @@ export function AppSidebar(props: AppSidebarProps) {
     return parts[0] ?? "";
   }, [base]);
 
-  // 🔍 Query status profile-completion (hanya untuk hide dashboard)
+  // 🔍 Query status profile-completion (hanya untuk hide dashboard SEKOLAH)
   const { data: completion } = useQuery<ProfileCompletionStatus | null>({
     queryKey: ["profile-completion", baseSlug],
     enabled: !!baseSlug,
@@ -144,10 +144,22 @@ export function AppSidebar(props: AppSidebarProps) {
     staleTime: 60_000,
   });
 
-  // ✅ aturan: kalau belum punya / belum lengkap profile → dashboard disembunyikan
-  const hideDashboard =
+  // ✅ aturan dasar: kalau belum punya / belum lengkap profile → bisa hide dashboard
+  const hideDashboardBase =
     !!completion &&
     (!completion.has_profile || !completion.is_profile_completed);
+
+  // 🔑 Tentukan navKey dulu (buat tau ini nav sekolah / murid / guru)
+  const navKey: keyof NavDict = resolveNavKey(membership, pathRole);
+
+  // Hanya hide dashboard untuk:
+  // - nav sekolah
+  // - BUKAN area user-murid / user-guru (pmb/unnasigned)
+  const applyHideDashboard =
+    hideDashboardBase &&
+    navKey === "sekolah" &&
+    !isUserStudentArea &&
+    !isUserTeacherArea;
 
   // 🔑 Tentukan sumber nav items
   let rawNavItems: NavItem[];
@@ -157,7 +169,6 @@ export function AppSidebar(props: AppSidebarProps) {
   } else if (isUserTeacherArea) {
     rawNavItems = NAVS_UNNASIGNED_TEACHER;
   } else {
-    const navKey: keyof NavDict = resolveNavKey(membership, pathRole);
     rawNavItems = NAVS[navKey];
   }
 
@@ -190,9 +201,9 @@ export function AppSidebar(props: AppSidebarProps) {
 
   // Susun items dari nav terpilih
   const items = rawNavItems
-    // filter dashboard kalau perlu
+    // filter dashboard kalau perlu (khusus nav sekolah)
     .filter((it) => {
-      if (!hideDashboard) return true;
+      if (!applyHideDashboard) return true;
       const label = it.label?.toLowerCase?.() ?? "";
       const path = (it.path ?? "").toLowerCase();
       return !(

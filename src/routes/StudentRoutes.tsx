@@ -5,7 +5,7 @@ import StudentDashboard from "@/pages/dashboard/students/StudentMainDashboard";
 import StudentAllSchedule from "@/pages/dashboard/students/schedules/agendas/StudentScheduleAgenda";
 import StudentDetailSchedule from "@/pages/dashboard/students/schedules/agendas/StudentScheduleAgendaDetail";
 import StudentMenuGrids from "@/pages/dashboard/students/menus/StudentMenuGrids";
-import StudentClassesAssignment from "@/pages/dashboard/students/classes/my-classes/csst/menus/assignments/StudentClassesAssignment";
+import StudentClassesAssignment from "@/pages/dashboard/students/my-classes/csst/menus/assignments/StudentClassesAssignment";
 import StudentFinance from "@/pages/dashboard/students/administration/StudentFinance";
 import StudentListFinance from "@/pages/dashboard/students/administration/StudentFinanceList";
 import StudentProgress from "@/pages/dashboard/students/classes/progress/StudentProgress";
@@ -13,25 +13,25 @@ import StudentRaport from "@/pages/dashboard/students/classes/progress/raports/S
 import StudentAbsence from "@/pages/dashboard/students/classes/progress/absences/StudentProgessAbsence";
 import StudentNotesSummary from "@/pages/dashboard/students/classes/progress/notes-summaries/StudentNotesSummary";
 import StudentProfil from "@/pages/dashboard/students/profiles/StudentProfil";
-import StudentMyClass from "@/pages/dashboard/students/classes/my-classes/StudentMyClass";
-import StudentMaterial from "@/pages/dashboard/students/classes/my-classes/csst/menus/materials/StudentClassesMaterial";
-import StudentClassesAttandence from "@/pages/dashboard/students/classes/my-classes/csst/menus/attendances/StudentClassesAttandence";
-import StudentExam from "@/pages/dashboard/students/classes/my-classes/csst/menus/exams/StudentClassesExam";
+import StudentMyClass from "@/pages/dashboard/students/my-classes/StudentMyClass";
+import StudentMaterial from "@/pages/dashboard/students/my-classes/csst/menus/materials/StudentClassesMaterial";
+import StudentCSSTStudentList from "@/pages/dashboard/students/my-classes/csst/menus/student-list/StudentCSSTStudentList";
+import StudentExam from "@/pages/dashboard/students/my-classes/csst/menus/exams/StudentClassesExam";
 import StudentClassesContact from "@/pages/dashboard/students/classes/contacts/StudentClassesContact";
 import StudentScheduleAgenda from "@/pages/dashboard/students/schedules/agendas/StudentScheduleAgenda";
 import StudentScheduleRoutine from "@/pages/dashboard/students/schedules/routine/StudentScheduleRoutine";
 import StudentEnrollment from "@/pages/dashboard/students/administration/StudentAdministrationEnrollment";
 import StudentReEnrollment from "@/pages/dashboard/students/administration/StudentAdministrationReEnrollment";
 import Setting from "@/pages/dashboard/components/page/Setting";
-import StudentChooseClassSection from "@/pages/dashboard/students/classes/my-classes/class-sections/StudentChooseClassSection";
-import StudentCSST from "@/pages/dashboard/students/classes/my-classes/csst/StudentCSST";
-import StudentClassSection from "@/pages/dashboard/students/classes/my-classes/class-sections/StudentClassSection";
-import StudentQuiz from "@/pages/dashboard/students/classes/my-classes/quiz/StudentQuiz";
-import StudentQuizReview from "@/pages/dashboard/students/classes/my-classes/quiz/StudentQuizReview";
-import StudentCSSTDailyReport from "@/pages/dashboard/students/classes/my-classes/csst/menus/daily-progress/StudentCSSTDailyReport";
-import StudentCSSTDailyReportDetail from "@/pages/dashboard/students/classes/my-classes/csst/menus/daily-progress/details/StudentCSSTDailyReportDetail";
-import StudentCSSTDetail from "@/pages/dashboard/students/classes/my-classes/csst/details/StudentCSSTDetail";
-import StudentCSSTRoomDetail from "@/pages/dashboard/students/classes/my-classes/csst/details/StudentCSSTRoomDetail";
+import StudentChooseClassSection from "@/pages/dashboard/students/my-classes/class-sections/StudentChooseClassSection";
+import StudentCSST from "@/pages/dashboard/students/my-classes/csst/StudentCSST";
+import StudentClassSection from "@/pages/dashboard/students/my-classes/class-sections/StudentClassSection";
+import StudentQuiz from "@/pages/dashboard/students/my-classes/quiz/StudentQuiz";
+import StudentQuizReview from "@/pages/dashboard/students/my-classes/quiz/StudentQuizReview";
+import StudentCSSTDailyReport from "@/pages/dashboard/students/my-classes/csst/menus/daily-progress/StudentCSSTDailyReport";
+import StudentCSSTDailyReportDetail from "@/pages/dashboard/students/my-classes/csst/menus/daily-progress/details/StudentCSSTDailyReportDetail";
+import StudentCSSTDetail from "@/pages/dashboard/students/my-classes/csst/details/StudentCSSTDetail";
+import StudentCSSTRoomDetail from "@/pages/dashboard/students/my-classes/csst/details/StudentCSSTRoomDetail";
 // import StudentCSSTAttandenceList from "@/pages/dashboard/students/classes/my-classes/csst/attendances/StudentCSSTAttandenceList";
 
 // ======================
@@ -78,30 +78,41 @@ export const StudentRoutes = (
     ===================== */}
     <Route path="profil-murid" element={<StudentProfil />} />
 
+    {/* /:school_slug/murid/kelas/kelas-saya */}
+
+    <Route path="kelas-saya">
+      <Route index element={<StudentMyClass />} />
+      <Route
+        path=":enrollment_id/pilih-kelas"
+        element={<StudentChooseClassSection />} // atau StudentChooseClassSection versi-mu
+      />
+      <Route path="rombel/:sectionId" element={<StudentClassSection />} />
+      <Route path="mapel/:csstId" element={<StudentCSST />} />
+      <Route path="mapel/:csstId/ruangan" element={<StudentCSSTRoomDetail />} />
+      <Route
+        path="mapel/:csstId/daily-progress"
+        element={<StudentCSSTDailyReport />}
+      />
+      <Route
+        path="mapel/:csstId/daily-progress/:id"
+        element={<StudentCSSTDailyReportDetail />}
+      />
+      <Route path="mapel/:csstId/ujian" element={<StudentExam showBack />} />
+      <Route
+        path="mapel/:csstId/tugas"
+        element={<StudentClassesAssignment showBack />}
+      />
+      <Route path="mapel/:csstId/detail" element={<StudentCSSTDetail />} />
+      <Route path="mapel/:csstId/murid" element={<StudentCSSTStudentList />} />
+
+      {/* <Route path="mapel/:csstId/absensi" element={<StudentCSSTAttandenceList />} /> */}
+    </Route>
+
     {/* ==================================================
         GRUP 1: /murid/kelas/...
         (versi "biasa", tanpa menu utama)
        ================================================== */}
-    <Route path="kelas">
-      {/* /:school_slug/murid/kelas/kelas-saya */}
-
-      <Route path="kelas-saya">
-        <Route index element={<StudentMyClass />} />
-        <Route
-          path=":enrollment_id/pilih-kelas"
-          element={<StudentChooseClassSection />} // atau StudentChooseClassSection versi-mu
-        />
-        <Route path="rombel/:sectionId" element={<StudentClassSection />} />
-        <Route path="mapel/:csstId" element={<StudentCSST />} />
-        <Route path="mapel/:csstId/ruangan" element={<StudentCSSTRoomDetail />} />
-        <Route path="mapel/:csstId/daily-progress" element={<StudentCSSTDailyReport />} />
-        <Route path="mapel/:csstId/daily-progress/:id" element={<StudentCSSTDailyReportDetail />} />
-        <Route path="mapel/:csstId/ujian" element={<StudentExam showBack />} />
-        <Route path="mapel/:csstId/tugas" element={<StudentClassesAssignment showBack />} />
-        <Route path="mapel/:csstId/detail" element={<StudentCSSTDetail />} />
-        {/* <Route path="mapel/:csstId/absensi" element={<StudentCSSTAttandenceList />} /> */}
-      </Route>
-
+    <Route path="progress">
       <Route path="progress">
         <Route index element={<StudentProgress />} />
         <Route path="raport" element={<StudentRaport />} />
@@ -169,7 +180,6 @@ export const StudentRoutes = (
       {/* Kontak */}
       <Route path="kontak" element={<StudentClassesContact showBack />} />
 
-
       {/* Detail per kelas */}
       <Route path="kelas-saya/:id/materi" element={<StudentMaterial />} />
       <Route
@@ -179,7 +189,7 @@ export const StudentRoutes = (
       <Route path="kelas-saya/:id/quiz" element={<StudentQuiz />} />
       <Route
         path="kelas-saya/:id/kehadiran"
-        element={<StudentClassesAttandence />}
+        element={<StudentCSSTStudentList />}
       />
 
       {/* Progress dari menu utama */}

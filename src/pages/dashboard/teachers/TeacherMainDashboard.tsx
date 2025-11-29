@@ -110,14 +110,17 @@ export type TeacherHome = {
 /* =========================================================
    RAW ATTENDANCE API TYPES (timeline guru)
 ========================================================= */
-
 type AttendanceSessionAPIItem = {
   session: {
     class_attendance_session_id: string;
     class_attendance_session_date: string;
     class_attendance_session_starts_at: string | null;
     class_attendance_session_ends_at: string | null;
+
+    // ⬇️ tambahin ini (sama seperti di student)
+    class_attendance_session_title?: string | null;
     class_attendance_session_display_title?: string | null;
+
     class_attendance_session_subject_name_snapshot?: string | null;
     class_attendance_session_section_name_snapshot?: string | null;
     class_attendance_session_csst_snapshot?: any;
@@ -439,7 +442,6 @@ async function fetchTeacherAttendanceThisWeek(): Promise<
     return [];
   }
 
-  // Sort jadwal pekan ini berdasarkan waktu mulai (terdekat dulu)
   const sorted = [...res.data.data].sort((a, b) => {
     const sa =
       a.session.class_attendance_session_starts_at ??
@@ -453,14 +455,21 @@ async function fetchTeacherAttendanceThisWeek(): Promise<
 
   const today = new Date();
 
-  // Map ke DashboardScheduleItem
   return sorted.map<DashboardScheduleItem>((row) => {
     const s = row.session;
     const csst = s.class_attendance_session_csst_snapshot || {};
-    const teacherName =
+
+    // (kalau nanti mau dipakai, tetap disiapkan)
+    const teacherBase =
       formatSchoolTeacherName(csst.school_teacher) ||
       csst.teacher_name ||
       undefined;
+
+    // ⬇️ sama seperti student: prioritaskan session_title
+    const sessionTitle =
+      s.class_attendance_session_title ||
+      s.class_attendance_session_display_title ||
+      null;
 
     const subjectName =
       s.class_attendance_session_subject_name_snapshot ||
@@ -474,10 +483,19 @@ async function fetchTeacherAttendanceThisWeek(): Promise<
       csst.class_section?.name ||
       "";
 
+    // judul besar card: "Ilmu Balaghoh Dasar pertemuan ke-8"
     const title =
-      sectionName && sectionName !== subjectName
+      sessionTitle ||
+      (sectionName && sectionName !== subjectName
         ? `${subjectName} — ${sectionName}`
-        : subjectName;
+        : subjectName);
+
+    // ⬇️ sub-text di bawah judul:
+    // untuk guru: "Kelas Balaghoh Menengah A • Ilmu Balaghoh Dasar"
+    const teacherDisplay =
+      sectionName && subjectName
+        ? `${sectionName} • ${subjectName}`
+        : sectionName || subjectName || teacherBase || undefined;
 
     const startLabel = timeFmt(s.class_attendance_session_starts_at);
     const endLabel = timeFmt(s.class_attendance_session_ends_at);
@@ -502,8 +520,14 @@ async function fetchTeacherAttendanceThisWeek(): Promise<
       case "late":
         stateLabel = "Sudah absen: Terlambat";
         break;
+      case "sick":
+        stateLabel = "Sakit";
+        break;
       case "excused":
-        stateLabel = "Izin / sakit";
+        stateLabel = "Izin / dimaafkan";
+        break;
+      case "leave":
+        stateLabel = "Cuti / keperluan lain";
         break;
       case "unknown":
       default:
@@ -512,14 +536,14 @@ async function fetchTeacherAttendanceThisWeek(): Promise<
     }
 
     const isToday = isSameLocalDay(s.class_attendance_session_date, today);
-    const canAttendNow = false; // untuk guru di dashboard utama, aksi cepat pakai kartu lain
+    const canAttendNow = false; // di dashboard guru tetap non-klik untuk absen
 
     return {
       id: s.class_attendance_session_id,
       date: s.class_attendance_session_date,
       time,
       location: undefined,
-      teacher: teacherName, // boleh diisi / dibiarkan, nanti di-join dengan location
+      teacher: teacherDisplay, // ⬅️ ini yang nongol di bawah judul
       title,
       note: stateLabel,
       isToday,

@@ -89,6 +89,10 @@ type AttendanceSessionListItem = {
   class_attendance_session_display_title: string;
   class_attendance_session_teacher_name_snapshot?: string;
   class_attendance_session_section_name_snapshot?: string;
+
+  // ⬇️ tambahin agar bisa ambil mapel
+  class_attendance_session_subject_name_snapshot?: string;
+
   participants?: {
     participant_id: string;
     participant_session_id: string;
@@ -166,7 +170,6 @@ const toTimeRange = (startIso: string, endIso: string): string => {
   }
 };
 
-/* Mapper: AttendanceSessionList -> DashboardScheduleItem */
 function mapAttendanceSessionsToDashboardSchedule(
   items: AttendanceSessionListItem[]
 ): DashboardScheduleItem[] {
@@ -180,6 +183,25 @@ function mapAttendanceSessionsToDashboardSchedule(
     const firstParticipant = s.participants?.[0];
     const participantState = firstParticipant?.participant_state;
 
+    const teacherName = s.class_attendance_session_teacher_name_snapshot;
+    const sectionName = s.class_attendance_session_section_name_snapshot ?? "";
+    const subjectName =
+      s.class_attendance_session_subject_name_snapshot || "Pertemuan";
+
+    // 🎯 Judul besar: prioritaskan session_title,
+    // lalu fallback ke display_title kalau perlu
+    const title =
+      s.class_attendance_session_title ||
+      s.class_attendance_session_display_title ||
+      subjectName;
+
+    // 🎯 Sub-text di bawah judul:
+    // "Ustadz Hendra, Lc • Ilmu Balaghoh Dasar"
+    const teacherDisplay =
+      teacherName && subjectName
+        ? `${teacherName} • ${subjectName}`
+        : teacherName || subjectName;
+
     return {
       id: s.class_attendance_session_id,
       date: s.class_attendance_session_date,
@@ -187,16 +209,21 @@ function mapAttendanceSessionsToDashboardSchedule(
         s.class_attendance_session_starts_at,
         s.class_attendance_session_ends_at
       ),
-      title:
-        s.class_attendance_session_display_title ||
-        s.class_attendance_session_title,
-      location: s.class_attendance_session_section_name_snapshot,
-      teacher: s.class_attendance_session_teacher_name_snapshot,
+
+      // judul besar di kartu
+      title,
+
+      // location: pakai nama kelas / rombel
+      location: sectionName || undefined,
+
+      // baris kecil di bawah judul
+      teacher: teacherDisplay || undefined,
+
+      // kalau mau nanti bisa isi "Sudah absen: Hadir" dll
       note: undefined,
 
       isToday,
       canAttendNow: false, // nanti bisa diisi true kalau jamnya sedang berlangsung
-
       participantState,
     };
   });

@@ -1,7 +1,7 @@
 // src/pages/dasboard/student/StudentMyClass.tsx
 import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Search, Info } from "lucide-react";
+import { ArrowLeft, Search } from "lucide-react";
 
 /* Breadcrumb (opsional) */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
@@ -11,7 +11,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 
 /* Data fetching */
 import { useQuery } from "@tanstack/react-query";
@@ -22,14 +21,16 @@ import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
 const dateLong = (iso?: string | null) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-      weekday: "long",
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    })
+        weekday: "long",
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      })
     : "-";
 
-const mapEnrollmentToBadge = (s: StudentClassEnrollmentStatus): "active" | "inactive" | "pending" => {
+const mapEnrollmentToBadge = (
+  s: StudentClassEnrollmentStatus
+): "active" | "inactive" | "pending" => {
   switch (s) {
     case "accepted":
       return "active";
@@ -42,7 +43,6 @@ const mapEnrollmentToBadge = (s: StudentClassEnrollmentStatus): "active" | "inac
       return "inactive";
   }
 };
-
 
 /* ============ Types dari API ============ */
 
@@ -281,12 +281,8 @@ export default function StudentMyClass({ showBack = false, backTo }: Props) {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Ringkasan
               </p>
-              <div className="grid grid-cols-3 gap-3 text-sm">
+              <div className="grid grid-cols-2 gap-3 text-sm">
                 <SummaryPill label="Kelas aktif" value={stats.active} />
-                <SummaryPill
-                  label="Belum punya rombel"
-                  value={stats.noSection}
-                />
                 <SummaryPill label="Pendaftaran lain" value={stats.others} />
               </div>
             </CardContent>
@@ -312,21 +308,6 @@ export default function StudentMyClass({ showBack = false, backTo }: Props) {
             </CardContent>
           </Card>
         </div>
-
-        {/* ===== Section: butuh pilih rombel ===== */}
-        <Section
-          title="Belum Punya Rombel"
-          hint={
-            withoutSection.length
-              ? `${withoutSection.length} kelas menunggu penempatan`
-              : undefined
-          }
-          emptyText="Tidak ada kelas yang menunggu penempatan."
-        >
-          {withoutSection.map((row) => (
-            <NeedSectionCard key={row.student_class_enrollments_id} row={row} />
-          ))}
-        </Section>
 
         {/* ===== Section: Kelas Aktif (sudah punya rombel) ===== */}
         <Section
@@ -470,10 +451,7 @@ function ActiveEnrollmentCard({ row }: { row: StudentClassEnrollmentRow }) {
             <h3 className="text-base md:text-lg font-semibold truncate">
               {name}
             </h3>
-            <CBadgeStatus
-              status="active"
-              className="h-6 text-xs"
-            />
+            <CBadgeStatus status="active" className="h-6 text-xs" />
 
             {sectionName && (
               <Badge variant="outline" className="h-6 text-xs">
@@ -539,67 +517,6 @@ function ActiveEnrollmentCard({ row }: { row: StudentClassEnrollmentRow }) {
   );
 }
 
-function NeedSectionCard({ row }: { row: StudentClassEnrollmentRow }) {
-  const name =
-    row.student_class_enrollments_class_name ||
-    row.student_class_enrollments_class_name_snapshot;
-  const term = row.student_class_enrollments_term_name_snapshot;
-  const year = row.student_class_enrollments_term_academic_year_snapshot;
-
-  const navigate = useNavigate();
-
-  const handleChooseSection = () => {
-    navigate(`${row.student_class_enrollments_id}/pilih-kelas`, {
-      state: {
-        enrollment: row,
-        sections: row.class_sections ?? [],
-      },
-    });
-  };
-
-  return (
-    <Card className={cn("border-dashed")}>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base md:text-lg flex items-center gap-2 flex-wrap">
-          <span className="truncate">{name}</span>
-          <CBadgeStatus
-            status="active"
-            className="h-6"
-          />
-
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="px-4 md:px-5 pb-4">
-        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-          <span>
-            Angkatan {term} • {year}
-          </span>
-        </div>
-
-        <div className="mt-3 flex flex-col gap-2 text-sm text-muted-foreground">
-          <div className="flex items-start gap-2">
-            <Info size={16} className="mt-0.5" />
-            <span>
-              Kamu sudah diterima di kelas ini, tetapi belum ditempatkan di
-              rombel (kelas paralel). Silakan pilih rombel yang tersedia.
-            </span>
-          </div>
-        </div>
-
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Button
-            size="sm"
-            onClick={handleChooseSection}
-            className="inline-flex gap-2"
-          >
-            Pilih Rombel / Gabung Kelas
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 /* Kartu untuk status selain accepted (pending, waitlist, dst) */
 function OtherEnrollmentCard({ row }: { row: StudentClassEnrollmentRow }) {
   const name =
@@ -617,7 +534,6 @@ function OtherEnrollmentCard({ row }: { row: StudentClassEnrollmentRow }) {
             status={mapEnrollmentToBadge(row.student_class_enrollments_status)}
             className="h-6"
           />
-
         </CardTitle>
       </CardHeader>
       <CardContent className="px-4 md:px-5 pb-4">

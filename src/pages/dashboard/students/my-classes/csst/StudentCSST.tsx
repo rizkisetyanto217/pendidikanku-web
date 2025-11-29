@@ -44,7 +44,6 @@ type ApiCSSTEmbedded = {
   class_section_subject_teacher_meeting_id?: string | null;
   class_section_subject_teacher_passcode?: string | null;
 
-
   class_section_subject_teacher_class_section_id: string;
   class_section_subject_teacher_class_section_name_snapshot?: string | null;
   class_section_subject_teacher_class_section_code_snapshot?: string | null;
@@ -188,8 +187,6 @@ const StudentCSST: React.FC = () => {
     ? extractErrorMessage(csstQ.error)
     : null;
 
-
-
   /* ===== Derive view models dari API ===== */
   const sectionView: SectionView | null = useMemo(() => {
     const it = csstQ.data?.class_section_subject_teacher;
@@ -320,10 +317,7 @@ const StudentCSST: React.FC = () => {
         <div className="mx-auto flex flex-col gap-6">
           {/* Top bar */}
           <div className="hidden md:flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate(-1)}>
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
               <ArrowLeft size={20} />
             </Button>
             <h1 className="text-lg font-semibold md:text-xl">
@@ -392,7 +386,6 @@ const StudentCSST: React.FC = () => {
             <Card className="transition hover:shadow-md">
               <CardContent className="p-4 md:p-5">
                 <div className="flex flex-col gap-3 h-full">
-
                   {/* Kiri: Info absensi */}
                   {/* Jika sudah absen */}
                   {hasCheckedIn && checkInTime ? (
@@ -431,7 +424,6 @@ const StudentCSST: React.FC = () => {
                             setHasCheckedIn(true);
                             setCheckInTime(`Pertemuan ${newMeeting}`);
                           }}
-
                         >
                           Absen Sekarang
                         </Button>
@@ -442,10 +434,9 @@ const StudentCSST: React.FC = () => {
               </CardContent>
             </Card>
 
-
-
             {/* Ruangan */}
-            <Card className="cursor-pointer transition hover:shadow-md"
+            <Card
+              className="cursor-pointer transition hover:shadow-md"
               onClick={() => navigate("ruangan")}
             >
               <CardContent className="p-4 md:p-5 flex flex-col gap-3">
@@ -473,30 +464,41 @@ const StudentCSST: React.FC = () => {
                       <div>
                         <span className="font-medium">Meeting ID: </span>
                         <span className="font-mono">
-                          {csstQ.data?.class_section_subject_teacher?.class_section_subject_teacher_meeting_id ?? "-"}
+                          {csstQ.data?.class_section_subject_teacher
+                            ?.class_section_subject_teacher_meeting_id ?? "-"}
                         </span>
                       </div>
                       {/* Passcode */}
                       <div>
                         <span className="font-medium">Passcode: </span>
                         <span className="font-mono">
-                          {csstQ.data?.class_section_subject_teacher?.class_section_subject_teacher_passcode ?? "-"}
+                          {csstQ.data?.class_section_subject_teacher
+                            ?.class_section_subject_teacher_passcode ?? "-"}
                         </span>
                       </div>
                       {/* Link Zoom (biarkan 1 kolom, otomatis melebar di mobile) */}
                       <div className="md:col-span-2">
                         <span className="font-medium">Link Zoom: </span>
-                        {csstQ.data?.class_section_subject_teacher?.class_section_subject_teacher_join_url ? (
+                        {csstQ.data?.class_section_subject_teacher
+                          ?.class_section_subject_teacher_join_url ? (
                           <a
-                            href={csstQ.data.class_section_subject_teacher.class_section_subject_teacher_join_url}
+                            href={
+                              csstQ.data.class_section_subject_teacher
+                                .class_section_subject_teacher_join_url
+                            }
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-primary underline break-all"
                           >
-                            {csstQ.data.class_section_subject_teacher.class_section_subject_teacher_join_url}
+                            {
+                              csstQ.data.class_section_subject_teacher
+                                .class_section_subject_teacher_join_url
+                            }
                           </a>
                         ) : (
-                          <span className="text-muted-foreground">Tidak tersedia</span>
+                          <span className="text-muted-foreground">
+                            Tidak tersedia
+                          </span>
                         )}
                       </div>
                     </div>
@@ -509,7 +511,10 @@ const StudentCSST: React.FC = () => {
           {/* Grid lainnya */}
           <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {/* Jumlah Murid */}
-            <Card className="cursor-pointer transition hover:shadow-md">
+            <Card
+              className="cursor-pointer transition hover:shadow-md"
+              onClick={() => navigate("murid")}
+            >
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="space-y-1">
                   <div className="text-sm text-muted-foreground flex items-center gap-2">
@@ -523,7 +528,8 @@ const StudentCSST: React.FC = () => {
             </Card>
 
             {/* Laporan Kehadiran */}
-            <Card className="cursor-pointer transition hover:shadow-md"
+            <Card
+              className="cursor-pointer transition hover:shadow-md"
               onClick={() => navigate("daily-progress")}
             >
               <CardContent className="p-4 flex items-center justify-between">
@@ -555,7 +561,8 @@ const StudentCSST: React.FC = () => {
             </Card>
 
             {/* Latihan */}
-            <Card className="cursor-pointer transition hover:shadow-md"
+            <Card
+              className="cursor-pointer transition hover:shadow-md"
               onClick={() => navigate("tugas")}
             >
               <CardContent className="p-4 flex items-center justify-between">
@@ -564,7 +571,9 @@ const StudentCSST: React.FC = () => {
                     <ClipboardList className="h-4 w-4" />
                     <span>Latihan</span>
                   </div>
-                  <div className="text-xl font-semibold">{totalAssessmentsUngraded}</div>
+                  <div className="text-xl font-semibold">
+                    {totalAssessmentsUngraded}
+                  </div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </CardContent>
@@ -572,7 +581,8 @@ const StudentCSST: React.FC = () => {
 
             {/* Ujian */}
             <Card className="cursor-pointer transition hover:shadow-md">
-              <CardContent className="p-4 flex items-center justify-between"
+              <CardContent
+                className="p-4 flex items-center justify-between"
                 onClick={() => navigate("ujian")}
               >
                 <div className="space-y-1">
@@ -580,14 +590,17 @@ const StudentCSST: React.FC = () => {
                     <ClipboardList className="h-4 w-4" />
                     <span>Ujian</span>
                   </div>
-                  <div className="text-xl font-semibold">{totalAssessmentsGraded}</div>
+                  <div className="text-xl font-semibold">
+                    {totalAssessmentsGraded}
+                  </div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </CardContent>
             </Card>
 
             {/* Profil Mapel */}
-            <Card className="cursor-pointer transition hover:shadow-md"
+            <Card
+              className="cursor-pointer transition hover:shadow-md"
               onClick={() => navigate("detail")}
             >
               <CardContent className="p-4 flex items-center justify-between">
@@ -613,7 +626,9 @@ const StudentCSST: React.FC = () => {
                     <Users className="h-4 w-4" />
                     <span>Grup WhatsApp Mapel</span>
                   </div>
-                  <div className="text-md font-semibold underline">Link Group</div>
+                  <div className="text-md font-semibold underline">
+                    Link Group
+                  </div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </CardContent>

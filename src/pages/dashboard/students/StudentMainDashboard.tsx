@@ -121,6 +121,8 @@ type AttendanceSessionAPIItem = {
     class_attendance_session_date: string;
     class_attendance_session_starts_at: string | null;
     class_attendance_session_ends_at: string | null;
+    // ⬇️ tambahin ini:
+    class_attendance_session_title?: string | null;
     class_attendance_session_display_title?: string | null;
     class_attendance_session_subject_name_snapshot?: string | null;
     class_attendance_session_section_name_snapshot?: string | null;
@@ -417,10 +419,16 @@ async function fetchStudentAttendanceThisWeek(): Promise<
   return sorted.map<DashboardScheduleItem>((row) => {
     const s = row.session;
     const csst = s.class_attendance_session_csst_snapshot || {};
-    const teacherName =
+
+    const teacherBase =
       formatSchoolTeacherName(csst.school_teacher) ||
       csst.teacher_name ||
       undefined;
+    // ⬇️ ambil dulu title dari session
+    const sessionTitle =
+      s.class_attendance_session_title ||
+      s.class_attendance_session_display_title ||
+      null;
 
     const subjectName =
       s.class_attendance_session_subject_name_snapshot ||
@@ -434,10 +442,18 @@ async function fetchStudentAttendanceThisWeek(): Promise<
       csst.class_section?.name ||
       "";
 
+    // ⬇️ PRIORITAS: pakai class_attendance_session_title
     const title =
-      sectionName && sectionName !== subjectName
+      sessionTitle ||
+      (sectionName && sectionName !== subjectName
         ? `${subjectName} — ${sectionName}`
-        : subjectName;
+        : subjectName);
+
+    // ⬇️ ini yang baru: gabungkan ustadz + mapel
+    const teacherDisplay =
+      teacherBase && subjectName
+        ? `${teacherBase} • ${subjectName}`
+        : teacherBase || subjectName || undefined;
 
     const startLabel = timeFmt(s.class_attendance_session_starts_at);
     const endLabel = timeFmt(s.class_attendance_session_ends_at);
@@ -485,7 +501,7 @@ async function fetchStudentAttendanceThisWeek(): Promise<
       date: s.class_attendance_session_date,
       time,
       location: undefined,
-      teacher: teacherName,
+      teacher: teacherDisplay, // ⬅️ pakai gabungan
       title,
       note: stateLabel,
       isToday,
