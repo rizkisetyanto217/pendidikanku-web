@@ -1,18 +1,12 @@
-// src/pages/dasboard/teacher/TeacherCSSTStudentAttendanceList.tsx
-import React, { useMemo, useState, useDeferredValue, useEffect } from "react";
+// src/pages/dashboard/teacher/TeacherCSSTStudentsList.tsx
+import React, { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableHeader,
@@ -24,191 +18,151 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   ArrowLeft,
-  CalendarDays,
-  Clock,
-  Download,
-  Filter,
   Search,
   Users,
-  CheckCircle2,
-  XCircle,
-  Stethoscope,
-  Hand,
-  MonitorSmartphone,
+  User,
+  PhoneCall,
+  MessageCircle,
+  UserCircle2,
 } from "lucide-react";
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+import api from "@/lib/axios";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 /* =========================================================
    KONFIG + TIPE
 ========================================================= */
-const USE_DUMMY = true;
+const USE_DUMMY = false;
 
-type AttendanceStatus = "hadir" | "sakit" | "izin" | "alpa" | "online";
+type Gender = "L" | "P";
 
-type AttendanceRow = {
-  studentId: string;
+type TeacherStudentRow = {
+  id: string;
   name: string;
-  status: AttendanceStatus;
-  checkInTime?: string; // "07:35"
-  note?: string;
+  nis?: string;
+  gender?: Gender;
+  avatarUrl?: string;
+  whatsappUrl?: string;
+  parentName?: string;
+  parentWhatsappUrl?: string;
+  isActive: boolean;
 };
 
-type AttendanceQueryParams = {
-  classId: string;
-  mode: "today" | "range";
-  date?: string; // YYYY-MM-DD (untuk today)
-  fromDate?: string; // YYYY-MM-DD (untuk range)
-  toDate?: string; // YYYY-MM-DD (untuk range)
-  fromTime?: string; // HH:mm (opsional, filter jam)
-  toTime?: string; // HH:mm
+type CSSTStudentsQueryParams = {
+  csstId: string;
 };
 
 /* =========================================================
-   DUMMY: 15 SISWA (sinkron dengan halaman daftar siswa)
+   TIPE API
 ========================================================= */
-const DUMMY_STUDENTS = [
-  { id: "s-01", name: "Ahmad Fathir" },
-  { id: "s-02", name: "Aisyah Zahra" },
-  { id: "s-03", name: "Muhammad Iqbal" },
-  { id: "s-04", name: "Siti Nurhaliza" },
-  { id: "s-05", name: "Rafi Pratama" },
-  { id: "s-06", name: "Nabila Kirana" },
-  { id: "s-07", name: "Fauzan Alfarizi" },
-  { id: "s-08", name: "Kayla Putri" },
-  { id: "s-09", name: "Zidan Maulana" },
-  { id: "s-10", name: "Alya Safira" },
-  { id: "s-11", name: "Raka Dwi Saputra" },
-  { id: "s-12", name: "Nayla Khairunnisa" },
-  { id: "s-13", name: "Ilham Saputra" },
-  { id: "s-14", name: "Aurel Maharani" },
-  { id: "s-15", name: "Daffa Alvaro" },
-] as const;
 
-const ALL_STATUSES: AttendanceStatus[] = [
-  "hadir",
-  "sakit",
-  "izin",
-  "alpa",
-  "online",
-];
+type ApiStudentCSSTItem = {
+  student_class_section_subject_teacher_id: string;
+  student_class_section_subject_teacher_school_id: string;
+  student_class_section_subject_teacher_student_id: string;
+  student_class_section_subject_teacher_csst_id: string;
+  student_class_section_subject_teacher_is_active: boolean;
 
-/* =========================================================
-   UTIL: Pembuatan dummy kehadiran yg deterministik per tanggal
-========================================================= */
-function hashCode(str: string) {
-  let h = 0;
-  for (let i = 0; i < str.length; i++) {
-    h = (h << 5) - h + str.charCodeAt(i);
-    h |= 0;
-  }
-  return Math.abs(h);
+  student_class_section_subject_teacher_user_profile_name_snapshot?:
+    | string
+    | null;
+  student_class_section_subject_teacher_user_profile_avatar_url_snapshot?:
+    | string
+    | null;
+  student_class_section_subject_teacher_user_profile_whatsapp_url?:
+    | string
+    | null;
+  student_class_section_subject_teacher_user_profile_parent_name_snapshot?:
+    | string
+    | null;
+  student_class_section_subject_teacher_user_profile_parent_whatsapp_url?:
+    | string
+    | null;
+  student_class_section_subject_teacher_user_profile_gender_snapshot?:
+    | string
+    | null;
+
+  student_class_section_subject_teacher_student_code_snapshot?: string | null;
+};
+
+type ApiStudentCSSTListResponse = {
+  success: boolean;
+  message: string;
+  data: ApiStudentCSSTItem[];
+  pagination: {
+    page: number;
+    per_page: number;
+    total: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+    count: number;
+    per_page_options: number[];
+  };
+};
+
+function mapGender(raw?: string | null): Gender | undefined {
+  if (!raw) return undefined;
+  if (raw === "L" || raw === "P") return raw;
+  return undefined;
 }
 
-function pickStatus(seed: number, idx: number): AttendanceStatus {
-  const r = (seed + idx * 37) % 100;
-  if (r < 68) return "hadir";
-  if (r < 75) return "online";
-  if (r < 85) return "izin";
-  if (r < 93) return "sakit";
-  return "alpa";
-}
-
-function timeWithOffset(base = "07:30", offsetMin = 0) {
-  const [h, m] = base.split(":").map(Number);
-  const date = new Date(2025, 0, 1, h, m + offsetMin);
-  const hh = String(date.getHours()).padStart(2, "0");
-  const mm = String(date.getMinutes()).padStart(2, "0");
-  return `${hh}:${mm}`;
-}
-
-function generateAttendanceForDate(dateStr: string): AttendanceRow[] {
-  const seed = hashCode(dateStr);
-  return DUMMY_STUDENTS.map((s, i) => {
-    const status = pickStatus(seed, i);
-    let time: string | undefined = undefined;
-    let note: string | undefined = undefined;
-
-    if (status === "hadir") {
-      const late = (seed + i * 11) % 20; // 0..19 menit
-      time = timeWithOffset("07:30", late);
-      if (late >= 10) note = "Datang agak terlambat";
-    } else if (status === "online") {
-      time = timeWithOffset("07:35", (seed + i * 9) % 15);
-      note = "Kelas online (Zoom)";
-    } else if (status === "sakit") {
-      note = "Izin sakit (surat orang tua)";
-    } else if (status === "izin") {
-      note = "Izin keluarga";
-    } else {
-      note = "Tidak hadir tanpa keterangan";
-    }
-
-    return { studentId: s.id, name: s.name, status, checkInTime: time, note };
-  });
-}
-
-function generateAttendanceRange(
-  fromDate: string,
-  toDate: string
-): AttendanceRow[] {
-  const from = new Date(fromDate);
-  const to = new Date(toDate);
-  const days: string[] = [];
-  for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
-    days.push(d.toISOString().slice(0, 10));
-  }
-  const map = new Map<string, AttendanceRow>();
-  for (const ds of days) {
-    const rows = generateAttendanceForDate(ds);
-    for (const r of rows) map.set(r.studentId, { ...r });
-  }
-  return Array.from(map.values());
+function mapApiToTeacherRows(items: ApiStudentCSSTItem[]): TeacherStudentRow[] {
+  return items.map((it) => ({
+    id: it.student_class_section_subject_teacher_student_id,
+    name:
+      it.student_class_section_subject_teacher_user_profile_name_snapshot ??
+      "Tanpa nama",
+    nis:
+      it.student_class_section_subject_teacher_student_code_snapshot ??
+      undefined,
+    gender: mapGender(
+      it.student_class_section_subject_teacher_user_profile_gender_snapshot
+    ),
+    avatarUrl:
+      it.student_class_section_subject_teacher_user_profile_avatar_url_snapshot ??
+      undefined,
+    whatsappUrl:
+      it.student_class_section_subject_teacher_user_profile_whatsapp_url ??
+      undefined,
+    parentName:
+      it.student_class_section_subject_teacher_user_profile_parent_name_snapshot ??
+      undefined,
+    parentWhatsappUrl:
+      it.student_class_section_subject_teacher_user_profile_parent_whatsapp_url ??
+      undefined,
+    isActive: it.student_class_section_subject_teacher_is_active,
+  }));
 }
 
 /* =========================================================
-   FETCH HOOK (dummy / nanti bisa diganti ke BE)
+   FETCH HOOK
 ========================================================= */
-async function fetchAttendanceDummy(
-  params: AttendanceQueryParams
-): Promise<AttendanceRow[]> {
-  if (params.mode === "today") {
-    const date = params.date || new Date().toISOString().slice(0, 10);
-    let rows = generateAttendanceForDate(date);
-    if (params.fromTime || params.toTime) {
-      const fromT = params.fromTime || "00:00";
-      const toT = params.toTime || "23:59";
-      rows = rows.filter((r) => {
-        if (!r.checkInTime) return true;
-        return r.checkInTime >= fromT && r.checkInTime <= toT;
-      });
+async function fetchCSSTStudentsLive(
+  params: CSSTStudentsQueryParams
+): Promise<TeacherStudentRow[]> {
+  const res = await api.get<ApiStudentCSSTListResponse>(
+    "/api/u/student-class-section-subject-teachers/list",
+    {
+      params: {
+        csst_id: params.csstId,
+      },
     }
-    return rows;
-  } else {
-    const from = params.fromDate || new Date().toISOString().slice(0, 10);
-    const to = params.toDate || from;
-    let rows = generateAttendanceRange(from, to);
-    if (params.fromTime || params.toTime) {
-      const fromT = params.fromTime || "00:00";
-      const toT = params.toTime || "23:59";
-      rows = rows.filter((r) => {
-        if (!r.checkInTime) return true;
-        return r.checkInTime >= fromT && r.checkInTime <= toT;
-      });
-    }
-    return rows;
-  }
+  );
+
+  const items = res.data?.data ?? [];
+  return mapApiToTeacherRows(items);
 }
 
-function useAttendance(params: AttendanceQueryParams) {
-  return useQuery({
-    queryKey: ["attendance", params, USE_DUMMY ? "dummy" : "live"],
+function useCSSTTeacherStudents(params: CSSTStudentsQueryParams) {
+  return useQuery<TeacherStudentRow[]>({
+    queryKey: ["csst-students-teacher", params.csstId],
     queryFn: async () => {
-      if (USE_DUMMY) return fetchAttendanceDummy(params);
-      // === LIVE (ganti sesuai BE) ===
-      // const res = await axios.get(`/api/classes/${params.classId}/attendance`, { params })
-      // return res.data as AttendanceRow[]
-      return fetchAttendanceDummy(params);
+      if (!params.csstId) return [];
+      if (USE_DUMMY) return []; // placeholder kalau mau dummy
+      return fetchCSSTStudentsLive(params);
     },
+    enabled: !!params.csstId,
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -216,175 +170,131 @@ function useAttendance(params: AttendanceQueryParams) {
 /* =========================================================
    UI HELPERS
 ========================================================= */
-function StatusBadge({ s }: { s: AttendanceStatus }) {
-  const tone: Record<
-    AttendanceStatus,
-    {
-      variant: "default" | "secondary" | "destructive" | "outline";
-      icon: React.ReactNode;
-      label: string;
-    }
-  > = {
-    hadir: {
-      variant: "default",
-      icon: <CheckCircle2 size={12} />,
-      label: "Hadir",
-    },
-    online: {
-      variant: "secondary",
-      icon: <MonitorSmartphone size={12} />,
-      label: "Online",
-    },
-    izin: { variant: "outline", icon: <Hand size={12} />, label: "Izin" },
-    sakit: {
-      variant: "outline",
-      icon: <Stethoscope size={12} />,
-      label: "Sakit",
-    },
-    alpa: {
-      variant: "destructive",
-      icon: <XCircle size={12} />,
-      label: "Alpa",
-    },
-  };
-  const t = tone[s];
+function GenderBadge({ gender }: { gender?: Gender }) {
+  if (!gender) return null;
+  const isL = gender === "L";
   return (
-    <Badge variant={t.variant} className="gap-1">
-      {t.icon}
-      {t.label}
+    <Badge variant={isL ? "secondary" : "outline"} className="gap-1 text-xs">
+      <User size={12} />
+      {isL ? "Laki-laki" : "Perempuan"}
     </Badge>
   );
 }
 
-function summarize(rows: AttendanceRow[]) {
-  const base: Record<AttendanceStatus, number> = {
-    hadir: 0,
-    online: 0,
-    izin: 0,
-    sakit: 0,
-    alpa: 0,
-  };
-  for (const r of rows) base[r.status]++;
-  return base;
+function AvatarStudent({
+  name,
+  avatarUrl,
+}: {
+  name: string;
+  avatarUrl?: string;
+}) {
+  const initials = name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
+
+  return (
+    <Avatar className="h-8 w-8">
+      {avatarUrl ? <AvatarImage src={avatarUrl} alt={name} /> : null}
+      <AvatarFallback>{initials || "S"}</AvatarFallback>
+    </Avatar>
+  );
 }
 
-function toCSV(rows: AttendanceRow[]) {
-  const header = ["Student ID", "Nama", "Status", "Check-in", "Catatan"];
-  const lines = rows.map((r) => [
-    r.studentId,
-    r.name.replace(/"/g, '""'),
-    r.status,
-    r.checkInTime || "",
-    (r.note || "").replace(/"/g, '""'),
-  ]);
-  const csv = [header, ...lines]
-    .map((cols) => cols.map((c) => `"${String(c)}"`).join(","))
-    .join("\n");
-  return new Blob([csv], { type: "text/csv;charset=utf-8;" });
+function buildWhatsAppLink(urlFromApi?: string) {
+  if (!urlFromApi) return undefined;
+  return urlFromApi; // BE sudah kasih https://wa.me/...
 }
 
 /* =========================================================
-   KOMPONEN UTAMA — pakai shadcn/ui Table
-   Route: /teacher/classes/:classId/attendance
+   KOMPONEN UTAMA
 ========================================================= */
-const TeacherCSSTStudentAttendanceList: React.FC = () => {
+const TeacherCSSTStudentsList: React.FC = () => {
   const navigate = useNavigate();
-   const { setHeader } = useDashboardHeader();
-    useEffect(() => {
-      setHeader({
-        title: "Kehadiran Murid",
-        breadcrumbs: [
-          { label: "Dashboard", href: "dashboard" },
-          { label: "Guru Mapel" },
-          { label: "Detail Mapel" },
-           { label: "Kehadiran Murid" },
-        ],
-        showBack: true,
-      });
-    }, [setHeader]);
-  const { classId = "" } = useParams<{ classId: string }>();
+  const { csstId = "" } = useParams<{ csstId: string }>();
+  const { setHeader } = useDashboardHeader();
 
-  // Mode & kontrol tanggal
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const [mode, setMode] = useState<"today" | "range">("today");
-  const [date, setDate] = useState<string>(todayStr);
-  const [fromDate, setFromDate] = useState<string>(todayStr);
-  const [toDate, setToDate] = useState<string>(todayStr);
-  const [fromTime, setFromTime] = useState<string>("");
-  const [toTime, setToTime] = useState<string>("");
+  useEffect(() => {
+    setHeader({
+      title: "Murid di Mapel Ini",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Guru Mapel" },
+        { label: "Detail Mapel" },
+        { label: "Daftar Murid" },
+      ],
+      showBack: true,
+    });
+  }, [setHeader]);
 
-  // Search & filter
+  // Guard kalau route nggak punya :csstId
+  if (!csstId) {
+    return (
+      <div className="w-full bg-background text-foreground">
+        <main className="mx-auto space-y-4">
+          <div className="flex items-center gap-2 mt-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(-1)}
+              className="mr-1"
+            >
+              <ArrowLeft size={20} />
+            </Button>
+            <h1 className="font-semibold text-lg">Daftar Murid</h1>
+          </div>
+          <Card className="p-4 space-y-2">
+            <div className="text-destructive text-sm font-medium">
+              Gagal memuat data.
+            </div>
+            <div className="text-xs text-muted-foreground">
+              CSST ID tidak ditemukan di URL.
+            </div>
+          </Card>
+        </main>
+      </div>
+    );
+  }
+
   const [q, setQ] = useState("");
   const dq = useDeferredValue(q);
-  const [statusFilter, setStatusFilter] = useState<"all" | AttendanceStatus>(
-    "all"
-  );
 
-  const { data: rows = [], isLoading } = useAttendance({
-    classId,
-    mode,
-    date,
-    fromDate,
-    toDate,
-    fromTime: fromTime || undefined,
-    toTime: toTime || undefined,
-  });
+  const {
+    data: rows = [],
+    isLoading,
+    isError,
+  } = useCSSTTeacherStudents({ csstId });
 
   const filtered = useMemo(() => {
     let list = rows;
-    if (statusFilter !== "all")
-      list = list.filter((r) => r.status === statusFilter);
     if (dq.trim()) {
       const k = dq.toLowerCase();
-      list = list.filter(
-        (r) =>
+      list = list.filter((r) => {
+        const parentName = r.parentName || "";
+        return (
           r.name.toLowerCase().includes(k) ||
-          r.studentId.toLowerCase().includes(k) ||
-          (r.note || "").toLowerCase().includes(k)
-      );
+          (r.nis || "").toLowerCase().includes(k) ||
+          parentName.toLowerCase().includes(k) ||
+          r.id.toLowerCase().includes(k)
+        );
+      });
     }
-    const order: AttendanceStatus[] = [
-      "hadir",
-      "online",
-      "izin",
-      "sakit",
-      "alpa",
-    ];
-    list = [...list].sort(
-      (a, b) =>
-        order.indexOf(a.status) - order.indexOf(b.status) ||
-        a.name.localeCompare(b.name)
-    );
-    return list;
-  }, [rows, statusFilter, dq]);
+    return [...list].sort((a, b) => a.name.localeCompare(b.name));
+  }, [rows, dq]);
 
-  const summary = useMemo(() => summarize(rows), [rows]);
-
-  const labelTanggal = useMemo(
-    () => (mode === "today" ? date : `${fromDate} s/d ${toDate}`),
-    [mode, date, fromDate, toDate]
-  );
-
-  function handleExport() {
-    const blob = toCSV(filtered);
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    const fname =
-      mode === "today"
-        ? `attendance_${classId}_${date}.csv`
-        : `attendance_${classId}_${fromDate}_to_${toDate}.csv`;
-    a.download = fname;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
+  const total = rows.length;
+  const totalL = rows.filter((r) => r.gender === "L").length;
+  const totalP = rows.filter((r) => r.gender === "P").length;
 
   return (
     <div className="w-full bg-background text-foreground">
       <main className="mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="md:flex hidden items-center gap-2">
+        {/* Header local (backup mobile) */}
+        <div className="flex items-center justify-between md:hidden">
+          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
@@ -394,206 +304,194 @@ const TeacherCSSTStudentAttendanceList: React.FC = () => {
               <ArrowLeft size={20} />
             </Button>
             <div>
-              <h1 className="font-semibold text-lg md:text-xl">Kehadiran Murid</h1>
-              <p className="text-sm text-muted-foreground">
-                Kelas: {classId || "-"}
+              <h1 className="font-semibold text-lg">Daftar Murid</h1>
+              <p className="text-xs text-muted-foreground">
+                Mapel / kelas: {csstId}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleExport} className="gap-2">
-              <Download size={16} /> Export CSV
-            </Button>
-          </div>
         </div>
 
-        {/* Controls */}
+        {/* Summary & Search */}
         <Card className="p-4 space-y-4">
-          <div className="flex flex-wrap gap-3 items-center">
-            <Select
-              value={mode}
-              onValueChange={(v) => setMode(v as "today" | "range")}
-            >
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Pilih mode" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="today">Hari Ini</SelectItem>
-                <SelectItem value="range">Rentang Tanggal</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {mode === "today" ? (
-              <div className="flex items-center gap-2">
-                <CalendarDays size={16} className="text-muted-foreground" />
-                <Input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="w-[170px]"
-                />
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <CalendarDays size={16} className="text-muted-foreground" />
-                <Input
-                  type="date"
-                  value={fromDate}
-                  onChange={(e) => setFromDate(e.target.value)}
-                  className="w-[170px]"
-                />
-                <span>—</span>
-                <Input
-                  type="date"
-                  value={toDate}
-                  onChange={(e) => setToDate(e.target.value)}
-                  className="w-[170px]"
-                />
-              </div>
-            )}
-
-            <div className="flex items-center gap-2">
-              <Clock size={16} className="text-muted-foreground" />
-              <Input
-                type="time"
-                value={fromTime}
-                onChange={(e) => setFromTime(e.target.value)}
-                placeholder="Mulai"
-                className="w-[130px]"
-              />
-              <span>—</span>
-              <Input
-                type="time"
-                value={toTime}
-                onChange={(e) => setToTime(e.target.value)}
-                placeholder="Selesai"
-                className="w-[130px]"
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-3 items-center">
-            <div className="flex items-center gap-2 flex-1 min-w-[240px]">
-              <Search size={18} className="text-muted-foreground" />
-              <Input
-                placeholder="Cari nama / ID / catatan…"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-              />
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Filter size={16} className="text-muted-foreground" />
-              <Select
-                value={statusFilter}
-                onValueChange={(v) =>
-                  setStatusFilter(v as AttendanceStatus | "all")
-                }
-              >
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Filter status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Semua status</SelectItem>
-                  {ALL_STATUSES.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </Card>
-
-        {/* Summary */}
-        <Card className="p-4">
           <div className="flex items-center justify-between flex-wrap gap-3">
-            <div className="text-sm text-muted-foreground">
-              Rentang:{" "}
-              <span className="font-medium text-foreground">
-                {labelTanggal}
-              </span>
+            <div>
+              <h2 className="font-semibold flex items-center gap-2">
+                <UserCircle2 size={18} />
+                Daftar Murid Mapel
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Data murid lengkap dengan kontak dan orang tua.
+              </p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Badge className="gap-1">
-                <Users size={12} /> Total: {rows.length}
+                <Users size={12} /> Total: {total}
               </Badge>
-              <Badge className="gap-1" variant="default">
-                <CheckCircle2 size={12} /> Hadir: {summary.hadir}
+              <Badge variant="secondary" className="gap-1">
+                <User size={12} /> L: {totalL}
               </Badge>
-              <Badge className="gap-1" variant="secondary">
-                <MonitorSmartphone size={12} /> Online: {summary.online}
-              </Badge>
-              <Badge className="gap-1" variant="outline">
-                <Hand size={12} /> Izin: {summary.izin}
-              </Badge>
-              <Badge className="gap-1" variant="outline">
-                <Stethoscope size={12} /> Sakit: {summary.sakit}
-              </Badge>
-              <Badge className="gap-1" variant="destructive">
-                <XCircle size={12} /> Alpa: {summary.alpa}
+              <Badge variant="outline" className="gap-1">
+                <User size={12} /> P: {totalP}
               </Badge>
             </div>
           </div>
+
+          <div className="flex items-center gap-2 flex-1 min-w-[260px]">
+            <Search size={18} className="text-muted-foreground" />
+            <Input
+              placeholder="Cari nama murid / NIS / orang tua…"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
+          </div>
         </Card>
 
-        {/* Table (shadcn/ui) */}
+        {/* TABLE */}
         <Card className="p-0">
           <ScrollArea className="w-full">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[60px]">#</TableHead>
-                  <TableHead>Nama</TableHead>
+                  <TableHead className="w-[56px]">#</TableHead>
+                  <TableHead>Murid</TableHead>
+                  <TableHead className="hidden sm:table-cell">NIS</TableHead>
+                  <TableHead className="hidden sm:table-cell">Gender</TableHead>
+                  <TableHead className="hidden md:table-cell">
+                    Kontak Murid
+                  </TableHead>
+                  <TableHead className="hidden md:table-cell">
+                    Orang Tua / Wali
+                  </TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Check-in</TableHead>
-                  <TableHead>Catatan</TableHead>
                 </TableRow>
               </TableHeader>
-
               <TableBody>
                 {isLoading ? (
                   <TableRow>
                     <TableCell
-                      colSpan={5}
+                      colSpan={7}
                       className="py-8 text-center text-muted-foreground"
                     >
-                      Memuat data kehadiran…
+                      Memuat daftar murid…
+                    </TableCell>
+                  </TableRow>
+                ) : isError ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={7}
+                      className="py-8 text-center text-destructive text-sm"
+                    >
+                      Gagal memuat daftar murid. Coba refresh atau hubungi
+                      admin.
                     </TableCell>
                   </TableRow>
                 ) : filtered.length > 0 ? (
-                  filtered.map((r, idx) => (
-                    <TableRow
-                      key={r.studentId}
-                      className="cursor-pointer hover:bg-muted/60"
-                      onClick={
-                        () => navigate(`${r.studentId}`)
-                        // jika base route berbeda, sesuaikan:
-                        // navigate(`/teacher/classes/${classId}/attendance/${r.studentId}`)
-                      }
-                    >
-                      <TableCell>{idx + 1}</TableCell>
-                      <TableCell className="font-medium">{r.name}</TableCell>
-                      <TableCell>
-                        <StatusBadge s={r.status} />
-                      </TableCell>
-                      <TableCell>{r.checkInTime || "-"}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {r.note || "-"}
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  filtered.map((r, idx) => {
+                    const waStudent = buildWhatsAppLink(r.whatsappUrl);
+                    const waParent = buildWhatsAppLink(r.parentWhatsappUrl);
+
+                    return (
+                      <TableRow key={r.id} className="hover:bg-muted/60">
+                        <TableCell>{idx + 1}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <AvatarStudent
+                              name={r.name}
+                              avatarUrl={r.avatarUrl}
+                            />
+                            <div className="flex flex-col">
+                              <span className="font-medium">{r.name}</span>
+                              <span className="text-[11px] text-muted-foreground">
+                                ID: {r.id.slice(0, 8)}…
+                              </span>
+                            </div>
+                          </div>
+                        </TableCell>
+
+                        <TableCell className="hidden sm:table-cell">
+                          <span className="font-mono text-xs">
+                            {r.nis || "-"}
+                          </span>
+                        </TableCell>
+
+                        <TableCell className="hidden sm:table-cell">
+                          <GenderBadge gender={r.gender} />
+                        </TableCell>
+
+                        {/* Kontak murid */}
+                        <TableCell className="hidden md:table-cell text-xs">
+                          {waStudent ? (
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-1">
+                                <MessageCircle size={12} />
+                                <a
+                                  href={waStudent}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="underline text-primary"
+                                >
+                                  WhatsApp
+                                </a>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+
+                        {/* Orang tua */}
+                        <TableCell className="hidden md:table-cell text-xs">
+                          {r.parentName ? (
+                            <div className="flex flex-col gap-1">
+                              <span className="font-medium">
+                                {r.parentName}
+                              </span>
+                              {waParent ? (
+                                <div className="flex items-center gap-1">
+                                  <PhoneCall size={12} />
+                                  <a
+                                    href={waParent}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="underline text-primary"
+                                  >
+                                    WA Orang Tua
+                                  </a>
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground">
+                                  Kontak belum tersedia
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+
+                        <TableCell>
+                          <Badge
+                            variant={r.isActive ? "default" : "outline"}
+                            className="text-[11px]"
+                          >
+                            {r.isActive ? "Aktif" : "Nonaktif"}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="py-10 text-center">
+                    <TableCell colSpan={7} className="py-10 text-center">
                       <div className="flex flex-col items-center gap-2 text-muted-foreground">
                         <Search size={20} />
                         <p className="font-medium text-foreground">
-                          Tidak ada data
+                          Tidak ada murid
                         </p>
                         <p className="text-sm">
-                          Coba ubah filter tanggal, jam, atau kata kunci.
+                          Coba cek kembali kelas/mapel atau hubungi admin
+                          sekolah.
                         </p>
                       </div>
                     </TableCell>
@@ -608,4 +506,4 @@ const TeacherCSSTStudentAttendanceList: React.FC = () => {
   );
 };
 
-export default TeacherCSSTStudentAttendanceList;
+export default TeacherCSSTStudentsList;

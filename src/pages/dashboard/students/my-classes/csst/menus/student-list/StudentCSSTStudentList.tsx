@@ -19,12 +19,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { ArrowLeft, Search, Users, User, UserCircle2 } from "lucide-react";
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
-// import api from "@/lib/axios";
+import api from "@/lib/axios"; // ✅ pakai axios instance yang sama
 
 /* =========================================================
    KONFIG + TIPE
 ========================================================= */
-const USE_DUMMY = true;
+const USE_DUMMY = false; // ganti ke true kalau mau pakai dummy lagi
 
 type Gender = "L" | "P";
 
@@ -40,9 +40,6 @@ type CSSTStudentsQueryParams = {
   csstId: string;
 };
 
-/* =========================================================
-   DUMMY DATA — daftar murid satu CSST
-========================================================= */
 /* =========================================================
    DUMMY DATA — daftar murid satu CSST
 ========================================================= */
@@ -73,31 +70,118 @@ const DUMMY_STUDENTS: StudentRow[] = BASE_DUMMY_STUDENTS.map((s, idx) =>
     : s
 );
 
+/* =========================================================
+   TIPE & MAPPING DARI API
+   {{base_url}}api/u/student-class-section-subject-teachers/list?csst_id=...
+========================================================= */
+
+type ApiStudentCSSTItem = {
+  student_class_section_subject_teacher_id: string;
+  student_class_section_subject_teacher_school_id: string;
+  student_class_section_subject_teacher_student_id: string;
+  student_class_section_subject_teacher_csst_id: string;
+  student_class_section_subject_teacher_is_active: boolean;
+
+  // snapshot user profile
+  student_class_section_subject_teacher_user_profile_name_snapshot?:
+    | string
+    | null;
+  student_class_section_subject_teacher_user_profile_avatar_url_snapshot?:
+    | string
+    | null;
+  student_class_section_subject_teacher_user_profile_whatsapp_url?:
+    | string
+    | null;
+  student_class_section_subject_teacher_user_profile_parent_name_snapshot?:
+    | string
+    | null;
+  student_class_section_subject_teacher_user_profile_parent_whatsapp_url?:
+    | string
+    | null;
+  student_class_section_subject_teacher_user_profile_gender_snapshot?:
+    | string
+    | null;
+
+  // kode / NIS siswa
+  student_class_section_subject_teacher_student_code_snapshot?: string | null;
+
+  // dll (score, notes, dll) — tidak dipakai di list ini
+};
+
+type ApiStudentCSSTListResponse = {
+  success: boolean;
+  message: string;
+  data: ApiStudentCSSTItem[];
+  pagination: {
+    page: number;
+    per_page: number;
+    total: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+    count: number;
+    per_page_options: number[];
+  };
+};
+
+function mapGender(raw?: string | null): Gender | undefined {
+  if (!raw) return undefined;
+  if (raw === "L" || raw === "P") return raw;
+  return undefined;
+}
+
+function mapApiToStudentRows(items: ApiStudentCSSTItem[]): StudentRow[] {
+  return items.map((it) => {
+    return {
+      id: it.student_class_section_subject_teacher_student_id,
+      name:
+        it.student_class_section_subject_teacher_user_profile_name_snapshot ??
+        "Tanpa nama",
+      nis:
+        it.student_class_section_subject_teacher_student_code_snapshot ??
+        undefined,
+      gender: mapGender(
+        it.student_class_section_subject_teacher_user_profile_gender_snapshot
+      ),
+      // TODO: kalau mau tandai "Ini kamu", bisa bandingkan dgn current student_id dari auth context
+      isSelf: false,
+    };
+  });
+}
 
 /* =========================================================
-   FETCH HOOK (dummy / nanti bisa diganti ke BE)
+   FETCH HOOK (dummy / live BE)
 ========================================================= */
 async function fetchCSSTStudentsDummy(
   _params: CSSTStudentsQueryParams
 ): Promise<StudentRow[]> {
-  // di real implementation bisa filter by csstId,
-  // tapi untuk dummy kita return static
   return DUMMY_STUDENTS;
 }
 
+async function fetchCSSTStudentsLive(
+  params: CSSTStudentsQueryParams
+): Promise<StudentRow[]> {
+  const res = await api.get<ApiStudentCSSTListResponse>(
+    "/api/u/student-class-section-subject-teachers/list",
+    {
+      params: {
+        csst_id: params.csstId,
+      },
+    }
+  );
+
+  const items = res.data?.data ?? [];
+  return mapApiToStudentRows(items);
+}
+
 function useCSSTStudents(params: CSSTStudentsQueryParams) {
-  return useQuery({
-    queryKey: ["csst-students", params, USE_DUMMY ? "dummy" : "live"],
+  return useQuery<StudentRow[]>({
+    queryKey: ["csst-students", params.csstId, USE_DUMMY ? "dummy" : "live"],
     queryFn: async () => {
       if (USE_DUMMY) return fetchCSSTStudentsDummy(params);
-
-      // === LIVE (ganti sesuai BE) ===
-      // const res = await api.get(
-      //   `/api/u/class-section-subject-teachers/${params.csstId}/students`
-      // );
-      // return res.data.data as StudentRow[];
-      return fetchCSSTStudentsDummy(params);
+      return fetchCSSTStudentsLive(params);
     },
+    enabled: !!params.csstId,
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -118,7 +202,6 @@ function GenderBadge({ gender }: { gender?: Gender }) {
 
 /* =========================================================
    KOMPONEN UTAMA — daftar murid untuk role student
-   contoh route: /student/csst/:csstId/students
 ========================================================= */
 const StudentCSSTStudentsList: React.FC = () => {
   const navigate = useNavigate();
@@ -141,7 +224,7 @@ const StudentCSSTStudentsList: React.FC = () => {
   const [q, setQ] = useState("");
   const dq = useDeferredValue(q);
 
-  const { data: rows = [], isLoading } = useCSSTStudents({ csstId });
+  const { data: rows = [], isLoading, isError } = useCSSTStudents({ csstId });
 
   const filtered = useMemo(() => {
     let list = rows;
@@ -236,6 +319,16 @@ const StudentCSSTStudentsList: React.FC = () => {
                       className="py-8 text-center text-muted-foreground"
                     >
                       Memuat daftar murid…
+                    </TableCell>
+                  </TableRow>
+                ) : isError ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={5}
+                      className="py-8 text-center text-destructive text-sm"
+                    >
+                      Gagal memuat daftar murid. Coba refresh halaman atau
+                      hubungi admin.
                     </TableCell>
                   </TableRow>
                 ) : filtered.length > 0 ? (

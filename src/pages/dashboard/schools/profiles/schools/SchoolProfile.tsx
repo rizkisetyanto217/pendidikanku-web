@@ -39,6 +39,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+
 import type {
   ApiSchool,
   ApiSchoolProfile,
@@ -53,28 +54,36 @@ import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayou
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 /* =================== Helpers =================== */
-type ApiList<T> = { message: string; data: T[]; pagination?: any };
+type ApiList<T> = {
+  success?: boolean;
+  message: string;
+  data: T[];
+  pagination?: any;
+};
 
 /* =================== Data Fetch =================== */
-const fetchSchool = async (id: string): Promise<ApiSchool | null> => {
-  const { data } = await axios.get<ApiList<ApiSchool>>(
-    `/public/schools/list?id=${id}`
-  );
+
+/**
+ * Ambil 1 school (plus profile) via /api/a/schools/list?include=profile&id=...
+ * Kalau schoolId null → backend akan fallback pakai school dari token (kalau endpoint /api/u yang dipakai).
+ * Di sini kita eksplisit pakai id dari token biar jelas.
+ */
+const fetchSchoolWithProfile = async (
+  id: string | null
+): Promise<ApiSchool | null> => {
+  if (!id) return null;
+
+  const { data } = await axios.get<ApiList<ApiSchool>>("/api/a/schools/list", {
+    params: {
+      id,
+      include: "profile",
+    },
+  });
+
   return data?.data?.[0] ?? null;
 };
 
-const fetchProfile = async (id: string): Promise<ApiSchoolProfile | null> => {
-  try {
-    const { data } = await axios.get<ApiSchoolProfile>(
-      `/api/schools/${id}/profile`
-    );
-    return data ?? null;
-  } catch (e: any) {
-    if (e?.response?.status === 404) return null;
-    throw e;
-  }
-};
-
+// upsert profile masih pakai endpoint lama: POST / PATCH
 const upsertProfile = async (
   schoolId: string,
   payload: Partial<ApiSchoolProfile> & { school_profile_id?: string }
@@ -86,7 +95,6 @@ const upsertProfile = async (
     );
     return data;
   }
-  // create new
   const { data } = await axios.post<ApiSchoolProfile>(
     `/api/schools/${schoolId}/profile`,
     payload
@@ -128,25 +136,20 @@ const SchoolProfile: React.FC<Props> = ({ showBack = false, backTo }) => {
     });
   }, [setHeader, showBack]);
 
-  // Queries (pakai schoolId dari token)
+  // 🔄 Single query: school + profile
   const qSchool = useQuery({
-    queryKey: ["school", schoolId],
-    queryFn: () => fetchSchool(schoolId!),
-    enabled: !!schoolId,
-  });
-  const qProfile = useQuery({
-    queryKey: ["school-profile", schoolId],
-    queryFn: () => fetchProfile(schoolId!),
+    queryKey: ["school-with-profile", schoolId],
+    queryFn: () => fetchSchoolWithProfile(schoolId),
     enabled: !!schoolId,
   });
 
-  const isLoading = userLoading || qSchool.isLoading || qProfile.isLoading;
-  const error = (qSchool.error || qProfile.error) as any | null;
+  const isLoading = userLoading || qSchool.isLoading;
+  const error = qSchool.error as any | null;
 
   const ui: SchoolUi | null = useMemo(() => {
     if (!qSchool.data) return null;
-    return adaptToUi(qSchool.data, qProfile.data ?? undefined);
-  }, [qSchool.data, qProfile.data]);
+    return adaptToUi(qSchool.data);
+  }, [qSchool.data]);
 
   const [editOpen, setEditOpen] = useState(false);
 
@@ -413,22 +416,21 @@ const SchoolProfile: React.FC<Props> = ({ showBack = false, backTo }) => {
             if (v.capacity != null && v.capacity < 0) {
               throw new Error("Kapasitas siswa minimal 0.");
             }
-
             const { schoolsPatch, profilePatch } = adaptFromUi(v);
-            const currentProfileId = qProfile.data?.school_profile_id;
+            // ambil id profile dari UI
+            const currentProfileId = v.profileId || null;
 
             await Promise.all([
               patchSchool(v.id, schoolsPatch),
               upsertProfile(v.id, {
                 ...profilePatch,
-                school_profile_id: currentProfileId,
+                school_profile_id: currentProfileId || undefined,
               }),
             ]);
 
-            await Promise.all([
-              q.invalidateQueries({ queryKey: ["school", v.id] }),
-              q.invalidateQueries({ queryKey: ["school-profile", v.id] }),
-            ]);
+            await q.invalidateQueries({
+              queryKey: ["school-with-profile", v.id],
+            });
             setEditOpen(false);
           }}
         />

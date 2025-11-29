@@ -1,180 +1,239 @@
-// src/types/school.ts
-export type ApiSchool = {
-    school_id: string;
-    school_name: string;
-    school_bio_short?: string | null;
-    school_location?: string | null;
-    school_city?: string | null;
-    school_domain?: string | null;
-    school_slug: string;
-    school_is_active: boolean;
-    school_is_verified: boolean;
-    school_verification_status: "pending" | "approved" | "rejected";
-    school_verified_at?: string | null;
-    school_contact_person_name?: string | null;
-    school_contact_person_phone?: string | null;
-    school_icon_url?: string | null;
-    school_logo_url?: string | null;
-    school_background_url?: string | null;
-    // ...others omitted
-};
+// src/pages/dasboard/schools/types/schoolProfile.ts
+
+/* ===================== API TYPES ===================== */
 
 export type ApiSchoolProfile = {
-    school_profile_id: string;
-    school_profile_school_id: string;
-    school_profile_description?: string | null;
-    school_profile_founded_year?: number | null;
-    school_profile_address?: string | null;
+  school_profile_id: string;
+  school_profile_school_id: string;
 
-    school_profile_contact_phone?: string | null;
-    school_profile_contact_email?: string | null;
+  school_profile_description: string | null;
+  school_profile_founded_year: number | null;
 
-    school_profile_google_maps_url?: string | null;
-    school_profile_instagram_url?: string | null;
-    school_profile_whatsapp_url?: string | null;
-    school_profile_youtube_url?: string | null;
-    school_profile_facebook_url?: string | null;
-    school_profile_tiktok_url?: string | null;
-    school_profile_whatsapp_group_ikhwan_url?: string | null;
-    school_profile_whatsapp_group_akhwat_url?: string | null;
-    school_profile_website_url?: string | null;
+  // kontak & sosial
+  school_profile_contact_phone: string | null;
+  school_profile_google_maps_url: string | null;
+  school_profile_instagram_url: string | null;
+  school_profile_whatsapp_url: string | null;
+  school_profile_youtube_url: string | null;
+  school_profile_facebook_url: string | null;
+  school_profile_tiktok_url: string | null;
+  school_profile_whatsapp_group_ikhwan_url: string | null;
+  school_profile_whatsapp_group_akhwat_url: string | null;
+  school_profile_website_url: string | null;
 
-    school_profile_school_npsn?: string | null;
-    school_profile_school_nss?: string | null;
-    school_profile_school_accreditation?:
-    | "A"
-    | "B"
-    | "C"
-    | "Ungraded"
-    | "-"
-    | null;
-    school_profile_school_principal_user_id?: string | null;
-    school_profile_school_student_capacity?: number | null;
-    school_profile_school_is_boarding: boolean;
+  // koordinat
+  school_profile_latitude: number | null;
+  school_profile_longitude: number | null;
 
-    school_profile_latitude?: number | null;
-    school_profile_longitude?: number | null;
+  // profil sekolah resmi
+  school_profile_school_npsn: string | null;
+  school_profile_school_nss: string | null;
+  school_profile_school_accreditation: string | null;
+  school_profile_school_principal_user_id: string | null; // UUID string
+  school_profile_school_email: string | null;
+  school_profile_school_address: string | null;
+  school_profile_school_student_capacity: number | null;
+  school_profile_school_is_boarding: boolean;
 
-    school_profile_school_email?: string | null;
-    school_profile_school_address?: string | null;
+  school_profile_created_at: string;
+  school_profile_updated_at: string;
+};
+
+export type ApiSchool = {
+  school_id: string;
+  school_name: string;
+  school_bio_short: string;
+  school_domain: string;
+  school_slug: string;
+  school_location: string;
+  school_city: string;
+  school_number: number;
+
+  school_is_active: boolean;
+  school_is_verified: boolean;
+  school_verification_status: string;
+  school_verification_notes: string;
+
+  school_contact_person_name: string;
+  school_contact_person_phone: string;
+
+  school_is_islamic_school: boolean;
+  school_tenant_profile: string;
+
+  school_levels: string[];
+
+  school_has_teacher_code: boolean;
+  school_teacher_code_set_at: string | null;
+
+  school_icon_url: string;
+  school_icon_object_key: string;
+  school_icon_url_old: string;
+  school_icon_object_key_old: string;
+  school_icon_delete_pending_until: string | null;
+
+  school_logo_url: string;
+  school_logo_object_key: string;
+  school_logo_url_old: string;
+  school_logo_object_key_old: string;
+
+  school_background_url: string;
+  school_background_object_key: string;
+  school_background_url_old: string;
+  school_background_object_key_old: string;
+
+  school_created_at: string;
+  school_updated_at: string;
+
+  // nested profile dari endpoint ?include=profile
+  school_profile?: ApiSchoolProfile | null;
+};
+
+/* ===================== UI Shape ===================== */
+
+export type SchoolUiSocials = {
+  instagram?: string | null;
+  youtube?: string | null;
+  facebook?: string | null;
+  tiktok?: string | null;
+  whatsapp?: string | null;
+  waIkhwan?: string | null;
+  waAkhwat?: string | null;
 };
 
 export type SchoolUi = {
-    id: string;
-    name: string;
-    npsn?: string | null;
-    accreditation?: "A" | "B" | "C" | "Ungraded" | "-" | null;
-    foundedYear?: number | null;
+  id: string;
+  name: string;
 
-    address?: string | null; // gabungan/tampilan
-    city?: string | null;
+  // ⬇️ ini yang baru
+  profileId: string | null;
 
-    contactPhone?: string | null;
-    contactEmail?: string | null;
-    website?: string | null;
+  description: string | null;
+  foundedYear: number | null;
 
-    principalUserId?: string | null;
+  address: string | null;
+  city: string | null;
 
-    description?: string | null;
+  npsn: string | null;
+  nss: string | null;
+  accreditation: string | null;
+  principalUserId: string | null;
+  capacity: number | null;
+  isBoarding: boolean;
 
-    mapsUrl?: string | null;
+  contactPhone: string | null;
+  contactEmail: string | null;
+  website: string | null;
 
-    capacity?: number | null;
-    isBoarding?: boolean;
+  mapsUrl: string | null;
+  socials: SchoolUiSocials | null;
 
-    socials?: {
-        instagram?: string | null;
-        youtube?: string | null;
-        facebook?: string | null;
-        tiktok?: string | null;
-        whatsapp?: string | null;
-        waIkhwan?: string | null;
-        waAkhwat?: string | null;
-    };
-
-    logoUrl?: string | null;
+  logoUrl: string | null;
 };
 
-export function adaptToUi(s: ApiSchool, p?: ApiSchoolProfile | null): SchoolUi {
-    return {
-        id: s.school_id,
-        name: s.school_name,
-        npsn: p?.school_profile_school_npsn ?? null,
-        accreditation: p?.school_profile_school_accreditation ?? null,
-        foundedYear: p?.school_profile_founded_year ?? null,
+/* ===================== Helpers ===================== */
 
-        address:
-            p?.school_profile_school_address ??
-            p?.school_profile_address ??
-            s.school_location ??
-            null,
-        city: s.school_city ?? null,
+const emptyToNull = (v: string | null | undefined): string | null => {
+  if (v == null) return null;
+  const t = v.trim();
+  return t === "" ? null : t;
+};
 
-        contactPhone:
-            p?.school_profile_contact_phone ?? s.school_contact_person_phone ?? null,
-        contactEmail:
-            p?.school_profile_school_email ?? p?.school_profile_contact_email ?? null,
-        website: p?.school_profile_website_url ?? null,
+/* ===================== Adapt: API -> UI ===================== */
+export const adaptToUi = (school: ApiSchool): SchoolUi => {
+  const p = school.school_profile ?? null;
 
-        principalUserId: p?.school_profile_school_principal_user_id ?? null,
+  return {
+    id: school.school_id,
+    name: school.school_name,
 
-        description: p?.school_profile_description ?? null,
+    // ⬇️ ini yang baru
+    profileId: p?.school_profile_id || null,
 
-        mapsUrl: p?.school_profile_google_maps_url ?? null,
+    description: p?.school_profile_description ?? null,
+    foundedYear: p?.school_profile_founded_year ?? null,
 
-        capacity: p?.school_profile_school_student_capacity ?? null,
-        isBoarding: !!p?.school_profile_school_is_boarding,
+    // alamat resmi ambil dari profile, kota dari school utama
+    address: p?.school_profile_school_address ?? null,
+    city: emptyToNull(school.school_city) ?? null,
 
-        socials: {
-            instagram: p?.school_profile_instagram_url ?? null,
-            youtube: p?.school_profile_youtube_url ?? null,
-            facebook: p?.school_profile_facebook_url ?? null,
-            tiktok: p?.school_profile_tiktok_url ?? null,
-            whatsapp: p?.school_profile_whatsapp_url ?? null,
-            waIkhwan: p?.school_profile_whatsapp_group_ikhwan_url ?? null,
-            waAkhwat: p?.school_profile_whatsapp_group_akhwat_url ?? null,
-        },
+    npsn: p?.school_profile_school_npsn ?? null,
+    nss: p?.school_profile_school_nss ?? null,
+    accreditation: p?.school_profile_school_accreditation ?? null,
+    principalUserId: p?.school_profile_school_principal_user_id ?? null,
+    capacity: p?.school_profile_school_student_capacity ?? null,
+    isBoarding: p?.school_profile_school_is_boarding ?? false,
 
-        logoUrl: s.school_logo_url ?? s.school_icon_url ?? null,
-    };
-}
+    // kontak
+    contactPhone:
+      p?.school_profile_contact_phone ??
+      emptyToNull(school.school_contact_person_phone),
+    contactEmail: p?.school_profile_school_email ?? null,
+    website: p?.school_profile_website_url ?? null,
+
+    mapsUrl: p?.school_profile_google_maps_url ?? null,
+
+    socials: {
+      instagram: p?.school_profile_instagram_url ?? null,
+      youtube: p?.school_profile_youtube_url ?? null,
+      facebook: p?.school_profile_facebook_url ?? null,
+      tiktok: p?.school_profile_tiktok_url ?? null,
+      whatsapp: p?.school_profile_whatsapp_url ?? null,
+      waIkhwan: p?.school_profile_whatsapp_group_ikhwan_url ?? null,
+      waAkhwat: p?.school_profile_whatsapp_group_akhwat_url ?? null,
+    },
+
+    // logo: pakai logo kalau ada, fallback ke icon
+    logoUrl:
+      emptyToNull(school.school_logo_url) ??
+      emptyToNull(school.school_icon_url) ??
+      null,
+  };
+};
+
+/* ===================== Adapt: UI -> API PATCH ===================== */
 
 export function adaptFromUi(ui: SchoolUi): {
-    schoolsPatch: Partial<ApiSchool>;
-    profilePatch: Partial<ApiSchoolProfile>;
+  schoolsPatch: Partial<ApiSchool>;
+  profilePatch: Partial<ApiSchoolProfile>;
 } {
-    return {
-        schoolsPatch: {
-            // untuk sekarang hanya name yang kita izinkan ubah dari UI di tabel schools
-            school_name: ui.name,
-            // opsional: school_location bisa diisi ringkas, tapi kita prioritaskan di profile
-        },
-        profilePatch: {
-            school_profile_school_npsn: ui.npsn ?? null,
-            school_profile_school_accreditation: ui.accreditation ?? null,
-            school_profile_founded_year: ui.foundedYear ?? null,
+  const schoolsPatch: Partial<ApiSchool> = {
+    school_name: ui.name,
+    school_city: ui.city ?? "",
+    // kalau mau, bisa ditambah mapping ke school_bio_short / school_location, dll.
+  };
 
-            school_profile_school_address: ui.address ?? null,
-            school_profile_contact_phone: ui.contactPhone ?? null,
-            school_profile_school_email: ui.contactEmail ?? null,
-            school_profile_website_url: ui.website ?? null,
+  const profilePatch: Partial<ApiSchoolProfile> = {
+    school_profile_description: emptyToNull(ui.description),
+    school_profile_founded_year: ui.foundedYear ?? null,
 
-            school_profile_school_principal_user_id: ui.principalUserId ?? null,
+    school_profile_school_address: emptyToNull(ui.address),
+    school_profile_school_student_capacity: ui.capacity ?? null,
+    school_profile_school_is_boarding: ui.isBoarding,
 
-            school_profile_description: ui.description ?? null,
+    school_profile_school_npsn: emptyToNull(ui.npsn),
+    school_profile_school_nss: emptyToNull(ui.nss),
+    school_profile_school_accreditation: emptyToNull(ui.accreditation),
+    school_profile_school_principal_user_id: emptyToNull(
+      ui.principalUserId ?? null
+    ),
 
-            school_profile_google_maps_url: ui.mapsUrl ?? null,
+    // kontak & website
+    school_profile_contact_phone: emptyToNull(ui.contactPhone),
+    school_profile_school_email: emptyToNull(ui.contactEmail),
+    school_profile_website_url: emptyToNull(ui.website),
 
-            school_profile_school_student_capacity: ui.capacity ?? null,
-            school_profile_school_is_boarding: !!ui.isBoarding,
+    // maps
+    school_profile_google_maps_url: emptyToNull(ui.mapsUrl),
 
-            school_profile_instagram_url: ui.socials?.instagram ?? null,
-            school_profile_youtube_url: ui.socials?.youtube ?? null,
-            school_profile_facebook_url: ui.socials?.facebook ?? null,
-            school_profile_tiktok_url: ui.socials?.tiktok ?? null,
-            school_profile_whatsapp_url: ui.socials?.whatsapp ?? null,
-            school_profile_whatsapp_group_ikhwan_url: ui.socials?.waIkhwan ?? null,
-            school_profile_whatsapp_group_akhwat_url: ui.socials?.waAkhwat ?? null,
-        },
-    };
+    // sosial
+    school_profile_instagram_url: emptyToNull(ui.socials?.instagram),
+    school_profile_youtube_url: emptyToNull(ui.socials?.youtube),
+    school_profile_facebook_url: emptyToNull(ui.socials?.facebook),
+    school_profile_tiktok_url: emptyToNull(ui.socials?.tiktok),
+    school_profile_whatsapp_url: emptyToNull(ui.socials?.whatsapp),
+    school_profile_whatsapp_group_ikhwan_url: emptyToNull(ui.socials?.waIkhwan),
+    school_profile_whatsapp_group_akhwat_url: emptyToNull(ui.socials?.waAkhwat),
+  };
+
+  return { schoolsPatch, profilePatch };
 }

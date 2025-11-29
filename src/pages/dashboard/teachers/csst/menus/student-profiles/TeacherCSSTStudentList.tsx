@@ -15,7 +15,13 @@ import {
 } from "@/components/ui/select";
 
 /* ---------- Icons ---------- */
-import { Phone, Users, AlertTriangle, NotebookPen, ArrowLeft } from "lucide-react";
+import {
+  Phone,
+  Users,
+  AlertTriangle,
+  NotebookPen,
+  ArrowLeft,
+} from "lucide-react";
 
 /* ---------- DataTable ---------- */
 import {
@@ -38,38 +44,45 @@ export type StudentSummary = {
   [key: string]: any;
 };
 
-/* ====== API TYPES (sesuai contoh respons) ====== */
+/* ====== API TYPES dari /u/student-class-section-subject-teachers/list ====== */
 
-type ApiStudentClassSection = {
-  student_class_section_id: string;
-  student_class_section_school_student_id: string;
-  student_class_section_section_id: string;
-  student_class_section_school_id: string;
-  student_class_section_section_slug_snapshot: string;
-  student_class_section_status: string;
-  student_class_section_user_profile_name_snapshot?: string | null;
-  student_class_section_user_profile_avatar_url_snapshot?: string | null;
-  student_class_section_user_profile_whatsapp_url_snapshot?: string | null;
-  student_class_section_assigned_at?: string | null;
-  student_class_section_created_at?: string | null;
-  student_class_section_updated_at?: string | null;
+type ApiStudentCSSTItem = {
+  student_class_section_subject_teacher_id: string;
+  student_class_section_subject_teacher_school_id: string;
+  student_class_section_subject_teacher_student_id: string;
+  student_class_section_subject_teacher_csst_id: string;
+  student_class_section_subject_teacher_is_active: boolean;
+
+  // snapshot profile siswa
+  student_class_section_subject_teacher_user_profile_name_snapshot?:
+    | string
+    | null;
+  student_class_section_subject_teacher_user_profile_avatar_url_snapshot?:
+    | string
+    | null;
+  student_class_section_subject_teacher_user_profile_whatsapp_url?:
+    | string
+    | null;
+  student_class_section_subject_teacher_user_profile_parent_name_snapshot?:
+    | string
+    | null;
+  student_class_section_subject_teacher_user_profile_parent_whatsapp_url?:
+    | string
+    | null;
+  student_class_section_subject_teacher_user_profile_gender_snapshot?:
+    | string
+    | null;
+
+  // kode / NIS siswa
+  student_class_section_subject_teacher_student_code_snapshot?: string | null;
+
+  // dll (score, notes, dst) — belum dipakai di halaman ini
 };
 
-type ApiClassSection = {
-  class_section_id: string;
-  class_section_school_id: string;
-  class_section_slug: string;
-  class_section_name: string;
-  class_section_total_students: number;
-  class_sections_student_class_sections_active_count: number;
-  class_sections_student_class_sections_count: number;
-  class_sections_student_class_sections: ApiStudentClassSection[];
-};
-
-type ApiResponse = {
+type ApiStudentCSSTListResponse = {
   success: boolean;
   message: string;
-  data: ApiClassSection[];
+  data: ApiStudentCSSTItem[];
 };
 
 /* =========================================================
@@ -106,90 +119,108 @@ function hasImportant(s: StudentSummary) {
 }
 
 /* =========================================================
-   API: AMBIL SISWA BERDASARKAN CLASS_SECTION_ID
+   API: AMBIL SISWA BERDASARKAN CSST_ID
+   GET /u/student-class-section-subject-teachers/list?csst_id=...
 ========================================================= */
 
-async function fetchStudentsByClassSection(
-  sectionId?: string
-): Promise<StudentSummary[]> {
-  if (!sectionId) {
+function mapGender(raw?: string | null): string {
+  if (!raw) return "";
+  if (raw === "L" || raw === "P") return raw;
+  return "";
+}
+
+async function fetchStudentsByCSST(csstId?: string): Promise<StudentSummary[]> {
+  if (!csstId) {
     console.warn(
-      "[TeacherCSSTStudentList] fetchStudentsByClassSection dipanggil tanpa sectionId"
+      "[TeacherCSSTStudentList] fetchStudentsByCSST dipanggil tanpa csstId"
     );
     return [];
   }
 
-  console.log(
-    "[TeacherCSSTStudentList] Fetch students for class_section_id =",
-    sectionId
+  console.log("[TeacherCSSTStudentList] Fetch students for csst_id =", csstId);
+
+  const res = await api.get<ApiStudentCSSTListResponse>(
+    "/u/student-class-section-subject-teachers/list",
+    {
+      params: {
+        csst_id: csstId,
+      },
+    }
   );
 
-  // NOTE: baseURL api kemungkinan sudah /api
-  const res = await api.get<ApiResponse>("/u/class-sections/list", {
-    params: {
-      id: sectionId,
-      with_student_class_sections: true,
-    },
-  });
-
   console.log(
-    "[TeacherCSSTStudentList] API /u/class-sections/list response:",
+    "[TeacherCSSTStudentList] API /u/student-class-section-subject-teachers/list response:",
     res.data
   );
 
-  const sections = res.data?.data ?? [];
+  const items = res.data?.data ?? [];
   const result: StudentSummary[] = [];
-  const seen = new Set<string>();
 
-  for (const sec of sections) {
-    const students = sec.class_sections_student_class_sections || [];
-    for (const sc of students) {
-      const sid = sc.student_class_section_school_student_id;
-      if (!sid || seen.has(sid)) continue;
-      seen.add(sid);
+  for (const it of items) {
+    const sid = it.student_class_section_subject_teacher_student_id;
+    if (!sid) continue;
 
-      const name =
-        sc.student_class_section_user_profile_name_snapshot ||
-        "Siswa tanpa nama";
+    const name =
+      it.student_class_section_subject_teacher_user_profile_name_snapshot ??
+      "Siswa tanpa nama";
 
-      const waUrl =
-        sc.student_class_section_user_profile_whatsapp_url_snapshot || "";
+    const waUrl =
+      it.student_class_section_subject_teacher_user_profile_whatsapp_url || "";
 
-      let phoneFromWa = "";
-      if (typeof waUrl === "string" && waUrl.includes("wa.me")) {
-        // https://wa.me/6285xxxx → ambil angka belakang
-        const parts = waUrl.split("wa.me/");
-        phoneFromWa = parts[1] ?? "";
-      }
-
-      result.push({
-        id: sid,
-        name,
-        // nis dihapus, belum ada di payload
-        gender: "", // belum ada di payload
-        phone: phoneFromWa,
-        parentName: "",
-        _waUrl: waUrl,
-        _sectionId: sc.student_class_section_section_id,
-      });
+    let phoneFromWa = "";
+    if (typeof waUrl === "string" && waUrl.includes("wa.me")) {
+      const parts = waUrl.split("wa.me/");
+      phoneFromWa = parts[1] ?? "";
     }
+
+    const gender = mapGender(
+      it.student_class_section_subject_teacher_user_profile_gender_snapshot
+    );
+
+    const parentName =
+      it.student_class_section_subject_teacher_user_profile_parent_name_snapshot ??
+      "";
+
+    const parentWa =
+      it.student_class_section_subject_teacher_user_profile_parent_whatsapp_url ??
+      "";
+
+    let phoneFromParentWa = "";
+    if (typeof parentWa === "string" && parentWa.includes("wa.me")) {
+      const parts = parentWa.split("wa.me/");
+      phoneFromParentWa = parts[1] ?? "";
+    }
+
+    result.push({
+      id: sid,
+      name,
+      gender,
+      nis:
+        it.student_class_section_subject_teacher_student_code_snapshot ??
+        undefined,
+      phone: phoneFromWa || phoneFromParentWa,
+      parentName,
+      _waUrl: waUrl,
+      _parentWaUrl: parentWa,
+      _csstId: it.student_class_section_subject_teacher_csst_id,
+      // field lain kalau mau ditambah tinggal ditaruh di sini
+    });
   }
 
   console.log(
     "[TeacherCSSTStudentList] mapped StudentSummary count =",
     result.length,
-    "items:",
-    result
+    "items:"
   );
 
   return result;
 }
 
-function useClassStudentsSingle(sectionId?: string) {
+function useCSSTStudents(csstId?: string) {
   return useQuery<StudentSummary[]>({
-    queryKey: ["class-students", sectionId],
-    queryFn: () => fetchStudentsByClassSection(sectionId),
-    enabled: !!sectionId, // ⬅️ jangan fetch kalau belum ada id
+    queryKey: ["csst-students-teacher", csstId],
+    queryFn: () => fetchStudentsByCSST(csstId),
+    enabled: !!csstId,
     staleTime: 60_000,
   });
 }
@@ -199,43 +230,26 @@ function useClassStudentsSingle(sectionId?: string) {
 ========================================================= */
 const TeacherCSSTStudentList: React.FC = () => {
   const navigate = useNavigate();
+  const { csstId } = useParams<{ csstId: string }>();
 
   const { setHeader } = useDashboardHeader();
-    useEffect(() => {
-      setHeader({
-        title: "Daftar Murid",
-        breadcrumbs: [
-          { label: "Dashboard", href: "dashboard" },
-          { label: "Guru Mapel" },
-          { label: "Detail Mapel"},
-          { label: "Daftar Murid" },
-        ],
-        showBack: true,
-      });
-    }, [setHeader]);
+  useEffect(() => {
+    setHeader({
+      title: "Daftar Murid",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Guru Mapel" },
+        { label: "Detail Mapel" },
+        { label: "Daftar Murid" },
+      ],
+      showBack: true,
+    });
+  }, [setHeader]);
 
-  // ambil berbagai param; yang penting: segment yang berisi class_section_id
-  const { id, classSectionId, sectionId, classId, classSlug, kelasId } =
-    useParams<{
-      id?: string;
-      classSectionId?: string;
-      sectionId?: string;
-      classId?: string;
-      classSlug?: string;
-      kelasId?: string;
-    }>();
-
-  // prioritas: param yang memang untuk class_section_id
-  const sectionKey =
-    classSectionId || sectionId || id || classId || classSlug || kelasId;
+  const sectionKey = csstId;
 
   console.log("[TeacherCSSTStudentList] route params =", {
-    id,
-    classSectionId,
-    sectionId,
-    classId,
-    classSlug,
-    kelasId,
+    csstId,
     sectionKey,
   });
 
@@ -243,7 +257,7 @@ const TeacherCSSTStudentList: React.FC = () => {
     data: students = [],
     isLoading,
     isError,
-  } = useClassStudentsSingle(sectionKey);
+  } = useCSSTStudents(sectionKey);
 
   const rawStudents: StudentSummary[] = students;
 
@@ -300,7 +314,8 @@ const TeacherCSSTStudentList: React.FC = () => {
   }, [rawStudents, deferredQ, onlyImportant]);
 
   /* =========================================================
-     Builder path detail
+     Builder path detail (relative)
+     /guru-mapel/:csstId/murid  → + /:id
   ========================================================= */
   const toStudentDetailPath = (studentId: string) =>
     `${encodeURIComponent(studentId)}`;
@@ -389,7 +404,7 @@ const TeacherCSSTStudentList: React.FC = () => {
       align: "center" as Align,
       cell: (s) => {
         const anyS = s as AnyRec;
-        const waUrl = anyS._waUrl as string | undefined;
+        const waUrl = (anyS._waUrl || anyS._parentWaUrl) as string | undefined;
 
         if (waUrl) {
           return (
@@ -435,7 +450,8 @@ const TeacherCSSTStudentList: React.FC = () => {
         <span className="text-muted-foreground">Filter:</span>
         <Select
           value={onlyImportant}
-          onValueChange={(v: "all" | "important") => setOnlyImportant(v)}>
+          onValueChange={(v: "all" | "important") => setOnlyImportant(v)}
+        >
           <SelectTrigger className="w-[220px]">
             <SelectValue placeholder="Filter catatan" />
           </SelectTrigger>
@@ -457,14 +473,12 @@ const TeacherCSSTStudentList: React.FC = () => {
         <div className="mx-auto flex flex-col gap-4 lg:gap-6">
           {/* Top bar */}
           <div className="md:flex hidden items-center gap-3">
-            <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => navigate(-1)}>
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
               <ArrowLeft size={20} />
             </Button>
             <h1 className="text-lg font-semibold md:flex-xl">Daftar Murid</h1>
           </div>
+
           <CDataTable
             controlsPlacement="above"
             searchPlaceholder="Cari nama/wali/keterangan…"
@@ -474,7 +488,7 @@ const TeacherCSSTStudentList: React.FC = () => {
               isError
                 ? "Gagal memuat data murid."
                 : !sectionKey
-                ? "Class section ID tidak ditemukan di URL."
+                ? "CSST ID tidak ditemukan di URL."
                 : null
             }
             columns={columns}

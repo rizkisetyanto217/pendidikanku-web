@@ -32,6 +32,7 @@ import StudentCSSTDailyReport from "@/pages/dashboard/students/my-classes/csst/m
 import StudentCSSTDailyReportDetail from "@/pages/dashboard/students/my-classes/csst/menus/daily-progress/details/StudentCSSTDailyReportDetail";
 import StudentCSSTDetail from "@/pages/dashboard/students/my-classes/csst/details/StudentCSSTDetail";
 import StudentCSSTRoomDetail from "@/pages/dashboard/students/my-classes/csst/details/StudentCSSTRoomDetail";
+import StudentCSSTMaterialList from "@/pages/dashboard/students/my-classes/csst/menus/materials/StudentClassesMaterial";
 // import StudentCSSTAttandenceList from "@/pages/dashboard/students/classes/my-classes/csst/attendances/StudentCSSTAttandenceList";
 
 // ======================
@@ -87,23 +88,28 @@ export const StudentRoutes = (
         element={<StudentChooseClassSection />} // atau StudentChooseClassSection versi-mu
       />
       <Route path="rombel/:sectionId" element={<StudentClassSection />} />
-      <Route path="mapel/:csstId" element={<StudentCSST />} />
-      <Route path="mapel/:csstId/ruangan" element={<StudentCSSTRoomDetail />} />
-      <Route
-        path="mapel/:csstId/daily-progress"
-        element={<StudentCSSTDailyReport />}
-      />
-      <Route
-        path="mapel/:csstId/daily-progress/:id"
-        element={<StudentCSSTDailyReportDetail />}
-      />
-      <Route path="mapel/:csstId/ujian" element={<StudentExam showBack />} />
-      <Route
-        path="mapel/:csstId/tugas"
-        element={<StudentClassesAssignment showBack />}
-      />
-      <Route path="mapel/:csstId/detail" element={<StudentCSSTDetail />} />
-      <Route path="mapel/:csstId/murid" element={<StudentCSSTStudentList />} />
+      <Route path="mapel/:csstId" element={<StudentCSST />}>
+        {/* default view kalau cuma /mapel/:csstId */}
+        <Route index element={<StudentCSSTDetail />} />
+
+        <Route path="detail" element={<StudentCSSTDetail />} />
+
+        <Route path="ruangan" element={<StudentCSSTRoomDetail />} />
+
+        <Route path="daily-progress" element={<StudentCSSTDailyReport />} />
+        <Route
+          path="daily-progress/:id"
+          element={<StudentCSSTDailyReportDetail />}
+        />
+
+        <Route path="ujian" element={<StudentExam showBack />} />
+
+        <Route path="tugas" element={<StudentClassesAssignment showBack />} />
+
+        <Route path="murid" element={<StudentCSSTStudentList />} />
+
+        <Route path="materi" element={<StudentCSSTMaterialList />} />
+      </Route>
 
       {/* <Route path="mapel/:csstId/absensi" element={<StudentCSSTAttandenceList />} /> */}
     </Route>

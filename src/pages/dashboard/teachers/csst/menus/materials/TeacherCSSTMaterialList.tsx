@@ -227,7 +227,10 @@ const TypeIcon = ({ t }: { t: MaterialType }) =>
    PAGE (pakai DataTable)
 ========================================================= */
 export default function TeacherCSSTMaterialList() {
-  const { id = "" } = useParams<{ id: string }>();
+  // 🔧 Ambil param sesuai route: :csstId
+  const { csstId = "" } = useParams<{ csstId: string }>();
+  const classId = csstId; // biar lebih kebaca
+
   const navigate = useNavigate();
   const qc = useQueryClient();
 
@@ -251,13 +254,17 @@ export default function TeacherCSSTMaterialList() {
     queryFn: fetchTeacherClasses,
     staleTime: 5 * 60_000,
   });
-  const cls = useMemo(() => classes.find((c) => c.id === id), [classes, id]);
+
+  const cls = useMemo(
+    () => classes.find((c) => c.id === classId),
+    [classes, classId]
+  );
 
   // materials
   const { data: materials = [], isFetching } = useQuery({
-    queryKey: QK.MATERIALS(id),
-    queryFn: () => fetchMaterialsByClass(id),
-    enabled: !!id,
+    queryKey: QK.MATERIALS(classId),
+    queryFn: () => fetchMaterialsByClass(classId),
+    enabled: !!classId, // ← sekarang true kalau csstId ada
     staleTime: 2 * 60_000,
   });
 
@@ -287,7 +294,7 @@ export default function TeacherCSSTMaterialList() {
   const confirmDelete = () => {
     if (!deleteTarget) return;
     const targetId = deleteTarget.id;
-    qc.setQueryData<Material[]>(QK.MATERIALS(id), (old = []) =>
+    qc.setQueryData<Material[]>(QK.MATERIALS(classId), (old = []) =>
       old.filter((x) => x.id !== targetId)
     );
     setDeleteTarget(null);
@@ -296,7 +303,7 @@ export default function TeacherCSSTMaterialList() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const copyShare = async (m: Material) => {
     const shareUrl =
-      m.url || `${window.location.origin}/class/${id}/materials/${m.id}`;
+      m.url || `${window.location.origin}/class/${classId}/materials/${m.id}`;
     try {
       await navigator.clipboard.writeText(shareUrl);
     } catch {
@@ -336,7 +343,8 @@ export default function TeacherCSSTMaterialList() {
               }
               target="_blank"
               rel="noreferrer"
-              data-no-row-click>
+              data-no-row-click
+            >
               {m.url}
             </a>
           )}
@@ -421,7 +429,8 @@ export default function TeacherCSSTMaterialList() {
                 href={m.url}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-2 underline break-all">
+                className="inline-flex items-center gap-2 underline break-all"
+              >
                 Buka {m.type === "file" ? "file" : "tautan"}{" "}
                 <ExternalLink className="h-4 w-4" />
               </a>
@@ -446,12 +455,14 @@ export default function TeacherCSSTMaterialList() {
               href={m.url}
               target="_blank"
               rel="noreferrer"
-              className="break-all">
+              className="break-all"
+            >
               <Button
                 variant="outline"
                 size="sm"
                 className="gap-2"
-                data-no-row-click>
+                data-no-row-click
+              >
                 {m.type === "file" ? (
                   <Download className="h-4 w-4" />
                 ) : (
@@ -470,7 +481,8 @@ export default function TeacherCSSTMaterialList() {
               copyShare(m);
             }}
             data-no-row-click
-            title="Salin tautan materi">
+            title="Salin tautan materi"
+          >
             {copiedId === m.id ? (
               <Check className="h-4 w-4" />
             ) : (
@@ -485,7 +497,8 @@ export default function TeacherCSSTMaterialList() {
               e.stopPropagation();
               navigate(`edit/${m.id}`);
             }}
-            data-no-row-click>
+            data-no-row-click
+          >
             <Pencil className="h-4 w-4" />
             Edit
           </Button>
@@ -497,7 +510,8 @@ export default function TeacherCSSTMaterialList() {
               e.stopPropagation();
               setDeleteTarget(m);
             }}
-            data-no-row-click>
+            data-no-row-click
+          >
             <Trash2 className="h-4 w-4" />
             Hapus
           </Button>
@@ -515,10 +529,7 @@ export default function TeacherCSSTMaterialList() {
         {/* Header actions */}
         <div className="flex items-center justify-between">
           <div className="w-full md:flex hidden items-center gap-2">
-            <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => navigate(-1)}>
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
               <ArrowLeft size={20} />
             </Button>
             <h1 className="text-lg font-semibold tracking-tight">
@@ -527,7 +538,7 @@ export default function TeacherCSSTMaterialList() {
           </div>
         </div>
 
-{/* DATATABLE */}
+        {/* DATATABLE */}
         <div className="px-4 md:px-6 pb-8">
           <DataTable<Material>
             onAdd={() => navigate("new")}
@@ -558,7 +569,8 @@ export default function TeacherCSSTMaterialList() {
                       size="sm"
                       className="gap-2"
                       data-no-row-click
-                      title={m.type === "file" ? "Unduh file" : "Buka tautan"}>
+                      title={m.type === "file" ? "Unduh file" : "Buka tautan"}
+                    >
                       {m.type === "file" ? (
                         <Download className="h-4 w-4" />
                       ) : (
@@ -574,7 +586,8 @@ export default function TeacherCSSTMaterialList() {
                   className="gap-2"
                   data-no-row-click
                   onClick={() => navigate(`edit/${m.id}`)}
-                  title="Edit materi">
+                  title="Edit materi"
+                >
                   <Pencil className="h-4 w-4" />
                 </Button>
 
@@ -584,7 +597,8 @@ export default function TeacherCSSTMaterialList() {
                   className="gap-2"
                   data-no-row-click
                   onClick={() => setDeleteTarget(m)}
-                  title="Hapus materi">
+                  title="Hapus materi"
+                >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
@@ -601,7 +615,8 @@ export default function TeacherCSSTMaterialList() {
         {/* AlertDialog Hapus */}
         <AlertDialog
           open={!!deleteTarget}
-          onOpenChange={(v) => !v && setDeleteTarget(null)}>
+          onOpenChange={(v) => !v && setDeleteTarget(null)}
+        >
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Hapus materi?</AlertDialogTitle>
@@ -615,56 +630,13 @@ export default function TeacherCSSTMaterialList() {
               <AlertDialogCancel>Batal</AlertDialogCancel>
               <AlertDialogAction
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                onClick={confirmDelete}>
+                onClick={confirmDelete}
+              >
                 Hapus
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-
-        {/* FILTERS */}
-        {/* <div className="w-full px-4 md:px-6">
-          <Card className="mb-6">
-            <CardContent className="p-4 md:p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="search" className="sr-only">
-                  Cari materi
-                </Label>
-                <div className="flex items-center gap-3 h-10 rounded-md border px-3">
-                  <Search className="h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="search"
-                    value={q}
-                    onChange={(e) => setQ(e.target.value)}
-                    placeholder="Cari materi…"
-                    className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-0"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="sr-only">Filter jenis</Label>
-                <div className="flex items-center gap-3 h-10">
-                  <div className="h-10 aspect-square grid place-items-center rounded-md border">
-                    <Filter className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <Select value={type} onValueChange={(v) => setType(v as any)}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Semua jenis" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Semua jenis</SelectItem>
-                      <SelectItem value="article">Artikel</SelectItem>
-                      <SelectItem value="file">File/PDF</SelectItem>
-                      <SelectItem value="link">Link</SelectItem>
-                      <SelectItem value="youtube">YouTube</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div> */}
       </main>
     </div>
   );

@@ -1,5 +1,8 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+// src/pages/sekolahislamku/student/StudentCSSTDailyReport.tsx
+
+import { useEffect, useMemo } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 
 /* UI */
 import { Button } from "@/components/ui/button";
@@ -13,162 +16,181 @@ import ScheduleList from "@/pages/dashboard/components/calender/ScheduleList";
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 import type { ScheduleRow } from "@/pages/dashboard/components/calender/types/types";
+import api from "@/lib/axios";
 
 /* =======================
-   FULL DUMMY DATA
+   Types API (compact timeline)
 ======================= */
-export const dummySchedules: ScheduleRow[] = [
-  {
-    id: "1",
-    title: "Pertemuan Mingguan",
-    date: "2025-01-20",
-    time: "08:00",
-    room: "Ruang 101",
-    teacher: "Budi Setiawan",
-    type: "class",
-    description: "Materi: Pengenalan Bab 1 dan diskusi dasar.",
-    status: "present",
-  },
-  {
-    id: "2",
-    title: "Ujian Tengah Semester",
-    date: "2025-01-20",
-    time: "10:00",
-    room: "Ruang 102",
-    teacher: "Budi Setiawan",
-    type: "exam",
-    description: "UTS materi bab 1 sampai bab 3.",
-    status: "present",
-  },
-  {
-    id: "3",
-    title: "Kegiatan Presentasi",
-    date: "2025-01-21",
-    time: "09:00",
-    room: "Aula Utama",
-    teacher: "Dewi Lestari",
-    type: "event",
-    description: "Presentasi kelompok mengenai proyek mini.",
-    status: "absent",
-  },
-  {
-    id: "4",
-    title: "Pembelajaran Lanjutan",
-    date: "2025-01-22",
-    time: "08:00",
-    room: "Ruang 103",
-    teacher: "Budi Setiawan",
-    type: "class",
-    description: "Materi Bab 2 dan latihan pemahaman.",
-    status: "absent",
-  },
-  {
-    id: "5",
-    title: "Evaluasi Harian",
-    date: "2025-01-22",
-    time: "13:00",
-    room: "Ruang 104",
-    teacher: "Budi Setiawan",
-    type: "exam",
-    description: "Evaluasi cepat untuk menilai progres harian.",
-    status: "present",
-  },
-  {
-    id: "6",
-    title: "Pembelajaran Tambahan",
-    date: "2025-01-23",
-    time: "07:30",
-    room: "Ruang 201",
-    teacher: "Dewi Lestari",
-    type: "class",
-    description: "Pendalaman materi bab 3 secara detail.",
-    status: "present",
-  },
-  {
-    id: "7",
-    title: "Diskusi Kelompok",
-    date: "2025-01-23",
-    time: "11:00",
-    room: "Ruang 202",
-    teacher: "Budi Setiawan",
-    type: "event",
-    description: "Diskusi kelompok untuk persiapan ujian.",
-    status: "present",
-  },
-  {
-    id: "8",
-    title: "Ujian Bab 2",
-    date: "2025-01-24",
-    time: "09:00",
-    room: "Ruang 103",
-    teacher: "Dewi Lestari",
-    type: "exam",
-    description: "Ujian materi bab 2.",
-    status: "present",
-  },
-  {
-    id: "9",
-    title: "Materi Lanjutan",
-    date: "2025-01-25",
-    time: "08:00",
-    room: "Ruang 101",
-    teacher: "Budi Setiawan",
-    type: "class",
-    description: "Topik lanjutan: penyelesaian studi kasus.",
-    status: "present",
-  },
-  {
-    id: "10",
-    title: "Kegiatan Evaluasi Umum",
-    date: "2025-01-25",
-    time: "13:00",
-    room: "Aula Tengah",
-    teacher: "Dewi Lestari",
-    type: "event",
-    description: "Review rangkuman materi dan evaluasi umum.",
-    status: "absent",
-  },
-];
+
+type ApiSessionItem = {
+  session: {
+    class_attendance_session_id: string;
+    class_attendance_session_title: string;
+    class_attendance_session_display_title?: string;
+    class_attendance_session_date: string; // "2025-11-20T00:00:00Z"
+    class_attendance_session_starts_at?: string; // "2025-11-20T01:00:00Z"
+    class_attendance_session_general_info?: string;
+    class_attendance_session_csst_snapshot?: {
+      teacher_name?: string;
+      school_teacher?: {
+        name?: string;
+      };
+    };
+    class_attendance_session_type_snapshot?: {
+      name?: string;
+    };
+  };
+  participant?: {
+    participant_id: string;
+    participant_state: string; // "present" | "absent" | "unknown" | ...
+  };
+};
+
+type ApiResponse = {
+  success: boolean;
+  message: string;
+  data: ApiSessionItem[];
+};
+
+/* =======================
+   Utils kecil
+======================= */
+
+// bikin "YYYY-MM" dari current date
+function getCurrentMonthStr(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
+}
+
+// convert ISO date ke "YYYY-MM-DD"
+function toYmd(dateISO: string | undefined): string {
+  if (!dateISO) return "";
+  return dateISO.slice(0, 10);
+}
+
+// ambil hh:mm dari starts_at
+function toTime(dateISO: string | undefined): string {
+  if (!dateISO) return "";
+  // contoh: "2025-11-20T01:00:00Z" -> "01:00"
+  return dateISO.substring(11, 16);
+}
 
 export default function StudentCSSTDailyReport() {
   const navigate = useNavigate();
   const { setHeader } = useDashboardHeader();
+  const { csstId } = useParams<{ csstId: string }>();
 
-  // Set header via effect, bukan di body
+  // bulan aktif: sekarang dulu (nanti bisa di-sync sama calendar kalau perlu)
+  const month = getCurrentMonthStr();
+
+  // Set header via effect
   useEffect(() => {
     setHeader({
       title: "Laporan Harian",
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
-        { label: "Guru Mapel" },
-        { label: "Detail Mapel", href: "guru mapel/detail mapel" },
+        { label: "Mata Pelajaran" },
+        { label: "Detail Mapel" },
         { label: "Laporan Harian" },
       ],
-      // kalau DashboardLayout biasa pakai actions/null, sekalian aja:
       actions: null,
     });
   }, [setHeader]);
 
+  /* =======================
+     Query data dari API
+  ======================= */
+
+  const { data, isLoading, isError } = useQuery<ApiResponse>({
+    queryKey: ["student-csst-daily-report", csstId, month],
+    enabled: !!csstId,
+    queryFn: async () => {
+      const res = await api.get("/api/u/attendance-sessions/list", {
+        params: {
+          student_timeline: 1,
+          month, // contoh: "2025-11"
+          mode: "compact",
+          csst_id: csstId,
+        },
+      });
+      return res.data;
+    },
+  });
+
+  /* =======================
+     Mapping ke ScheduleRow
+  ======================= */
+
+  const schedules: ScheduleRow[] = useMemo(() => {
+    if (!data?.data) return [];
+
+    return data.data.map((item) => {
+      const s = item.session;
+      const p = item.participant;
+
+      const teacherName =
+        s.class_attendance_session_csst_snapshot?.teacher_name ??
+        s.class_attendance_session_csst_snapshot?.school_teacher?.name ??
+        "";
+
+      // Ikuti tipe ScheduleRow: cuma "present" | "absent" | undefined
+      let status: ScheduleRow["status"];
+      if (
+        p?.participant_state === "present" ||
+        p?.participant_state === "absent"
+      ) {
+        status = p.participant_state;
+      } else {
+        status = undefined;
+      }
+
+      const description =
+        s.class_attendance_session_general_info ||
+        s.class_attendance_session_type_snapshot?.name ||
+        "";
+
+      return {
+        id: s.class_attendance_session_id,
+        title:
+          s.class_attendance_session_display_title ||
+          s.class_attendance_session_title ||
+          "Pertemuan",
+        date: toYmd(s.class_attendance_session_date),
+        time: toTime(s.class_attendance_session_starts_at),
+        room: "", // belum ada field di response
+        teacher: teacherName,
+        type: "class", // semua ini pertemuan kelas
+        description,
+        status,
+      } satisfies ScheduleRow;
+    });
+  }, [data]);
+
   return (
     <div className="w-full overflow-x-hidden bg-background text-foreground">
       <div className="md:flex hidden gap-3 items-center">
-        <Button
-          variant="ghost"
-          onClick={() => navigate(-1)}>
+        <Button variant="ghost" onClick={() => navigate(-1)}>
           <ArrowLeft size={20} />
         </Button>
         <h1 className="text-lg font-semibold md:text-xl">Laporan Harian</h1>
       </div>
+
       <CardContent className="p-4">
+        {isError && (
+          <div className="text-sm text-destructive mb-3">
+            Gagal memuat laporan harian. Coba beberapa saat lagi ya.
+          </div>
+        )}
+
         <ScheduleList
-          data={dummySchedules}
-          loading={false}
-          hideRowActions={true}       // ICON EDIT/HAPUS HILANG
+          data={schedules}
+          loading={isLoading}
+          hideRowActions={true} // ICON EDIT/HAPUS HILANG
           onEdit={(row) => navigate(`${row.id}`)}
         />
-
       </CardContent>
-    </div >
-
+    </div>
   );
 }

@@ -52,14 +52,14 @@ export interface TeacherApiRow {
   school_teacher_code: string | null;
   school_teacher_slug: string | null;
 
-  school_teacher_employment: "tetap" | "honor" | string;
+  school_teacher_employment?: "tetap" | "honor" | string;
   school_teacher_is_active: boolean;
   school_teacher_joined_at: string | null;
-  school_teacher_left_at: string | null;
+  school_teacher_left_at?: string | null;
   school_teacher_is_verified: boolean;
-  school_teacher_verified_at: string | null;
+  school_teacher_verified_at?: string | null;
   school_teacher_is_public: boolean;
-  school_teacher_notes: string | null;
+  school_teacher_notes?: string | null;
 
   school_teacher_user_teacher_name_snapshot: string | null;
   school_teacher_user_teacher_avatar_url_snapshot: string | null;
@@ -67,15 +67,28 @@ export interface TeacherApiRow {
   school_teacher_user_teacher_title_prefix_snapshot: string | null;
   school_teacher_user_teacher_title_suffix_snapshot: string | null;
 
-  school_teacher_school_name_snapshot: string | null;
-  school_teacher_school_slug_snapshot: string | null;
+  // gender snapshot dari user_teacher
+  school_teacher_user_teacher_gender_snapshot?:
+    | "male"
+    | "female"
+    | string
+    | null;
+
+  school_teacher_school_name_snapshot?: string | null;
+  school_teacher_school_slug_snapshot?: string | null;
 
   school_teacher_sections: any[] | string;
   school_teacher_csst: any[] | string;
 
+  // agregat (kalau ada di API)
+  school_teacher_total_class_sections?: number;
+  school_teacher_total_class_section_subject_teachers?: number;
+  school_teacher_total_class_sections_active?: number;
+  school_teacher_total_class_section_subject_teachers_active?: number;
+
   school_teacher_created_at: string;
   school_teacher_updated_at: string;
-  school_teacher_deleted_at: string | null;
+  school_teacher_deleted_at?: string | null;
 }
 
 type PublicTeachersResponse = {
@@ -240,7 +253,7 @@ const SchoolTeacher: React.FC<Props> = ({ showBack = false, backTo }) => {
     );
   }
 
-  /* ===== Query list (public) ===== */
+  /* ===== Query list (user scope) ===== */
   const {
     data,
     isLoading: teachersLoading,
@@ -248,14 +261,21 @@ const SchoolTeacher: React.FC<Props> = ({ showBack = false, backTo }) => {
     refetch,
     error,
   } = useQuery<PublicTeachersResponse, AxiosError>({
-    queryKey: ["public-school-teachers", schoolId],
+    queryKey: ["u-school-teachers", schoolId],
     enabled: Boolean(schoolId),
     staleTime: 120_000,
     retry: 1,
     queryFn: async () => {
       const res = await axios.get<PublicTeachersResponse>(
-        `/public/${schoolId}/school-teachers/list`,
-        { params: { page: 1, per_page: 999 } }
+        "/api/u/school-teachers/list",
+        {
+          params: {
+            page: 1,
+            per_page: 999,
+            // kalau nanti mau server-side search, tinggal aktifin:
+            // q: q || undefined,
+          },
+        }
       );
       return res.data;
     },
@@ -277,6 +297,14 @@ const SchoolTeacher: React.FC<Props> = ({ showBack = false, backTo }) => {
         csstArr?.[0]?.subject_name_snapshot ??
         undefined;
 
+      // map gender snapshot → "L" / "P"
+      let gender: "L" | "P" | undefined;
+      if (t.school_teacher_user_teacher_gender_snapshot === "male") {
+        gender = "L";
+      } else if (t.school_teacher_user_teacher_gender_snapshot === "female") {
+        gender = "P";
+      }
+
       return {
         id: t.school_teacher_id,
         code: t.school_teacher_code,
@@ -297,6 +325,8 @@ const SchoolTeacher: React.FC<Props> = ({ showBack = false, backTo }) => {
         isVerified: t.school_teacher_is_verified,
         joinedAt: t.school_teacher_joined_at,
         leftAt: t.school_teacher_left_at,
+        gender,
+        // email belum ada di snapshot → biarkan undefined
       } as TeacherItem;
     });
   }, [data]);

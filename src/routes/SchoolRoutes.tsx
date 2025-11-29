@@ -101,40 +101,76 @@ export const SchoolRoutes = (
     </Route>
 
     <Route path="kelas">
-      <Route
-        path="daftar-kelas/section/:id"
-        element={<SchoolSectionDetail />}
-      />
-      <Route path="level" element={<SchoolClassParent />} />
-      <Route
-        path="level/:classParentId"
-        element={<SchoolClassParentDetail />}
-      />
-      <Route path="level/new" element={<SchoolClassParentForm />} />
-      <Route path="level/edit/:id" element={<SchoolClassParentForm />} />
-      <Route path="daftar-kelas" element={<SchoolClass />} />
-      <Route path="daftar-kelas/:classId" element={<SchoolClassDetail />} />
-      <Route
-        path="daftar-kelas/:classId/murid"
-        element={<SchoolClassStudentList />}
-      />
-      <Route path="daftar-kelas/new" element={<SchoolClassForm />} />
-      <Route path="daftar-kelas/edit/:classId" element={<SchoolClassForm />} />
-      <Route path="semua-kelas" element={<SchoolClassesSection />} />
-      <Route
-        path="semua-kelas/:classSectionId"
-        element={<SchoolClassSectionDetail />}
-      />
-      <Route path="semua-kelas/new" element={<SchoolClassSectionForm />} />
-      <Route
-        path="semua-kelas/edit/:classSectionId"
-        element={<SchoolClassSectionDetail />}
-      />
-      <Route path="pelajaran" element={<SchoolCSST />} />
-      <Route path="pelajaran/:csstId" element={<SchoolCSSTDetail />} />
-      // di routes kelas
-      <Route path="pelajaran/new" element={<SchoolCSSTForm />} />
-      <Route path="pelajaran/:csstId/edit" element={<SchoolCSSTForm />} />
+      {/* LEVEL (Class Parent) */}
+      <Route path="level">
+        {/* /kelas/level */}
+        <Route index element={<SchoolClassParent />} />
+
+        {/* /kelas/level/new */}
+        <Route path="new" element={<SchoolClassParentForm />} />
+
+        {/* /kelas/level/edit/:classParentId */}
+        <Route path="edit/:classParentId" element={<SchoolClassParentForm />} />
+
+        {/* /kelas/level/:classParentId */}
+        <Route path=":classParentId" element={<SchoolClassParentDetail />} />
+      </Route>
+
+      {/* DAFTAR KELAS (Class) */}
+      <Route path="daftar-kelas">
+        {/* /kelas/daftar-kelas */}
+        <Route index element={<SchoolClass />} />
+
+        {/* /kelas/daftar-kelas/new */}
+        <Route path="new" element={<SchoolClassForm />} />
+
+        {/* /kelas/daftar-kelas/edit/:classId */}
+        <Route path="edit/:classId" element={<SchoolClassForm />} />
+
+        {/* /kelas/daftar-kelas/:classId */}
+        <Route path=":classId" element={<SchoolClassDetail />} />
+
+        {/* /kelas/daftar-kelas/:classId/murid */}
+        <Route path=":classId/murid" element={<SchoolClassStudentList />} />
+
+        {/* /kelas/daftar-kelas/section/:id */}
+        <Route path="section/:id" element={<SchoolSectionDetail />} />
+      </Route>
+
+      {/* SEMUA KELAS (Class Sections) */}
+      <Route path="semua-kelas">
+        {/* /kelas/semua-kelas */}
+        <Route index element={<SchoolClassesSection />} />
+
+        {/* /kelas/semua-kelas/new */}
+        <Route path="new" element={<SchoolClassSectionForm />} />
+
+        {/* /kelas/semua-kelas/edit/:classSectionId */}
+        <Route
+          path="edit/:classSectionId"
+          element={<SchoolClassSectionDetail />}
+          // kalau maksudnya form:
+          // element={<SchoolClassSectionForm />}
+        />
+
+        {/* /kelas/semua-kelas/:classSectionId */}
+        <Route path=":classSectionId" element={<SchoolClassSectionDetail />} />
+      </Route>
+
+      {/* PELAJARAN (CSST) */}
+      <Route path="pelajaran">
+        {/* /kelas/pelajaran */}
+        <Route index element={<SchoolCSST />} />
+
+        {/* /kelas/pelajaran/new */}
+        <Route path="new" element={<SchoolCSSTForm />} />
+
+        {/* /kelas/pelajaran/:csstId */}
+        <Route path=":csstId" element={<SchoolCSSTDetail />} />
+
+        {/* /kelas/pelajaran/:csstId/edit */}
+        <Route path=":csstId/edit" element={<SchoolCSSTForm />} />
+      </Route>
     </Route>
 
     <Route path="keuangan">

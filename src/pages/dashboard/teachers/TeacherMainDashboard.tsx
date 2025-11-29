@@ -3,6 +3,9 @@ import React, { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import axios from "@/lib/axios";
 
+/* current user */
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+
 /* shadcn/ui */
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -29,20 +32,15 @@ import {
 } from "@/pages/dashboard/components/card/schedule/CCardScheduleDashboard";
 
 /* =========================================================
-   DEMO TOGGLE
-========================================================= */
-const __USE_DEMO__ = true;
-
-/* =========================================================
    TYPES
 ========================================================= */
 export type TeacherScheduleItem = {
   id: string;
   startISO: string;
   endISO: string;
-  timeText?: string; // computed
+  timeText?: string;
   subject: string;
-  sectionName: string; // e.g., "X IPA 1"
+  sectionName: string;
   room?: string;
   mode?: "offline" | "online" | "hybrid";
   note?: string;
@@ -59,7 +57,7 @@ export type AttendanceTodoItem = {
 
 export type GradingQueueItem = {
   id: string;
-  title: string; // e.g., "Ulangan Harian 1"
+  title: string;
   subject: string;
   sectionName: string;
   dueISO?: string;
@@ -75,36 +73,17 @@ export type MyClassItem = {
   slug?: string;
 };
 
-export type AnnouncementUI = {
+export type HomeroomSectionItem = {
   id: string;
-  title: string;
-  date: string;
-  body: string;
-  type?: "info" | "warning" | "success";
-  slug?: string;
-};
-
-export type TeacherHome = {
-  teacher: {
-    id: string;
-    name: string;
-    titlePrefix?: string;
-    titleSuffix?: string;
-    avatarUrl?: string;
-    schoolName: string;
-  };
-  kpis: {
-    classesTaught: number;
-    sessionsToday: number;
-    attendancePending: number;
-    gradingPending: number;
-  };
-  todaySchedule: TeacherScheduleItem[];
-  attendanceTodos: AttendanceTodoItem[];
-  gradingQueue: GradingQueueItem[];
-  myClasses: MyClassItem[];
-  announcements: AnnouncementUI[];
-  inboxUnread: number;
+  name: string;
+  slug: string;
+  code?: string;
+  studentCount: number;
+  studentCountActive?: number;
+  imageUrl?: string;
+  parentName?: string;
+  termName?: string;
+  academicYear?: string;
 };
 
 /* =========================================================
@@ -117,7 +96,6 @@ type AttendanceSessionAPIItem = {
     class_attendance_session_starts_at: string | null;
     class_attendance_session_ends_at: string | null;
 
-    // ⬇️ tambahin ini (sama seperti di student)
     class_attendance_session_title?: string | null;
     class_attendance_session_display_title?: string | null;
 
@@ -127,7 +105,7 @@ type AttendanceSessionAPIItem = {
   };
   participant?: {
     participant_id: string;
-    participant_state: string; // "unknown" | "present" | ...
+    participant_state: string;
   };
 };
 
@@ -138,28 +116,58 @@ type AttendanceSessionsResponse = {
 };
 
 /* =========================================================
-   UTILS
+   API CLASS SECTIONS (WALI KELAS)
 ========================================================= */
-const pad2 = (n: number) => String(n).padStart(2, "0");
-const yyyyMmDdLocal = (d = new Date()) =>
-  `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 
-const timeRangeText = (startISO: string, endISO: string): string => {
-  try {
-    const s = new Date(startISO).toLocaleTimeString("id-ID", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    const e = new Date(endISO).toLocaleTimeString("id-ID", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    return `${s} - ${e}`;
-  } catch {
-    return "";
-  }
+type ClassSectionAPICompact = {
+  class_section_id: string;
+  class_section_name: string;
+  class_section_slug: string;
+  class_section_code?: string | null;
+  class_section_total_students: number;
+  class_section_total_students_active?: number;
+  class_section_image_url?: string | null;
+
+  class_section_class_parent_name_snapshot?: string | null;
+  class_section_class_parent_slug_snapshot?: string | null;
+  class_section_academic_term_name_snapshot?: string | null;
+  class_section_academic_term_slug_snapshot?: string | null;
+  class_section_academic_year_snapshot?: string | null;
 };
 
+type ClassSectionsListResponse = {
+  success: boolean;
+  message: string;
+  data: ClassSectionAPICompact[];
+};
+
+/* =========================================================
+   API CSST (MAPEL DIAJAR GURU)
+========================================================= */
+
+type CSSTApiItem = {
+  class_section_subject_teacher_id: string;
+  class_section_subject_teacher_slug: string;
+
+  class_section_subject_teacher_enrolled_count: number;
+
+  class_section_subject_teacher_class_section_name_snapshot: string;
+  class_section_subject_teacher_class_section_slug_snapshot: string;
+
+  class_section_subject_teacher_class_room_name_snapshot?: string | null;
+
+  class_section_subject_teacher_subject_name_snapshot: string;
+};
+
+type CSSTListResponse = {
+  success: boolean;
+  message: string;
+  data: CSSTApiItem[];
+};
+
+/* =========================================================
+   UTILS
+========================================================= */
 const dateFmt = (iso?: string): string => {
   if (!iso) return "-";
   try {
@@ -170,14 +178,6 @@ const dateFmt = (iso?: string): string => {
     });
   } catch {
     return iso;
-  }
-};
-
-const dayName = (iso: string) => {
-  try {
-    return new Date(iso).toLocaleDateString("id-ID", { weekday: "long" });
-  } catch {
-    return "";
   }
 };
 
@@ -234,198 +234,45 @@ const isSameLocalDay = (iso: string, base: Date = new Date()): boolean => {
   );
 };
 
-/* =========================================================
-   DEMO DATA
-========================================================= */
-function makeDemoTeacherHome(): TeacherHome {
-  const now = new Date();
-  const today = yyyyMmDdLocal(now);
-  const mkISO = (h: number, m: number) => {
-    const d = new Date(now);
-    d.setHours(h, m, 0, 0);
-    return d.toISOString();
-  };
+/* helper: ambil active membership dari berbagai kemungkinan path */
+const resolveActiveMembership = (userCtx: any): any | undefined => {
+  if (!userCtx) return undefined;
 
-  // ↓ contoh jadwal demo (bukan dari API timeline)
-  const rawSchedule = [
-    {
-      id: "s1",
-      startISO: mkISO(7, 0),
-      endISO: mkISO(8, 30),
-      subject: "Matematika",
-      sectionName: "X IPA 1",
-      room: "Ruang 201",
-      mode: "offline",
-      note: "Bab 2: Persamaan Kuadrat",
-    },
-    {
-      id: "s2",
-      startISO: mkISO(9, 0),
-      endISO: mkISO(10, 30),
-      subject: "Bahasa Indonesia",
-      sectionName: "X IPA 1",
-      room: "Ruang 201",
-      mode: "hybrid",
-      note: "Analisis teks editorial",
-    },
-    {
-      id: "s3",
-      startISO: mkISO(11, 0),
-      endISO: mkISO(12, 0),
-      subject: "Pembinaan Tahfidz",
-      sectionName: "Ekskul Tahfidz",
-      room: "Aula",
-      mode: "offline",
-    },
-  ] satisfies Array<Omit<TeacherScheduleItem, "timeText">>;
+  const direct =
+    userCtx.activeSchoolMembership ??
+    userCtx.active_school_membership ??
+    userCtx.membership;
 
-  const todaySchedule: TeacherScheduleItem[] = rawSchedule.map((it) => ({
-    ...it,
-    timeText: timeRangeText(it.startISO, it.endISO),
-    day: dayName(it.startISO),
-  }));
+  if (direct) return direct;
 
-  const attendanceTodos: AttendanceTodoItem[] = [
-    {
-      sessionId: "att-1001",
-      dateISO: today,
-      subject: "Matematika",
-      sectionName: "X IPA 1",
-      status: "pending",
-    },
-    {
-      sessionId: "att-1002",
-      dateISO: today,
-      subject: "Bahasa Indonesia",
-      sectionName: "X IPA 1",
-      status: "pending",
-    },
-  ];
+  if (Array.isArray(userCtx.memberships) && userCtx.memberships.length > 0) {
+    const flagged = userCtx.memberships.find(
+      (m: any) => m.is_active || m.is_default || m.is_primary
+    );
+    return flagged ?? userCtx.memberships[0];
+  }
 
-  const gradingQueue: GradingQueueItem[] = [
-    {
-      id: "gq-01",
-      title: "UH 1 - Aljabar",
-      subject: "Matematika",
-      sectionName: "X IPA 1",
-      dueISO: new Date(now.getTime() + 2 * 864e5).toISOString(),
-      toGradeCount: 28,
-    },
-    {
-      id: "gq-02",
-      title: "Tugas 2 - Teks Editorial",
-      subject: "Bahasa Indonesia",
-      sectionName: "X IPA 1",
-      dueISO: new Date(now.getTime() + 4 * 864e5).toISOString(),
-      toGradeCount: 27,
-    },
-  ];
-
-  const myClasses: MyClassItem[] = [
-    {
-      csstId: "csst-1",
-      subject: "Matematika",
-      sectionName: "X IPA 1",
-      studentCount: 28,
-      room: "Ruang 201",
-      slug: "x-ipa-1-matematika",
-    },
-    {
-      csstId: "csst-2",
-      subject: "Bahasa Indonesia",
-      sectionName: "X IPA 1",
-      studentCount: 28,
-      room: "Ruang 201",
-      slug: "x-ipa-1-bahasa-indonesia",
-    },
-    {
-      csstId: "csst-3",
-      subject: "Ekskul Tahfidz",
-      sectionName: "Ekskul Tahfidz",
-      studentCount: 20,
-      room: "Aula",
-      slug: "ekskul-tahfidz",
-    },
-  ];
-
-  const announcements: AnnouncementUI[] = [
-    {
-      id: "ann-01",
-      title: "Rapat Kurikulum Jumat, 15 Nov 2025",
-      date: now.toISOString(),
-      body: "Dimulai pukul 13:30 di Ruang Rapat Lt.2. Harap hadir tepat waktu.",
-      type: "info",
-    },
-    {
-      id: "ann-02",
-      title: "Deadline Nilai Tengah Semester",
-      date: new Date(now.getTime() + 5 * 864e5).toISOString(),
-      body: "Mohon input nilai minimal 70% sebelum Senin depan.",
-      type: "warning",
-    },
-  ];
-
-  return {
-    teacher: {
-      id: "u-teacher-1",
-      name: "Ahmad Fauzi",
-      titlePrefix: "Drs.",
-      titleSuffix: "M.Pd.",
-      schoolName: "",
-    },
-    kpis: {
-      classesTaught: myClasses.length,
-      sessionsToday: todaySchedule.length,
-      attendancePending: attendanceTodos.filter((t) => t.status === "pending")
-        .length,
-      gradingPending: gradingQueue.reduce((a, b) => a + b.toGradeCount, 0),
-    },
-    todaySchedule,
-    attendanceTodos,
-    gradingQueue,
-    myClasses,
-    announcements,
-    inboxUnread: 3,
-  };
-}
-
-/* =========================================================
-   API (dengan fallback demo)
-========================================================= */
-const QK = {
-  TEACHER_HOME: ["teacher-home"] as const,
-  TEACHER_ATTENDANCE_WEEK: ["teacher-attendance-week"] as const,
+  return undefined;
 };
 
-async function fetchTeacherHome(): Promise<TeacherHome> {
-  if (__USE_DEMO__) return makeDemoTeacherHome();
-  try {
-    const res = await axios.get<TeacherHome>("/api/t/home", {
-      withCredentials: true,
-    });
-    if (!res.data) return makeDemoTeacherHome();
-    const withComputed: TeacherHome = {
-      ...res.data,
-      todaySchedule: (res.data.todaySchedule ?? []).map((it) => ({
-        ...it,
-        timeText: it.timeText ?? timeRangeText(it.startISO, it.endISO),
-      })),
-    };
-    return withComputed;
-  } catch (e) {
-    console.warn("[teacher-home] API error, fallback demo", e);
-    return makeDemoTeacherHome();
-  }
-}
+/* =========================================================
+   QUERY KEYS
+========================================================= */
+const QK = {
+  TEACHER_ATTENDANCE_WEEK: ["teacher-attendance-week"] as const,
+  TEACHER_HOMEROOM: ["teacher-homeroom"] as const,
+  TEACHER_SUBJECT_CLASSES: ["teacher-subject-classes"] as const,
+};
 
-/**
- * Fetch attendance sessions (week range) untuk GURU,
- * mapping ke DashboardScheduleItem, sort berdasarkan waktu,
- * dan nanti di kartu di-limit max 5 (di DashboardScheduleCard).
- */
+/* =========================================================
+   API HELPERS + DEBUG LOG
+========================================================= */
+
 async function fetchTeacherAttendanceThisWeek(): Promise<
   DashboardScheduleItem[]
 > {
+  console.log("[TeacherDashboard] fetchTeacherAttendanceThisWeek CALLED");
+
   const res = await axios.get<AttendanceSessionsResponse>(
     "/api/u/attendance-sessions/list",
     {
@@ -438,7 +285,13 @@ async function fetchTeacherAttendanceThisWeek(): Promise<
     }
   );
 
+  console.log("[TeacherDashboard] attendance-sessions/list response", res.data);
+
   if (!res.data?.success || !Array.isArray(res.data.data)) {
+    console.warn(
+      "[TeacherDashboard] attendance-sessions/list invalid payload",
+      res.data
+    );
     return [];
   }
 
@@ -459,13 +312,11 @@ async function fetchTeacherAttendanceThisWeek(): Promise<
     const s = row.session;
     const csst = s.class_attendance_session_csst_snapshot || {};
 
-    // (kalau nanti mau dipakai, tetap disiapkan)
     const teacherBase =
       formatSchoolTeacherName(csst.school_teacher) ||
       csst.teacher_name ||
       undefined;
 
-    // ⬇️ sama seperti student: prioritaskan session_title
     const sessionTitle =
       s.class_attendance_session_title ||
       s.class_attendance_session_display_title ||
@@ -483,15 +334,12 @@ async function fetchTeacherAttendanceThisWeek(): Promise<
       csst.class_section?.name ||
       "";
 
-    // judul besar card: "Ilmu Balaghoh Dasar pertemuan ke-8"
     const title =
       sessionTitle ||
       (sectionName && sectionName !== subjectName
         ? `${subjectName} — ${sectionName}`
         : subjectName);
 
-    // ⬇️ sub-text di bawah judul:
-    // untuk guru: "Kelas Balaghoh Menengah A • Ilmu Balaghoh Dasar"
     const teacherDisplay =
       sectionName && subjectName
         ? `${sectionName} • ${subjectName}`
@@ -536,14 +384,14 @@ async function fetchTeacherAttendanceThisWeek(): Promise<
     }
 
     const isToday = isSameLocalDay(s.class_attendance_session_date, today);
-    const canAttendNow = false; // di dashboard guru tetap non-klik untuk absen
+    const canAttendNow = false;
 
     return {
       id: s.class_attendance_session_id,
       date: s.class_attendance_session_date,
       time,
       location: undefined,
-      teacher: teacherDisplay, // ⬅️ ini yang nongol di bawah judul
+      teacher: teacherDisplay,
       title,
       note: stateLabel,
       isToday,
@@ -551,6 +399,115 @@ async function fetchTeacherAttendanceThisWeek(): Promise<
       participantState: state,
     };
   });
+}
+
+async function fetchTeacherHomeroomSections(
+  schoolTeacherId: string
+): Promise<HomeroomSectionItem[]> {
+  console.log(
+    "[TeacherDashboard] fetchTeacherHomeroomSections teacherId =",
+    schoolTeacherId
+  );
+
+  if (!schoolTeacherId) {
+    console.warn(
+      "[TeacherDashboard] fetchTeacherHomeroomSections called with empty teacherId"
+    );
+    return [];
+  }
+
+  const res = await axios.get<ClassSectionsListResponse>(
+    "/api/u/class-sections/list",
+    {
+      params: {
+        teacher_id: schoolTeacherId,
+        is_active: true,
+        all: 1,
+      },
+      withCredentials: true,
+    }
+  );
+
+  console.log("[TeacherDashboard] class-sections/list response", res.data);
+
+  if (!res.data?.success || !Array.isArray(res.data.data)) {
+    console.warn(
+      "[TeacherDashboard] class-sections/list invalid payload",
+      res.data
+    );
+    return [];
+  }
+
+  return res.data.data.map<HomeroomSectionItem>((row) => ({
+    id: row.class_section_id,
+    name: row.class_section_name,
+    slug: row.class_section_slug,
+    code: row.class_section_code ?? undefined,
+    studentCount: row.class_section_total_students,
+    studentCountActive: row.class_section_total_students_active,
+    imageUrl: row.class_section_image_url ?? undefined,
+    parentName: row.class_section_class_parent_name_snapshot ?? undefined,
+    termName: row.class_section_academic_term_name_snapshot ?? undefined,
+    academicYear: row.class_section_academic_year_snapshot ?? undefined,
+  }));
+}
+
+async function fetchTeacherSubjectClasses(
+  schoolTeacherId: string
+): Promise<MyClassItem[]> {
+  console.log(
+    "[TeacherDashboard] fetchTeacherSubjectClasses teacherId =",
+    schoolTeacherId
+  );
+
+  if (!schoolTeacherId) {
+    console.warn(
+      "[TeacherDashboard] fetchTeacherSubjectClasses called with empty teacherId"
+    );
+    return [];
+  }
+
+  try {
+    const res = await axios.get<CSSTListResponse>(
+      "/api/u/class-section-subject-teachers/list",
+      {
+        params: {
+          teacher_id: schoolTeacherId,
+          is_active: true,
+          all: 1,
+        },
+        withCredentials: true,
+      }
+    );
+
+    console.log(
+      "[TeacherDashboard] class-section-subject-teachers/list response",
+      res.data
+    );
+
+    if (!res.data?.success || !Array.isArray(res.data.data)) {
+      console.warn("[TeacherDashboard] CSST list invalid payload", res.data);
+      return [];
+    }
+
+    const mapped = res.data.data.map<MyClassItem>((row) => ({
+      csstId: row.class_section_subject_teacher_id,
+      subject: row.class_section_subject_teacher_subject_name_snapshot,
+      sectionName:
+        row.class_section_subject_teacher_class_section_name_snapshot,
+      studentCount: row.class_section_subject_teacher_enrolled_count,
+      room:
+        row.class_section_subject_teacher_class_room_name_snapshot ?? undefined,
+      slug: row.class_section_subject_teacher_slug,
+    }));
+
+    console.log("[TeacherDashboard] mapped CSST items", mapped);
+
+    return mapped;
+  } catch (err) {
+    console.error("[TeacherDashboard] CSST list ERROR", err);
+    return [];
+  }
 }
 
 /* =========================================================
@@ -635,6 +592,86 @@ function AttendanceTodoCard({
   );
 }
 
+function HomeroomClassesCard({
+  items,
+  loading,
+}: {
+  items: HomeroomSectionItem[];
+  loading?: boolean;
+}) {
+  const isEmpty = !loading && items.length === 0;
+
+  return (
+    <Card className="shadow-sm">
+      <CardHeader className="px-5 py-4">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <span className="h-9 w-9 rounded-xl grid place-items-center bg-muted text-primary">
+            <Users className="h-4 w-4" />
+          </span>
+          Wali Kelas
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {loading && items.length === 0 ? (
+          <div className="space-y-2">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        ) : isEmpty ? (
+          <div className="text-sm text-muted-foreground">
+            Saat ini belum menjadi wali kelas di rombel manapun.
+          </div>
+        ) : (
+          items.slice(0, 4).map((r) => {
+            const metaParts: string[] = [];
+            if (r.parentName) metaParts.push(r.parentName);
+            if (r.termName) metaParts.push(r.termName);
+            if (!r.termName && r.academicYear) metaParts.push(r.academicYear);
+            const meta = metaParts.join(" • ");
+
+            const total =
+              r.studentCountActive && r.studentCountActive > 0
+                ? `${r.studentCountActive}/${r.studentCount} siswa aktif`
+                : `${r.studentCount} siswa`;
+
+            return (
+              <div
+                key={r.id}
+                className="rounded-xl border p-3 flex items-center justify-between gap-3"
+              >
+                <div className="min-w-0">
+                  <div className="font-medium leading-tight truncate">
+                    {r.name}
+                  </div>
+                  {meta && (
+                    <div className="text-xs text-muted-foreground truncate">
+                      {meta}
+                    </div>
+                  )}
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    {total}
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    (window.location.href = r.slug
+                      ? `/teacher/class-sections/${r.slug}`
+                      : `/teacher/class-sections/${r.id}`)
+                  }
+                >
+                  Detail <ArrowRight className="ml-1 h-4 w-4" />
+                </Button>
+              </div>
+            );
+          })
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function MyClassesCard({
   items,
   seeAllPath,
@@ -705,19 +742,45 @@ function MyClassesCard({
    PAGE
 ========================================================= */
 const TeacherMainDashboard: React.FC = () => {
-  const {
-    data,
-    isLoading,
-    isFetching: isFetchingHome,
-  } = useQuery({
-    queryKey: QK.TEACHER_HOME,
-    queryFn: fetchTeacherHome,
-    staleTime: 60_000,
-    refetchOnWindowFocus: false,
-  });
+  const userQuery = useCurrentUser() as any;
+  const userLoading = userQuery?.isLoading ?? false;
+  const userCtx = userQuery?.data ?? null;
 
+  console.log("[TeacherDashboard] userQuery", userQuery);
+  console.log("[TeacherDashboard] userCtx (data)", userCtx);
+
+  const activeMembership = resolveActiveMembership(userCtx);
+  console.log("[TeacherDashboard] activeMembership", activeMembership);
+
+  const teacherId: string =
+    activeMembership?.school_teacher_id ??
+    activeMembership?.school_teacher?.school_teacher_id ??
+    userCtx?.school_teacher?.school_teacher_id ??
+    userCtx?.school_teacher_id ??
+    "";
+
+  const teacherName: string =
+    activeMembership?.school_teacher?.name ??
+    userCtx?.user?.name ??
+    userCtx?.profile?.name ??
+    userCtx?.name ??
+    "Guru";
+
+  const schoolName: string =
+    activeMembership?.school?.name ??
+    activeMembership?.school_name ??
+    userCtx?.activeSchool?.name ??
+    userCtx?.active_school?.name ??
+    userCtx?.school?.name ??
+    "";
+
+  console.log("[TeacherDashboard] teacherId =", teacherId);
+  console.log("[TeacherDashboard] teacherName =", teacherName);
+  console.log("[TeacherDashboard] schoolName =", schoolName);
+
+  // 1) Query jadwal (timeline)
   const {
-    data: attendanceThisWeek,
+    data: attendanceThisWeek = [],
     isLoading: isLoadingAttendance,
     isFetching: isFetchingAttendance,
   } = useQuery({
@@ -726,6 +789,43 @@ const TeacherMainDashboard: React.FC = () => {
     staleTime: 30_000,
     refetchOnWindowFocus: false,
   });
+
+  // 2) Query rombel WALI KELAS
+  const { data: homeroomSections = [], isLoading: isLoadingHomeroom } =
+    useQuery({
+      queryKey: [...QK.TEACHER_HOMEROOM, teacherId],
+      queryFn: () => fetchTeacherHomeroomSections(teacherId),
+      staleTime: 60_000,
+      refetchOnWindowFocus: false,
+      enabled: !!teacherId,
+    });
+
+  // 3) Query mapel yang diajar (CSST)
+  const { data: subjectClasses = [] } = useQuery({
+    queryKey: [...QK.TEACHER_SUBJECT_CLASSES, teacherId],
+    queryFn: () => fetchTeacherSubjectClasses(teacherId),
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+    enabled: !!teacherId,
+  });
+
+  useEffect(() => {
+    console.log(
+      "[TeacherDashboard] attendanceThisWeek (mapped)",
+      attendanceThisWeek
+    );
+  }, [attendanceThisWeek]);
+
+  useEffect(() => {
+    console.log(
+      "[TeacherDashboard] homeroomSections from query",
+      homeroomSections
+    );
+  }, [homeroomSections]);
+
+  useEffect(() => {
+    console.log("[TeacherDashboard] subjectClasses from query", subjectClasses);
+  }, [subjectClasses]);
 
   const [flash, setFlash] = useState<{
     type: "success" | "error";
@@ -738,7 +838,10 @@ const TeacherMainDashboard: React.FC = () => {
     return () => clearTimeout(t);
   }, [flash]);
 
-  if (isLoading) {
+  const globalLoading =
+    userLoading || (isLoadingAttendance && !attendanceThisWeek.length);
+
+  if (globalLoading) {
     return (
       <div className="p-6 grid gap-4">
         <Skeleton className="h-16 w-full" />
@@ -756,43 +859,42 @@ const TeacherMainDashboard: React.FC = () => {
     );
   }
 
-  if (!data) {
-    return (
-      <div className="p-6 text-center text-muted-foreground">
-        Tidak bisa memuat dashboard.
-      </div>
-    );
-  }
+  // Build "Perlu Absen Hari Ini" dari jadwal minggu ini
+  const attendanceTodos: AttendanceTodoItem[] = attendanceThisWeek
+    .filter(
+      (s) =>
+        s.date &&
+        isSameLocalDay(s.date) &&
+        (!s.participantState || s.participantState === "unknown")
+    )
+    .map((s) => ({
+      sessionId: s.id,
+      dateISO: s.date ?? "",
+      subject: s.title ?? "Pertemuan",
+      sectionName: s.teacher ?? "",
+      status: "pending",
+    }));
 
-  const t = data.teacher;
-  const nameFull = `${t.titlePrefix ? t.titlePrefix + " " : ""}${t.name}${
-    t.titleSuffix ? ", " + t.titleSuffix : ""
-  }`;
+  const classesTaught = subjectClasses.length;
+  const sessionsToday = attendanceThisWeek.filter((s) =>
+    s.date ? isSameLocalDay(s.date) : false
+  ).length;
+  const attendancePending = attendanceTodos.length;
+  const gradingPending = 0;
 
-  // Jadwal di kartu: dari attendance timeline guru; kalau kosong, fallback ke todaySchedule backend
-  const scheduleFromTimeline: DashboardScheduleItem[] =
-    attendanceThisWeek && attendanceThisWeek.length > 0
-      ? attendanceThisWeek
-      : [];
+  const kpis = {
+    classesTaught,
+    sessionsToday,
+    attendancePending,
+    gradingPending,
+  };
 
-  let scheduleItems: DashboardScheduleItem[] = scheduleFromTimeline;
+  console.log("[TeacherDashboard] KPIs", kpis);
 
-  if (scheduleItems.length === 0 && data.todaySchedule?.length) {
-    scheduleItems = data.todaySchedule.map<DashboardScheduleItem>((s) => {
-      const time = s.timeText ?? timeRangeText(s.startISO, s.endISO);
-      const date = s.startISO;
-      const isToday = isSameLocalDay(s.startISO);
-      return {
-        id: s.id,
-        date,
-        time,
-        title: `${s.subject} — ${s.sectionName}`,
-        location: s.room,
-        teacher: undefined,
-        isToday,
-      };
-    });
-  }
+  const myClassesItems: MyClassItem[] = subjectClasses;
+  const scheduleItems: DashboardScheduleItem[] = attendanceThisWeek;
+
+  const nameFull = teacherName;
 
   return (
     <div className="w-full bg-background text-foreground">
@@ -810,26 +912,26 @@ const TeacherMainDashboard: React.FC = () => {
                   {nameFull}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {t.schoolName}
+                  {schoolName}
                 </div>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="outline">
                 <Users className="h-3.5 w-3.5 mr-1" />
-                Kelas diajar: {data.kpis.classesTaught}
+                Kelas diajar: {kpis.classesTaught}
               </Badge>
               <Badge variant="outline">
                 <CalendarDays className="h-3.5 w-3.5 mr-1" />
-                Sesi hari ini: {data.kpis.sessionsToday}
+                Sesi hari ini: {kpis.sessionsToday}
               </Badge>
               <Badge variant="destructive">
                 <ClipboardList className="h-3.5 w-3.5 mr-1" />
-                Absen pending: {data.kpis.attendancePending}
+                Absen pending: {kpis.attendancePending}
               </Badge>
               <Badge variant="outline">
                 <CheckCheck className="h-3.5 w-3.5 mr-1" />
-                Perlu dinilai: {data.kpis.gradingPending}
+                Perlu dinilai: {kpis.gradingPending}
               </Badge>
             </div>
           </CardContent>
@@ -839,22 +941,22 @@ const TeacherMainDashboard: React.FC = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <KpiTile
             label="Kelas Diajar"
-            value={data.kpis.classesTaught}
+            value={kpis.classesTaught}
             icon={<BookOpen size={18} />}
           />
           <KpiTile
             label="Sesi Hari Ini"
-            value={data.kpis.sessionsToday}
+            value={kpis.sessionsToday}
             icon={<CalendarDays size={18} />}
           />
           <KpiTile
             label="Absen Pending"
-            value={data.kpis.attendancePending}
+            value={kpis.attendancePending}
             icon={<ClipboardList size={18} />}
           />
           <KpiTile
             label="Butuh Penilaian"
-            value={data.kpis.gradingPending}
+            value={kpis.gradingPending}
             icon={<CheckCheck size={18} />}
           />
         </div>
@@ -863,10 +965,15 @@ const TeacherMainDashboard: React.FC = () => {
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-5 items-stretch">
           {/* Kiri */}
           <div className="col-span-1 md:col-span-6 space-y-6">
-            <MyClassesCard items={data.myClasses} seeAllPath={`guru-mapel`} />
+            <HomeroomClassesCard
+              items={homeroomSections}
+              loading={isLoadingHomeroom}
+            />
+
+            <MyClassesCard items={myClassesItems} seeAllPath={`guru-mapel`} />
 
             <AttendanceTodoCard
-              items={data.attendanceTodos}
+              items={attendanceTodos}
               onOpen={(sid) =>
                 (window.location.href = `/teacher/sessions/${sid}/attendance`)
               }
@@ -890,7 +997,7 @@ const TeacherMainDashboard: React.FC = () => {
 
         {/* Footer mini */}
         <div className="text-xs text-muted-foreground text-right">
-          {isFetchingHome || isFetchingAttendance ? "Menyegarkan data…" : ""}
+          {isFetchingAttendance ? "Menyegarkan data…" : ""}
         </div>
       </main>
     </div>

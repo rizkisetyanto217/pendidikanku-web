@@ -18,7 +18,7 @@ import {
   ArrowLeft,
   ClipboardList,
   UserSquare2,
-  MapPin, // ⬅️ NEW
+  MapPin,
 } from "lucide-react";
 
 /* dashboard header */
@@ -26,61 +26,72 @@ import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayou
 import type { AxiosError } from "axios";
 import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
 
-/* ========= Types dari API /u/student-class-section-subject-teachers/list ========= */
+/* ========= Types dari API /u/class-section-subject-teachers/list ========= */
 
 type DeliveryMode = "offline" | "online" | "hybrid" | string;
 
-type ApiCSSTEmbedded = {
+// sesuai response contoh yang kamu kirim
+type ApiCSSTItem = {
   class_section_subject_teacher_id: string;
+  class_section_subject_teacher_school_id: string;
+  class_section_subject_teacher_class_section_id: string;
+  class_section_subject_teacher_class_subject_id: string;
+  class_section_subject_teacher_school_teacher_id: string;
   class_section_subject_teacher_slug: string;
 
+  class_section_subject_teacher_total_attendance?: number | null;
+  class_section_subject_teacher_enrolled_count?: number | null;
+  class_section_subject_teacher_total_assessments?: number | null;
+  class_section_subject_teacher_total_assessments_graded?: number | null;
+  class_section_subject_teacher_total_assessments_ungraded?: number | null;
+  class_section_subject_teacher_total_students_passed?: number | null;
+
+  class_section_subject_teacher_delivery_mode?: DeliveryMode | null;
+
+  class_section_subject_teacher_total_books?: number | null;
+  class_section_subject_teacher_total_students_male?: number | null;
+  class_section_subject_teacher_total_students_female?: number | null;
+
+  class_section_subject_teacher_class_section_slug_snapshot?: string | null;
+  class_section_subject_teacher_class_section_name_snapshot?: string | null;
+  class_section_subject_teacher_class_section_code_snapshot?: string | null;
+
+  // optional snapshot guru (kalau backend kirim)
+  class_section_subject_teacher_school_teacher_snapshot?: {
+    id?: string;
+    name?: string;
+    avatar_url?: string;
+    whatsapp_url?: string;
+    title_prefix?: string;
+    title_suffix?: string;
+  } | null;
+
+  class_section_subject_teacher_school_teacher_name_snapshot?: string | null;
+
+  class_section_subject_teacher_subject_id_snapshot?: string | null;
   class_section_subject_teacher_subject_name_snapshot?: string | null;
   class_section_subject_teacher_subject_code_snapshot?: string | null;
   class_section_subject_teacher_subject_slug_snapshot?: string | null;
 
-  class_section_subject_teacher_school_teacher_name_snapshot?: string | null;
+  class_section_subject_teacher_min_passing_score?: number | null;
+  class_section_subject_teacher_is_active?: boolean | null;
 
+  // ONLINE ROOM (kalau ada)
   class_section_subject_teacher_join_url?: string | null;
   class_section_subject_teacher_meeting_id?: string | null;
   class_section_subject_teacher_passcode?: string | null;
 
-  class_section_subject_teacher_class_section_id: string;
-  class_section_subject_teacher_class_section_name_snapshot?: string | null;
-  class_section_subject_teacher_class_section_code_snapshot?: string | null;
-  class_section_subject_teacher_class_section_slug_snapshot?: string | null;
-
-  // ⬅️ NEW: snapshot nama ruangan (kalau ada di API)
+  // OFFLINE ROOM (kalau nanti kamu tambahkan di backend)
   class_section_subject_teacher_room_name_snapshot?: string | null;
-
-  class_section_subject_teacher_delivery_mode?: DeliveryMode | null;
-  class_section_subject_teacher_enrolled_count?: number | null;
-  class_section_subject_teacher_min_passing_score?: number | null;
 
   class_section_subject_teacher_created_at?: string | null;
   class_section_subject_teacher_updated_at?: string | null;
-  class_section_subject_teacher_is_active?: boolean | null;
-  class_section_subject_teacher_school_id?: string | null;
 };
 
-type ApiStudentCSSTItem = {
-  student_class_section_subject_teacher_id: string;
-  student_class_section_subject_teacher_school_id: string;
-  student_class_section_subject_teacher_student_id: string;
-  student_class_section_subject_teacher_csst_id: string;
-  student_class_section_subject_teacher_is_active: boolean;
-  student_class_section_subject_teacher_score_max_total: number;
-  student_class_section_subject_teacher_edits_history: any[];
-  student_class_section_subject_teacher_meta: Record<string, any>;
-  student_class_section_subject_teacher_created_at: string;
-  student_class_section_subject_teacher_updated_at: string;
-
-  class_section_subject_teacher?: ApiCSSTEmbedded | null;
-};
-
-type ApiStudentCSSTListResponse = {
+type ApiCSSTListResponse = {
   success: boolean;
   message: string;
-  data: ApiStudentCSSTItem[];
+  data: ApiCSSTItem[];
   pagination: {
     page: number;
     per_page: number;
@@ -116,7 +127,6 @@ type CsstView = {
   enrolledCount: number;
   minPassingScore?: number | null;
 
-  // ⬅️ NEW
   roomName?: string | null;
 };
 
@@ -154,31 +164,30 @@ const StudentCSST: React.FC = () => {
   const navigate = useNavigate();
   const { setHeader } = useDashboardHeader();
 
-  // dummy laporan kehadiran
-  // State untuk absensi
+  // State dummy laporan kehadiran
   const [hasCheckedIn, setHasCheckedIn] = useState(false);
-  const [checkInTime, setCheckInTime] = useState<string | null>(null);
+  const [checkInLabel, setCheckInLabel] = useState<string | null>(null);
+  const [checkInAt, setCheckInAt] = useState<Date | null>(null);
 
-  // laporan kehadiran 0/10 -> berubah menjadi 1/10
   const [attendanceReports, setAttendanceReports] = useState(0);
   const totalMeetingsDummy = 10;
 
-  /* ===== Query detail CSST via pivot murid ===== */
-  const csstQ = useQuery<ApiStudentCSSTItem | undefined, AxiosError>({
+  /* ===== Query detail CSST langsung dari /u/class-section-subject-teachers/list ===== */
+  const csstQ = useQuery<ApiCSSTItem | null, AxiosError>({
     queryKey: ["student-csst-detail", csstId],
     enabled: !!csstId,
     queryFn: async () => {
-      const res = await axios.get<ApiStudentCSSTListResponse>(
-        "/u/student-class-section-subject-teachers/list",
+      const res = await axios.get<ApiCSSTListResponse>(
+        "/u/class-section-subject-teachers/list",
         {
           params: {
-            include: "csst",
-            csst_id: csstId,
+            id: csstId, // ✅ sesuai contoh: ?id=bc20fa79-...
           },
         }
       );
+
       const items = res.data?.data ?? [];
-      return items[0];
+      return items[0] ?? null; // ✅ tidak pernah undefined
     },
     staleTime: 60_000,
   });
@@ -189,7 +198,7 @@ const StudentCSST: React.FC = () => {
 
   /* ===== Derive view models dari API ===== */
   const sectionView: SectionView | null = useMemo(() => {
-    const it = csstQ.data?.class_section_subject_teacher;
+    const it = csstQ.data;
     if (!it) return null;
 
     return {
@@ -206,40 +215,35 @@ const StudentCSST: React.FC = () => {
   }, [csstQ.data]);
 
   const csstView: CsstView | null = useMemo(() => {
-    const pivot = csstQ.data;
-    const csst = csstQ.data?.class_section_subject_teacher;
-    if (!pivot || !csst) return null;
+    const it = csstQ.data;
+    if (!it) return null;
 
     const subjectName =
-      csst.class_section_subject_teacher_subject_name_snapshot ??
+      it.class_section_subject_teacher_subject_name_snapshot ??
       "Mata pelajaran tanpa nama";
     const subjectCode =
-      csst.class_section_subject_teacher_subject_code_snapshot ?? null;
+      it.class_section_subject_teacher_subject_code_snapshot ?? null;
     const subjectSlug =
-      csst.class_section_subject_teacher_subject_slug_snapshot ?? null;
+      it.class_section_subject_teacher_subject_slug_snapshot ?? null;
 
     const teacherName =
-      csst.class_section_subject_teacher_school_teacher_name_snapshot ??
+      it.class_section_subject_teacher_school_teacher_name_snapshot ??
       "Guru tanpa nama";
 
-    const deliveryMode =
-      csst.class_section_subject_teacher_delivery_mode ?? "-";
-    const isActive =
-      csst.class_section_subject_teacher_is_active ??
-      pivot.student_class_section_subject_teacher_is_active;
+    const deliveryMode = it.class_section_subject_teacher_delivery_mode ?? "-";
+    const isActive = it.class_section_subject_teacher_is_active ?? true;
 
-    const enrolledCount =
-      csst.class_section_subject_teacher_enrolled_count ?? 0;
+    const enrolledCount = it.class_section_subject_teacher_enrolled_count ?? 0;
 
     const minPassingScore =
-      csst.class_section_subject_teacher_min_passing_score ?? null;
+      it.class_section_subject_teacher_min_passing_score ?? null;
 
     const roomName =
-      csst.class_section_subject_teacher_room_name_snapshot ?? null;
+      it.class_section_subject_teacher_room_name_snapshot ?? null;
 
     return {
-      id: csst.class_section_subject_teacher_id,
-      slug: csst.class_section_subject_teacher_slug,
+      id: it.class_section_subject_teacher_id,
+      slug: it.class_section_subject_teacher_slug,
       subjectName,
       subjectCode,
       subjectSlug,
@@ -292,12 +296,9 @@ const StudentCSST: React.FC = () => {
 
   /* ===== Render utama ===== */
 
-  // total pertemuan dummy untuk tampilan 0/10
   const totalStudents = csstView.enrolledCount ?? 0;
-  // placeholder: belum ada field khusus di response
-  const totalAttendanceToday = 0; // ⬅️ bisa di-wire ke API absensi nanti
+  const totalAttendanceToday = 0; // nanti di-wire ke API absensi
 
-  // Dummy Data
   const totalBooks = 0;
   const totalAssessmentsGraded = 0;
   const totalAssessmentsUngraded = 0;
@@ -377,29 +378,21 @@ const StudentCSST: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Quick links (versi murid) */}
-
-          {/* Row khusus: Absensi & Ruangan (card memanjang) */}
+          {/* Row: Absensi & Ruangan */}
           <div className="grid gap-3 md:grid-cols-2">
-            {/* Absensi hari ini */}
             {/* Absensi hari ini */}
             <Card className="transition hover:shadow-md">
               <CardContent className="p-4 md:p-5">
                 <div className="flex flex-col gap-3 h-full">
-                  {/* Kiri: Info absensi */}
-                  {/* Jika sudah absen */}
-                  {hasCheckedIn && checkInTime ? (
+                  {hasCheckedIn && checkInLabel ? (
                     <div className="space-y-1">
                       <div className="text-sm text-muted-foreground flex items-center gap-2">
                         <CalendarDays className="h-4 w-4" />
                         <span>Absensi Hari Ini</span>
                       </div>
-
-                      {/* Tampilkan Pertemuan */}
                       <div className="text-xl font-semibold leading-tight">
-                        {checkInTime}
+                        {checkInLabel}
                       </div>
-                      {/* Teks tambahan ukuran XS */}
                       <div className="text-xs text-muted-foreground">
                         Pengenalan Ilmu Balaghah
                       </div>
@@ -422,7 +415,8 @@ const StudentCSST: React.FC = () => {
                             const newMeeting = attendanceReports + 1;
                             setAttendanceReports(newMeeting);
                             setHasCheckedIn(true);
-                            setCheckInTime(`Pertemuan ${newMeeting}`);
+                            setCheckInLabel(`Pertemuan ${newMeeting}`);
+                            setCheckInAt(new Date());
                           }}
                         >
                           Absen Sekarang
@@ -440,13 +434,11 @@ const StudentCSST: React.FC = () => {
               onClick={() => navigate("ruangan")}
             >
               <CardContent className="p-4 md:p-5 flex flex-col gap-3">
-                {/* Judul + Icon */}
                 <div className="text-sm text-muted-foreground flex items-center gap-2">
                   <MapPin className="h-4 w-4" />
                   <span>Ruangan</span>
                 </div>
 
-                {/* Jika OFFLINE → Belum diatur */}
                 {csstView.deliveryMode !== "online" ? (
                   <>
                     <div className="text-xl font-semibold leading-tight">
@@ -458,42 +450,33 @@ const StudentCSST: React.FC = () => {
                   </>
                 ) : (
                   <>
-                    {/* ONLINE MODE (Zoom / Meet / Teams) */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                      {/* Meeting ID */}
                       <div>
                         <span className="font-medium">Meeting ID: </span>
                         <span className="font-mono">
-                          {csstQ.data?.class_section_subject_teacher
+                          {csstQ.data
                             ?.class_section_subject_teacher_meeting_id ?? "-"}
                         </span>
                       </div>
-                      {/* Passcode */}
                       <div>
                         <span className="font-medium">Passcode: </span>
                         <span className="font-mono">
-                          {csstQ.data?.class_section_subject_teacher
-                            ?.class_section_subject_teacher_passcode ?? "-"}
+                          {csstQ.data?.class_section_subject_teacher_passcode ??
+                            "-"}
                         </span>
                       </div>
-                      {/* Link Zoom (biarkan 1 kolom, otomatis melebar di mobile) */}
                       <div className="md:col-span-2">
                         <span className="font-medium">Link Zoom: </span>
-                        {csstQ.data?.class_section_subject_teacher
-                          ?.class_section_subject_teacher_join_url ? (
+                        {csstQ.data?.class_section_subject_teacher_join_url ? (
                           <a
                             href={
-                              csstQ.data.class_section_subject_teacher
-                                .class_section_subject_teacher_join_url
+                              csstQ.data.class_section_subject_teacher_join_url
                             }
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-primary underline break-all"
                           >
-                            {
-                              csstQ.data.class_section_subject_teacher
-                                .class_section_subject_teacher_join_url
-                            }
+                            {csstQ.data.class_section_subject_teacher_join_url}
                           </a>
                         ) : (
                           <span className="text-muted-foreground">
@@ -634,17 +617,19 @@ const StudentCSST: React.FC = () => {
               </CardContent>
             </Card>
           </div>
-          {hasCheckedIn && checkInTime && (
+
+          {hasCheckedIn && checkInAt && (
             <div className="w-full text-center text-destructive text-sm font-medium mt-2">
               Anda absen pada{" "}
-              {new Date(checkInTime).toLocaleString("id-ID", {
+              {checkInAt.toLocaleString("id-ID", {
                 weekday: "long",
                 day: "numeric",
                 month: "long",
                 year: "numeric",
                 hour: "2-digit",
                 minute: "2-digit",
-              })}
+              })}{" "}
+              {checkInLabel ? `(${checkInLabel})` : ""}
             </div>
           )}
         </div>
