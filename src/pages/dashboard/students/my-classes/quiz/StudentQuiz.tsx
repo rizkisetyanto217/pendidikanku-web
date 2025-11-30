@@ -1,6 +1,8 @@
 // src/pages/sekolahislamku/pages/student/StudentQuiz.tsx
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import axios from "@/lib/axios";
 
 /* shadcn/ui */
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,6 +30,7 @@ import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayou
 
 /* optional, kalau ada di project-mu */
 import { htmlToPlainText } from "@/components/costum/CRichTextEditor";
+import type { AxiosError } from "axios";
 
 /* =========================
    Types
@@ -64,119 +67,84 @@ type SubmitPayload = {
 };
 
 /* =========================
-   DUMMY QUESTIONS
+   API DTO TYPES
 ========================= */
 
-const DUMMY_QUESTIONS: StudentQuestion[] = [
-  {
-    id: "q1",
-    text: "<p>Siapakah <strong>khalifah pertama</strong> setelah wafatnya Rasulullah ﷺ?</p>",
-    type: "single",
-    points: 10,
-    options: [
-      { key: "A", text: "Utsman bin Affan" },
-      { key: "B", text: "Ali bin Abi Thalib" },
-      { key: "C", text: "Abu Bakar Ash-Shiddiq" },
-      { key: "D", text: "Umar bin Khattab" },
-    ],
-  },
-  {
-    id: "q2",
-    text: "Apa arti kata <em>“taqwa”</em> secara sederhana?",
-    type: "short_text",
-    points: 5,
-  },
-  {
-    id: "q3",
-    text: "Sebutkan minimal dua contoh adab ketika menuntut ilmu.",
-    type: "paragraph",
-    points: 10,
-  },
-  {
-    id: "q4",
-    text: "Rukun Islam yang keempat adalah…",
-    type: "single",
-    points: 5,
-    options: [
-      { key: "A", text: "Syahadat" },
-      { key: "B", text: "Zakat" },
-      { key: "C", text: "Puasa Ramadhan" },
-      { key: "D", text: "Haji ke Baitullah" },
-    ],
-  },
-  {
-    id: "q5",
-    text: "Tuliskan secara singkat pengertian <strong>ikhlas</strong> dalam beramal.",
-    type: "short_text",
-    points: 5,
-  },
-  {
-    id: "q6",
-    text: "<p>Berikut ini yang <strong>bukan</strong> termasuk nama Al-Qur’an adalah…</p>",
-    type: "single",
-    points: 10,
-    options: [
-      { key: "A", text: "Al-Furqan" },
-      { key: "B", text: "Az-Zikr" },
-      { key: "C", text: "Al-Masih" },
-      { key: "D", text: "Al-Kitab" },
-    ],
-  },
-  {
-    id: "q7",
-    text: "Sebutkan adab saat memasuki masjid.",
-    type: "paragraph",
-    points: 10,
-  },
-  {
-    id: "q8",
-    text: "<p>Amalan hati yang paling utama adalah…</p>",
-    type: "single",
-    points: 5,
-    options: [
-      { key: "A", text: "Tawakal" },
-      { key: "B", text: "Zuhud" },
-      { key: "C", text: "Cinta kepada Allah" },
-      { key: "D", text: "Sabar" },
-    ],
-  },
-  {
-    id: "q9",
-    text: "Apa perbedaan singkat antara <em>iman</em> dan <em>Islam</em>?",
-    type: "paragraph",
-    points: 10,
-  },
-  {
-    id: "q10",
-    text: "<p>Berikut ini yang termasuk <strong>rukun iman</strong> adalah…</p>",
-    type: "single",
-    points: 10,
-    options: [
-      { key: "A", text: "Beriman kepada kitab-kitab Allah" },
-      { key: "B", text: "Bersyahadat dan shalat" },
-      { key: "C", text: "Berpuasa dan berzakat" },
-      { key: "D", text: "Berjihad di jalan Allah" },
-    ],
-  },
-  {
-    id: "q11",
-    text: "Tuliskan dua contoh akhlak terpuji kepada orang tua.",
-    type: "paragraph",
-    points: 10,
-  },
-  {
-    id: "q12",
-    text: "<p>Nabi yang menerima wahyu pertama kali di gua Hira adalah…</p>",
-    type: "single",
-    points: 5,
-    options: [
-      { key: "A", text: "Nabi Musa a.s." },
-      { key: "B", text: "Nabi Nuh a.s." },
-      { key: "C", text: "Nabi Muhammad ﷺ" },
-      { key: "D", text: "Nabi Ibrahim a.s." },
-    ],
-  },
-];
+type ApiQuizQuestionItem = {
+  quiz_question_id: string;
+  quiz_question_quiz_id: string;
+  quiz_question_school_id: string;
+  quiz_question_type: "single" | "short_text" | "paragraph" | string;
+  quiz_question_text: string;
+  quiz_question_points: number;
+  quiz_question_answers?: Record<string, string> | null;
+  quiz_question_correct?: string | null;
+  quiz_question_explanation?: string | null;
+  quiz_question_created_at: string;
+  quiz_question_updated_at: string;
+};
+
+type ApiQuizQuestionListResponse = {
+  success: boolean;
+  message: string;
+  data: ApiQuizQuestionItem[];
+  pagination: {
+    page: number;
+    per_page: number;
+    total: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+    count: number;
+    per_page_options: number[];
+  };
+};
+
+/* =========================
+   Helpers kecil
+========================= */
+
+const extractErrorMessage = (err: unknown): string => {
+  const ax = err as AxiosError<any>;
+  const msgFromResp =
+    ax?.response?.data?.message ||
+    ax?.response?.data?.error ||
+    ax?.response?.statusText;
+  if (msgFromResp) return String(msgFromResp);
+  if (ax?.message) return ax.message;
+  return "Terjadi kesalahan saat memuat soal kuis.";
+};
+
+/* mapping dari API -> model frontend */
+const mapApiQuestionToStudentQuestion = (
+  api: ApiQuizQuestionItem
+): StudentQuestion => {
+  const typeApi = (api.quiz_question_type || "").toLowerCase();
+  let type: StudentQuestionType = "single";
+  if (typeApi === "short_text") type = "short_text";
+  else if (typeApi === "paragraph") type = "paragraph";
+  else type = "single"; // default
+
+  let options: StudentOption[] | undefined;
+  if (type === "single" && api.quiz_question_answers) {
+    // convert { "A": "Text", "B": "Text" } -> [{ key, text }]
+    options = Object.entries(api.quiz_question_answers)
+      .map(([key, text]) => ({
+        key,
+        text,
+      }))
+      // sort biar urut A,B,C,D,...
+      .sort((a, b) => a.key.localeCompare(b.key));
+  }
+
+  return {
+    id: api.quiz_question_id,
+    text: api.quiz_question_text,
+    type,
+    points: api.quiz_question_points ?? 1,
+    options,
+  };
+};
 
 /* util kecil buat format mm:ss */
 function formatTime(sec: number) {
@@ -190,7 +158,7 @@ function formatTime(sec: number) {
 ========================= */
 
 export default function StudentQuiz() {
-  const { quizId = "dummy-quiz-1" } = useParams<{ quizId: string }>();
+  const { quizId = "" } = useParams<{ quizId: string }>();
 
   const navigate = useNavigate();
   const { state } = useLocation();
@@ -199,6 +167,38 @@ export default function StudentQuiz() {
   const quizMeta = useMemo(() => (state ?? {}) as QuizMetaFromState, [state]);
   const timeLimit = quizMeta.timeLimitMin != null ? quizMeta.timeLimitMin : 45; // default 45 menit
   const attemptsAllowed = quizMeta.attemptsAllowed ?? 1;
+
+  /* ====== Load questions dari API ====== */
+
+  const quizQuestionsQ = useQuery<ApiQuizQuestionListResponse, AxiosError>({
+    queryKey: ["student-quiz-questions", quizId],
+    enabled: !!quizId,
+    queryFn: async () => {
+      const res = await axios.get<ApiQuizQuestionListResponse>(
+        "/u/quiz-questions/list",
+        {
+          params: {
+            quiz_id: quizId,
+            page: 1,
+            per_page: 200, // asumsi max 200 soal per quiz
+          },
+        }
+      );
+      return res.data;
+    },
+    staleTime: 30_000,
+  });
+
+  const quizError: string | null = quizQuestionsQ.isError
+    ? extractErrorMessage(quizQuestionsQ.error)
+    : null;
+
+  const questions: StudentQuestion[] = useMemo(
+    () => quizQuestionsQ.data?.data?.map(mapApiQuestionToStudentQuestion) ?? [],
+    [quizQuestionsQ.data]
+  );
+
+  /* ====== State Jawaban & UI ====== */
 
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
@@ -214,22 +214,20 @@ export default function StudentQuiz() {
   // dialog pengaturan lanjutan
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  // dialog auto-submit saat semua soal terjawab
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [autoSubmitPromptShown, setAutoSubmitPromptShown] = useState(false);
-
   // timer (detik)
   const [remainingSec, setRemainingSec] = useState(timeLimit * 60);
 
   /* ====== Header / breadcrumb ====== */
 
   useEffect(() => {
-    const title = quizMeta.title || "Kerjakan Kuis (Dummy)";
+    const title = quizMeta.title || "Kerjakan Kuis";
     setHeader?.({
       title,
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
-        { label: "Ujian", href: "../ujian" },
+        // kita lagi di /student/mapel/:csstId/ujian/quiz/:quizId
+        // jadi cukup "../" buat balik ke /student/mapel/:csstId/ujian
+        { label: "Ujian", href: "../" },
         { label: title },
       ],
       showBack: true,
@@ -251,6 +249,15 @@ export default function StudentQuiz() {
     return () => window.clearInterval(id);
   }, []);
 
+  /* ====== Clamp index kalau jumlah soal berubah ====== */
+  useEffect(() => {
+    if (!questions.length) {
+      setCurrentIndex(0);
+      return;
+    }
+    setCurrentIndex((idx) => Math.min(Math.max(0, idx), questions.length - 1));
+  }, [questions.length]);
+
   /* ====== Jawaban handler ====== */
 
   const handleChangeSingle = (qid: string, key: string) => {
@@ -271,34 +278,35 @@ export default function StudentQuiz() {
 
   /* ====== Hitung jumlah terjawab ====== */
 
-  const totalQuestions = DUMMY_QUESTIONS.length;
-  const answeredCount = DUMMY_QUESTIONS.filter((q) => {
-    const val = answers[q.id];
-    if (typeof val === "string") return val.trim() !== "";
-    if (Array.isArray(val)) return val.length > 0;
-    return false;
-  }).length;
+  const totalQuestions = questions.length;
+  const answeredCount = useMemo(
+    () =>
+      questions.filter((q) => {
+        const val = answers[q.id];
+        if (typeof val === "string") return val.trim() !== "";
+        if (Array.isArray(val)) return val.length > 0;
+        return false;
+      }).length,
+    [questions, answers]
+  );
 
-  /* ====== Auto-open modal submit kalau semua terjawab ====== */
-
-  useEffect(() => {
-    if (
-      totalQuestions > 0 &&
-      answeredCount === totalQuestions &&
-      !autoSubmitPromptShown
-    ) {
-      setConfirmOpen(true);
-      setAutoSubmitPromptShown(true);
-    }
-  }, [answeredCount, totalQuestions, autoSubmitPromptShown]);
-
-  /* ====== Submit (DUMMY) ====== */
-
+  /* ====== Submit (DUMMY, tapi pakai data API) ====== */
   const doSubmit = () => {
     setSubmitError(null);
     setSubmitSuccess(null);
 
-    const unanswered = DUMMY_QUESTIONS.filter((q) => {
+    // 1) Cek dulu: masih ada soal ragu-ragu?
+    const hasDoubt = Object.values(doubts).some((v) => v);
+    if (hasDoubt) {
+      setSubmitError(
+        "Masih ada soal yang ditandai ragu-ragu. Silakan cek ulang dan hapus tanda ragu-ragu di semua soal sebelum mengirim jawaban."
+      );
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    // 2) Cek soal yang belum dijawab
+    const unanswered = questions.filter((q) => {
       const val = answers[q.id];
       if (typeof val === "string") return val.trim() === "";
       if (Array.isArray(val)) return val.length === 0;
@@ -313,9 +321,10 @@ export default function StudentQuiz() {
       return;
     }
 
+    // 3) Semua aman -> submit (dummy)
     const payload: SubmitPayload = {
       quiz_id: quizId,
-      answers: DUMMY_QUESTIONS.map((q) => ({
+      answers: questions.map((q) => ({
         question_id: q.id,
         answer: answers[q.id],
       })),
@@ -328,35 +337,139 @@ export default function StudentQuiz() {
     );
   };
 
-  const handleSubmit = () => {
-    setConfirmOpen(false);
-    doSubmit();
-  };
-
   /* soal yang ditampilkan sesuai mode */
-  const visibleQuestions =
-    mode === "scroll"
-      ? DUMMY_QUESTIONS
-      : [DUMMY_QUESTIONS[Math.min(currentIndex, DUMMY_QUESTIONS.length - 1)]];
+  const visibleQuestions: StudentQuestion[] = useMemo(() => {
+    if (!questions.length) return [];
+    if (mode === "scroll") return questions;
+    const idx = Math.min(currentIndex, questions.length - 1);
+    return [questions[idx]];
+  }, [questions, mode, currentIndex]);
 
   /* ====== Question Map (untuk mode satu per satu) ====== */
 
   type QuestionStatus = "empty" | "answered" | "doubt";
 
-  const questionStatuses: QuestionStatus[] = DUMMY_QUESTIONS.map((q) => {
-    const val = answers[q.id];
-    const hasAnswer =
-      typeof val === "string"
-        ? val.trim() !== ""
-        : Array.isArray(val)
-          ? val.length > 0
-          : false;
-    const isDoubt = !!doubts[q.id];
+  const questionStatuses: QuestionStatus[] = useMemo(
+    () =>
+      questions.map((q) => {
+        const val = answers[q.id];
+        const hasAnswer =
+          typeof val === "string"
+            ? val.trim() !== ""
+            : Array.isArray(val)
+            ? val.length > 0
+            : false;
+        const isDoubt = !!doubts[q.id];
 
-    if (isDoubt) return "doubt";
-    if (hasAnswer) return "answered";
-    return "empty";
-  });
+        if (isDoubt) return "doubt";
+        if (hasAnswer) return "answered";
+        return "empty";
+      }),
+    [questions, answers, doubts]
+  );
+
+  /* ====== Loading & Error state ====== */
+
+  if (quizQuestionsQ.isLoading) {
+    return (
+      <div className="w-full bg-background text-foreground">
+        <main className="w-full px-4 md:px-6 md:py-6">
+          <div className="mx-auto max-w-3xl flex flex-col gap-4">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" onClick={handleBack}>
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div>
+                <div className="h-5 w-40 bg-muted rounded animate-pulse" />
+                <div className="mt-1 h-3 w-56 bg-muted rounded animate-pulse" />
+              </div>
+            </div>
+
+            <Card>
+              <CardContent className="p-4 space-y-3">
+                <div className="h-4 w-56 bg-muted rounded animate-pulse" />
+                <div className="h-3 w-full bg-muted rounded animate-pulse" />
+                <div className="h-3 w-3/4 bg-muted rounded animate-pulse" />
+                <div className="h-3 w-1/2 bg-muted rounded animate-pulse" />
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (quizError) {
+    return (
+      <div className="w-full bg-background text-foreground">
+        <main className="w-full px-4 md:px-6 md:py-6">
+          <div className="mx-auto max-w-3xl flex flex-col gap-4">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" onClick={handleBack}>
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div>
+                <h1 className="text-lg font-semibold">Kerjakan Kuis</h1>
+                <p className="text-xs text-muted-foreground">
+                  Gagal memuat soal kuis.
+                </p>
+              </div>
+            </div>
+
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription className="ml-2 text-xs break-all">
+                {quizError}
+              </AlertDescription>
+            </Alert>
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-fit"
+              onClick={() => quizQuestionsQ.refetch()}
+            >
+              Coba lagi
+            </Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  /* Kalau tidak ada soal sama sekali */
+  if (!questions.length) {
+    return (
+      <div className="w-full bg-background text-foreground">
+        <main className="w-full px-4 md:px-6 md:py-6">
+          <div className="mx-auto max-w-3xl flex flex-col gap-4">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" onClick={handleBack}>
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div>
+                <h1 className="text-lg font-semibold">Kerjakan Kuis</h1>
+                <p className="text-xs text-muted-foreground">
+                  Belum ada soal yang tersedia untuk kuis ini.
+                </p>
+              </div>
+            </div>
+
+            <Card>
+              <CardContent className="p-4 text-sm text-muted-foreground">
+                Guru belum menambahkan soal untuk kuis ini, atau soal belum
+                dipublikasikan.
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  /* =========================
+     RENDER UTAMA
+  ========================== */
 
   return (
     <div className="w-full bg-background text-foreground">
@@ -373,7 +486,7 @@ export default function StudentQuiz() {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <h1 className="text-lg font-semibold">
-              {quizMeta.title || "Kerjakan Kuis (Dummy)"}
+              {quizMeta.title || "Kerjakan Kuis"}
             </h1>
           </div>
 
@@ -382,13 +495,13 @@ export default function StudentQuiz() {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base md:text-lg">
-                  {quizMeta.title || "Kuis Dummy: Materi Umum"}
+                  {quizMeta.title || "Kuis Online"}
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0 space-y-2 text-sm text-muted-foreground">
                 <p className="whitespace-pre-wrap">
                   {quizMeta.description ||
-                    "Ini adalah tampilan kuis untuk murid (dummy). Jawab semua pertanyaan, lalu kirim. Payload akan muncul di console browser."}
+                    "Jawab semua pertanyaan berikut sesuai kemampuanmu."}
                 </p>
                 <div className="flex flex-wrap gap-2 text-xs">
                   <Badge variant="outline" className="h-5">
@@ -399,7 +512,7 @@ export default function StudentQuiz() {
                     Percobaan: {attemptsAllowed}x
                   </Badge>
                   <Badge variant="outline" className="h-5">
-                    {DUMMY_QUESTIONS.length} pertanyaan
+                    {questions.length} pertanyaan
                   </Badge>
                 </div>
               </CardContent>
@@ -481,15 +594,15 @@ export default function StudentQuiz() {
                           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
 
                           status === "empty" &&
-                          "border-border bg-muted/40 text-muted-foreground",
+                            "border-border bg-muted/40 text-muted-foreground",
                           status === "answered" &&
-                          "border-primary/70 bg-primary/10 dark:bg-primary/20 text-primary",
+                            "border-primary/70 bg-primary/10 dark:bg-primary/20 text-primary",
                           status === "doubt" &&
-                          "border-amber-500 bg-amber-500/10 text-amber-300",
+                            "border-amber-500 bg-amber-500/10 text-amber-300",
 
-                          // ⬇️ DI SINI TAMBahkan override untuk state aktif
+                          // ⬇️ ganti bagian ini
                           isActive &&
-                          "ring-1 ring-primary bg-primary text-primary-foreground"
+                            "ring-1 ring-primary bg-primary text-foreground font-semibold"
                         )}
                       >
                         {idx + 1}
@@ -524,7 +637,7 @@ export default function StudentQuiz() {
             )}
           >
             {visibleQuestions.map((q) => {
-              const idx = DUMMY_QUESTIONS.findIndex((it) => it.id === q.id);
+              const idx = questions.findIndex((it) => it.id === q.id);
               const qId = q.id;
               return (
                 <QuestionCard
@@ -572,14 +685,11 @@ export default function StudentQuiz() {
           )}
 
           {/* Footer submit – HANYA muncul kalau SEMUA soal terjawab */}
-          {DUMMY_QUESTIONS.length > 0 && answeredCount === totalQuestions && (
+          {totalQuestions > 0 && answeredCount === totalQuestions && (
             <>
               <Separator className="my-2" />
               <div className="flex justify-end">
-                <Button
-                  onClick={() => setConfirmOpen(true)}
-                  className="flex items-center gap-2"
-                >
+                <Button onClick={doSubmit} className="flex items-center gap-2">
                   <Send className="h-4 w-4" />
                   Kirim Jawaban
                 </Button>
@@ -609,7 +719,10 @@ export default function StudentQuiz() {
                   ? "border-primary bg-primary/5"
                   : "hover:bg-muted/40"
               )}
-              onClick={() => setMode("scroll")}
+              onClick={() => {
+                setMode("scroll");
+                setSettingsOpen(false); // ⬅ langsung tutup dialog
+              }}
             >
               <CardContent className="p-3 flex items-start gap-3">
                 <div className="mt-1 h-2 w-2 rounded-full bg-primary" />
@@ -640,7 +753,10 @@ export default function StudentQuiz() {
                   ? "border-primary bg-primary/5"
                   : "hover:bg-muted/40"
               )}
-              onClick={() => setMode("paged")}
+              onClick={() => {
+                setMode("paged");
+                setSettingsOpen(false); // ⬅ langsung tutup dialog
+              }}
             >
               <CardContent className="p-3 flex items-start gap-3">
                 <div className="mt-1 h-2 w-2 rounded-full bg-primary" />
@@ -668,44 +784,6 @@ export default function StudentQuiz() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setSettingsOpen(false)}>
               Tutup
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog konfirmasi submit */}
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Kirim jawaban sekarang?</DialogTitle>
-            <DialogDescription>
-              {answeredCount === totalQuestions
-                ? "Semua soal sudah kamu jawab. Kamu bisa mengirim jawaban sekarang, atau meninjau ulang dulu (misalnya soal yang ditandai ragu-ragu)."
-                : `Saat ini baru ${answeredCount} dari ${totalQuestions} soal yang terjawab.`}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-2 text-sm text-muted-foreground">
-            Soal yang ditandai{" "}
-            <span className="inline-flex items-center gap-1 align-middle">
-              <span className="h-2 w-2 rounded-full bg-amber-500" />
-              <span>ragu-ragu</span>
-            </span>{" "}
-            bisa kamu cek ulang sebelum kirim.
-          </div>
-          <DialogFooter className="flex gap-2 justify-end">
-            <Button
-              variant="outline"
-              onClick={() => setConfirmOpen(false)}
-              type="button"
-            >
-              Tinjau dulu
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              type="button"
-              disabled={answeredCount !== totalQuestions}
-            >
-              Kirim Jawaban
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -749,8 +827,8 @@ function QuestionCard({
     typeof value === "string"
       ? value.trim() !== ""
       : Array.isArray(value)
-        ? value.length > 0
-        : false;
+      ? value.length > 0
+      : false;
 
   const [noteOpen, setNoteOpen] = useState(Boolean(note));
 
@@ -760,7 +838,7 @@ function QuestionCard({
         "overflow-hidden flex flex-col",
         fullHeight && "h-full",
         isDoubtful &&
-        "border-amber-400 bg-amber-50/60 dark:bg-amber-950/20 dark:border-amber-500"
+          "border-amber-400 bg-amber-50/60 dark:bg-amber-950/20 dark:border-amber-500"
       )}
     >
       <CardHeader className="pb-2">
@@ -877,8 +955,8 @@ function QuestionCard({
               {noteOpen
                 ? "Sembunyikan catatan"
                 : note
-                  ? "Lihat / ubah catatan"
-                  : "Tambah catatan"}
+                ? "Lihat / ubah catatan"
+                : "Tambah catatan"}
             </Button>
           </div>
 
