@@ -37,6 +37,8 @@ import {
   AccordionContent,
 } from "@/components/ui/accordion";
 
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 // import api from "@/lib/axios";
 
@@ -313,7 +315,6 @@ async function fetchMaterialsByClass(classId: string): Promise<Material[]> {
     },
   ]);
 }
-
 /* =========================================================
    HELPERS
 ========================================================= */
@@ -459,7 +460,7 @@ export default function StudentCSSTMaterial() {
 
   const handleSelectLecture = (m: Material) => {
     setCurrent(m);
-    // biar di mobile langsung ke video
+    // biar di mobile langsung ke video / konten
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -481,6 +482,9 @@ export default function StudentCSSTMaterial() {
       setTimeout(() => setCopiedId(null), 1200);
     }
   };
+
+  // modal baca artikel full width
+  const [articleFullscreenOpen, setArticleFullscreenOpen] = useState(false);
 
   const renderPlayerContent = () => {
     if (!current) {
@@ -506,9 +510,11 @@ export default function StudentCSSTMaterial() {
 
     if (current.type === "article") {
       return (
-        <div className="w-full h-full bg-background border rounded-md p-4 overflow-auto">
-          <h2 className="font-semibold mb-3">{current.title}</h2>
-          <div className="text-sm whitespace-pre-line">
+        <div className="w-full h-full bg-background border rounded-md p-4 overflow-auto flex flex-col">
+          <h2 className="font-semibold mb-2 text-sm md:text-base">
+            {current.title}
+          </h2>
+          <div className="text-xs md:text-sm whitespace-pre-line flex-1">
             {current.content ?? "Belum ada konten artikel."}
           </div>
         </div>
@@ -553,7 +559,7 @@ export default function StudentCSSTMaterial() {
 
   /* =========================
      Render
-  ========================= */
+  ========================== */
   return (
     <div className="w-full bg-background text-foreground">
       <main className="mx-auto max-w-6xl space-y-6 px-4 md:px-6 pb-8">
@@ -618,6 +624,19 @@ export default function StudentCSSTMaterial() {
                       </>
                     )}
                   </div>
+
+                  {/* ⬇ tombol layar penuh dipindah ke sini */}
+                  {current?.type === "article" && (
+                    <div className="flex justify-end pt-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setArticleFullscreenOpen(true)}
+                      >
+                        Baca layar penuh
+                      </Button>
+                    </div>
+                  )}
                 </CardHeader>
               </Card>
 
@@ -868,6 +887,46 @@ export default function StudentCSSTMaterial() {
           </div>
         )}
       </main>
+
+      {/* Dialog artikel layar penuh */}
+      <Dialog
+        open={articleFullscreenOpen && current?.type === "article"}
+        onOpenChange={setArticleFullscreenOpen}
+      >
+        <DialogContent className="max-w-5xl w-[95vw] h-[80vh] p-0">
+          <div className="flex flex-col h-full">
+            <div className="px-6 pt-4 pb-3 border-b">
+              <p className="text-[11px] uppercase text-muted-foreground font-medium">
+                {current?.sectionTitle ?? "Materi Kelas"}
+              </p>
+              <h2 className="text-lg md:text-xl font-semibold">
+                {current?.title}
+              </h2>
+              <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
+                {current?.createdAt && (
+                  <span className="inline-flex items-center gap-1">
+                    <CalendarDays className="h-3 w-3" />
+                    {dateLong(current.createdAt)}
+                  </span>
+                )}
+                {current?.durationMinutes && (
+                  <span className="inline-flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {formatDuration(current.durationMinutes)}
+                  </span>
+                )}
+                {current?.author && <span>Oleh {current.author}</span>}
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-auto px-6 py-4">
+              <div className="text-sm leading-relaxed whitespace-pre-line">
+                {current?.content ?? "Belum ada konten artikel."}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

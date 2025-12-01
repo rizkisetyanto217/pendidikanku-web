@@ -56,13 +56,6 @@ type ApiResponse = {
    Utils kecil
 ======================= */
 
-// bikin "YYYY-MM" dari current date
-function getCurrentMonthStr(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  return `${year}-${month}`;
-}
 
 // convert ISO date ke "YYYY-MM-DD"
 function toYmd(dateISO: string | undefined): string {
@@ -81,9 +74,6 @@ export default function StudentCSSTDailyReport() {
   const navigate = useNavigate();
   const { setHeader } = useDashboardHeader();
   const { csstId } = useParams<{ csstId: string }>();
-
-  // bulan aktif: sekarang dulu (nanti bisa di-sync sama calendar kalau perlu)
-  const month = getCurrentMonthStr();
 
   // Set header via effect
   useEffect(() => {
@@ -104,13 +94,12 @@ export default function StudentCSSTDailyReport() {
   ======================= */
 
   const { data, isLoading, isError } = useQuery<ApiResponse>({
-    queryKey: ["student-csst-daily-report", csstId, month],
+    queryKey: ["student-csst-daily-report", csstId],
     enabled: !!csstId,
     queryFn: async () => {
       const res = await api.get("/api/u/attendance-sessions/list", {
         params: {
           student_timeline: 1,
-          month, // contoh: "2025-11"
           mode: "compact",
           csst_id: csstId,
         },

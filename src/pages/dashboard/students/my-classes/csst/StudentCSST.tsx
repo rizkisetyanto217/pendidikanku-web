@@ -530,7 +530,10 @@ const StudentCSST: React.FC = () => {
             </Card>
 
             {/* Materi */}
-            <Card className="cursor-pointer transition hover:shadow-md">
+            <Card
+              className="cursor-pointer transition hover:shadow-md"
+              onClick={() => navigate("materi")}
+            >
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="space-y-1">
                   <div className="text-sm text-muted-foreground flex items-center gap-2">
