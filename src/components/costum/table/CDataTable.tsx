@@ -403,9 +403,9 @@ export function CDataTable<T>(props: DataTableProps<T>) {
       onClick={
         onRowClick
           ? (e) => {
-              if (shouldIgnoreRowInteraction(e)) return;
-              onRowClick(row);
-            }
+            if (shouldIgnoreRowInteraction(e)) return;
+            onRowClick(row);
+          }
           : undefined
       }
       className={cn(
@@ -418,12 +418,12 @@ export function CDataTable<T>(props: DataTableProps<T>) {
       onKeyDown={
         onRowClick
           ? (e) => {
-              if (shouldIgnoreRowInteraction(e)) return;
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                onRowClick?.(row);
-              }
+            if (shouldIgnoreRowInteraction(e)) return;
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              onRowClick?.(row);
             }
+          }
           : undefined
       }>
       {columns.map((c) => (
@@ -524,7 +524,7 @@ export function CDataTable<T>(props: DataTableProps<T>) {
                   <TableHeader
                     className={cn(
                       stickyHeader &&
-                        "sticky top-0 z-10 backdrop-blur supports-[backdrop-filter]:bg-transparent"
+                      "sticky top-0 z-10 backdrop-blur supports-[backdrop-filter]:bg-transparent"
                     )}>
                     <TableRow className="bg-primary/10">
                       {columns.map((col) => (
@@ -566,16 +566,16 @@ export function CDataTable<T>(props: DataTableProps<T>) {
                           onClick={
                             onRowClick
                               ? (e) => {
-                                  if (shouldIgnoreRowInteraction(e)) return;
-                                  onRowClick(row);
-                                }
+                                if (shouldIgnoreRowInteraction(e)) return;
+                                onRowClick(row);
+                              }
                               : undefined
                           }
                           className={cn(
                             "group/row border-b border-border",
                             zebra &&
-                              idx % 2 === 1 &&
-                              "bg-muted/30 dark:bg-muted/20",
+                            idx % 2 === 1 &&
+                            "bg-muted/30 dark:bg-muted/20",
                             hoverCls,
                             onRowClick && "cursor-pointer"
                           )}
@@ -584,12 +584,12 @@ export function CDataTable<T>(props: DataTableProps<T>) {
                           onKeyDown={
                             onRowClick
                               ? (e) => {
-                                  if (shouldIgnoreRowInteraction(e)) return;
-                                  if (e.key === "Enter" || e.key === " ") {
-                                    e.preventDefault();
-                                    onRowClick?.(row);
-                                  }
+                                if (shouldIgnoreRowInteraction(e)) return;
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  onRowClick?.(row);
                                 }
+                              }
                               : undefined
                           }>
                           {columns.map((col) => (
@@ -730,7 +730,7 @@ function PaginationFooter(props: {
 /* =========================
    Utils (PERBAIKAN ALIGN)
 ========================= */
-function alignToHeader(a: Align = "center") {
+function alignToHeader(a: Align = "left") {
   // Semua header default di tengah
   switch (a) {
     case "left":
@@ -738,11 +738,11 @@ function alignToHeader(a: Align = "center") {
     case "right":
       return "text-right";
     default:
-      return "text-center";
+      return "text-left";
   }
 }
 
-function alignToCell(a: Align = "center") {
+function alignToCell(a: Align = "left") {
   // Semua sel isi default di tengah
   switch (a) {
     case "left":
@@ -750,7 +750,7 @@ function alignToCell(a: Align = "center") {
     case "right":
       return "text-right";
     default:
-      return "text-center";
+      return "text-left";
   }
 }
 
@@ -766,7 +766,7 @@ function safeLSSet(key: string, value: string) {
   try {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(key, value);
-  } catch {}
+  } catch { }
 }
 
 /* Re-export */

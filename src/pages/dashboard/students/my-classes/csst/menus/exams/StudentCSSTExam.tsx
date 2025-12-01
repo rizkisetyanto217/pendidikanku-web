@@ -398,12 +398,11 @@ const StudentCSSTExam: React.FC<StudentClassesExam> = ({ showBack }) => {
       const state = progress?.state;
 
       if (statusTab === "not_started") {
-        // belum dikerjakan: tidak ada progress, atau state bukan submitted/ongoing/completed
         okStatus = !progress
           ? true
           : !["ongoing", "submitted", "submitted_late", "completed"].includes(
-              String(state)
-            );
+            String(state)
+          );
       } else if (statusTab === "done") {
         okStatus =
           state === "submitted" ||
@@ -448,31 +447,37 @@ const StudentCSSTExam: React.FC<StudentClassesExam> = ({ showBack }) => {
     setSearchParams(newParams);
   };
 
-  // klik tombol di card
-  const handleOpenExam = (
-    assessment: StudentAssessmentItem,
-    isStart: boolean
-  ) => {
+  // 🔧 klik tombol di card
+  const handleOpenExam = (assessment: StudentAssessmentItem) => {
     if (!assessment.assessment_slug) return;
 
-    // kalau mode start & punya banyak quiz -> pilih quiz dulu
+    // Kalau ujian tipe quiz dan punya daftar quiz
     if (
-      isStart &&
+      assessment.assessment_kind === "quiz" &&
       assessment.quizzes &&
-      assessment.quizzes.length > 1 &&
-      assessment.assessment_kind === "quiz"
+      assessment.quizzes.length > 0
     ) {
+      // Kalau cuma ada 1 quiz -> langsung ke halaman quiz
+      if (assessment.quizzes.length === 1) {
+        const onlyQuiz = assessment.quizzes[0];
+        // route nested: /student/mapel/:csstId/ujian/quiz/:quizId
+        navigate(
+          `quiz/${onlyQuiz.quiz_id}?assessment_id=${assessment.assessment_id}`
+        );
+        return;
+      }
+
+      // Kalau lebih dari 1 quiz -> buka modal pilih quiz
       setStartAssessment(assessment);
       return;
     }
 
-    // default: langsung ke halaman assessment (atau 1 quiz)
+    // Default (bukan quiz) -> ke halaman detail assessment
     navigate(
       `/student/assessments/${assessment.assessment_slug}?csst_id=${csstId}`
     );
   };
 
-  // setelah user pilih quiz tertentu
   // setelah user pilih quiz tertentu
   const handleStartQuiz = (
     assessment: StudentAssessmentItem,
@@ -652,9 +657,8 @@ const StudentCSSTExam: React.FC<StudentClassesExam> = ({ showBack }) => {
 
                   const scoreText =
                     progress?.score != null
-                      ? `${progress.score}/${
-                          assessment.assessment_max_score ?? 100
-                        }`
+                      ? `${progress.score}/${assessment.assessment_max_score ?? 100
+                      }`
                       : "-";
 
                   const dateRangeText = formatDateRange(
@@ -779,15 +783,15 @@ const StudentCSSTExam: React.FC<StudentClassesExam> = ({ showBack }) => {
                         <Button
                           size="sm"
                           disabled={!canStartOrView}
-                          onClick={() => handleOpenExam(assessment, isOngoing)}
+                          onClick={() => handleOpenExam(assessment)}
                         >
                           {isOngoing
                             ? "Kerjakan sekarang"
                             : progress?.state === "submitted" ||
                               progress?.state === "submitted_late" ||
                               progress?.state === "completed"
-                            ? "Lihat hasil"
-                            : "Lihat detail"}
+                              ? "Lihat hasil"
+                              : "Lihat detail"}
                         </Button>
                       </CardFooter>
                     </Card>
@@ -826,7 +830,7 @@ const StudentCSSTExam: React.FC<StudentClassesExam> = ({ showBack }) => {
           )}
         </div>
 
-        {/* Dialog pilih quiz saat "Kerjakan sekarang" */}
+        {/* Dialog pilih quiz saat ujian punya >1 quiz */}
         <Dialog
           open={!!startAssessment}
           onOpenChange={(open) => {

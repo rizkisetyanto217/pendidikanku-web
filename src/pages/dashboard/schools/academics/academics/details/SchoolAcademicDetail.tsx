@@ -117,10 +117,10 @@ type TermListResp = {
 const dateShort = (iso?: string | null) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
     : "-";
 
 function deliveryModeLabel(mode: string) {
@@ -180,25 +180,25 @@ export default function SchoolAcademicDetail() {
   const sections = bundle?.class_sections ?? [];
 
   useEffect(() => {
-  // ⛔ Jangan jalankan sebelum data term ada
-  if (!term) return;
+    // ⛔ Jangan jalankan sebelum data term ada
+    if (!term) return;
 
-  const schoolId = term.academic_term_school_id;
+    const schoolId = term.academic_term_school_id;
 
-  setHeader({
-    title: "Detail Akademik",
-    breadcrumbs: [
-      { label: "Dashboard", href: "dashboard" },
-      { label: "Akademik" },
-      {
-        label: "Tahun Akademik",
-        href: `/${schoolId}/sekolah/akademik/tahun-akademik`,
-      },
-      { label: "Detail" },
-    ],
-    showBack: true,
-  });
-}, [term, setHeader]);
+    setHeader({
+      title: "Detail Akademik",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Akademik" },
+        {
+          label: "Tahun Akademik",
+          href: `/${schoolId}/sekolah/akademik/tahun-akademik`,
+        },
+        { label: "Detail" },
+      ],
+      showBack: true,
+    });
+  }, [term, setHeader]);
 
   /* === PATCH (edit) === */
   const patchMut = useMutation({
@@ -284,7 +284,9 @@ export default function SchoolAcademicDetail() {
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="md:flex hidden items-center gap-3">
-              <Button variant="ghost" onClick={() => navigate(-1)}>
+              <Button
+                variant="ghost"
+                onClick={() => navigate(-1)}>
                 <ArrowLeft size={20} />
               </Button>
               <h1 className="font-semibold text-lg md:text-xl">

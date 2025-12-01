@@ -95,12 +95,12 @@ type ApiResponse = {
 const getInitials = (name?: string | null) =>
   name
     ? name
-        .split(" ")
-        .filter(Boolean)
-        .map((n) => n[0])
-        .join("")
-        .substring(0, 2)
-        .toUpperCase()
+      .split(" ")
+      .filter(Boolean)
+      .map((n) => n[0])
+      .join("")
+      .substring(0, 2)
+      .toUpperCase()
     : "U";
 
 const formatGender = (g?: string | null) => {
@@ -207,7 +207,7 @@ export default function TeacherProfil({ showBack = false, backTo }: Props) {
     const certs = teacher.user_teacher_certificates ?? [];
 
     return (
-      <div className="flex-1 flex flex-col space-y-6 min-w-0">
+      <div className="w-full flex flex-col space-y-6 min-w-0">
         {/* Top header (di dalam page, selain header dashboard) */}
         <div className="md:flex hidden gap-3 items-center">
           {showBack && (
@@ -215,7 +215,7 @@ export default function TeacherProfil({ showBack = false, backTo }: Props) {
               onClick={handleBack}
               variant="ghost"
               size="icon"
-              className="cursor-pointer self-start"
+
             >
               <ArrowLeft size={20} />
             </Button>
@@ -326,14 +326,14 @@ export default function TeacherProfil({ showBack = false, backTo }: Props) {
                   </div>
                   {typeof teacher.user_teacher_experience_years ===
                     "number" && (
-                    <div className="flex items-center gap-2">
-                      <BookOpen className="size-4" />
-                      <span>
-                        {teacher.user_teacher_experience_years} tahun pengalaman
-                        mengajar
-                      </span>
-                    </div>
-                  )}
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="size-4" />
+                        <span>
+                          {teacher.user_teacher_experience_years} tahun pengalaman
+                          mengajar
+                        </span>
+                      </div>
+                    )}
                 </div>
               </div>
             </div>
@@ -509,7 +509,7 @@ export default function TeacherProfil({ showBack = false, backTo }: Props) {
 
   /* ================= RENDER FINAL ================= */
   return (
-    <main className="md:py-8">
+    <main className="w-full">
       <div className="mx-auto">
         {loading ? (
           <div className="flex-1 flex items-center justify-center py-20 text-muted-foreground">

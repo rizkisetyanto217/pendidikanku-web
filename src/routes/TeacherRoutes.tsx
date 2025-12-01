@@ -58,22 +58,10 @@ export const TeacherRoutes = (
 
     {/* Guru Mapel / CSST */}
     <Route path="guru-mapel">
-      {/* index: list semua mapel yang diampu guru */}
       <Route index element={<TeacherCSST />} />
 
-      {/* parent: detail mapel + tab internal, pakai Outlet */}
-      <Route path=":csstId" element={<TeacherCSSTDetail />}>
-        {/* default child kalau cuma /guru-mapel/:csstId */}
-        <Route index element={<TeacherCSSTManagement />} />
-        {/* atau kalau mau ringkasannya di komponen lain:
-        <Route index element={<TeacherCSSTOverview />} /> */}
-
-        {/* Kehadiran Murid */}
-        <Route path="absensi" element={<TeacherCSSTStudentAttendanceList />} />
-        <Route
-          path="absensi/:id"
-          element={<TeacherCSSTStudentAttendanceDetail />}
-        />
+      <Route path=":csstId">
+        <Route index element={<TeacherCSSTDetail />} />
 
         {/* Murid */}
         <Route path="murid" element={<TeacherCSSTStudentList />} />
@@ -86,8 +74,15 @@ export const TeacherRoutes = (
           element={<TeacherCSSTDailyReportDetail />}
         />
 
-        {/* Kelola kelas (kalau mau sebagai tab terpisah, bisa tetap di sini) */}
-        <Route path="kelola-kelas" element={<TeacherCSSTManagement />} />
+        {/* Absensi */}
+        <Route path="absensi" element={<TeacherCSSTStudentAttendanceList />} />
+        <Route
+          path="absensi/:id"
+          element={<TeacherCSSTStudentAttendanceDetail />}
+        />
+
+        {/* Ujian */}
+        <Route path="ujian" element={<TeacherCSSTExam />} />
 
         {/* Materi */}
         <Route path="materi" element={<TeacherCSSTMaterialList />} />
@@ -97,16 +92,13 @@ export const TeacherRoutes = (
           element={<TeacherCSSTMaterialForm />}
         />
 
-        {/* Ujian */}
-        <Route path="ujian" element={<TeacherCSSTExam />} />
-
         {/* Buku */}
         <Route path="buku" element={<TeacherCSSTBookList />} />
         <Route path="buku/new" element={<TeacherCSSTBookForm />} />
         <Route path="buku/:bookId" element={<TeacherCSSTBookDetail />} />
         <Route path="buku/edit/:bookId" element={<TeacherCSSTBookForm />} />
 
-        {/* Tugas / Assessment */}
+        {/* Tugas */}
         <Route path="tugas" element={<TeacherCSSTAssignment />} />
         <Route path="tugas/new" element={<TeacherCSSTAssessmentForm />} />
         <Route
@@ -117,8 +109,12 @@ export const TeacherRoutes = (
           path="tugas/:assessmentId/:quizId"
           element={<TeacherQuizBuilder />}
         />
+
+        {/* Kelola */}
+        <Route path="kelola-kelas" element={<TeacherCSSTManagement />} />
       </Route>
     </Route>
+
 
     {/* Jadwal */}
     <Route path="jadwal">
@@ -134,69 +130,84 @@ export const TeacherRoutes = (
     {/* Profil */}
     <Route path="profil-guru" element={<TeacherProfil />} />
 
-    {/* Menu Utama Guru */}
+    {/* Menu Utama*/}
     <Route path="menu-utama">
       <Route index element={<TeacherMenuGrids />} />
+
       {/* Wali Kelas */}
       <Route path="wali-kelas">
-        <Route index element={<TeacherClass />} />
+        <Route index element={<TeacherClass showBack />} />
         <Route path=":classSectionId" element={<TeacherClassDetail />} />
       </Route>
 
       {/* Guru Mapel / CSST */}
       <Route path="guru-mapel">
-        <Route index element={<TeacherCSST />} />
-        <Route path=":csstId" element={<TeacherCSSTDetail />} />
+        <Route index element={<TeacherCSST showBack />} />
 
-        {/* Kehadiran Murid */}
-        <Route
-          path=":csstId/semua-kehadiran"
-          element={<TeacherCSSTStudentAttendanceList />}
-        />
-        <Route path=":csstId/murid" element={<TeacherCSSTStudentList />} />
-        <Route
-          path=":csstId/murid/:id"
-          element={<TeacherCSSTStudentDetail />}
-        />
+        <Route path=":csstId">
+          <Route index element={<TeacherCSSTDetail />} />
 
-        {/* Assignments */}
-        <Route path=":csstId/tugas" element={<TeacherCSSTAssignment />} />
-        <Route
-          path=":csstId/tugas/new"
-          element={<TeacherCSSTAssessmentForm />}
-        />
-        <Route
-          path=":csstId/tugas/:assessmentId"
-          element={<TeacherCSSTAssessmentDetail />}
-        />
-        <Route
-          path=":csstId/tugas/:assessmentId/:quizId"
-          element={<TeacherQuizBuilder />}
-        />
+          {/* Murid */}
+          <Route path="murid" element={<TeacherCSSTStudentList />} />
+          <Route path="murid/:id" element={<TeacherCSSTStudentDetail />} />
 
-        {/* Materi, Ujian, Buku */}
-        <Route path=":csstId/materi" element={<TeacherCSSTMaterialList />} />
-        <Route path=":csstId/ujian" element={<TeacherCSSTExam />} />
-        <Route path=":csstId/buku" element={<TeacherCSSTBookList />} />
-        <Route
-          path=":csstId/buku/:bookId"
-          element={<TeacherCSSTBookDetail />}
-        />
+          {/* Daily progress */}
+          <Route path="daily-progress" element={<TeacherCSSTDailyReport />} />
+          <Route
+            path="daily-progress/:id"
+            element={<TeacherCSSTDailyReportDetail />}
+          />
+
+          {/* Absensi */}
+          <Route path="absensi" element={<TeacherCSSTStudentAttendanceList />} />
+          <Route
+            path="absensi/:id"
+            element={<TeacherCSSTStudentAttendanceDetail />}
+          />
+
+          {/* Ujian */}
+          <Route path="ujian" element={<TeacherCSSTExam />} />
+
+          {/* Materi */}
+          <Route path="materi" element={<TeacherCSSTMaterialList />} />
+          <Route path="materi/new" element={<TeacherCSSTMaterialForm />} />
+          <Route
+            path="materi/edit/:materialId"
+            element={<TeacherCSSTMaterialForm />}
+          />
+
+          {/* Buku */}
+          <Route path="buku" element={<TeacherCSSTBookList />} />
+          <Route path="buku/new" element={<TeacherCSSTBookForm />} />
+          <Route path="buku/:bookId" element={<TeacherCSSTBookDetail />} />
+          <Route path="buku/edit/:bookId" element={<TeacherCSSTBookForm />} />
+
+          {/* Tugas */}
+          <Route path="tugas" element={<TeacherCSSTAssignment />} />
+          <Route path="tugas/new" element={<TeacherCSSTAssessmentForm />} />
+          <Route
+            path="tugas/:assessmentId"
+            element={<TeacherCSSTAssessmentDetail />}
+          />
+          <Route
+            path="tugas/:assessmentId/:quizId"
+            element={<TeacherQuizBuilder />}
+          />
+
+          {/* Kelola */}
+          <Route path="kelola-kelas" element={<TeacherCSSTManagement />} />
+        </Route>
       </Route>
 
       {/* Jadwal */}
-      <Route path="agenda">
-        <Route index element={<TeacherScheduleAgenda />} />
-        <Route path="agenda/:id" element={<TeacherScheduleAgendaDetail />} />
-        <Route path="rutin" element={<TeacherScheduleRoutine />} />
-        <Route
-          path="rutin/:routineId"
-          element={<TeacherScheduleRoutineDetail />}
-        />
-      </Route>
+      <Route path="agenda" element={<TeacherScheduleAgenda showBack />} />
+      <Route path="agenda/:id" element={<TeacherScheduleAgendaDetail />} />
+      <Route path="rutin" element={<TeacherScheduleRoutine showBack />} />
+      <Route path="rutin/:routineId" element={<TeacherScheduleRoutineDetail />} />
 
       {/* Profil */}
-      <Route path="profil-guru" element={<TeacherProfil />} />
+      <Route path="profil-guru" element={<TeacherProfil showBack />} />
     </Route>
+
   </Route>
 );

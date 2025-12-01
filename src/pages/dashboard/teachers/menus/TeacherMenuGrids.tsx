@@ -80,14 +80,14 @@ export default function TeacherMenuGrids() {
         items: [
           {
             key: "jadwal-agenda",
-            label: "Agenda",
-            to: "jadwal/agenda",
+            label: "Jadwal Agenda",
+            to: "agenda",
             icon: <CalendarDays className="w-5 h-5" />,
           },
           {
             key: "jadwal-rutin",
             label: "Jadwal Rutin",
-            to: "jadwal/rutin",
+            to: "rutin",
             icon: <CalendarDays className="w-5 h-5" />,
           },
         ],

@@ -1,5 +1,5 @@
 // src/pages/teacher/classes/TeacherCSSTStudentDetail.tsx
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 /* ========== shadcn/ui ========== */
@@ -11,8 +11,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 /* ========== Icons ========== */
 import {
   ArrowLeft,
-  Users,
-  MessageSquareText,
+
   AlertTriangle,
   Building2,
 
@@ -22,6 +21,8 @@ import {
   Clock,
   Phone,
 } from "lucide-react";
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
 
 /* =========================================================
    TYPES — mirror kolom penting dari tabel (school_students + snapshots)
@@ -140,14 +141,7 @@ const DUMMY_STUDENT: StudentDetailDTO = {
 const fmtDate = (iso?: string | null) =>
   iso ? new Date(iso).toLocaleDateString() : "-";
 
-const statusToBadge = (s?: StudentDetailDTO["school_student_status"]) => {
-  const map: Record<string, { label: string; variant?: any }> = {
-    active: { label: "Aktif" },
-    inactive: { label: "Nonaktif", variant: "secondary" },
-    alumni: { label: "Alumni", variant: "outline" },
-  };
-  return s ? map[s] ?? { label: s } : { label: "-" };
-};
+
 
 function pickActiveSections(sections: SectionItem[] = []) {
   return sections.filter((x) => x?.is_active);
@@ -158,8 +152,39 @@ function pickActiveSections(sections: SectionItem[] = []) {
 ========================================================= */
 const TeacherCSSTStudentDetail: React.FC = () => {
   const navigate = useNavigate();
-  //   const location = useLocation();
-  const { studentId: paramStudentId } = useParams<{ studentId?: string }>();
+  const { setHeader } = useDashboardHeader();
+
+  const { classSectionId: csstId, studentId: paramStudentId } = useParams();
+
+  useEffect(() => {
+    setHeader({
+      title: "Detail Murid",
+      breadcrumbs: [
+        { label: "Dashboard", href: `dashboard` },
+        { label: "Wali Kelas" },
+        { label: "Detail Kelas", href: `wali-kelas/${csstId}` },
+        { label: "Daftar Murid", href: `wali-kelas/${csstId}/murid` },
+        { label: "Detail Murid" },
+      ],
+      showBack: true,
+    });
+  }, [setHeader, csstId]);
+
+  const mapStudentStatusToBadge = (
+    s: StudentDetailDTO["school_student_status"]
+  ): "active" | "inactive" | "pending" => {
+    switch (s) {
+      case "active":
+        return "active";
+      case "inactive":
+        return "inactive";
+      case "alumni":
+        return "inactive"; // atau "pending" jika mau
+      default:
+        return "inactive";
+    }
+  };
+
 
   // Pakai dummy 100%; namun tetap hormati :studentId untuk future-proof
   const dto = useMemo(() => {
@@ -181,61 +206,26 @@ const TeacherCSSTStudentDetail: React.FC = () => {
   );
 
   return (
-    <div className="w-full bg-background text-foreground">
-      <main className="w-full max-w-screen-2xl mx-auto">
-       {/* Top Bar */}
-      <div className="hidden md:block">
-        {/* Baris 1 */}
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate(-1)}
-          >
-            <ArrowLeft />
-          </Button>
-          <h1 className="font-semibold text-lg md:text-xl">
-            Detail Murid
-          </h1>
-        </div>
-        {/* Baris 2 */}
-        <div className="mt-3 flex flex-wrap items-center gap-3">
-          <h1 className="text-xl md:text-2xl font-semibold tracking-tight">
-            {dto.school_student_user_profile_name_snapshot}
-          </h1>
-
-          <Badge className="uppercase">
-            {statusToBadge(dto.school_student_status).label}
-          </Badge>
-
-          <div className="ml-auto flex items-center gap-2">
-            {dto.school_student_user_profile_whatsapp_url_snapshot && (
-              <a
-                href={dto.school_student_user_profile_whatsapp_url_snapshot}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <Button variant="default" size="sm" className="gap-2">
-                  <MessageSquareText size={16} /> WhatsApp
-                </Button>
-              </a>
-            )}
-
-            {dto.school_student_user_profile_parent_whatsapp_url_snapshot && (
-              <a
-                href={dto.school_student_user_profile_parent_whatsapp_url_snapshot}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <Button variant="secondary" size="sm" className="gap-2">
-                  <Users size={16} /> Wali
-                </Button>
-              </a>
-            )}
+    <div className="w-full overflow-x-hidden bg-background text-foreground">
+      <main className="w-full ">
+        {/* Top Bar */}
+        <div className="hidden md:block">
+          {/* Baris 1 */}
+          <div className="md:flex hidden items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(-1)}
+            >
+              <ArrowLeft />
+            </Button>
+            <h1 className="font-semibold text-lg md:text-xl">
+              Detail Murid
+            </h1>
           </div>
-        </div>
-      </div>
+          {/* Baris 2 */}
 
+        </div>
 
         <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
           {/* Identitas */}
@@ -263,10 +253,10 @@ const TeacherCSSTStudentDetail: React.FC = () => {
                   )}
                 </Field>
                 <Field label="Status">
-                  <Badge variant="outline" className="uppercase">
-                    {statusToBadge(dto.school_student_status).label}
-                  </Badge>
+                  <CBadgeStatus status={mapStudentStatusToBadge(dto.school_student_status)} />
+
                 </Field>
+
                 <Field label="Bergabung">
                   {fmtDate(dto.school_student_joined_at)}
                 </Field>
@@ -380,7 +370,8 @@ const TeacherCSSTStudentDetail: React.FC = () => {
                               Sejak {fmtDate(s.from)}
                             </div>
                           </div>
-                          <Badge>AKTIF</Badge>
+                          <CBadgeStatus status="active" className="text-[10px]" />
+
                         </li>
                       ))}
                     </ul>

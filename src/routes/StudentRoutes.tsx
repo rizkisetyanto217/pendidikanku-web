@@ -99,9 +99,10 @@ export const StudentRoutes = (
             element={<StudentCSSTDailyReportDetail />}
           />
           <Route path="ujian" element={<StudentExam showBack />} />
-          {/* 🔽 nested quiz di bawah ujian */}
+          {/* nested quiz di bawah ujian */}
           <Route path="ujian/quiz/:quizId" element={<StudentQuiz />} />
           <Route path="tugas" element={<StudentClassesAssignment showBack />} />
+          <Route path="tugas/quiz/:quizId" element={<StudentQuiz />} />
           <Route path="murid" element={<StudentCSSTStudentList />} />
           <Route path="materi" element={<StudentCSSTMaterialList />} />
         </Route>

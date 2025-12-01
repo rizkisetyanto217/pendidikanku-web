@@ -51,15 +51,20 @@ export default function StudentClassSection() {
   // guard kalau halaman diakses tanpa state (misal refresh direct)
   const hasData = !!enrollment && !!section;
 
-  const sectionData = section as SectionWithMeta;
+  // jangan paksa section sebagai object
+  const sectionData: SectionWithMeta | undefined = section;
 
-  const studentsCount = sectionData.class_section_total_students ?? 0;
+  // SAFE ACCESS
+  const studentsCount =
+    sectionData?.class_section_total_students ?? 0;
+
   const termName = enrollment?.student_class_enrollments_term_name_snapshot;
   const year =
     enrollment?.student_class_enrollments_term_academic_year_snapshot;
 
   const csstItems: CsstItem[] = useMemo(() => {
-    const list = sectionData.class_section_subject_teachers ?? [];
+    const list = sectionData?.class_section_subject_teachers ?? [];
+
     return list.map((csst) => ({
       id: csst.class_section_subject_teacher_id,
       subject:
@@ -83,23 +88,23 @@ export default function StudentClassSection() {
   useEffect(() => {
     if (!hasData) return;
 
-    const className =
-      enrollment.student_class_enrollments_class_name ||
-      enrollment.student_class_enrollments_class_name_snapshot;
-
     setHeader?.({
       title: "Detail Kelas",
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
-        { label: "Kelas Saya", href: "../" },
-        { label: className || "Detail Kelas" },
+        { label: "Kelas Saya" },
+        { label: "Detail Kelas" },
       ],
-      actions: null,
       showBack: true,
     });
   }, [setHeader, hasData, enrollment]);
 
   const handleBack = () => navigate(-1);
+
+  if (!sectionData || !enrollment) {
+    return <div className="p-6">Data tidak tersedia.</div>;
+  }
+
 
   if (!hasData) {
     return (

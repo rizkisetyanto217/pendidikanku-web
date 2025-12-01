@@ -1,7 +1,6 @@
 // src/pages/teacher/classes/TeacherCSSTStudentList.tsx
 import React, { useMemo, useState, useDeferredValue, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 
 /* ---------- shadcn/ui ---------- */
 import { Button } from "@/components/ui/button";
@@ -30,7 +29,6 @@ import {
   type Align,
 } from "@/components/costum/table/CDataTable";
 
-import api from "@/lib/axios";
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* =========================================================
@@ -42,47 +40,6 @@ export type StudentSummary = {
   id: string; // school_student_id
   name: string; // nama siswa
   [key: string]: any;
-};
-
-/* ====== API TYPES dari /u/student-class-section-subject-teachers/list ====== */
-
-type ApiStudentCSSTItem = {
-  student_class_section_subject_teacher_id: string;
-  student_class_section_subject_teacher_school_id: string;
-  student_class_section_subject_teacher_student_id: string;
-  student_class_section_subject_teacher_csst_id: string;
-  student_class_section_subject_teacher_is_active: boolean;
-
-  // snapshot profile siswa
-  student_class_section_subject_teacher_user_profile_name_snapshot?:
-    | string
-    | null;
-  student_class_section_subject_teacher_user_profile_avatar_url_snapshot?:
-    | string
-    | null;
-  student_class_section_subject_teacher_user_profile_whatsapp_url?:
-    | string
-    | null;
-  student_class_section_subject_teacher_user_profile_parent_name_snapshot?:
-    | string
-    | null;
-  student_class_section_subject_teacher_user_profile_parent_whatsapp_url?:
-    | string
-    | null;
-  student_class_section_subject_teacher_user_profile_gender_snapshot?:
-    | string
-    | null;
-
-  // kode / NIS siswa
-  student_class_section_subject_teacher_student_code_snapshot?: string | null;
-
-  // dll (score, notes, dst) — belum dipakai di halaman ini
-};
-
-type ApiStudentCSSTListResponse = {
-  success: boolean;
-  message: string;
-  data: ApiStudentCSSTItem[];
 };
 
 /* =========================================================
@@ -123,114 +80,61 @@ function hasImportant(s: StudentSummary) {
    GET /u/student-class-section-subject-teachers/list?csst_id=...
 ========================================================= */
 
-function mapGender(raw?: string | null): string {
-  if (!raw) return "";
-  if (raw === "L" || raw === "P") return raw;
-  return "";
-}
 
-async function fetchStudentsByCSST(csstId?: string): Promise<StudentSummary[]> {
-  if (!csstId) {
-    console.warn(
-      "[TeacherCSSTStudentList] fetchStudentsByCSST dipanggil tanpa csstId"
-    );
-    return [];
-  }
 
-  console.log("[TeacherCSSTStudentList] Fetch students for csst_id =", csstId);
 
-  const res = await api.get<ApiStudentCSSTListResponse>(
-    "/u/student-class-section-subject-teachers/list",
-    {
-      params: {
-        csst_id: csstId,
-      },
-    }
-  );
 
-  console.log(
-    "[TeacherCSSTStudentList] API /u/student-class-section-subject-teachers/list response:",
-    res.data
-  );
+/* ======================================================
+   DUMMY STUDENTS (untuk Wali Kelas)
+====================================================== */
+const DUMMY_STUDENTS: StudentSummary[] = [
+  {
+    id: "stu-1",
+    name: "Ahmad Fauzi",
+    gender: "L",
+    phone: "081234567890",
+    guardian: "Bpk. Fauzan",
+    importantNotes: ["Sering lupa buku", "Perlu perhatian tambahan"],
+  },
+  {
+    id: "stu-2",
+    name: "Aisyah Rahma",
+    gender: "P",
+    phone: "081312345678",
+    guardian: "Ibu Rani",
+    importantNotes: ["Alergi makanan tertentu"],
+  },
+  {
+    id: "stu-3",
+    name: "Muhammad Iqbal",
+    gender: "L",
+    phone: "08199887766",
+    guardian: "Bpk. Ilyas",
+  },
+  {
+    id: "stu-4",
+    name: "Siti Zulaikha",
+    gender: "P",
+    phone: "081567891234",
+    guardian: "Ibu Sarah",
+    notes: ["Perlu bimbingan membaca"],
+  },
+  {
+    id: "stu-5",
+    name: "Rizki Maulana",
+    gender: "L",
+    phone: "",
+    guardian: "Bpk. Hilmi",
+  },
+];
 
-  const items = res.data?.data ?? [];
-  const result: StudentSummary[] = [];
-
-  for (const it of items) {
-    const sid = it.student_class_section_subject_teacher_student_id;
-    if (!sid) continue;
-
-    const name =
-      it.student_class_section_subject_teacher_user_profile_name_snapshot ??
-      "Siswa tanpa nama";
-
-    const waUrl =
-      it.student_class_section_subject_teacher_user_profile_whatsapp_url || "";
-
-    let phoneFromWa = "";
-    if (typeof waUrl === "string" && waUrl.includes("wa.me")) {
-      const parts = waUrl.split("wa.me/");
-      phoneFromWa = parts[1] ?? "";
-    }
-
-    const gender = mapGender(
-      it.student_class_section_subject_teacher_user_profile_gender_snapshot
-    );
-
-    const parentName =
-      it.student_class_section_subject_teacher_user_profile_parent_name_snapshot ??
-      "";
-
-    const parentWa =
-      it.student_class_section_subject_teacher_user_profile_parent_whatsapp_url ??
-      "";
-
-    let phoneFromParentWa = "";
-    if (typeof parentWa === "string" && parentWa.includes("wa.me")) {
-      const parts = parentWa.split("wa.me/");
-      phoneFromParentWa = parts[1] ?? "";
-    }
-
-    result.push({
-      id: sid,
-      name,
-      gender,
-      nis:
-        it.student_class_section_subject_teacher_student_code_snapshot ??
-        undefined,
-      phone: phoneFromWa || phoneFromParentWa,
-      parentName,
-      _waUrl: waUrl,
-      _parentWaUrl: parentWa,
-      _csstId: it.student_class_section_subject_teacher_csst_id,
-      // field lain kalau mau ditambah tinggal ditaruh di sini
-    });
-  }
-
-  console.log(
-    "[TeacherCSSTStudentList] mapped StudentSummary count =",
-    result.length,
-    "items:"
-  );
-
-  return result;
-}
-
-function useCSSTStudents(csstId?: string) {
-  return useQuery<StudentSummary[]>({
-    queryKey: ["csst-students-teacher", csstId],
-    queryFn: () => fetchStudentsByCSST(csstId),
-    enabled: !!csstId,
-    staleTime: 60_000,
-  });
-}
 
 /* =========================================================
    PAGE
 ========================================================= */
 const TeacherCSSTStudentList: React.FC = () => {
   const navigate = useNavigate();
-  const { csstId } = useParams<{ csstId: string }>();
+  const { classSectionId: csstId } = useParams();
 
   const { setHeader } = useDashboardHeader();
   useEffect(() => {
@@ -238,13 +142,13 @@ const TeacherCSSTStudentList: React.FC = () => {
       title: "Daftar Murid",
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
-        { label: "Guru Mapel" },
-        { label: "Detail Mapel" },
+        { label: "Wali kelas" },
+        { label: "Detail Kelas", href: `wali-kelas/${csstId}` },
         { label: "Daftar Murid" },
       ],
       showBack: true,
     });
-  }, [setHeader]);
+  }, [setHeader, csstId]);
 
   const sectionKey = csstId;
 
@@ -253,11 +157,10 @@ const TeacherCSSTStudentList: React.FC = () => {
     sectionKey,
   });
 
-  const {
-    data: students = [],
-    isLoading,
-    isError,
-  } = useCSSTStudents(sectionKey);
+  const students = DUMMY_STUDENTS;
+  const isLoading = false;
+  const isError = false;
+
 
   const rawStudents: StudentSummary[] = students;
 
@@ -332,104 +235,104 @@ const TeacherCSSTStudentList: React.FC = () => {
       __hasImportant: boolean;
     }
   >[] = [
-    {
-      id: "name",
-      header: "Nama",
-      minW: "220px",
-      cell: (s) => (
-        <div className="flex items-center gap-2">
-          <span className="font-medium">{s.name}</span>
-          {s.__hasImportant && (
-            <Badge variant="destructive" className="gap-1">
-              <AlertTriangle size={12} />
-              Penting
-            </Badge>
-          )}
-        </div>
-      ),
-    },
-    {
-      id: "gender",
-      header: "JK",
-      align: "center" as Align,
-      cell: (s) =>
-        s.gender ? (
-          <Badge variant="outline" className="uppercase">
-            {s.gender}
-          </Badge>
-        ) : (
-          "-"
-        ),
-    },
-    {
-      id: "guardian",
-      header: "Wali",
-      minW: "180px",
-      cell: (s) =>
-        s.guardian ? (
-          <span className="inline-flex items-center gap-1">
-            <Users size={12} />
-            {s.guardian}
-          </span>
-        ) : (
-          "-"
-        ),
-    },
-    {
-      id: "notes",
-      header: "Catatan",
-      minW: "320px",
-      cell: (s) => {
-        const items = extractImportantNotes(s);
-        if (!items.length)
-          return <span className="text-muted-foreground">—</span>;
-        const [first, ...rest] = items;
-        return (
-          <div className="text-sm">
-            <div className="flex items-center gap-2 font-medium mb-0.5">
-              <NotebookPen size={14} />
-              <span>Keterangan penting</span>
-            </div>
-            <div className="text-muted-foreground">
-              {first}
-              {rest.length ? ` (+${rest.length} lagi)` : ""}
-            </div>
+      {
+        id: "name",
+        header: "Nama",
+        minW: "220px",
+        cell: (s) => (
+          <div className="flex items-center gap-2">
+            <span className="font-medium">{s.name}</span>
+            {s.__hasImportant && (
+              <Badge variant="destructive" className="gap-1">
+                <AlertTriangle size={12} />
+                Penting
+              </Badge>
+            )}
           </div>
-        );
+        ),
       },
-    },
-    {
-      id: "phone",
-      header: "Kontak",
-      align: "center" as Align,
-      cell: (s) => {
-        const anyS = s as AnyRec;
-        const waUrl = (anyS._waUrl || anyS._parentWaUrl) as string | undefined;
-
-        if (waUrl) {
+      {
+        id: "gender",
+        header: "JK",
+        align: "center" as Align,
+        cell: (s) =>
+          s.gender ? (
+            <Badge variant="outline" className="uppercase">
+              {s.gender}
+            </Badge>
+          ) : (
+            "-"
+          ),
+      },
+      {
+        id: "guardian",
+        header: "Wali",
+        minW: "180px",
+        cell: (s) =>
+          s.guardian ? (
+            <span className="inline-flex items-center gap-1">
+              <Users size={12} />
+              {s.guardian}
+            </span>
+          ) : (
+            "-"
+          ),
+      },
+      {
+        id: "notes",
+        header: "Catatan",
+        minW: "320px",
+        cell: (s) => {
+          const items = extractImportantNotes(s);
+          if (!items.length)
+            return <span className="text-muted-foreground">—</span>;
+          const [first, ...rest] = items;
           return (
-            <a href={waUrl} target="_blank" rel="noreferrer">
+            <div className="text-sm">
+              <div className="flex items-center gap-2 font-medium mb-0.5">
+                <NotebookPen size={14} />
+                <span>Keterangan penting</span>
+              </div>
+              <div className="text-muted-foreground">
+                {first}
+                {rest.length ? ` (+${rest.length} lagi)` : ""}
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        id: "phone",
+        header: "Kontak",
+        align: "center" as Align,
+        cell: (s) => {
+          const anyS = s as AnyRec;
+          const waUrl = (anyS._waUrl || anyS._parentWaUrl) as string | undefined;
+
+          if (waUrl) {
+            return (
+              <a href={waUrl} target="_blank" rel="noreferrer">
+                <Button variant="secondary" size="sm" className="gap-1">
+                  <Phone size={14} />
+                  WhatsApp
+                </Button>
+              </a>
+            );
+          }
+
+          return s.phone ? (
+            <a href={`tel:${s.phone}`}>
               <Button variant="secondary" size="sm" className="gap-1">
                 <Phone size={14} />
-                WhatsApp
+                Telp
               </Button>
             </a>
+          ) : (
+            <span className="text-muted-foreground">—</span>
           );
-        }
-
-        return s.phone ? (
-          <a href={`tel:${s.phone}`}>
-            <Button variant="secondary" size="sm" className="gap-1">
-              <Phone size={14} />
-              Telp
-            </Button>
-          </a>
-        ) : (
-          <span className="text-muted-foreground">—</span>
-        );
+        },
       },
-    },
-  ];
+    ];
 
   /* =========================================================
      Stats di atas tabel
@@ -473,7 +376,11 @@ const TeacherCSSTStudentList: React.FC = () => {
         <div className="mx-auto flex flex-col gap-4 lg:gap-6">
           {/* Top bar */}
           <div className="md:flex hidden items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(-1)}
+            >
               <ArrowLeft size={20} />
             </Button>
             <h1 className="text-lg font-semibold md:flex-xl">Daftar Murid</h1>
@@ -488,8 +395,8 @@ const TeacherCSSTStudentList: React.FC = () => {
               isError
                 ? "Gagal memuat data murid."
                 : !sectionKey
-                ? "CSST ID tidak ditemukan di URL."
-                : null
+                  ? "CSST ID tidak ditemukan di URL."
+                  : null
             }
             columns={columns}
             rows={normalized}

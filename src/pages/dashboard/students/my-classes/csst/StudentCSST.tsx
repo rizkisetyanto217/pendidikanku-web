@@ -256,19 +256,27 @@ const StudentCSST: React.FC = () => {
     };
   }, [csstQ.data]);
 
+
+
   /* ===== Set header dashboard ===== */
   useEffect(() => {
-    if (!csstView) return;
+    if (!csstView || !sectionView) return;
+
     setHeader({
-      title: "Detail Mata Pelajaran",
+      title: "Mata Pelajaran",
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
-        { label: "Mata Pelajaran Saya", href: "../mapel-saya" },
-        { label: "Detail Mapel" },
+        { label: "Kelas Saya" },
+        {
+          label: "Detail Kelas",
+          href: `kelas-saya/rombel/${sectionView.sectionId}`,
+        },
+        { label: "Mata Pelajaran" },
       ],
-      actions: null,
+      showBack: true,
     });
-  }, [csstView, setHeader]);
+  }, [csstView, sectionView, setHeader]);
+
 
   /* ===== Loading & error ===== */
   if (csstQ.isLoading) {
@@ -318,7 +326,10 @@ const StudentCSST: React.FC = () => {
         <div className="mx-auto flex flex-col gap-6">
           {/* Top bar */}
           <div className="hidden md:flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(-1)}>
               <ArrowLeft size={20} />
             </Button>
             <h1 className="text-lg font-semibold md:text-xl">

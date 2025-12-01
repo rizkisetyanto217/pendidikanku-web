@@ -1,4 +1,4 @@
-// src/components/rich-text/RichTextInput.tsx
+// src/components/costum/CRichTextInput.tsx
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 
 import { cn } from "@/lib/utils";
@@ -203,8 +203,30 @@ export function RichTextInput(props: RichTextInputProps) {
   };
 
   const execBlock = (block: "p" | "h1" | "h2" | "h3" | "blockquote") => {
-    editorRef.current?.focus();
-    document.execCommand("formatBlock", false, block === "p" ? "p" : block);
+    if (!editorRef.current) return;
+
+    editorRef.current.focus();
+
+    // Map ke tag yang disukai browser
+    const tag =
+      block === "p"
+        ? "P"
+        : block === "blockquote"
+          ? "BLOCKQUOTE"
+          : block.toUpperCase(); // H1 / H2 / H3
+
+    try {
+      // Coba tanpa < > dulu
+      document.execCommand("formatBlock", false, tag);
+
+      // Khusus blockquote (dan kadang heading), Chrome suka format <TAG>
+      if (block === "blockquote") {
+        document.execCommand("formatBlock", false, `<${tag}>`);
+      }
+    } catch {
+      // ignore
+    }
+
     refreshToolbarState();
   };
 
@@ -374,50 +396,95 @@ export function RichTextInput(props: RichTextInputProps) {
     if (!sel || sel.rangeCount === 0) return;
     const range = sel.getRangeAt(0);
 
-    const findBlockElement = () => {
-      let node: Node | null = range.startContainer;
-      while (node && node !== editorRef.current) {
-        if (
-          node instanceof HTMLElement &&
-          /^(p|div|li|h1|h2|h3|blockquote)$/i.test(node.tagName)
-        ) {
-          return node;
+    // ========== AUTO LIST: "- " & "1. " ==========
+    if (e.key === " ") {
+      // Ambil teks dari awal block sampai posisi caret
+      let textBefore = "";
+
+      try {
+        const beforeRange = range.cloneRange();
+
+        // Cari block terdekat (p/div/li/h1/h2/h3/blockquote)
+        let node: Node | null = range.startContainer;
+        let blockEl: HTMLElement | null = null;
+        while (node && node !== editorRef.current) {
+          if (
+            node instanceof HTMLElement &&
+            /^(p|div|li|h1|h2|h3|blockquote)$/i.test(node.tagName)
+          ) {
+            blockEl = node;
+            break;
+          }
+          node = node.parentNode;
         }
-        node = node.parentNode;
+
+        if (blockEl) {
+          beforeRange.selectNodeContents(blockEl);
+          beforeRange.setEnd(range.startContainer, range.startOffset);
+          textBefore = beforeRange.toString();
+        } else {
+          // fallback: pakai container langsung
+          beforeRange.setStart(range.startContainer, 0);
+          textBefore = beforeRange.toString();
+        }
+      } catch {
+        // ignore
       }
-      return editorRef.current;
-    };
 
-    const blockEl = findBlockElement() as HTMLElement | null;
+      const trimmed = textBefore.trim();
+      const isBulletTrigger = trimmed === "-";
+      const isNumberTrigger = trimmed === "1.";
 
-    // "- " → bullets, "1. " → numbered list
-    if (e.key === " " && blockEl) {
-      const text = (blockEl.textContent || "").trim();
-
-      if (text === "-" || text === "1.") {
+      if (isBulletTrigger || isNumberTrigger) {
         e.preventDefault();
 
-        const isOrdered = text === "1.";
-
-        blockEl.textContent = "";
-
-        const newRange = document.createRange();
-        newRange.selectNodeContents(blockEl);
-        newRange.collapse(true);
-        sel.removeAllRanges();
-        sel.addRange(newRange);
-
+        // Biarkan browser bikin list dulu
         document.execCommand(
-          isOrdered ? "insertOrderedList" : "insertUnorderedList",
+          isNumberTrigger ? "insertOrderedList" : "insertUnorderedList",
           false
         );
 
         refreshToolbarState();
+
+        // Bersihkan marker "- " atau "1. " di dalam <li>
+        const sel2 = window.getSelection();
+        if (!sel2 || sel2.rangeCount === 0) return;
+        const r2 = sel2.getRangeAt(0);
+
+        let liNode: Node | null = r2.startContainer;
+        while (liNode && !(liNode instanceof HTMLLIElement)) {
+          liNode = liNode.parentNode;
+        }
+
+        if (liNode && liNode instanceof HTMLLIElement) {
+          const text = liNode.textContent ?? "";
+          const trimmedLi = text.trim();
+
+          let cleaned = text;
+
+          // Kalau isinya cuma "-" atau "1." (dengan / tanpa spasi) → kosongin
+          if (trimmedLi === "-" || trimmedLi === "1.") {
+            cleaned = "";
+          } else {
+            // Kalau di depan masih ada marker, bersihkan
+            cleaned = text.replace(/^(\s*-\s*|\s*1\.\s*)/, "");
+          }
+
+          liNode.textContent = cleaned;
+
+          // Pindahkan caret ke akhir <li>
+          const newRange = document.createRange();
+          newRange.selectNodeContents(liNode);
+          newRange.collapse(false);
+          sel2.removeAllRanges();
+          sel2.addRange(newRange);
+        }
+
         return;
       }
     }
 
-    // Enter di dalam blockquote → keluar ke paragraf baru (P)
+    // ========== ENTER di dalam blockquote: keluar ke paragraf baru ==========
     if (e.key === "Enter" && !e.shiftKey) {
       let node: Node | null = range.startContainer;
       let blockquote: HTMLElement | null = null;
@@ -455,6 +522,7 @@ export function RichTextInput(props: RichTextInputProps) {
         sel.addRange(newRange);
 
         refreshToolbarState();
+        return;
       }
     }
   };

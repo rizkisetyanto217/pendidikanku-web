@@ -403,8 +403,8 @@ const StudentCSSTAssignment: React.FC<StudentClassesAssignmentProps> = ({
         okStatus = !progress
           ? true
           : !["ongoing", "submitted", "submitted_late", "completed"].includes(
-              String(state)
-            );
+            String(state)
+          );
       } else if (statusTab === "done") {
         okStatus =
           state === "submitted" ||
@@ -449,25 +449,31 @@ const StudentCSSTAssignment: React.FC<StudentClassesAssignmentProps> = ({
     setSearchParams(newParams);
   };
 
-  // klik tombol di card
-  const handleOpenAssignment = (
-    assessment: StudentAssessmentItem,
-    isStart: boolean
-  ) => {
+  // 🔧 klik tombol di card
+  const handleOpenAssignment = (assessment: StudentAssessmentItem) => {
     if (!assessment.assessment_slug) return;
 
-    // kalau mode start & punya banyak quiz -> pilih quiz dulu
+    // Kalau assessment-nya tipe quiz dan punya daftar quiz
     if (
-      isStart &&
+      assessment.assessment_kind === "quiz" &&
       assessment.quizzes &&
-      assessment.quizzes.length > 1 &&
-      assessment.assessment_kind === "quiz"
+      assessment.quizzes.length > 0
     ) {
+      // Kalau cuma ada 1 quiz -> langsung ke halaman quiz
+      if (assessment.quizzes.length === 1) {
+        const onlyQuiz = assessment.quizzes[0];
+        navigate(
+          `quiz/${onlyQuiz.quiz_id}?assessment_id=${assessment.assessment_id}`
+        );
+        return;
+      }
+
+      // Kalau lebih dari 1 quiz -> buka modal pilih quiz
       setStartAssessment(assessment);
       return;
     }
 
-    // default: langsung ke halaman assessment (atau 1 quiz)
+    // Default (bukan quiz) -> ke halaman detail assessment
     navigate(
       `/student/assessments/${assessment.assessment_slug}?csst_id=${csstId}`
     );
@@ -654,9 +660,8 @@ const StudentCSSTAssignment: React.FC<StudentClassesAssignmentProps> = ({
 
                   const scoreText =
                     progress?.score != null
-                      ? `${progress.score}/${
-                          assessment.assessment_max_score ?? 100
-                        }`
+                      ? `${progress.score}/${assessment.assessment_max_score ?? 100
+                      }`
                       : "-";
 
                   const dateRangeText = formatDateRange(
@@ -781,17 +786,15 @@ const StudentCSSTAssignment: React.FC<StudentClassesAssignmentProps> = ({
                         <Button
                           size="sm"
                           disabled={!canStartOrView}
-                          onClick={() =>
-                            handleOpenAssignment(assessment, isOngoing)
-                          }
+                          onClick={() => handleOpenAssignment(assessment)}
                         >
                           {isOngoing
                             ? "Kerjakan sekarang"
                             : progress?.state === "submitted" ||
                               progress?.state === "submitted_late" ||
                               progress?.state === "completed"
-                            ? "Lihat hasil"
-                            : "Lihat detail"}
+                              ? "Lihat hasil"
+                              : "Lihat detail"}
                         </Button>
                       </CardFooter>
                     </Card>
@@ -830,7 +833,7 @@ const StudentCSSTAssignment: React.FC<StudentClassesAssignmentProps> = ({
           )}
         </div>
 
-        {/* Dialog pilih quiz saat "Kerjakan sekarang" */}
+        {/* Dialog pilih quiz saat tugas punya >1 quiz */}
         <Dialog
           open={!!startAssessment}
           onOpenChange={(open) => {

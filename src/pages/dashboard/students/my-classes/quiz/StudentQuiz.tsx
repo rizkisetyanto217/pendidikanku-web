@@ -23,7 +23,13 @@ import {
 } from "@/components/ui/dialog";
 
 /* icons */
-import { ArrowLeft, Timer, Send, AlertTriangle } from "lucide-react";
+import {
+  ArrowLeft,
+  Timer,
+  Send,
+  AlertTriangle,
+  ListOrdered,
+} from "lucide-react";
 
 /* breadcrumb */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
@@ -123,17 +129,15 @@ const mapApiQuestionToStudentQuestion = (
   let type: StudentQuestionType = "single";
   if (typeApi === "short_text") type = "short_text";
   else if (typeApi === "paragraph") type = "paragraph";
-  else type = "single"; // default
+  else type = "single";
 
   let options: StudentOption[] | undefined;
   if (type === "single" && api.quiz_question_answers) {
-    // convert { "A": "Text", "B": "Text" } -> [{ key, text }]
     options = Object.entries(api.quiz_question_answers)
       .map(([key, text]) => ({
         key,
         text,
       }))
-      // sort biar urut A,B,C,D,...
       .sort((a, b) => a.key.localeCompare(b.key));
   }
 
@@ -157,6 +161,8 @@ function formatTime(sec: number) {
    Page Component
 ========================= */
 
+type QuestionStatus = "empty" | "answered" | "doubt";
+
 export default function StudentQuiz() {
   const { quizId = "" } = useParams<{ quizId: string }>();
 
@@ -165,7 +171,7 @@ export default function StudentQuiz() {
   const { setHeader } = useDashboardHeader();
 
   const quizMeta = useMemo(() => (state ?? {}) as QuizMetaFromState, [state]);
-  const timeLimit = quizMeta.timeLimitMin != null ? quizMeta.timeLimitMin : 45; // default 45 menit
+  const timeLimit = quizMeta.timeLimitMin != null ? quizMeta.timeLimitMin : 45;
   const attemptsAllowed = quizMeta.attemptsAllowed ?? 1;
 
   /* ====== Load questions dari API ====== */
@@ -180,7 +186,7 @@ export default function StudentQuiz() {
           params: {
             quiz_id: quizId,
             page: 1,
-            per_page: 200, // asumsi max 200 soal per quiz
+            per_page: 200,
           },
         }
       );
@@ -207,14 +213,12 @@ export default function StudentQuiz() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
 
-  // mode tampilan soal: scroll semua / satu-satu
   const [mode, setMode] = useState<"scroll" | "paged">("scroll");
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // dialog pengaturan lanjutan
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [questionMapOpen, setQuestionMapOpen] = useState(false);
 
-  // timer (detik)
   const [remainingSec, setRemainingSec] = useState(timeLimit * 60);
 
   /* ====== Header / breadcrumb ====== */
@@ -225,8 +229,6 @@ export default function StudentQuiz() {
       title,
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
-        // kita lagi di /student/mapel/:csstId/ujian/quiz/:quizId
-        // jadi cukup "../" buat balik ke /student/mapel/:csstId/ujian
         { label: "Ujian", href: "../" },
         { label: title },
       ],
@@ -276,9 +278,10 @@ export default function StudentQuiz() {
     setDoubts((prev) => ({ ...prev, [qid]: !prev[qid] }));
   };
 
-  /* ====== Hitung jumlah terjawab ====== */
+  /* ====== Hitung jumlah terjawab & status submit ====== */
 
   const totalQuestions = questions.length;
+
   const answeredCount = useMemo(
     () =>
       questions.filter((q) => {
@@ -290,13 +293,50 @@ export default function StudentQuiz() {
     [questions, answers]
   );
 
+  const hasDoubt = useMemo(
+    () => Object.values(doubts).some((v) => v),
+    [doubts]
+  );
+
+  const hasUnanswered = useMemo(
+    () => totalQuestions > 0 && answeredCount < totalQuestions,
+    [totalQuestions, answeredCount]
+  );
+
+  const canSubmit = totalQuestions > 0 && !hasDoubt && !hasUnanswered;
+
+  useEffect(() => {
+    if (!hasDoubt && !hasUnanswered && submitError) {
+      setSubmitError(null);
+    }
+  }, [hasDoubt, hasUnanswered, submitError]);
+
+  /* ====== Status tiap soal (untuk peta soal) ====== */
+
+  const questionStatuses: QuestionStatus[] = useMemo(
+    () =>
+      questions.map((q) => {
+        const val = answers[q.id];
+        const hasAnswer =
+          typeof val === "string"
+            ? val.trim() !== ""
+            : Array.isArray(val)
+              ? val.length > 0
+              : false;
+        const isDoubt = !!doubts[q.id];
+
+        if (isDoubt) return "doubt";
+        if (hasAnswer) return "answered";
+        return "empty";
+      }),
+    [questions, answers, doubts]
+  );
+
   /* ====== Submit (DUMMY, tapi pakai data API) ====== */
   const doSubmit = () => {
     setSubmitError(null);
     setSubmitSuccess(null);
 
-    // 1) Cek dulu: masih ada soal ragu-ragu?
-    const hasDoubt = Object.values(doubts).some((v) => v);
     if (hasDoubt) {
       setSubmitError(
         "Masih ada soal yang ditandai ragu-ragu. Silakan cek ulang dan hapus tanda ragu-ragu di semua soal sebelum mengirim jawaban."
@@ -305,23 +345,15 @@ export default function StudentQuiz() {
       return;
     }
 
-    // 2) Cek soal yang belum dijawab
-    const unanswered = questions.filter((q) => {
-      const val = answers[q.id];
-      if (typeof val === "string") return val.trim() === "";
-      if (Array.isArray(val)) return val.length === 0;
-      return true;
-    });
-
-    if (unanswered.length > 0) {
+    if (hasUnanswered) {
+      const unansweredCount = totalQuestions - answeredCount;
       setSubmitError(
-        `Masih ada ${unanswered.length} pertanyaan yang belum dijawab.`
+        `Masih ada ${unansweredCount} pertanyaan yang belum dijawab.`
       );
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 
-    // 3) Semua aman -> submit (dummy)
     const payload: SubmitPayload = {
       quiz_id: quizId,
       answers: questions.map((q) => ({
@@ -345,36 +377,13 @@ export default function StudentQuiz() {
     return [questions[idx]];
   }, [questions, mode, currentIndex]);
 
-  /* ====== Question Map (untuk mode satu per satu) ====== */
-
-  type QuestionStatus = "empty" | "answered" | "doubt";
-
-  const questionStatuses: QuestionStatus[] = useMemo(
-    () =>
-      questions.map((q) => {
-        const val = answers[q.id];
-        const hasAnswer =
-          typeof val === "string"
-            ? val.trim() !== ""
-            : Array.isArray(val)
-            ? val.length > 0
-            : false;
-        const isDoubt = !!doubts[q.id];
-
-        if (isDoubt) return "doubt";
-        if (hasAnswer) return "answered";
-        return "empty";
-      }),
-    [questions, answers, doubts]
-  );
-
   /* ====== Loading & Error state ====== */
 
   if (quizQuestionsQ.isLoading) {
     return (
       <div className="w-full bg-background text-foreground">
         <main className="w-full px-4 md:px-6 md:py-6">
-          <div className="mx-auto max-w-3xl flex flex-col gap-4">
+          <div className="mx-auto max-w-5xl flex flex-col gap-4">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="icon" onClick={handleBack}>
                 <ArrowLeft className="h-5 w-5" />
@@ -403,7 +412,7 @@ export default function StudentQuiz() {
     return (
       <div className="w-full bg-background text-foreground">
         <main className="w-full px-4 md:px-6 md:py-6">
-          <div className="mx-auto max-w-3xl flex flex-col gap-4">
+          <div className="mx-auto max-w-5xl flex flex-col gap-4">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="icon" onClick={handleBack}>
                 <ArrowLeft className="h-5 w-5" />
@@ -442,7 +451,7 @@ export default function StudentQuiz() {
     return (
       <div className="w-full bg-background text-foreground">
         <main className="w-full px-4 md:px-6 md:py-6">
-          <div className="mx-auto max-w-3xl flex flex-col gap-4">
+          <div className="mx-auto max-w-5xl flex flex-col gap-4">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="icon" onClick={handleBack}>
                 <ArrowLeft className="h-5 w-5" />
@@ -473,23 +482,13 @@ export default function StudentQuiz() {
 
   return (
     <div className="w-full bg-background text-foreground">
-      <main className="w-full px-4 md:px-6 md:py-6">
+      <main className="w-full md:py-6">
         <div
           className={cn(
-            "mx-auto max-w-3xl flex flex-col gap-4",
+            "mx-auto max-w-5xl flex flex-col gap-4 px-4 md:px-6 pb-16 md:pb-0",
             mode === "paged" && "min-h-[calc(100vh-6rem)]"
           )}
         >
-          {/* Top bar (mobile) */}
-          <div className="flex items-center gap-3 md:hidden">
-            <Button variant="ghost" size="icon" onClick={handleBack}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <h1 className="text-lg font-semibold">
-              {quizMeta.title || "Kerjakan Kuis"}
-            </h1>
-          </div>
-
           {/* Info quiz – DISABLED saat mode satu per satu */}
           {mode === "scroll" && (
             <Card>
@@ -548,158 +547,369 @@ export default function StudentQuiz() {
               )}
             </div>
 
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSettingsOpen(true)}
+              >
+                Pengaturan lanjutan
+              </Button>
+            </div>
+          </div>
+
+          {/* ====== GRID: KIRI soal, KANAN peta (desktop) ====== */}
+          <div className="grid gap-4 md:grid-cols-[minmax(0,2.4fr)_minmax(260px,1fr)] md:items-start">
+            {/* ==================== KIRI ==================== */}
+            <section className="space-y-4">
+              {submitError && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription className="ml-2">
+                    {submitError}
+                  </AlertDescription>
+                </Alert>
+              )}
+              {submitSuccess && (
+                <Alert>
+                  <AlertDescription>{submitSuccess}</AlertDescription>
+                </Alert>
+              )}
+
+              <div
+                className={cn(
+                  "grid gap-4",
+                  mode === "paged" && "grid-cols-1 auto-rows-fr"
+                )}
+              >
+                {visibleQuestions.map((q) => {
+                  const idx = questions.findIndex((it) => it.id === q.id);
+                  const qId = q.id;
+                  return (
+                    <QuestionCard
+                      key={q.id}
+                      domId={`question-${q.id}`}
+                      q={q}
+                      index={idx}
+                      value={answers[qId]}
+                      note={notes[qId] ?? ""}
+                      isDoubtful={!!doubts[qId]}
+                      fullHeight={mode === "paged"}
+                      onChangeSingle={(key) => handleChangeSingle(qId, key)}
+                      onChangeShortText={(text) =>
+                        handleChangeShortText(qId, text)
+                      }
+                      onChangeNote={(text) => handleChangeNote(qId, text)}
+                      onToggleDoubt={() => toggleDoubt(qId)}
+                    />
+                  );
+                })}
+              </div>
+
+              {mode === "paged" && totalQuestions > 0 && (
+                <div className="flex items-center justify-between mt-1 text-xs md:text-sm">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentIndex === 0}
+                    onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
+                  >
+                    Soal sebelumnya
+                  </Button>
+                  <span className="text-muted-foreground">
+                    Soal {currentIndex + 1} dari {totalQuestions}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentIndex === totalQuestions - 1}
+                    onClick={() =>
+                      setCurrentIndex((i) =>
+                        Math.min(totalQuestions - 1, i + 1)
+                      )
+                    }
+                  >
+                    Soal berikutnya
+                  </Button>
+                </div>
+              )}
+
+              {canSubmit && (
+                <>
+                  <Separator className="my-2 md:hidden" />
+                  <div className="flex justify-end md:hidden">
+                    <Button
+                      onClick={doSubmit}
+                      className="flex items-center gap-2"
+                    >
+                      <Send className="h-4 w-4" />
+                      Kirim Jawaban
+                    </Button>
+                  </div>
+                </>
+              )}
+            </section>
+
+            {/* ==================== KANAN – sidebar statis ==================== */}
+            {totalQuestions > 0 && (
+              <aside className="hidden md:block sticky top-24 space-y-3">
+                <Card className="border-dashed bg-card/40">
+                  <CardContent className="py-3 space-y-2">
+                    <div className="flex items-center justify-between gap-2 text-xs">
+                      <span className="font-medium">
+                        Peta soal ({totalQuestions})
+                      </span>
+                      <div className="flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+                        <span className="inline-flex items-center gap-1">
+                          <span className="h-2 w-2 rounded-full bg-muted-foreground/50" />
+                          Belum
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <span className="h-2 w-2 rounded-full bg-primary" />
+                          Terjawab
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <span className="h-2 w-2 rounded-full bg-amber-500" />
+                          Ragu
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-5 lg:grid-cols-6 gap-1.5">
+                      {questionStatuses.map((status, idx) => {
+                        const isActive =
+                          mode === "paged" && idx === currentIndex;
+                        const qId = questions[idx]?.id;
+
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => {
+                              if (!qId) return;
+                              if (mode === "paged") {
+                                setCurrentIndex(idx);
+                              } else {
+                                const el = document.getElementById(
+                                  `question-${qId}`
+                                );
+                                if (el) {
+                                  el.scrollIntoView({
+                                    behavior: "smooth",
+                                    block: "start",
+                                  });
+                                }
+                              }
+                            }}
+                            className={cn(
+                              "h-7 text-[11px] rounded-md border flex items-center justify-center transition",
+                              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                              status === "empty" &&
+                              "border-border bg-muted/40 text-muted-foreground",
+                              status === "answered" &&
+                              "border-primary/70 bg-primary/10 dark:bg-primary/20 text-primary",
+                              status === "doubt" &&
+                              "border-amber-500 bg-amber-500/10 text-amber-300",
+                              isActive &&
+                              "ring-1 ring-primary bg-primary text-foreground font-semibold"
+                            )}
+                          >
+                            {idx + 1}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {canSubmit && (
+                  <Card>
+                    <CardContent className="pt-3 pb-4 space-y-2">
+                      <Button
+                        onClick={doSubmit}
+                        className="w-full flex items-center justify-center gap-2"
+                      >
+                        <Send className="h-4 w-4" />
+                        Kirim Jawaban
+                      </Button>
+                      <p className="text-[11px] text-muted-foreground">
+                        Semua soal sudah terjawab dan tidak ada yang ditandai
+                        ragu-ragu. Klik &quot;Kirim Jawaban&quot; jika kamu
+                        sudah yakin.
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+              </aside>
+            )}
+          </div>
+        </div>
+
+        {/* Floating button peta soal (mobile only) */}
+        {totalQuestions > 0 && (
+          <button
+            type="button"
+            onClick={() => setQuestionMapOpen(true)}
+            className={cn(
+              "md:hidden fixed bottom-5 right-4 z-40",
+              "rounded-full shadow-lg border bg-primary text-primary-foreground",
+              "h-12 w-12 flex items-center justify-center",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+            )}
+          >
+            <ListOrdered className="h-5 w-5" />
+            <span className="sr-only">Peta soal</span>
+          </button>
+        )}
+      </main>
+
+      {/* Dialog Peta Soal (mobile) */}
+      <Dialog open={questionMapOpen} onOpenChange={setQuestionMapOpen}>
+        <DialogContent className="max-w-sm md:hidden">
+          <DialogHeader>
+            <DialogTitle>Peta soal</DialogTitle>
+            <DialogDescription>
+              Lihat ringkasan, atur tampilan, dan lompat ke soal tertentu.
+            </DialogDescription>
+          </DialogHeader>
+
+          {totalQuestions > 0 ? (
+            <div className="space-y-4">
+              {/* Ringkasan kecil */}
+              <div className="flex items-center justify-between text-xs">
+                <span className="flex items-center gap-1 text-muted-foreground">
+                  <Timer className="h-3 w-3" />
+                  Sisa waktu:{" "}
+                  <span className="font-semibold text-foreground">
+                    {formatTime(remainingSec)}
+                  </span>
+                </span>
+                <span className="text-muted-foreground">
+                  Terjawab{" "}
+                  <span className="font-semibold">
+                    {answeredCount}/{totalQuestions}
+                  </span>{" "}
+                  soal
+                </span>
+              </div>
+
+              {/* Pilih mode tampilan langsung dari modal */}
+              <div className="space-y-1">
+                <p className="text-[11px] font-medium text-muted-foreground">
+                  Mode tampilan soal
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={mode === "scroll" ? "default" : "outline"}
+                    className="flex-1 justify-center"
+                    onClick={() => {
+                      setMode("scroll");
+                      setQuestionMapOpen(false); // ⬅ auto close setelah pilih
+                    }}
+                  >
+                    Scroll
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={mode === "paged" ? "default" : "outline"}
+                    className="flex-1 justify-center"
+                    onClick={() => {
+                      setMode("paged");
+                      setQuestionMapOpen(false); // ⬅ auto close setelah pilih
+                    }}
+                  >
+                    Satu per satu
+                  </Button>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Pengaturan ini hanya mengubah tampilan di perangkatmu, tidak
+                  mempengaruhi penilaian.
+                </p>
+              </div>
+
+              {/* Legend status */}
+              <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground">
+                <span className="inline-flex items-center gap-1">
+                  <span className="h-2 w-2 rounded-full bg-muted-foreground/50" />
+                  Belum dijawab
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="h-2 w-2 rounded-full bg-primary" />
+                  Terjawab
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="h-2 w-2 rounded-full bg-amber-500" />
+                  Ragu-ragu
+                </span>
+              </div>
+
+              {/* Grid nomor soal */}
+              <div className="grid grid-cols-6 gap-1.5">
+                {questionStatuses.map((status, idx) => {
+                  const isActive = mode === "paged" && idx === currentIndex;
+                  const qId = questions[idx]?.id;
+
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        if (!qId) return;
+                        if (mode === "paged") {
+                          setCurrentIndex(idx);
+                        } else {
+                          const el = document.getElementById(`question-${qId}`);
+                          if (el) {
+                            el.scrollIntoView({
+                              behavior: "smooth",
+                              block: "start",
+                            });
+                          }
+                        }
+                        setQuestionMapOpen(false);
+                      }}
+                      className={cn(
+                        "h-7 text-[11px] rounded-md border flex items-center justify-center transition",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                        status === "empty" &&
+                        "border-border bg-muted/40 text-muted-foreground",
+                        status === "answered" &&
+                        "border-primary/70 bg-primary/10 dark:bg-primary/20 text-primary",
+                        status === "doubt" &&
+                        "border-amber-500 bg-amber-500/10 text-amber-300",
+                        isActive &&
+                        "ring-1 ring-primary bg-primary text-foreground font-semibold"
+                      )}
+                    >
+                      {idx + 1}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Belum ada soal untuk kuis ini.
+            </p>
+          )}
+
+          <DialogFooter className="mt-3">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setSettingsOpen(true)}
+              className="w-full"
+              onClick={() => setQuestionMapOpen(false)}
             >
-              Pengaturan lanjutan
+              Tutup
             </Button>
-          </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-          {/* Question map (hanya saat mode satu per satu) */}
-          {mode === "paged" && (
-            <Card className="border-dashed bg-card/40">
-              <CardContent className="py-3 space-y-2">
-                <div className="flex items-center justify-between gap-2 text-xs">
-                  <span className="font-medium">
-                    Peta soal ({totalQuestions} pertanyaan)
-                  </span>
-                  <div className="flex flex-wrap gap-2 text-[11px] text-muted-foreground">
-                    <span className="inline-flex items-center gap-1">
-                      <span className="h-2 w-2 rounded-full bg-muted-foreground/50" />
-                      Belum dijawab
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <span className="h-2 w-2 rounded-full bg-primary" />
-                      Terjawab
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <span className="h-2 w-2 rounded-full bg-amber-500" />
-                      Ragu-ragu
-                    </span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-1.5">
-                  {questionStatuses.map((status, idx) => {
-                    const isActive = idx === currentIndex;
-                    return (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setCurrentIndex(idx)}
-                        className={cn(
-                          "h-7 text-[11px] rounded-md border flex items-center justify-center transition",
-                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-
-                          status === "empty" &&
-                            "border-border bg-muted/40 text-muted-foreground",
-                          status === "answered" &&
-                            "border-primary/70 bg-primary/10 dark:bg-primary/20 text-primary",
-                          status === "doubt" &&
-                            "border-amber-500 bg-amber-500/10 text-amber-300",
-
-                          // ⬇️ ganti bagian ini
-                          isActive &&
-                            "ring-1 ring-primary bg-primary text-foreground font-semibold"
-                        )}
-                      >
-                        {idx + 1}
-                      </button>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Error / success submit */}
-          {submitError && (
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription className="ml-2">
-                {submitError}
-              </AlertDescription>
-            </Alert>
-          )}
-          {submitSuccess && (
-            <Alert>
-              <AlertDescription>{submitSuccess}</AlertDescription>
-            </Alert>
-          )}
-
-          {/* List pertanyaan */}
-          <div
-            className={cn(
-              "grid gap-4",
-              mode === "paged" && "grid-cols-1 auto-rows-fr"
-            )}
-          >
-            {visibleQuestions.map((q) => {
-              const idx = questions.findIndex((it) => it.id === q.id);
-              const qId = q.id;
-              return (
-                <QuestionCard
-                  key={q.id}
-                  q={q}
-                  index={idx}
-                  value={answers[qId]}
-                  note={notes[qId] ?? ""}
-                  isDoubtful={!!doubts[qId]}
-                  fullHeight={mode === "paged"}
-                  onChangeSingle={(key) => handleChangeSingle(qId, key)}
-                  onChangeShortText={(text) => handleChangeShortText(qId, text)}
-                  onChangeNote={(text) => handleChangeNote(qId, text)}
-                  onToggleDoubt={() => toggleDoubt(qId)}
-                />
-              );
-            })}
-          </div>
-
-          {/* Navigasi untuk mode satu per satu */}
-          {mode === "paged" && totalQuestions > 0 && (
-            <div className="flex items-center justify-between mt-1 text-xs md:text-sm">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={currentIndex === 0}
-                onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
-              >
-                Soal sebelumnya
-              </Button>
-              <span className="text-muted-foreground">
-                Soal {currentIndex + 1} dari {totalQuestions}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={currentIndex === totalQuestions - 1}
-                onClick={() =>
-                  setCurrentIndex((i) => Math.min(totalQuestions - 1, i + 1))
-                }
-              >
-                Soal berikutnya
-              </Button>
-            </div>
-          )}
-
-          {/* Footer submit – HANYA muncul kalau SEMUA soal terjawab */}
-          {totalQuestions > 0 && answeredCount === totalQuestions && (
-            <>
-              <Separator className="my-2" />
-              <div className="flex justify-end">
-                <Button onClick={doSubmit} className="flex items-center gap-2">
-                  <Send className="h-4 w-4" />
-                  Kirim Jawaban
-                </Button>
-              </div>
-            </>
-          )}
-        </div>
-      </main>
-
-      {/* Dialog Pengaturan Lanjutan */}
+      {/* Dialog Pengaturan Lanjutan (versi lengkap) */}
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -711,7 +921,6 @@ export default function StudentQuiz() {
           </DialogHeader>
 
           <div className="space-y-4 py-2">
-            {/* Mode scroll */}
             <Card
               className={cn(
                 "border cursor-pointer transition",
@@ -721,7 +930,7 @@ export default function StudentQuiz() {
               )}
               onClick={() => {
                 setMode("scroll");
-                setSettingsOpen(false); // ⬅ langsung tutup dialog
+                setSettingsOpen(false);
               }}
             >
               <CardContent className="p-3 flex items-start gap-3">
@@ -745,7 +954,6 @@ export default function StudentQuiz() {
               </CardContent>
             </Card>
 
-            {/* Mode satu per satu */}
             <Card
               className={cn(
                 "border cursor-pointer transition",
@@ -755,7 +963,7 @@ export default function StudentQuiz() {
               )}
               onClick={() => {
                 setMode("paged");
-                setSettingsOpen(false); // ⬅ langsung tutup dialog
+                setSettingsOpen(false);
               }}
             >
               <CardContent className="p-3 flex items-start gap-3">
@@ -797,6 +1005,7 @@ export default function StudentQuiz() {
 ========================= */
 
 function QuestionCard({
+  domId,
   q,
   index,
   value,
@@ -808,6 +1017,7 @@ function QuestionCard({
   onChangeNote,
   onToggleDoubt,
 }: {
+  domId: string;
   q: StudentQuestion;
   index: number;
   value: string | string[] | undefined;
@@ -827,18 +1037,19 @@ function QuestionCard({
     typeof value === "string"
       ? value.trim() !== ""
       : Array.isArray(value)
-      ? value.length > 0
-      : false;
+        ? value.length > 0
+        : false;
 
   const [noteOpen, setNoteOpen] = useState(Boolean(note));
 
   return (
     <Card
+      id={domId}
       className={cn(
         "overflow-hidden flex flex-col",
         fullHeight && "h-full",
         isDoubtful &&
-          "border-amber-400 bg-amber-50/60 dark:bg-amber-950/20 dark:border-amber-500"
+        "border-amber-400 bg-amber-50/60 dark:bg-amber-950/20 dark:border-amber-500"
       )}
     >
       <CardHeader className="pb-2">
@@ -875,7 +1086,6 @@ function QuestionCard({
       </CardHeader>
 
       <CardContent className="pt-0 space-y-3 flex-1 flex flex-col">
-        {/* Pilihan ganda */}
         {q.type === "single" && q.options && (
           <div className="grid gap-2 mt-1">
             {q.options.map((opt) => {
@@ -911,7 +1121,6 @@ function QuestionCard({
           </div>
         )}
 
-        {/* Jawaban singkat / panjang */}
         {q.type === "short_text" && (
           <Input
             placeholder="Jawaban kamu…"
@@ -928,10 +1137,8 @@ function QuestionCard({
           />
         )}
 
-        {/* Spacer biar tombol nempel bawah saat fullHeight */}
         <div className="flex-1" />
 
-        {/* Tombol ragu & catatan */}
         <div className="mt-4 space-y-2">
           <div className="flex flex-wrap gap-2">
             <Button
@@ -955,8 +1162,8 @@ function QuestionCard({
               {noteOpen
                 ? "Sembunyikan catatan"
                 : note
-                ? "Lihat / ubah catatan"
-                : "Tambah catatan"}
+                  ? "Lihat / ubah catatan"
+                  : "Tambah catatan"}
             </Button>
           </div>
 

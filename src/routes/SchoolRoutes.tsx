@@ -73,27 +73,27 @@ export const SchoolRoutes = (
       </Route>
     </Route>
 
-    {/* === Global Routes (opsional, jika di luar menu utama) === */}
+    {/* === Akademik === */}
     <Route path="akademik">
-      <Route path="tahun-akademik" element={<SchoolAcademic />} />
+      <Route index path="tahun-akademik" element={<SchoolAcademic />} />
       <Route path="tahun-akademik/:id" element={<SchoolDetailAcademic />} />
       <Route path="tahun-akademik/manage" element={<SchoolAcademicManage />} />
       <Route path="tahun-akademik/new" element={<SchoolAcademicTermForm />} />
-      <Route
-        path="tahun-akademik/edit/:id"
-        element={<SchoolAcademicTermForm />}
-      />
+      <Route path="tahun-akademik/edit/:id" element={<SchoolAcademicTermForm />} />
 
+      {/* === Ruangan === */}
       <Route path="ruangan" element={<SchoolRoom />} />
       <Route path="ruangan/:id" element={<SchoolDetailRoom />} />
       <Route path="ruangan/new" element={<SchoolRoomForm />} />
       <Route path="ruangan/edit/:id" element={<SchoolRoomForm />} />
 
+      {/* === Buku === */}
       <Route path="buku" element={<SchoolBooks />} />
       <Route path="buku/:id" element={<SchoolBookDetail />} />
       <Route path="buku/new" element={<SchoolBookForm />} />
       <Route path="buku/edit/:id" element={<SchoolBookForm />} />
 
+      {/* === Mata Pelajaran === */}
       <Route path="mata-pelajaran" element={<SchoolSubject />} />
       <Route path="mata-pelajaran/:id" element={<SchoolSubjectDetail />} />
       <Route path="mata-pelajaran/new" element={<SchoolSubjectForm />} />
@@ -103,16 +103,10 @@ export const SchoolRoutes = (
     <Route path="kelas">
       {/* LEVEL (Class Parent) */}
       <Route path="level">
-        {/* /kelas/level */}
         <Route index element={<SchoolClassParent />} />
-
-        {/* /kelas/level/new */}
         <Route path="new" element={<SchoolClassParentForm />} />
-
-        {/* /kelas/level/edit/:classParentId */}
         <Route path="edit/:classParentId" element={<SchoolClassParentForm />} />
 
-        {/* /kelas/level/:classParentId */}
         <Route path=":classParentId" element={<SchoolClassParentDetail />} />
       </Route>
 
@@ -149,8 +143,8 @@ export const SchoolRoutes = (
         <Route
           path="edit/:classSectionId"
           element={<SchoolClassSectionDetail />}
-          // kalau maksudnya form:
-          // element={<SchoolClassSectionForm />}
+        // kalau maksudnya form:
+        // element={<SchoolClassSectionForm />}
         />
 
         {/* /kelas/semua-kelas/:classSectionId */}

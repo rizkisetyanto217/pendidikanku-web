@@ -25,6 +25,7 @@ import { UnnasignedRoutes } from "./UnnasignedRoutes";
 import AuthPrivacy from "@/pages/dashboard/auth/other/AuthPrivacy";
 import AuthTerm from "@/pages/dashboard/auth/other/AuthTerm";
 import AuthForgotPassword from "@/pages/dashboard/auth/other/AuthForgotPassword";
+import RichTextPlayground from "@/pages/RichTextPlayground";
 
 export default function AppRoutes() {
   return (
@@ -95,6 +96,7 @@ export default function AppRoutes() {
       <Route path="/not-found" element={<NotFound />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
       <Route path="*" element={<NotFound />} />
+      <Route path="/rich-text" element={<RichTextPlayground />} />
     </Routes>
   );
 }
