@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { pad2, fmtFullDate } from "./types/types";
 import type { ScheduleRow } from "./types/types";
 
-import { RowActions } from "@/components/costum/table/CRowAction";
+import { CRowActions } from "@/components/costum/table/CRowAction";
 
 type Props = {
   data: ScheduleRow[];
@@ -316,7 +316,7 @@ export default function ScheduleList({
                           {!readOnly &&
                             !hideRowActions && // ← BARU DITAMBAH
                             (onEdit || onDelete) && (
-                              <RowActions<ScheduleRow>
+                              <CRowActions<ScheduleRow>
                                 mode="inline"
                                 size="sm"
                                 row={s}

@@ -7,7 +7,7 @@ import TeacherDashboard from "@/pages/dashboard/teachers/TeacherMainDashboard";
 
 // Menu utama guru
 import TeacherMenuGrids from "@/pages/dashboard/teachers/menus/TeacherMenuGrids";
-import TeacherClass from "@/pages/dashboard/teachers/classes/TeacherClass";
+import TeacherClassSection from "@/pages/dashboard/teachers/classes/TeacherClassSection";
 import TeacherCSST from "@/pages/dashboard/teachers/csst/TeacherCSST";
 import TeacherScheduleAgenda from "@/pages/dashboard/teachers/schedules/agendas/TeacherScheduleAgenda";
 import TeacherProfil from "@/pages/dashboard/teachers/profiles/TeacherProfil";
@@ -34,6 +34,7 @@ import TeacherCSSTDailyReportDetail from "@/pages/dashboard/teachers/csst/menus/
 import TeacherCSSTBookForm from "@/pages/dashboard/teachers/csst/menus/books/details/TeacherCSSTBookForm";
 import TeacherCSSTMaterialForm from "@/pages/dashboard/teachers/csst/menus/materials/details/TeacherCSSTMaterialForm";
 import TeacherCSSTStudentAttendanceDetail from "@/pages/dashboard/teachers/csst/menus/student-attendances/details/TeacherCSSTStudentAttendanceDetail";
+import TeacherCSSTRoom from "@/pages/dashboard/teachers/csst/menus/rooms/TeacherCSSTRoom";
 
 export const TeacherRoutes = (
   <Route path="guru" element={<DashboardLayout />}>
@@ -44,16 +45,11 @@ export const TeacherRoutes = (
 
     {/* Wali Kelas */}
     <Route path="wali-kelas">
-      <Route index element={<TeacherClass />} />
+      <Route index element={<TeacherClassSection />} />
       <Route path=":classSectionId" element={<TeacherClassDetail />} />
-      <Route
-        path=":classSectionId/murid"
-        element={<TeacherCSSTStudentList />}
-      />
-      <Route
-        path=":classSectionId/murid/:id"
-        element={<TeacherCSSTStudentDetail />}
-      />
+      <Route path=":classSectionId/murid" element={<TeacherCSSTStudentList />} />
+      <Route path=":classSectionId/murid/:id" element={<TeacherCSSTStudentDetail />} />
+      <Route path=":classSectionId/ruangan" element={<TeacherCSSTRoom />} />
     </Route>
 
     {/* Guru Mapel / CSST */}
@@ -136,7 +132,7 @@ export const TeacherRoutes = (
 
       {/* Wali Kelas */}
       <Route path="wali-kelas">
-        <Route index element={<TeacherClass showBack />} />
+        <Route index element={<TeacherClassSection showBack />} />
         <Route path=":classSectionId" element={<TeacherClassDetail />} />
       </Route>
 

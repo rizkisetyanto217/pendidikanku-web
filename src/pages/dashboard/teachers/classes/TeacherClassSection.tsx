@@ -1,4 +1,4 @@
-// src/pages/sekolahislamku/teacher/TeacherClass.tsx
+// src/pages/dashboard/teacher/classes/TeacherClassSection.tsx
 import { useMemo, useState, useDeferredValue, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -8,8 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
@@ -315,7 +313,19 @@ function useFilters(rows: SectionRow[]) {
 ========================================================== */
 function SectionCard({ s }: { s: SectionRow }) {
   return (
-    <Card className="p-4 hover:shadow-lg transition">
+    <Card
+      className="
+        p-4 
+        border 
+        transition-all duration-150 
+        cursor-pointer
+        hover:bg-primary/5 
+        hover:border-primary 
+        hover:shadow-sm
+        hover:-translate-y-1
+      "
+    >
+
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -372,7 +382,7 @@ function SectionCard({ s }: { s: SectionRow }) {
 ========================================================== */
 type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
-export default function TeacherClass({
+export default function TeacherClassSection({
   showBack = false,
   backTo
 }: Props) {
@@ -424,7 +434,6 @@ export default function TeacherClass({
             variant="outline"
             onClick={() => navigate(-1)}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Kembali
           </Button>
         </main>
       </div>
@@ -433,97 +442,55 @@ export default function TeacherClass({
 
   return (
     <div className="w-full bg-background text-foreground">
-      <main className="mx-auto space-y-6 pb-10">
-        {/* Header Section */}
-        <div className="md:flex hidden gap-3 items-center">
-          {showBack && (
-            <Button
-              onClick={handleBack}
-              variant="ghost"
-              size="icon"
-              className="cursor-pointer self-start"
-            >
-              <ArrowLeft size={20} />
-            </Button>
-          )}
-          <h1 className="text-xl font-semibold md:text-xl">Kelas yang Saya Ajar</h1>
-        </div>
-
-        {/* Filters */}
-        <Card className="p-4 space-y-4">
-          <div className="flex items-center gap-3">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <Input
-              value={f.q}
-              onChange={(e) => f.setQ(e.target.value)}
-              placeholder="Cari nama kelas / wali / ruang…"
-              className="w-full"
-            />
+      <main className="w-full">
+        <div className="mx-auto flex flex-col gap-6">
+          {/* Header Section */}
+          <div className="md:flex hidden gap-3 items-center">
+            {showBack && (
+              <Button
+                onClick={handleBack}
+                variant="ghost"
+                size="icon"
+                className="cursor-pointer self-start"
+              >
+                <ArrowLeft size={20} />
+              </Button>
+            )}
+            <h1 className="text-xl font-semibold md:text-xl">Kelas yang Saya Ajar</h1>
           </div>
 
-          <div className="flex flex-wrap gap-3">
-            <Select value={f.term} onValueChange={f.setTerm}>
-              <SelectTrigger className="w-[220px]">
-                <SelectValue placeholder="Tahun Ajaran" />
-              </SelectTrigger>
-              <SelectContent>
-                {f.terms.map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {t === "all" ? "Semua Tahun Ajaran" : t}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Filters */}
+          <Card className="p-4 space-y-4">
+            <div className="flex items-center gap-3">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <Input
+                value={f.q}
+                onChange={(e) => f.setQ(e.target.value)}
+                placeholder="Cari nama kelas / wali / ruang…"
+                className="w-full"
+              />
+            </div>
 
-            <Select value={f.room} onValueChange={f.setRoom}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Ruangan" />
-              </SelectTrigger>
-              <SelectContent>
-                {f.rooms.map((r) => (
-                  <SelectItem key={r} value={r}>
-                    {r === "all" ? "Semua Ruangan" : r}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex flex-wrap gap-3">
+              <Select value={f.active} onValueChange={f.setActive}>
+                <SelectContent>
+                  <SelectItem value="active">Aktif</SelectItem>
+                  <SelectItem value="inactive">Nonaktif</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </Card>
 
-            <Select value={f.active} onValueChange={f.setActive}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Semua Status</SelectItem>
-                <SelectItem value="active">Aktif</SelectItem>
-                <SelectItem value="inactive">Nonaktif</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={f.sortBy}
-              onValueChange={(v) => f.setSortBy(v as any)}
-            >
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Urutkan" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="name">Nama Kelas</SelectItem>
-                <SelectItem value="students">Jumlah Siswa</SelectItem>
-                <SelectItem value="created">Terbaru Dibuat</SelectItem>
-              </SelectContent>
-            </Select>
+          {/* Grid */}
+          <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
+            {f.filtered.length ? (
+              f.filtered.map((s) => <SectionCard key={s.id} s={s} />)
+            ) : (
+              <Card className="col-span-2 p-10 text-center">
+                Tidak ada kelas ditemukan.
+              </Card>
+            )}
           </div>
-        </Card>
-
-        {/* Grid */}
-        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
-          {f.filtered.length ? (
-            f.filtered.map((s) => <SectionCard key={s.id} s={s} />)
-          ) : (
-            <Card className="col-span-2 p-10 text-center">
-              Tidak ada kelas ditemukan.
-            </Card>
-          )}
         </div>
       </main>
     </div>

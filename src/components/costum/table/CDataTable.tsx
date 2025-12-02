@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import {
   ChevronLeft,
@@ -30,7 +28,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 
-import { RowActions, NO_ROW_CLICK_ATTR as RA_NO_CLICK } from "./CRowAction";
+import CRowActions, { NO_ROW_CLICK_ATTR as RA_NO_CLICK } from "./CRowAction";
 
 /* =========================
    Types
@@ -122,7 +120,6 @@ export type DataTableProps<T> = {
   className?: string;
 };
 
-export const NO_ROW_CLICK_ATTR = "data-no-row-click";
 
 /* =========================
    Component
@@ -278,7 +275,7 @@ export function CDataTable<T>(props: DataTableProps<T>) {
 
   /* ========== Hover classes ========== */
   const hoverCls = rowHover
-    ? "transition cursor-pointer hover:bg-primary/5 hover:border-primary"
+    ? "transition cursor-pointer hover:bg-primary/5 hover:border-primary hover:-translate-y-1"
     : "";
 
   const cellHoverCls = rowHover
@@ -378,7 +375,6 @@ export function CDataTable<T>(props: DataTableProps<T>) {
           "select",
           "textarea",
           "label",
-          `[${NO_ROW_CLICK_ATTR}]`,
           `[${RA_NO_CLICK}]`,
           "[data-interactive]",
           ".badge",
@@ -439,7 +435,7 @@ export function CDataTable<T>(props: DataTableProps<T>) {
       {hasActionsColumn && (
         <div className="pt-2 flex justify-end">
           {actions ? (
-            <RowActions
+            <CRowActions
               /* mode tidak diisi -> default "menu" */
               row={row}
               onView={actions.onView}
@@ -613,7 +609,7 @@ export function CDataTable<T>(props: DataTableProps<T>) {
                                 cellHoverCls
                               )}>
                               {actions ? (
-                                <RowActions
+                                <CRowActions
                                   row={row}
                                   onView={actions.onView}
                                   onEdit={actions.onEdit}

@@ -206,10 +206,9 @@ const TeacherCSSTStudentDetail: React.FC = () => {
   );
 
   return (
-    <div className="w-full overflow-x-hidden bg-background text-foreground">
+    <div className="w-full bg-background text-foreground">
       <main className="w-full ">
-        {/* Top Bar */}
-        <div className="hidden md:block">
+        <div className="mx-auto flex flex-col gap-6">
           {/* Baris 1 */}
           <div className="md:flex hidden items-center gap-3">
             <Button

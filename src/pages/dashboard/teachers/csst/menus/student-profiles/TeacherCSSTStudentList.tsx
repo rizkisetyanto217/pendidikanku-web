@@ -253,8 +253,7 @@ const TeacherCSSTStudentList: React.FC = () => {
       },
       {
         id: "gender",
-        header: "JK",
-        align: "center" as Align,
+        header: "L/P",
         cell: (s) =>
           s.gender ? (
             <Badge variant="outline" className="uppercase">
@@ -371,9 +370,9 @@ const TeacherCSSTStudentList: React.FC = () => {
      RENDER
   ========================================================= */
   return (
-    <div className="w-full overflow-x-hidden bg-background text-foreground">
+    <div className="w-full bg-background text-foreground">
       <main className="w-full">
-        <div className="mx-auto flex flex-col gap-4 lg:gap-6">
+        <div className="mx-auto flex flex-col gap-6">
           {/* Top bar */}
           <div className="md:flex hidden items-center gap-3">
             <Button

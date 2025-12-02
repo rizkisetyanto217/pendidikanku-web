@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "@/lib/axios";
 import { useNavigate } from "react-router-dom";
@@ -7,32 +7,11 @@ import {
   CheckCircle2,
   Info,
   Loader2,
-  MoreHorizontal,
-  Pencil,
-  Trash2,
-  Eye,
   ArrowLeft,
 } from "lucide-react";
 
 /* ---------- shadcn/ui ---------- */
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-} from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
 
 /* ---------- DataTable (baru) ---------- */
 import {
@@ -47,6 +26,7 @@ import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayou
 /* 🔐 Context user dari simple-context (JWT) */
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
+import CRowActions from "@/components/costum/table/CRowAction";
 
 /* ===================== Types ===================== */
 type AcademicTerm = {
@@ -160,41 +140,6 @@ function useDeleteTerm(schoolId?: string) {
   });
 }
 
-/* ===================== Actions Menu ===================== */
-function ActionsMenu({
-  onView,
-  onEdit,
-  onDelete,
-}: {
-  onView: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
-}) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="Aksi">
-          <MoreHorizontal size={18} />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={onView} className="gap-2">
-          <Eye size={14} /> Lihat
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={onEdit} className="gap-2">
-          <Pencil size={14} /> Edit
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onClick={onDelete}
-          className="gap-2 text-destructive focus:text-destructive"
-        >
-          <Trash2 size={14} /> Hapus
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
 
 /* ===================== Page (pakai DataTable) ===================== */
 type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
@@ -263,15 +208,6 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
   }, [terms]);
 
   const deleteTerm = useDeleteTerm(schoolId || undefined);
-
-  const [toDelete, setToDelete] = useState<AcademicTerm | null>(null);
-  const [confirmOpen, setConfirmOpen] = useState(false);
-
-  const handleConfirmDelete = async () => {
-    if (!toDelete) return;
-    await deleteTerm.mutateAsync(toDelete.id);
-    setConfirmOpen(false);
-  };
 
   const columns: ColumnDef<AcademicTerm>[] = [
     {
@@ -416,82 +352,33 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
                 }
               )
             }
-            renderActions={(t) => (
-              <ActionsMenu
+            renderActions={(row) => (
+              <CRowActions
+                mode="inline"
+                size="sm"
+                row={row}
                 onView={() =>
                   navigate(
-                    `/${schoolSlug}/sekolah/akademik/tahun-akademik/${t.id}`,
-                    {
-                      state: { term: t },
-                    }
+                    `/${schoolSlug}/sekolah/akademik/tahun-akademik/${row.id}`,
+                    { state: { term: row } }
                   )
                 }
                 onEdit={() =>
                   navigate(
-                    `/${schoolSlug}/sekolah/akademik/tahun-akademik/edit/${t.id}`,
-                    {
-                      state: { term: t },
-                    }
+                    `/${schoolSlug}/sekolah/akademik/tahun-akademik/edit/${row.id}`,
+                    { state: { term: row } }
                   )
                 }
-                onDelete={() => {
-                  setToDelete(t);
-                  setConfirmOpen(true);
+                onDelete={async () => {
+                  await deleteTerm.mutateAsync(row.id);
                 }}
+
               />
             )}
-            actions={{
-              mode: "inline",
-              onView: (row) => {
-                navigate(
-                  `/${schoolSlug}/sekolah/akademik/tahun-akademik/${row.id}`,
-                  {
-                    state: { term: row },
-                  }
-                );
-              },
-              onEdit: (row) => {
-                navigate(
-                  `/${schoolSlug}/sekolah/akademik/tahun-akademik/edit/${row.id}`,
-                  {
-                    state: { term: row },
-                  }
-                );
-              },
-              onDelete: (row) => {
-                setToDelete(row);
-                setConfirmOpen(true);
-              },
-            }}
             pageSize={20}
           />
         </div>
       </main>
-
-      {/* Modal Konfirmasi Hapus */}
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              Hapus “{toDelete?.name ?? "Periode"}”?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Yakin ingin menghapus periode akademik ini? Tindakan ini tidak
-              dapat dibatalkan.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={deleteTerm.isPending}
-            >
-              {deleteTerm.isPending ? "Menghapus…" : "Hapus"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };

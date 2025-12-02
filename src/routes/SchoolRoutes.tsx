@@ -29,7 +29,6 @@ import SchoolRegistrationsSetting from "@/pages/dashboard/schools/registrations/
 import SchoolScheduleAgenda from "@/pages/dashboard/schools/schedules/agendas/SchoolScheduleAgenda";
 import SchoolScheduleRoutine from "@/pages/dashboard/schools/schedules/routines/SchoolScheduleRoutine";
 import SchoolSubjectDetail from "@/pages/dashboard/schools/academics/subjects/details/SchoolSubjectDetail";
-import SchoolAcademicManage from "@/pages/dashboard/schools/academics/academics/details/SchoolAcademicManage";
 import SchoolCampaign from "@/pages/dashboard/schools/campaign/SchoolCampaign";
 import SchoolClassParent from "@/pages/dashboard/schools/classes/class-parents/SchoolClassParent";
 import SchoolClass from "@/pages/dashboard/schools/classes/classes/SchoolClass";
@@ -77,7 +76,6 @@ export const SchoolRoutes = (
     <Route path="akademik">
       <Route index path="tahun-akademik" element={<SchoolAcademic />} />
       <Route path="tahun-akademik/:id" element={<SchoolDetailAcademic />} />
-      <Route path="tahun-akademik/manage" element={<SchoolAcademicManage />} />
       <Route path="tahun-akademik/new" element={<SchoolAcademicTermForm />} />
       <Route path="tahun-akademik/edit/:id" element={<SchoolAcademicTermForm />} />
 

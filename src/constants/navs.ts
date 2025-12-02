@@ -348,7 +348,7 @@ export const NAVS: NavDict = {
     },
     {
       path: "guru-mapel",
-      label: "Guru Mapel",
+      label: "Mata Pelajaran",
       icon: UserCog, // /guru/guru-mapel
     },
     {

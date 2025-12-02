@@ -193,11 +193,11 @@ const TeacherCSSTDetail: React.FC = () => {
   const { setHeader } = useDashboardHeader();
   useEffect(() => {
     setHeader({
-      title: "Detail Mapel",
+      title: "Detail Mata Pelajaran",
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
-        { label: "Guru Mapel" },
-        { label: "Detail Mapel" },
+        { label: "Guru Mata Pelajaran" },
+        { label: "Detail Mata Pelajaran" },
       ],
       showBack: true,
     });
@@ -433,7 +433,7 @@ const TeacherCSSTDetail: React.FC = () => {
             {/* Absensi hari ini - wide card */}
             <Card
               className="cursor-pointer transition hover:shadow-md"
-              onClick={() => navigate("absensi")}
+              onClick={() => navigate("")}
             >
               <CardContent className="p-4 md:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <div className="space-y-1">
@@ -492,7 +492,7 @@ const TeacherCSSTDetail: React.FC = () => {
             {/* Profil Murid */}
             <Card
               className="cursor-pointer transition hover:shadow-md"
-              onClick={() => navigate("murid")}
+              onClick={() => navigate("absensi")}
             >
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="space-y-1">

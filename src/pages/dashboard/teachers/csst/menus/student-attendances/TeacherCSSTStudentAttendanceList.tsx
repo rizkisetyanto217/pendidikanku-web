@@ -21,13 +21,16 @@ import {
   Search,
   Users,
   User,
-  PhoneCall,
   MessageCircle,
   UserCircle2,
+  NotebookPen,
+
 } from "lucide-react";
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 import api from "@/lib/axios";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
+
+import CRowActions from "@/components/costum/table/CRowAction";
 
 /* =========================================================
    KONFIG + TIPE
@@ -64,23 +67,23 @@ type ApiStudentCSSTItem = {
   student_class_section_subject_teacher_is_active: boolean;
 
   student_class_section_subject_teacher_user_profile_name_snapshot?:
-    | string
-    | null;
+  | string
+  | null;
   student_class_section_subject_teacher_user_profile_avatar_url_snapshot?:
-    | string
-    | null;
+  | string
+  | null;
   student_class_section_subject_teacher_user_profile_whatsapp_url?:
-    | string
-    | null;
+  | string
+  | null;
   student_class_section_subject_teacher_user_profile_parent_name_snapshot?:
-    | string
-    | null;
+  | string
+  | null;
   student_class_section_subject_teacher_user_profile_parent_whatsapp_url?:
-    | string
-    | null;
+  | string
+  | null;
   student_class_section_subject_teacher_user_profile_gender_snapshot?:
-    | string
-    | null;
+  | string
+  | null;
 
   student_class_section_subject_teacher_student_code_snapshot?: string | null;
 };
@@ -170,43 +173,36 @@ function useCSSTTeacherStudents(params: CSSTStudentsQueryParams) {
 /* =========================================================
    UI HELPERS
 ========================================================= */
-function GenderBadge({ gender }: { gender?: Gender }) {
-  if (!gender) return null;
-  const isL = gender === "L";
-  return (
-    <Badge variant={isL ? "secondary" : "outline"} className="gap-1 text-xs">
-      <User size={12} />
-      {isL ? "Laki-laki" : "Perempuan"}
-    </Badge>
-  );
-}
-
-function AvatarStudent({
-  name,
-  avatarUrl,
-}: {
-  name: string;
-  avatarUrl?: string;
-}) {
-  const initials = name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase();
-
-  return (
-    <Avatar className="h-8 w-8">
-      {avatarUrl ? <AvatarImage src={avatarUrl} alt={name} /> : null}
-      <AvatarFallback>{initials || "S"}</AvatarFallback>
-    </Avatar>
-  );
-}
 
 function buildWhatsAppLink(urlFromApi?: string) {
   if (!urlFromApi) return undefined;
   return urlFromApi; // BE sudah kasih https://wa.me/...
+}
+
+// =========================================================
+// UTIL: Ambil catatan penting (mirip TeacherCSSTStudentList)
+// =========================================================
+type AnyRec = Record<string, any>;
+
+function extractImportantNotes(s: AnyRec): string[] {
+  const notes: string[] = [];
+
+  if (Array.isArray(s.importantNotes)) notes.push(...s.importantNotes);
+  if (typeof s.notes === "string") notes.push(s.notes);
+  if (Array.isArray(s.notes)) notes.push(...s.notes);
+
+  if (Array.isArray(s.flags)) notes.push(...s.flags);
+  else if (s.flags && typeof s.flags === "object") {
+    Object.values(s.flags).forEach((v) => {
+      if (typeof v === "string" && v.trim()) notes.push(v.trim());
+    });
+  }
+
+  if (typeof s.warning === "string") notes.push(s.warning);
+  if (typeof s.healthNote === "string") notes.push(s.healthNote);
+  if (typeof s.financeNote === "string") notes.push(s.financeNote);
+
+  return Array.from(new Set(notes.map((n) => n.trim()).filter(Boolean)));
 }
 
 /* =========================================================
@@ -219,7 +215,7 @@ const TeacherCSSTStudentsList: React.FC = () => {
 
   useEffect(() => {
     setHeader({
-      title: "Murid di Mapel Ini",
+      title: "Daftar Murid",
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Guru Mapel" },
@@ -235,7 +231,7 @@ const TeacherCSSTStudentsList: React.FC = () => {
     return (
       <div className="w-full bg-background text-foreground">
         <main className="mx-auto space-y-4">
-          <div className="flex items-center gap-2 mt-4">
+          <div className="md:flex hidden items-center gap-2 mt-4">
             <Button
               variant="ghost"
               size="icon"
@@ -244,7 +240,7 @@ const TeacherCSSTStudentsList: React.FC = () => {
             >
               <ArrowLeft size={20} />
             </Button>
-            <h1 className="font-semibold text-lg">Daftar Murid</h1>
+            <h1 className="font-semibold text-lg md:text-xl">Daftar Murid</h1>
           </div>
           <Card className="p-4 space-y-2">
             <div className="text-destructive text-sm font-medium">
@@ -293,8 +289,8 @@ const TeacherCSSTStudentsList: React.FC = () => {
     <div className="w-full bg-background text-foreground">
       <main className="mx-auto space-y-6">
         {/* Header local (backup mobile) */}
-        <div className="flex items-center justify-between md:hidden">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between">
+          <div className="md:flex hidden items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
@@ -353,17 +349,14 @@ const TeacherCSSTStudentsList: React.FC = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[56px]">#</TableHead>
+                  <TableHead className="w-[56px]">No</TableHead>
                   <TableHead>Murid</TableHead>
                   <TableHead className="hidden sm:table-cell">NIS</TableHead>
-                  <TableHead className="hidden sm:table-cell">Gender</TableHead>
-                  <TableHead className="hidden md:table-cell">
-                    Kontak Murid
-                  </TableHead>
-                  <TableHead className="hidden md:table-cell">
-                    Orang Tua / Wali
-                  </TableHead>
+                  <TableHead className="hidden sm:table-cell">L/P</TableHead>
+                  <TableHead className="hidden md:table-cell">Kontak Murid </TableHead>
+                  <TableHead className="hidden md:table-cell">Catatan</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -389,17 +382,24 @@ const TeacherCSSTStudentsList: React.FC = () => {
                 ) : filtered.length > 0 ? (
                   filtered.map((r, idx) => {
                     const waStudent = buildWhatsAppLink(r.whatsappUrl);
-                    const waParent = buildWhatsAppLink(r.parentWhatsappUrl);
 
                     return (
-                      <TableRow key={r.id} className="hover:bg-muted/60">
+                      <TableRow
+                        key={r.id}
+                        className="
+                          group/row 
+                          border-b border-border 
+                          transition-all duration-150 
+                          cursor-pointer
+                          hover:bg-primary/5 
+                          hover:border-primary 
+                          hover:shadow-sm
+                        "
+                      >
+
                         <TableCell>{idx + 1}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <AvatarStudent
-                              name={r.name}
-                              avatarUrl={r.avatarUrl}
-                            />
                             <div className="flex flex-col">
                               <span className="font-medium">{r.name}</span>
                               <span className="text-[11px] text-muted-foreground">
@@ -416,8 +416,15 @@ const TeacherCSSTStudentsList: React.FC = () => {
                         </TableCell>
 
                         <TableCell className="hidden sm:table-cell">
-                          <GenderBadge gender={r.gender} />
+                          {r.gender ? (
+                            <Badge variant="outline" className="uppercase">
+                              {r.gender}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
                         </TableCell>
+
 
                         {/* Kontak murid */}
                         <TableCell className="hidden md:table-cell text-xs">
@@ -440,44 +447,53 @@ const TeacherCSSTStudentsList: React.FC = () => {
                           )}
                         </TableCell>
 
-                        {/* Orang tua */}
+                        {/* Catatan */}
                         <TableCell className="hidden md:table-cell text-xs">
-                          {r.parentName ? (
-                            <div className="flex flex-col gap-1">
-                              <span className="font-medium">
-                                {r.parentName}
-                              </span>
-                              {waParent ? (
-                                <div className="flex items-center gap-1">
-                                  <PhoneCall size={12} />
-                                  <a
-                                    href={waParent}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="underline text-primary"
-                                  >
-                                    WA Orang Tua
-                                  </a>
+                          {(() => {
+                            const items = extractImportantNotes(r);
+                            if (!items.length)
+                              return <span className="text-muted-foreground">-</span>;
+
+                            const [first, ...rest] = items;
+                            return (
+                              <div className="text-sm">
+                                <div className="flex items-center gap-2 font-medium mb-0.5">
+                                  <NotebookPen size={14} />
+                                  <span>Keterangan penting</span>
                                 </div>
-                              ) : (
-                                <span className="text-muted-foreground">
-                                  Kontak belum tersedia
-                                </span>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
+                                <div className="text-muted-foreground">
+                                  {first}
+                                  {rest.length ? ` (+${rest.length} lagi)` : ""}
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </TableCell>
 
+                        {/* Status */}
                         <TableCell>
-                          <Badge
-                            variant={r.isActive ? "default" : "outline"}
-                            className="text-[11px]"
-                          >
-                            {r.isActive ? "Aktif" : "Nonaktif"}
-                          </Badge>
+                          <CBadgeStatus
+                            status={r.isActive ? "active" : "inactive"}
+                            className="text-[10px]"
+                          />
                         </TableCell>
+
+                        {/* Aksi */}
+                        <TableCell>
+                          <CRowActions
+                            mode="inline"
+                            size="sm"
+                            row={r}
+                            onView={() => navigate(`/guru/murid/${r.id}`)}
+                            onEdit={() => navigate(`/guru/murid/edit/${r.id}`, { state: { student: r } })}
+                            onDelete={async () => {
+                              console.log("DELETE:", r.id);
+                              // TODO: panggil API delete jika sudah ada endpoint
+                            }}
+                          />
+                        </TableCell>
+
+
                       </TableRow>
                     );
                   })
@@ -502,6 +518,7 @@ const TeacherCSSTStudentsList: React.FC = () => {
           </ScrollArea>
         </Card>
       </main>
+
     </div>
   );
 };
