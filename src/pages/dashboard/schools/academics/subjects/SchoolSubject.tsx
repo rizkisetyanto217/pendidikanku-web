@@ -32,6 +32,7 @@ import {
 
 import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
 import CRowActions from "@/components/costum/table/CRowAction";
+import { cn } from "@/lib/utils";
 
 /* ================= Types ================= */
 export type SubjectStatus = "active" | "inactive";
@@ -454,15 +455,16 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
               )}
               renderCard={(r) => (
                 <div
-                  className="rounded-xl border p-4 space-y-3 cursor-pointer transition hover:bg-primary/5 hover:border-primary"
+                  className={cn(
+                    "rounded-xl border p-4 space-y-3 cursor-pointer transition-all duration-150",
+                    "hover:border-primary/40 hover:bg-accent/10 hover:shadow-sm"
+                  )}
                   onClick={() => navigate(`${r.id}`)}
                 >
                   {/* Header + Status */}
                   <div className="flex items-center justify-between">
                     <div className="font-semibold">{r.name}</div>
-                    <CBadgeStatus
-                      status={r.status === "active" ? "active" : "inactive"}
-                    />
+                    <CBadgeStatus status={r.status === "active" ? "active" : "inactive"} />
                   </div>
 
                   {/* Info Kode */}
@@ -488,23 +490,19 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
                     </div>
                   </div>
 
-                  {/* ==== Aksi GRID VIEW ==== */}
+                  {/* Aksi */}
                   <div
                     className="flex justify-end"
-                    onClick={(e) => e.stopPropagation()} // mencegah buka detail
+                    onClick={(e) => e.stopPropagation()}
                   >
                     <CRowActions
                       row={r}
                       mode="inline"
                       size="sm"
                       onView={() => navigate(`${r.id}`)}
-                      onEdit={() =>
-                        navigate(`edit/${r.id}`, {
-                          state: { subject: r },
-                        })
-                      }
+                      onEdit={() => navigate(`edit/${r.id}`, { state: { subject: r } })}
                       onDelete={() => delMut.mutate(r.id)}
-                      forceMenu={false} // grid view = inline
+                      forceMenu={false}
                     />
                   </div>
                 </div>

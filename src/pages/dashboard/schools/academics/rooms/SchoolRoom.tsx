@@ -237,7 +237,7 @@ export default function SchoolRoom({ showBack = false, backTo }: Props) {
     <div className="w-full overflow-x-hidden bg-background text-foreground">
       <main className="w-full">
         <div className="mx-auto flex flex-col gap-4 lg:gap-6">
-          {/* ✅ Header Back seperti SchoolClassSection */}
+          {/* Header */}
           <div className="md:flex hidden gap-3 items-center">
             {showBack && (
               <Button
@@ -254,7 +254,6 @@ export default function SchoolRoom({ showBack = false, backTo }: Props) {
           </div>
 
           <DataTable<Room>
-            /* Tambah → ke halaman /akademik/ruangan/new */
             onAdd={() => navigate("new")}
             addLabel="Tambah"
             controlsPlacement="above"
@@ -273,8 +272,6 @@ export default function SchoolRoom({ showBack = false, backTo }: Props) {
             viewModes={["table", "card"] as ViewMode[]}
             defaultView="table"
             storageKey={`rooms:${schoolId}`}
-
-            /* klik baris → detail /ruangan/:id */
             onRowClick={(r) => navigate(`./${r.id}`)}
             renderActions={(row, view) => (
               <CRowActions
@@ -286,7 +283,7 @@ export default function SchoolRoom({ showBack = false, backTo }: Props) {
                   navigate(`edit/${row.id}`, { state: { room: row } })
                 }
                 onDelete={() => deleteRoom.mutate(row.id)}
-                forceMenu={view === "table"} // dropdown jika table mode
+                forceMenu={view === "table"}
               />
             )}
           />

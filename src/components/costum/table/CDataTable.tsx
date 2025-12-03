@@ -395,7 +395,7 @@ export function CDataTable<T>(props: DataTableProps<T>) {
   const suppressView = Boolean(onRowClick);
 
   const cardHoverCls = rowHover
-    ? "transition-all hover:bg-primary/5 hover:border-primary hover:-translate-y-1 cursor-pointer"
+    ? "transition-all hover:bg-primary/5 hover:border-primary hover:-translate-y-1 cursor-pointer hover:-translate-y-1"
     : "";
 
   /* ========== Render ========== */
