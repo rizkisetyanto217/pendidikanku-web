@@ -112,20 +112,10 @@ export const SchoolRoutes = (
       <Route path="daftar-kelas">
         {/* /kelas/daftar-kelas */}
         <Route index element={<SchoolClass />} />
-
-        {/* /kelas/daftar-kelas/new */}
         <Route path="new" element={<SchoolClassForm />} />
-
-        {/* /kelas/daftar-kelas/edit/:classId */}
         <Route path="edit/:classId" element={<SchoolClassForm />} />
-
-        {/* /kelas/daftar-kelas/:classId */}
         <Route path=":classId" element={<SchoolClassDetail />} />
-
-        {/* /kelas/daftar-kelas/:classId/murid */}
         <Route path=":classId/murid" element={<SchoolClassStudentList />} />
-
-        {/* /kelas/daftar-kelas/section/:id */}
         <Route path="section/:id" element={<SchoolSectionDetail />} />
       </Route>
 

@@ -352,29 +352,30 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
                 }
               )
             }
-            renderActions={(row) => (
+            renderActions={(row, view) => (
               <CRowActions
                 mode="inline"
                 size="sm"
                 row={row}
                 onView={() =>
-                  navigate(
-                    `/${schoolSlug}/sekolah/akademik/tahun-akademik/${row.id}`,
-                    { state: { term: row } }
-                  )
+                  navigate(`/${schoolSlug}/sekolah/akademik/tahun-akademik/${row.id}`, {
+                    state: { term: row },
+                  })
                 }
                 onEdit={() =>
-                  navigate(
-                    `/${schoolSlug}/sekolah/akademik/tahun-akademik/edit/${row.id}`,
-                    { state: { term: row } }
-                  )
+                  navigate(`/${schoolSlug}/sekolah/akademik/tahun-akademik/edit/${row.id}`, {
+                    state: { term: row },
+                  })
                 }
                 onDelete={async () => {
                   await deleteTerm.mutateAsync(row.id);
                 }}
 
+                /* 🎯 Hanya TABLE VIEW yang pakai dropdown */
+                forceMenu={view === "table"}
               />
             )}
+
             pageSize={20}
           />
         </div>

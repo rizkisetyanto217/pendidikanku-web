@@ -1,16 +1,12 @@
 // src/pages/sekolahislamku/dashboard-school/books/SchoolBooks.tsx
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "@/lib/axios";
 import {
   ImageOff,
-  Pencil,
-  Trash2,
   Info,
   Loader2,
-  MoreHorizontal,
-  Eye,
   ArrowLeft,
 } from "lucide-react";
 
@@ -19,29 +15,16 @@ import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayou
 
 /* shadcn/ui */
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-} from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
 
-/* ✅ DataTable baru — sama seperti Academic */
+
+/* DataTable */
 import {
   CDataTable as DataTable,
   type ColumnDef,
 } from "@/components/costum/table/CDataTable";
+
+/* CRowActions */
+import CRowActions from "@/components/costum/table/CRowAction";
 
 /* =========================================================
    Types (disesuaikan dengan /api/u/books/list)
@@ -75,36 +58,14 @@ export type BooksResponse = {
 /* =========================================================
    Fetch list (USER) - /u/books/list
 ========================================================= */
-function useBooksList(params: { schoolId: string }) {
-  const { schoolId } = params; // masih dipakai buat context & routing
-
-  return useQuery<BooksResponse>({
-    queryKey: ["books-list-public", { schoolId }],
+function useBooksList(schoolId: string) {
+  return useQuery<BookAPI[]>({
+    queryKey: ["books-list-public", schoolId],
     queryFn: async () => {
-      const r = await axios.get<BooksResponse>("/u/books/list", {
-        withCredentials: true,
-        params: { _: Date.now() },
-      });
-
-      const rows = (r.data?.data ?? []) as BookAPI[];
-
-      return {
-        data: rows,
-        pagination: r.data?.pagination,
-      };
+      const r = await axios.get("/u/books/list", { withCredentials: true });
+      return r.data?.data ?? [];
     },
-    placeholderData: (prev) =>
-      prev ?? {
-        data: [],
-        pagination: {
-          page: 1,
-          per_page: 0,
-          total: 0,
-          total_pages: 1,
-          has_next: false,
-          has_prev: false,
-        },
-      },
+    placeholderData: [],
   });
 }
 
@@ -114,58 +75,11 @@ function useBooksList(params: { schoolId: string }) {
 function useDeleteBook() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => {
-      const { data } = await axios.delete(
-        `/api/a/books/${encodeURIComponent(id)}`,
-        { withCredentials: true }
-      );
-      return data;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["books-list-public"] }),
+    mutationFn: async (id: string) =>
+      axios.delete(`/api/a/books/${id}`, { withCredentials: true }),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ["books-list-public"] }),
   });
-}
-
-/* =========================================================
-   Actions Menu (Dropdown) — konsisten Academic
-========================================================= */
-function ActionsMenu({
-  onView,
-  onEdit,
-  onDelete,
-}: {
-  onView?: () => void;
-  onEdit?: () => void;
-  onDelete?: () => void;
-}) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="Aksi">
-          <MoreHorizontal size={18} />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        {onView && (
-          <DropdownMenuItem onClick={onView} className="gap-2">
-            <Eye size={14} /> Lihat
-          </DropdownMenuItem>
-        )}
-        {onEdit && (
-          <DropdownMenuItem onClick={onEdit} className="gap-2">
-            <Pencil size={14} /> Edit
-          </DropdownMenuItem>
-        )}
-        {(onView || onEdit) && onDelete && <DropdownMenuSeparator />}
-        {onDelete && (
-          <DropdownMenuItem
-            onClick={onDelete}
-            className="gap-2 text-destructive focus:text-destructive">
-            <Trash2 size={14} /> Hapus
-          </DropdownMenuItem>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
 }
 
 /* =========================================================
@@ -175,7 +89,7 @@ type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
 export default function SchoolBooks({ showBack = false, backTo }: Props) {
   const navigate = useNavigate();
-  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
+  const { schoolId = "" } = useParams();
 
   /* ✅ Breadcrumb */
   const { setHeader } = useDashboardHeader();
@@ -191,15 +105,11 @@ export default function SchoolBooks({ showBack = false, backTo }: Props) {
     });
   }, [setHeader, showBack]);
 
-  const params = useParams<{ schoolId?: string }>();
-  const schoolId = params.schoolId || "";
-
-  const booksQ = useBooksList({ schoolId });
-  const rows = booksQ.data?.data ?? [];
-
+  /* Fetch */
+  const booksQuery = useBooksList(schoolId);
   const deleteBook = useDeleteBook();
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<BookAPI | null>(null);
+
+  const rows = booksQuery.data ?? [];
 
   /* ====== Kolom DataTable ====== */
   const columns = useMemo<ColumnDef<BookAPI>[]>(() => {
@@ -260,17 +170,17 @@ export default function SchoolBooks({ showBack = false, backTo }: Props) {
     ];
   }, []);
 
-  /* ====== Stats slot — sama gaya Academic ====== */
-  const statsSlot = booksQ.isLoading ? (
+  /* ================== STATS SLOT ================== */
+  const statsSlot = booksQuery.isLoading ? (
     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-      <Loader2 className="h-4 w-4 animate-spin" /> Memuat buku…
+      <Loader2 className="h-4 w-4 animate-spin" /> Memuat daftar buku…
     </div>
-  ) : booksQ.isError ? (
+  ) : booksQuery.isError ? (
     <div className="rounded-xl border p-4 text-sm space-y-2">
       <div className="flex items-center gap-2">
         <Info className="h-4 w-4" /> Gagal memuat buku.
       </div>
-      <Button size="sm" onClick={() => booksQ.refetch()}>
+      <Button size="sm" onClick={() => booksQuery.refetch()}>
         Coba lagi
       </Button>
     </div>
@@ -278,26 +188,6 @@ export default function SchoolBooks({ showBack = false, backTo }: Props) {
     <div className="text-sm text-muted-foreground">
       Total buku: {rows.length}
     </div>
-  );
-
-  /* ====== Actions (Dropdown) — diarahkan ke halaman detail/edit ====== */
-  const renderActions = (r: BookAPI) => (
-    <ActionsMenu
-      onView={() =>
-        navigate(`${r.book_id}`, {
-          state: { book: r },
-        })
-      }
-      onEdit={() =>
-        navigate(`edit/${r.book_id}`, {
-          state: { book: r },
-        })
-      }
-      onDelete={() => {
-        setDeleteTarget(r);
-        setDeleteOpen(true);
-      }}
-    />
   );
 
   return (
@@ -308,7 +198,7 @@ export default function SchoolBooks({ showBack = false, backTo }: Props) {
           <div className="md:flex hidden gap-3 items-center">
             {showBack && (
               <Button
-                onClick={handleBack}
+                onClick={() => (backTo ? navigate(backTo) : navigate(-1))}
                 variant="ghost"
                 size="icon"
                 className="cursor-pointer self-start">
@@ -318,112 +208,46 @@ export default function SchoolBooks({ showBack = false, backTo }: Props) {
             <h1 className="font-semibold text-lg md:text-xl">Daftar Buku</h1>
           </div>
 
+          {/* ======================================
+              DATA TABLE PAKAI CRowActions
+        ====================================== */}
           <DataTable<BookAPI>
-            /* ===== Toolbar ===== */
-            onAdd={() => navigate("new")} // 🔗 ke /akademik/buku/new
+            onAdd={() => navigate("new")}
             addLabel="Tambah"
             controlsPlacement="above"
-            /* ===== Search ===== */
             defaultQuery=""
             searchPlaceholder="Cari judul atau penulis…"
-            searchByKeys={["book_title", "book_author", "book_slug"]}
-            /* ===== Stats ===== */
+            searchByKeys={["book_title", "book_author"]}
             statsSlot={statsSlot}
-            /* ===== Data ===== */
-            loading={booksQ.isLoading}
-            error={
-              booksQ.isError ? (booksQ.error as any)?.message ?? "Error" : null
-            }
+            loading={booksQuery.isLoading}
+            error={booksQuery.isError ? "Gagal memuat buku" : null}
             columns={columns}
             rows={rows}
             getRowId={(r) => r.book_id}
-            /* ===== UX ===== */
-            defaultAlign="center"
             stickyHeader
             zebra
-            pageSize={20}
-            pageSizeOptions={[10, 20, 50, 100, 200]}
             viewModes={["table", "card"]}
-            defaultView="table"
-            /* Aksi pakai Dropdown (renderActions) */
-            renderActions={renderActions}
-            /* Klik baris/card → detail */
-            onRowClick={(r) =>
-              navigate(`${r.book_id}`, {
-                state: { book: r },
-              })
-            }
-            /* Renderer kartu */
-            renderCard={(r) => (
-              <div
-                className="rounded-xl border space-y-3 p-3 cursor-pointer transition hover:border-primary hover:bg-primary/5"
-                onClick={() =>
-                  navigate(`${r.book_id}`, {
-                    state: { book: r },
-                  })
-                }>
-                <div className="flex gap-3">
-                  <div className="w-16">
-                    {r.book_image_url ? (
-                      <img
-                        src={r.book_image_url}
-                        alt={r.book_title}
-                        className="h-24 w-16 rounded-md object-cover"
-                      />
-                    ) : (
-                      <div className="grid h-24 w-16 place-items-center rounded-md bg-muted">
-                        <ImageOff className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                    )}
-                  </div>
 
-                  <div className="flex-1 space-y-1">
-                    <div className="font-medium">{r.book_title}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {r.book_author || "-"}
-                    </div>
-                    <div className="text-xs text-muted-foreground line-clamp-2">
-                      {r.book_desc || "Belum ada deskripsi."}
-                    </div>
-                  </div>
-                </div>
+            /* Row Click → Detail */
+            onRowClick={(r) => navigate(`${r.book_id}`, { state: { book: r } })}
 
-                {/* tombol menu, tidak boleh trigger onClick parent */}
-                <div
-                  className="flex justify-end"
-                  onClick={(e) => e.stopPropagation()}>
-                  {renderActions(r)}
-                </div>
-              </div>
+            /* Aksi */
+            renderActions={(r, view) => (
+              <CRowActions
+                row={r}
+                mode="inline"
+                size="sm"
+                onView={() => navigate(`${r.book_id}`, { state: { book: r } })}
+                onEdit={() =>
+                  navigate(`edit/${r.book_id}`, { state: { book: r } })
+                }
+                onDelete={() => deleteBook.mutate(r.book_id)}
+                forceMenu={view === "table"} // table = dropdown, card = inline
+              />
             )}
           />
         </div>
       </main>
-
-      {/* Dialog Konfirmasi Hapus */}
-      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Buku?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Yakin ingin menghapus buku{" "}
-              <span className="font-medium">“{deleteTarget?.book_title}”</span>?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={async () => {
-                if (!deleteTarget) return;
-                await deleteBook.mutateAsync(deleteTarget.book_id);
-                setDeleteOpen(false);
-              }}>
-              {deleteBook.isPending ? "Menghapus…" : "Hapus"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

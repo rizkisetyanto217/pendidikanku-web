@@ -23,22 +23,15 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from "@/components/ui/alert-dialog";
 
-/* re-use your DataTable */
+/* DataTable */
 import {
-  DataTable,
+  CDataTable as DataTable,
   type ColumnDef,
 } from "@/components/costum/table/CDataTable";
+
 import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
+import CRowActions from "@/components/costum/table/CRowAction";
 
 /* ================= Types ================= */
 export type SubjectStatus = "active" | "inactive";
@@ -158,10 +151,11 @@ const sumHours = (arr: ClassSubjectItem[]) => {
 };
 
 /* ================= Mutations ================= */
-function useDeleteSubjectMutation(school_id: string, subjectId: string) {
+function useDeleteSubjectMutation(school_id: string) {
   const qc = useQueryClient();
+
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async (subjectId: string) => {
       const { data } = await axios.delete(
         `${ADMIN_PREFIX}/${encodeURIComponent(school_id)}/subjects/${subjectId}`
       );
@@ -173,41 +167,7 @@ function useDeleteSubjectMutation(school_id: string, subjectId: string) {
   });
 }
 
-/* ================= Confirm Delete Dialog ================= */
-function ConfirmDeleteDialog({
-  open,
-  title,
-  message,
-  confirmLabel = "Hapus",
-  loading = false,
-  onClose,
-  onConfirm,
-}: {
-  open: boolean;
-  title: string;
-  message: string;
-  confirmLabel?: string;
-  loading?: boolean;
-  onClose: () => void;
-  onConfirm: () => void | Promise<void>;
-}) {
-  return (
-    <AlertDialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{message}</AlertDialogDescription>
-        </AlertDialogHeader>
-        <div className="flex justify-end gap-2">
-          <AlertDialogCancel>Batal</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} disabled={loading}>
-            {loading ? "Menghapus…" : confirmLabel}
-          </AlertDialogAction>
-        </div>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
-}
+
 
 /* ================= Page (TABLE) ================= */
 type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
@@ -233,7 +193,9 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
   const { data: currentUser } = useCurrentUser();
   const schoolId = currentUser?.membership?.school_id ?? "";
 
-  const [deleteData, setDeleteData] = useState<SubjectRow | null>(null);
+  // DELETE mutation (gunakan subjectId dari row)
+  const delMut = useDeleteSubjectMutation(schoolId);
+
 
   // controls (mengikat ke DataTable)
   const [query, setQuery] = useState("");
@@ -242,8 +204,7 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
     "name-asc" | "name-desc" | "code-asc" | "code-desc"
   >("name-asc");
 
-  // delete mutation pakai schoolId dari context + subjectId dari deleteData
-  const delMut = useDeleteSubjectMutation(schoolId || "", deleteData?.id ?? "");
+
 
   const mergedQ = useQuery({
     queryKey: ["subjects-merged", schoolId],
@@ -365,8 +326,8 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
             r.status === "active"
               ? "active"
               : r.status === "inactive"
-              ? "inactive"
-              : "pending"
+                ? "inactive"
+                : "pending"
           }
         />
       ),
@@ -473,49 +434,50 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
               stickyHeader
               zebra
               rightSlot={RightSlot}
-              enableActions
-              actions={{
-                mode: "menu",
-                onView: (row) => navigate(`${row.id}`), // -> /mata-pelajaran/:id
-                onEdit: (row) =>
-                  navigate(`edit/${row.id}`, {
-                    state: { subject: row }, // buat prefilling di SchoolSubjectForm
-                  }),
-                onDelete: (row) => setDeleteData(row),
-                labels: { view: "Detail", edit: "Edit", delete: "Hapus" },
-                size: "sm",
-              }}
               onRowClick={(row) => navigate(`${row.id}`)}
               storageKey="subjects.table.view"
               minTableWidth={880}
+              renderActions={(row, view) => (
+                <CRowActions
+                  row={row}
+                  mode="inline"
+                  size="sm"
+                  onView={() => navigate(`${row.id}`)}
+                  onEdit={() =>
+                    navigate(`edit/${row.id}`, {
+                      state: { subject: row },
+                    })
+                  }
+                  onDelete={() => delMut.mutate(row.id)}
+                  forceMenu={view === "table"}
+                />
+              )}
               renderCard={(r) => (
                 <div
-                  className="rounded-xl border p-4 space-y-1 cursor-pointer transition hover:bg-primary/5 hover:border-primary"
-                  onClick={() => navigate(`${r.id}`)}>
+                  className="rounded-xl border p-4 space-y-3 cursor-pointer transition hover:bg-primary/5 hover:border-primary"
+                  onClick={() => navigate(`${r.id}`)}
+                >
+                  {/* Header + Status */}
                   <div className="flex items-center justify-between">
                     <div className="font-semibold">{r.name}</div>
                     <CBadgeStatus
-                      status={
-                        r.status === "active"
-                          ? "active"
-                          : r.status === "inactive"
-                          ? "inactive"
-                          : "pending"
-                      }
+                      status={r.status === "active" ? "active" : "inactive"}
                     />
                   </div>
+
+                  {/* Info Kode */}
                   <div className="text-xs text-muted-foreground">
                     Kode: {r.code || "-"}
                   </div>
-                  <div className="grid grid-cols-3 gap-2 mt-2 text-sm">
+
+                  {/* Grid Info */}
+                  <div className="grid grid-cols-3 gap-2 text-sm">
                     <div className="rounded border p-2">
                       <div className="text-xs text-muted-foreground">Kelas</div>
                       <div className="font-medium">{r.class_count}</div>
                     </div>
                     <div className="rounded border p-2">
-                      <div className="text-xs text-muted-foreground">
-                        Jam/Mgg
-                      </div>
+                      <div className="text-xs text-muted-foreground">Jam/Mgg</div>
                       <div className="font-medium">
                         {r.total_hours_per_week ?? "-"}
                       </div>
@@ -525,30 +487,33 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
                       <div className="font-medium">{r.book_count}</div>
                     </div>
                   </div>
+
+                  {/* ==== Aksi GRID VIEW ==== */}
+                  <div
+                    className="flex justify-end"
+                    onClick={(e) => e.stopPropagation()} // mencegah buka detail
+                  >
+                    <CRowActions
+                      row={r}
+                      mode="inline"
+                      size="sm"
+                      onView={() => navigate(`${r.id}`)}
+                      onEdit={() =>
+                        navigate(`edit/${r.id}`, {
+                          state: { subject: r },
+                        })
+                      }
+                      onDelete={() => delMut.mutate(r.id)}
+                      forceMenu={false} // grid view = inline
+                    />
+                  </div>
                 </div>
               )}
+
             />
           )}
         </div>
       </main>
-
-      {/* Hapus pakai AlertDialog, tetap di halaman ini */}
-      <ConfirmDeleteDialog
-        open={!!deleteData}
-        title={`Hapus "${deleteData?.name}"?`}
-        message="Yakin ingin menghapus pelajaran ini? Tindakan tidak dapat dibatalkan."
-        confirmLabel={delMut.isPending ? "Menghapus…" : "Hapus"}
-        loading={delMut.isPending}
-        onClose={() => setDeleteData(null)}
-        onConfirm={async () => {
-          if (!schoolId || !deleteData) return;
-          try {
-            await delMut.mutateAsync();
-          } finally {
-            setDeleteData(null);
-          }
-        }}
-      />
     </div>
   );
 };

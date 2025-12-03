@@ -198,9 +198,8 @@ export default function CMenuDropdown({
                 <Label
                   key={m.value}
                   htmlFor={`mode-${m.value}`}
-                  className={`flex items-center justify-center gap-1 rounded-md border px-2 py-1 text-xs cursor-pointer ${
-                    mode === m.value ? "bg-primary/10 border-primary" : ""
-                  }`}
+                  className={`flex items-center justify-center gap-1 rounded-md border px-2 py-1 text-xs cursor-pointer ${mode === m.value ? "bg-primary/10 border-primary" : ""
+                    }`}
                 >
                   <RadioGroupItem
                     id={`mode-${m.value}`}

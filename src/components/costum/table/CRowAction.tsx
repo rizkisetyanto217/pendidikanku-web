@@ -39,6 +39,8 @@ export type RowActionsProps<T> = {
   suppressView?: boolean;
   size?: Size;
   className?: string;
+
+  forceMenu?: boolean;
 };
 
 function PillIconButton(props: {
@@ -80,6 +82,7 @@ function PillIconButton(props: {
 
 export function CRowActions<T>({
   mode = "menu",
+  forceMenu = false,
   row,
   onView,
   onEdit,
@@ -94,6 +97,8 @@ export function CRowActions<T>({
     edit: labels?.edit ?? "Edit",
     delete: labels?.delete ?? "Hapus",
   };
+
+  const effectiveMode: Mode = forceMenu ? "menu" : mode;
 
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -191,17 +196,17 @@ export function CRowActions<T>({
 
   return (
     <>
-      {/* ROW ACTIONS */}
-      {mode === "inline"
+      {effectiveMode === "inline"
         ? inlinePart
-        : mode === "both"
+        : effectiveMode === "both"
           ? (
             <div className="flex items-center gap-2">
               {inlinePart}
               {menuPart}
             </div>
           )
-          : menuPart}
+          : menuPart}   {/* DEFAULT MENU */}
+
 
       {/* ALERT DIALOG (Global internal) */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>

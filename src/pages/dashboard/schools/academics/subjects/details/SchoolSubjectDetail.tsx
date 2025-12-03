@@ -114,11 +114,11 @@ const SchoolSubjectDetail: React.FC = () => {
   const { setHeader } = useDashboardHeader();
   useEffect(() => {
     setHeader({
-      title: "Detail Mapel",
+      title: "Detail Mata Pelajaran",
       breadcrumbs: [
         { label: "Dashboard", href: "dashboard" },
         { label: "Akademik" },
-        { label: "Mapel", href: "akademik/mata-pelajaran" },
+        { label: "Mata Pelajaran", href: "akademik/mata-pelajaran" },
         { label: "Detail" },
       ],
       showBack: true,
@@ -371,7 +371,7 @@ const SchoolSubjectDetail: React.FC = () => {
               >
                 <ArrowLeft size={20} />
               </Button>
-              <h1 className="font-semibold text-lg md:text-xl">Detail Mapel</h1>
+              <h1 className="font-semibold text-lg md:text-xl">Detail Mata Pelajaran</h1>
             </div>
           </div>
 

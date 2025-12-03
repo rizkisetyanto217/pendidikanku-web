@@ -5,47 +5,31 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import axios, { getActiveschoolId } from "@/lib/axios";
 import {
   MapPin,
-  Eye,
-  Pencil,
-  Trash2,
-  MoreHorizontal,
   Info,
   Loader2,
   ArrowLeft,
 } from "lucide-react";
 
-/* ✅ Import untuk breadcrumb header */
+/* Import untuk breadcrumb header */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
-/* ✅ Current user context (dari token + simple-context) */
+/* Current user context (dari token + simple-context) */
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 /* shadcn/ui */
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-} from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
 
-/* ✅ DataTable (gaya Academic) */
+
+
+/* Custom Table Components */
 import {
   CDataTable as DataTable,
   type ColumnDef,
   type ViewMode,
 } from "@/components/costum/table/CDataTable";
+
+
+import CRowActions from "@/components/costum/table/CRowAction";
 import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
 
 /* ===================== TYPES ===================== */
@@ -88,40 +72,17 @@ function usePublicRoomsQuery(
   });
 }
 
-/* ===================== ACTIONS MENU ===================== */
-function ActionsMenu({
-  onView,
-  onEdit,
-  onDelete,
-}: {
-  onView: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
-}) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="Aksi">
-          <MoreHorizontal size={18} />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={onView} className="gap-2">
-          <Eye size={14} /> Lihat
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={onEdit} className="gap-2">
-          <Pencil size={14} /> Edit
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onClick={onDelete}
-          className="gap-2 text-destructive focus:text-destructive"
-        >
-          <Trash2 size={14} /> Hapus
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
+/* ===================== DELETE MUTATION ===================== */
+function useDeleteRoom(schoolId: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await axios.delete(`/a/${schoolId}/class-rooms/${id}`);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["public-rooms", schoolId] });
+    },
+  });
 }
 
 /* ===================== PAGE ===================== */
@@ -130,7 +91,7 @@ type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 export default function SchoolRoom({ showBack = false, backTo }: Props) {
   const navigate = useNavigate();
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
-  const qc = useQueryClient();
+
 
   /* ✅ Breadcrumb */
   const { setHeader } = useDashboardHeader();
@@ -196,21 +157,8 @@ export default function SchoolRoom({ showBack = false, backTo }: Props) {
     [data]
   );
 
-  /* DELETE */
-  const delRoom = useMutation({
-    mutationFn: async (id: string) => {
-      if (!schoolId) throw new Error("School ID tidak tersedia");
-      await axios.delete(`/a/${schoolId}/class-rooms/${id}`);
-    },
-    onSuccess: async () => {
-      await qc.invalidateQueries({
-        queryKey: ["public-rooms", schoolId, q, page, perPage],
-      });
-    },
-  });
-
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<Room | null>(null);
+  /* DELETE Mutation */
+  const deleteRoom = useDeleteRoom(schoolId);
 
   /* Kolom tabel */
   const columns: ColumnDef<Room>[] = useMemo(
@@ -316,9 +264,7 @@ export default function SchoolRoom({ showBack = false, backTo }: Props) {
             searchPlaceholder="Cari nama, lokasi, atau platform…"
             statsSlot={statsSlot}
             loading={roomsQ.isLoading}
-            error={
-              roomsQ.isError ? (roomsQ.error as any)?.message ?? "Error" : null
-            }
+            error={roomsQ.isError ? "Gagal memuat ruangan" : null}
             columns={columns}
             rows={rooms}
             getRowId={(r) => r.id}
@@ -326,51 +272,26 @@ export default function SchoolRoom({ showBack = false, backTo }: Props) {
             zebra={false}
             viewModes={["table", "card"] as ViewMode[]}
             defaultView="table"
-            storageKey={`rooms:${schoolId ?? "unknown"}`}
+            storageKey={`rooms:${schoolId}`}
+
             /* klik baris → detail /ruangan/:id */
             onRowClick={(r) => navigate(`./${r.id}`)}
-            renderActions={(r) => (
-              <ActionsMenu
-                onView={() => navigate(`./${r.id}`)}
+            renderActions={(row, view) => (
+              <CRowActions
+                row={row}
+                mode="inline"
+                size="sm"
+                onView={() => navigate(`./${row.id}`)}
                 onEdit={() =>
-                  navigate(`edit/${r.id}`, {
-                    state: { room: r },
-                  })
+                  navigate(`edit/${row.id}`, { state: { room: row } })
                 }
-                onDelete={() => {
-                  setDeleteTarget(r);
-                  setConfirmOpen(true);
-                }}
+                onDelete={() => deleteRoom.mutate(row.id)}
+                forceMenu={view === "table"} // dropdown jika table mode
               />
             )}
           />
         </div>
       </main>
-
-      {/* Hapus Dialog */}
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Ruangan?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Data ruangan "{deleteTarget?.name}" akan dihapus permanen dan
-              tidak dapat dipulihkan.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={delRoom.isPending}>
-              Batal
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteTarget && delRoom.mutate(deleteTarget.id)}
-              disabled={delRoom.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {delRoom.isPending ? "Menghapus…" : "Hapus"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

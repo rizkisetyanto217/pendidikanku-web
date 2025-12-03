@@ -22,6 +22,7 @@ import {
 /* ✅ Current user context (ambil school_id dari token) */
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
+import CRowActions from "@/components/costum/table/CRowAction";
 
 /* ================= Types ================= */
 export interface Level {
@@ -274,9 +275,66 @@ const SchoolClassParent: React.FC = () => {
             viewModes={["table", "card"] as ViewMode[]}
             defaultView="table"
             storageKey={`class-parents:${schoolId ?? "unknown"}`}
-            onRowClick={(r) => navigate(`${r.id}`)} // ⬅️ ke detail: level/:classParentId
+            onRowClick={(r) => navigate(`${r.id}`)}
             pageSize={perPage}
             pageSizeOptions={[10, 20, 50, 100, 200]}
+            // TAMBAH
+            renderActions={(row, view) => (
+              <CRowActions
+                row={row}
+                mode="inline"
+                size="sm"
+                onView={() => navigate(`${row.id}`)}
+                onEdit={() => navigate(`edit/${row.id}`)}
+                onDelete={() => console.log("delete", row.id)}
+                forceMenu={view === "table"} // TABLE = menu, CARD = inline
+              />
+            )}
+            // TAMBAH
+            renderCard={(r) => (
+              <div
+                className="rounded-xl border p-4 space-y-3 cursor-pointer hover:border-primary/40 transition"
+                onClick={() => navigate(`${r.id}`)}
+              >
+                <div className="font-semibold">{r.name}</div>
+                <div className="text-xs text-muted-foreground">Slug: {r.slug}</div>
+
+                <div className="grid grid-cols-3 gap-2 text-sm">
+                  <div className="border rounded p-2">
+                    <div className="text-xs text-muted-foreground">Level</div>
+                    <div className="font-medium">{r.level ?? "-"}</div>
+                  </div>
+
+                  <div className="border rounded p-2">
+                    <div className="text-xs text-muted-foreground">Kelas</div>
+                    <div className="font-medium">{r.totalClasses ?? 0}</div>
+                  </div>
+
+                  <div className="border rounded p-2">
+                    <div className="text-xs text-muted-foreground">Status</div>
+                    <CBadgeStatus
+                      status={r.is_active ? "active" : "inactive"}
+                    />
+                  </div>
+                </div>
+
+                {/* Aksi CARD VIEW */}
+                <div
+                  className="flex justify-end"
+                  onClick={(e) => e.stopPropagation()} // cegah navigasi
+                >
+                  <CRowActions
+                    row={r}
+                    mode="inline"
+                    size="sm"
+                    onView={() => navigate(`${r.id}`)}
+                    onEdit={() => navigate(`edit/${r.id}`)}
+                    onDelete={() => console.log("delete", r.id)}
+                    forceMenu={false}
+                  />
+                </div>
+              </div>
+            )}
           />
 
           {/* Footer pagination (kalau mau diisi kombo perPage lengkap, tinggal tambahin Trigger/Content) */}

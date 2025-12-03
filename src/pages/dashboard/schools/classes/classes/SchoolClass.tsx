@@ -1,8 +1,8 @@
 // src/pages/dashboard/school/class/SchoolClass.tsx
 import { useMemo, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useSearchParams, useNavigate } from "react-router-dom";
-import { Info, Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 import axios, { getActiveschoolId } from "@/lib/axios";
 
 /* shadcn/ui */
@@ -17,16 +17,16 @@ import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayou
 import {
   CDataTable as DataTable,
   type ColumnDef,
-  type ViewMode,
 } from "@/components/costum/table/CDataTable";
 
-/* ✅ Current user context */
+/* Auth */
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import CRowActions from "@/components/costum/table/CRowAction";
 
-/* ================= Types ================= */
+/* ========== Types ========== */
 export type ClassStatus = "active" | "inactive";
 
-/* PUBLIC classes (middle layer) */
+
 type ApiClass = {
   class_id: string;
   class_school_id: string;
@@ -53,9 +53,9 @@ type ApiClass = {
   class_created_at: string;
   class_updated_at: string;
 };
-type ApiListClasses = { data: ApiClass[] };
 
-/* Row untuk DataTable KELAS */
+
+/* Table Row */
 type MiddleClassRow = {
   id: string;
   name: string;
@@ -72,14 +72,14 @@ type MiddleClassRow = {
   status: "active" | "inactive";
 };
 
-/* ================= Helpers ================= */
+/* Helpers */
 const fmtDate = (iso?: string | null) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
     : "-";
 
 /* ================= Fetchers ================= */
@@ -93,10 +93,8 @@ async function fetchClassesPublic(
   if (params?.status && params.status !== "all")
     p.active_only = params.status === "active";
   if (params?.levelId) p.class_parent_id = params.levelId;
-  const res = await axios.get<ApiListClasses>(
-    `/public/${schoolId}/classes/list`,
-    { params: p }
-  );
+
+  const res = await axios.get(`/public/${schoolId}/classes/list`, { params: p });
   return res.data?.data ?? [];
 }
 
@@ -105,16 +103,13 @@ type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
 const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
   const navigate = useNavigate();
-  const [sp, setSp] = useSearchParams();
 
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
-  /* ✅ Ambil school_id dari token + fallback cookie */
+  /* school id */
   const currentUserQ = useCurrentUser();
-  const activeMembership = currentUserQ.data?.membership ?? null;
-  const schoolIdFromMembership = activeMembership?.school_id ?? null;
-  const schoolId = schoolIdFromMembership || getActiveschoolId() || null;
-  const hasSchool = Boolean(schoolId);
+  const membership = currentUserQ.data?.membership;
+  const schoolId = membership?.school_id || getActiveschoolId() || null;
 
   /* Header */
   const { setHeader } = useDashboardHeader();
@@ -130,100 +125,80 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
     });
   }, [setHeader]);
 
-  const q = (sp.get("q") ?? "").trim();
-  const status = (sp.get("status") ?? "all") as ClassStatus | "all";
-  const levelId = sp.get("level_id") ?? ""; // tetap didukung via query
+  /* Query params */
+  const [query, setQuery] = useState("");
+  const [status] = useState<ClassStatus | "all">("all");
+  const [levelId] = useState<string>("");
 
-  const [page, setPage] = useState(() => Number(sp.get("page") ?? 1) || 1);
-  const [perPage, setPerPage] = useState(
-    () => Number(sp.get("per") ?? 20) || 20
-  );
-  useEffect(() => {
-    const copy = new URLSearchParams(sp);
-    copy.set("page", String(page));
-    copy.set("per", String(perPage));
-    setSp(copy, { replace: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, perPage]);
 
-  /* ===== Data ===== */
+  /* Pagination */
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(20);
+
+
+
+  /* Fetch Query */
   const classesQ = useQuery({
-    queryKey: ["classes-public", schoolId, q, status, levelId],
-    enabled: hasSchool,
-    queryFn: () => fetchClassesPublic(schoolId, { q, status, levelId }),
-    staleTime: 60_000,
+    queryKey: ["classes-public", schoolId, query, status, levelId],
+    enabled: Boolean(schoolId),
+    queryFn: () => fetchClassesPublic(schoolId, { q: query, status, levelId }),
+    staleTime: 60000,
   });
 
-  /* ===== DataTable rows ===== */
-  const classRows: MiddleClassRow[] = useMemo(() => {
-    return (classesQ.data ?? []).map((c) => ({
-      id: c.class_id,
-      name:
-        c.class_name ||
-        [
-          c.class_parent_name_snapshot,
-          c.class_term_name_snapshot,
-          c.class_term_academic_year_snapshot,
-        ]
-          .filter(Boolean)
-          .join(" — "),
-      slug: c.class_slug,
-      parentId: c.class_parent_id,
-      parentSlug: c.class_parent_slug_snapshot ?? null,
-      parentName: c.class_parent_name_snapshot,
-      parentLevel: c.class_parent_level_snapshot ?? undefined,
-      term:
-        c.class_term_academic_year_snapshot && c.class_term_name_snapshot
-          ? `${c.class_term_academic_year_snapshot} — ${c.class_term_name_snapshot}`
-          : c.class_term_academic_year_snapshot || c.class_term_name_snapshot,
-      regOpen: c.class_registration_opens_at ?? null,
-      regClose: c.class_registration_closes_at ?? null,
-      quotaTaken: c.class_quota_taken ?? null,
-      quotaTotal: c.class_quota_total ?? null,
-      status: c.class_status,
-    }));
-  }, [classesQ.data]);
-
-  /* ===== FE filter by levelId (kalau datang dari URL) ===== */
-  const filteredRows = useMemo(
-    () => classRows.filter((r) => !levelId || r.parentId === levelId),
-    [classRows, levelId]
+  /* Convert rows */
+  const rows: MiddleClassRow[] = useMemo(
+    () =>
+      (classesQ.data ?? []).map((c) => ({
+        id: c.class_id,
+        name: c.class_name ?? c.class_parent_name_snapshot ?? "-",
+        slug: c.class_slug,
+        parentName: c.class_parent_name_snapshot,
+        parentLevel: c.class_parent_level_snapshot ?? undefined,
+        term:
+          c.class_term_academic_year_snapshot &&
+            c.class_term_name_snapshot
+            ? `${c.class_term_academic_year_snapshot} — ${c.class_term_name_snapshot}`
+            : c.class_term_academic_year_snapshot ??
+            c.class_term_name_snapshot ??
+            "-",
+        regOpen: c.class_registration_opens_at,
+        regClose: c.class_registration_closes_at,
+        quotaTaken: c.class_quota_taken,
+        quotaTotal: c.class_quota_total,
+        status: c.class_status,
+      })),
+    [classesQ.data]
   );
 
-  /* ===== Pagination client-side ===== */
-  const totalLocal = filteredRows.length;
-  const pagedRows = filteredRows.slice((page - 1) * perPage, page * perPage);
+  /* Page slice */
+  const filtered = rows.filter((r) => !levelId || r.parentLevel === Number(levelId));
+  const pagedRows = filtered.slice((page - 1) * perPage, page * perPage);
 
-  /* ===== Stats Slot ===== */
+
+
+  /* Stats */
   const statsSlot = classesQ.isLoading ? (
     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-      <Loader2 className="animate-spin" size={16} /> Memuat kelas…
-    </div>
-  ) : classesQ.isError ? (
-    <div className="rounded-xl border p-4 text-sm space-y-2">
-      <div className="flex items-center gap-2">
-        <Info size={16} /> Gagal memuat kelas.
-      </div>
-      <Button size="sm" onClick={() => classesQ.refetch()}>
-        Coba lagi
-      </Button>
+      <Loader2 className="animate-spin h-4 w-4" /> Memuat kelas…
     </div>
   ) : (
     <div className="grid gap-3 md:grid-cols-3 text-sm">
       <div className="rounded-xl border p-3">
         <div className="text-xs text-muted-foreground">Jumlah Kelas</div>
-        <div className="font-medium">{totalLocal}</div>
+        <div className="font-medium">{filtered.length}</div>
       </div>
+
       <div className="rounded-xl border p-3">
         <div className="text-xs text-muted-foreground">Aktif</div>
         <div className="font-medium">
-          {filteredRows.filter((r) => r.status === "active").length}
+          {filtered.filter((r) => r.status === "active").length}
         </div>
       </div>
+
       <div className="rounded-xl border p-3">
-        <div className="text-xs text-muted-foreground">Terisi Total</div>
+        <div className="text-xs text-muted-foreground">Total Terisi</div>
         <div className="font-medium">
-          {filteredRows.reduce((acc, r) => acc + (r.quotaTaken ?? 0), 0)}
+          {filtered.reduce((a, r) => a + (r.quotaTaken ?? 0), 0)}
         </div>
       </div>
     </div>
@@ -279,16 +254,20 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
         id: "quota",
         header: "Kuota",
         align: "center",
-        minW: "120px",
-        cell: (r) =>
-          r.quotaTotal != null ? (
-            <span className="tabular-nums">
-              {r.quotaTaken ?? 0} / {r.quotaTotal}
+        minW: "140px",
+        cell: (r) => (
+          <div className="flex items-center justify-center gap-1 text-sm tabular-nums">
+            <span className="font-medium">
+              {r.quotaTaken ?? 0}
             </span>
-          ) : (
-            <span className="tabular-nums">{r.quotaTaken ?? 0} / ∞</span>
-          ),
+            <span className="opacity-70">/</span>
+            <span className="font-medium">
+              {r.quotaTotal ?? "∞"}
+            </span>
+          </div>
+        ),
       },
+
       {
         id: "status",
         header: "Status",
@@ -310,16 +289,6 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
     ],
     []
   );
-
-  /* ===== Query handlers ===== */
-  const handleQueryChange = (val: string) => {
-    const copy = new URLSearchParams(sp);
-    if (val) copy.set("q", val);
-    else copy.delete("q");
-    copy.set("page", "1");
-    setSp(copy, { replace: true });
-    setPage(1);
-  };
 
   /* ===== Layout ===== */
   return (
@@ -355,64 +324,114 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
           </div>
 
           <DataTable<MiddleClassRow>
-            onAdd={() => navigate("new")} // ➜ /sekolah/kelas/daftar-kelas/new
+            onAdd={() => navigate("new")}
             addLabel="Tambah"
             controlsPlacement="above"
-            defaultQuery={q}
-            onQueryChange={handleQueryChange}
-            filterer={() => true}
-            searchByKeys={["name", "slug", "parentName", "term"]}
+            onQueryChange={(val) => {
+              if (val !== query) {
+                setQuery(val);
+              }
+            }}
+            searchByKeys={["name", "slug", "term", "parentName"]}
             searchPlaceholder="Cari nama/slug/tingkat/periode…"
             statsSlot={statsSlot}
             loading={classesQ.isLoading}
-            error={
-              classesQ.isError
-                ? (classesQ.error as any)?.message ?? "Error"
-                : null
-            }
+            error={classesQ.isError ? "Gagal memuat kelas." : null}
             columns={columns}
             rows={pagedRows}
             getRowId={(r) => r.id}
             stickyHeader
             zebra
-            viewModes={["table", "card"] as ViewMode[]}
+            viewModes={["table", "card"]}
             defaultView="table"
-            storageKey={`classes:${schoolId ?? "unknown"}`}
-            // ⬇️ kirim state ke detail kelas
-            onRowClick={(r) =>
-              navigate(`${r.id}`, {
-                state: {
-                  className: r.name,
-                  classSlug: r.slug,
-                  parentName: r.parentName,
-                  parentLevel: r.parentLevel,
-                },
-              })
-            }
+            storageKey={`classes:${schoolId}`}
+            onRowClick={(r) => navigate(`${r.id}`)}
             pageSize={perPage}
             pageSizeOptions={[10, 20, 50, 100, 200]}
-            enableActions
-            actions={{
-              mode: "menu",
-              onView: (row) =>
-                navigate(`${row.id}`, {
-                  state: {
-                    className: row.name,
-                    classSlug: row.slug,
-                    parentName: row.parentName,
-                    parentLevel: row.parentLevel,
-                  },
-                }),
-              onEdit: (row) =>
-                navigate(`edit/${row.id}`, {
-                  state: { classRow: row }, // bisa dipakai buat prefill SchoolClassForm
-                }),
-              labels: {
-                view: "Detail",
-                edit: "Edit",
-              },
-              size: "sm",
-            }}
+
+            /* ===================================
+               ACTIONS (diambil alih oleh CRowActions)
+               =================================== */
+            renderActions={(row, view) => (
+              <CRowActions
+                row={row}
+                mode="inline"
+                size="sm"
+                forceMenu={view === "table"} // table = menu, card = inline
+                onView={() =>
+                  navigate(`${row.id}`, {
+                    state: {
+                      className: row.name,
+                      parentName: row.parentName,
+                      parentLevel: row.parentLevel,
+                    },
+                  })
+                }
+                onEdit={() => navigate(`edit/${row.id}`)}
+                onDelete={() => console.log("hapus kelas", row.id)}
+              />
+            )}
+
+            /* =======================
+               CARD RENDERING
+               ======================= */
+            renderCard={(r) => (
+              <div
+                className="p-4 border rounded-xl space-y-3 cursor-pointer hover:border-primary/40"
+                onClick={() => navigate(`${r.id}`)}
+              >
+                <div className="font-semibold">{r.name}</div>
+
+                <div className="text-xs text-muted-foreground">
+                  Slug: {r.slug}
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 text-sm">
+                  <div className="border rounded p-2">
+                    <div className="text-xs text-muted-foreground">Tingkat</div>
+                    <div className="font-medium">
+                      {r.parentName}
+                      {r.parentLevel != null ? ` (Lvl ${r.parentLevel})` : ""}
+                    </div>
+                  </div>
+
+                  <div className="border rounded p-2">
+                    <div className="text-xs text-muted-foreground">Kuota</div>
+                    <div className="font-medium">
+                      {r.quotaTaken ?? 0} / {r.quotaTotal ?? "∞"}
+                    </div>
+                  </div>
+
+                  <div className="border rounded p-2">
+                    <div className="text-xs text-muted-foreground">Status</div>
+                    <span
+                      className={cn(
+                        "inline-flex px-2 py-0.5 rounded text-xs ring-1",
+                        r.status === "active"
+                          ? "bg-sky-500/15 text-sky-500 ring-sky-500/25"
+                          : "bg-zinc-500/10 text-zinc-500 ring-zinc-500/20"
+                      )}
+                    >
+                      {r.status === "active" ? "Aktif" : "Nonaktif"}
+                    </span>
+                  </div>
+                </div>
+
+                <div
+                  className="flex justify-end"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <CRowActions
+                    row={r}
+                    mode="inline"
+                    size="sm"
+                    onView={() => navigate(`${r.id}`)}
+                    onEdit={() => navigate(`edit/${r.id}`)}
+                    onDelete={() => console.log("hapus kelas", r.id)}
+                  />
+                </div>
+              </div>
+            )}
           />
 
           {/* Footer pagination */}

@@ -90,7 +90,8 @@ export type DataTableProps<T> = {
 
   enableActions?: boolean; // default true
   actions?: ActionsConfig<T>;
-  renderActions?: (row: T) => React.ReactNode;
+  renderActions?: (row: T, view: ViewMode) => React.ReactNode;
+
 
   stickyHeader?: boolean;
   zebra?: boolean;
@@ -148,6 +149,7 @@ export function CDataTable<T>(props: DataTableProps<T>) {
     enableActions = true,
     actions,
     renderActions,
+    renderCard,
 
     stickyHeader = false,
     zebra = false,
@@ -160,7 +162,6 @@ export function CDataTable<T>(props: DataTableProps<T>) {
     defaultView = "table",
     storageKey,
     onViewModeChange,
-    renderCard,
     cardColsClass = "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
     cardGapClass = "gap-4",
 
@@ -393,65 +394,9 @@ export function CDataTable<T>(props: DataTableProps<T>) {
   const actionsHeaderLabel = actions?.headerLabel ?? "Aksi";
   const suppressView = Boolean(onRowClick);
 
-  /* ========== Default Card Renderer (meta-aware) ========== */
-  const DefaultCard = (row: T, meta: CellMeta) => (
-    <div
-      onClick={
-        onRowClick
-          ? (e) => {
-            if (shouldIgnoreRowInteraction(e)) return;
-            onRowClick(row);
-          }
-          : undefined
-      }
-      className={cn(
-        "rounded-xl border p-4 space-y-2",
-        hoverCls,
-        onRowClick && "cursor-pointer"
-      )}
-      role={onRowClick ? "button" : undefined}
-      tabIndex={onRowClick ? 0 : undefined}
-      onKeyDown={
-        onRowClick
-          ? (e) => {
-            if (shouldIgnoreRowInteraction(e)) return;
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              onRowClick?.(row);
-            }
-          }
-          : undefined
-      }>
-      {columns.map((c) => (
-        <div
-          key={c.id}
-          className="flex items-start justify-between gap-3 text-sm">
-          <div className="text-muted-foreground">{c.header}</div>
-          <div className="font-medium text-right">
-            {c.cell ? c.cell(row, meta) : String((row as any)[c.id] ?? "")}
-          </div>
-        </div>
-      ))}
-      {hasActionsColumn && (
-        <div className="pt-2 flex justify-end">
-          {actions ? (
-            <CRowActions
-              /* mode tidak diisi -> default "menu" */
-              row={row}
-              onView={actions.onView}
-              onEdit={actions.onEdit}
-              onDelete={actions.onDelete}
-              labels={actions.labels}
-              size={actions.size}
-              suppressView={suppressView}
-            />
-          ) : (
-            renderActions?.(row)
-          )}
-        </div>
-      )}
-    </div>
-  );
+  const cardHoverCls = rowHover
+    ? "transition-all hover:bg-primary/5 hover:border-primary hover:-translate-y-1 cursor-pointer"
+    : "";
 
   /* ========== Render ========== */
   const tableMinW =
@@ -617,12 +562,17 @@ export function CDataTable<T>(props: DataTableProps<T>) {
                                   labels={actions.labels}
                                   size={actions.size}
                                   suppressView={suppressView}
+
+                                  /* Paksa dropdown di TABLE VIEW */
+                                  forceMenu={view === "table"}
                                 />
                               ) : (
-                                renderActions?.(row)
+                                renderActions?.(row, view)
+
                               )}
                             </TableCell>
                           )}
+
                         </TableRow>
                       );
                     })}
@@ -642,6 +592,7 @@ export function CDataTable<T>(props: DataTableProps<T>) {
             />
           </>
         ) : (
+
           /* ===== CARD MODE ===== */
           <>
             <div className={cn("grid", cardColsClass, cardGapClass)}>
@@ -653,9 +604,66 @@ export function CDataTable<T>(props: DataTableProps<T>) {
                   rowId: rid,
                   isCard: true,
                 };
+
                 return (
                   <div key={rid}>
-                    {renderCard ? renderCard(row) : DefaultCard(row, meta)}
+                    {renderCard ? (
+                      renderCard(row)
+                    ) : (
+                      <div
+                        className={cn("rounded-xl border p-4 space-y-3", cardHoverCls)}
+                        onClick={
+                          onRowClick
+                            ? (e) => {
+                              if (shouldIgnoreRowInteraction(e)) return;
+                              onRowClick(row);
+                            }
+                            : undefined
+                        }
+                        role={onRowClick ? "button" : undefined}
+                        tabIndex={onRowClick ? 0 : undefined}
+                        onKeyDown={
+                          onRowClick
+                            ? (e) => {
+                              if (shouldIgnoreRowInteraction(e)) return;
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                onRowClick(row);
+                              }
+                            }
+                            : undefined
+                        }
+                      >
+                        {columns.map((c) => (
+                          <div
+                            key={c.id}
+                            className="flex items-start justify-between gap-3 text-sm"
+                          >
+                            <div className="text-muted-foreground">{c.header}</div>
+                            <div className="font-medium text-right">
+                              {c.cell ? c.cell(row, meta) : String((row as any)[c.id] ?? "")}
+                            </div>
+                          </div>
+                        ))}
+
+                        {/* ACTIONS */}
+                        <div className="pt-2 flex justify-end">
+                          {renderActions
+                            ? renderActions(row, view)
+                            : actions && (
+                              <CRowActions
+                                row={row}
+                                onView={actions.onView}
+                                onEdit={actions.onEdit}
+                                onDelete={actions.onDelete}
+                                labels={actions.labels}
+                                size={actions.size}
+                                suppressView={suppressView}
+                              />
+                            )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -671,6 +679,7 @@ export function CDataTable<T>(props: DataTableProps<T>) {
               onNext={onNext}
             />
           </>
+
         )}
       </div>
     </div>
