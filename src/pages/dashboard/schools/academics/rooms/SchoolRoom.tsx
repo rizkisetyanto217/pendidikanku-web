@@ -167,6 +167,8 @@ export default function SchoolRoom({ showBack = false, backTo }: Props) {
         id: "name",
         header: "Nama Ruangan",
         minW: "220px",
+        align: "left",
+        className: "text-left",
         cell: (r) => (
           <div>
             <div className="font-medium">{r.name}</div>
@@ -186,12 +188,16 @@ export default function SchoolRoom({ showBack = false, backTo }: Props) {
         id: "jenis",
         header: "Jenis",
         minW: "100px",
+        align: "left",
+        className: "text-left",
         cell: (r) => (r.is_virtual ? "Virtual" : "Fisik"),
       },
       {
         id: "platform",
         header: "Platform",
         minW: "140px",
+        align: "left",
+        className: "text-left",
         cell: (r) => r.platform ?? "-",
       },
       {

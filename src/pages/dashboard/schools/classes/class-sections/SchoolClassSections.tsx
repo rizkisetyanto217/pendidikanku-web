@@ -231,10 +231,16 @@ function SectionCard({
   const className = section.class_section_class_name_snapshot;
   const classSlug = section.class_section_class_slug_snapshot;
 
-  const cardClassName = `group relative flex cursor-pointer flex-col overflow-hidden border transition-all duration-150 ${isActive
-    ? "border-emerald-500/60 hover:border-emerald-400 hover:bg-emerald-950/10"
-    : "border-border/70 hover:border-primary/50 hover:bg-muted/10"
-    }`;
+  const cardClassName = `
+  group relative flex cursor-pointer flex-col overflow-hidden border rounded-xl
+  transition-all duration-200
+  hover:-translate-y-1 hover:bg-primary/5 hover:border-primary
+  ${isActive
+      ? "border-emerald-500/60"
+      : "border-border/70"
+    }
+`;
+
 
   const stripClassName = `absolute inset-y-0 left-0 w-1 rounded-r-full ${isActive ? "bg-emerald-500" : "bg-muted-foreground/40"
     }`;

@@ -24,6 +24,7 @@ import axios, { getAccessToken } from "@/lib/axios";
 
 /* Tambahan untuk breadcrumb sistem dashboard */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+import CMenuSearch from "@/components/costum/common/CMenuSearch";
 
 /* =====================
    Types API CSST
@@ -319,15 +320,13 @@ export default function TeacherCSST({ showBack = false, backTo }: Props) {
             </h1>
           </div>
         </div>
-        <div className="flex items-center gap-2 border rounded-xl px-4 py-2 mb-4 bg-background shadow-sm w-full sm:w-auto">
-          <Search size={18} className="text-primary" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cari nama mapel..."
-            className="bg-transparent outline-none text-sm w-full"
-          />
-        </div>
+        <CMenuSearch
+          value={search}
+          onChange={setSearch}
+          placeholder="Cari nama mapel..."
+          className="mb-4"
+        />
+
 
         {/* Toggle View Mode */}
         <div className="flex justify-end mt-4 mb-4">

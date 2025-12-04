@@ -145,7 +145,8 @@ export default function SchoolBooks({ showBack = false, backTo }: Props) {
       {
         id: "title_author",
         header: "Judul & Penulis",
-        align: "center",
+        align: "left",
+        className: "text-left",
         minW: "260px",
         cell: (r) => (
           <div>
@@ -160,7 +161,8 @@ export default function SchoolBooks({ showBack = false, backTo }: Props) {
         id: "desc",
         header: "Deskripsi",
         minW: "260px",
-        align: "center",
+        align: "left",
+        className: "text-left",
         cell: (r) => (
           <div className="text-sm text-muted-foreground line-clamp-2">
             {r.book_desc || "—"}

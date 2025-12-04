@@ -88,7 +88,7 @@ export default function TeacherScheduleDetail() {
         { label: "Detail Mapel", href: `guru-mapel/${csstId}` },
         {
           label: "Laporan Harian",
-          href: `guru-mapel/${csstId}/daily-progress`,
+          href: `guru-mapel/${csstId}/laporan-harian`,
         },
         { label: "Detail Laporan Harian" },
       ],

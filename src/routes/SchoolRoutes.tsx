@@ -33,20 +33,17 @@ import SchoolCampaign from "@/pages/dashboard/schools/campaign/SchoolCampaign";
 import SchoolClassParent from "@/pages/dashboard/schools/classes/class-parents/SchoolClassParent";
 import SchoolClass from "@/pages/dashboard/schools/classes/classes/SchoolClass";
 import SchoolClassesSection from "@/pages/dashboard/schools/classes/class-sections/SchoolClassSections";
-import SchoolCSST from "@/pages/dashboard/schools/classes/class-section-subject-teachers/SchoolCSST";
 import SchoolCampaignDetail from "@/pages/dashboard/schools/campaign/SchoolCampaignDetail";
 import Setting from "@/pages/dashboard/components/page/Setting";
 import Help from "@/pages/dashboard/components/page/Help";
 import SchoolClassParentDetail from "@/pages/dashboard/schools/classes/class-parents/details/SchoolClassParentDetail";
 import SchoolClassDetail from "@/pages/dashboard/schools/classes/classes/details/SchoolClassDetail";
 import SchoolClassSectionDetail from "@/pages/dashboard/schools/classes/class-sections/details/SchoolClassSectionDetail";
-import SchoolCSSTDetail from "@/pages/dashboard/schools/classes/class-section-subject-teachers/details/SchoolCSSTDetail";
 import SchoolAcademicTermForm from "@/pages/dashboard/schools/academics/academics/details/SchoolAcademicForms";
 import SchoolBookForm from "@/pages/dashboard/schools/academics/books/details/SchoolBookForm";
 import SchoolRoomForm from "@/pages/dashboard/schools/academics/rooms/details/SchoolRoomForm";
 import SchoolSubjectForm from "@/pages/dashboard/schools/academics/subjects/details/SchoolSubjectForm";
 import SchoolClassParentForm from "@/pages/dashboard/schools/classes/class-parents/details/SchoolClassParentForm";
-import SchoolCSSTForm from "@/pages/dashboard/schools/classes/class-section-subject-teachers/details/SchoolCSSTForm";
 import SchoolClassForm from "@/pages/dashboard/schools/classes/classes/details/SchoolClassForm";
 import SchoolClassSectionForm from "@/pages/dashboard/schools/classes/class-sections/details/SchoolClassSectionForm";
 import SchoolClassStudentList from "@/pages/dashboard/schools/classes/classes/student-list/SchoolClassStudentList";
@@ -138,21 +135,6 @@ export const SchoolRoutes = (
         {/* /kelas/semua-kelas/:classSectionId */}
         <Route path=":classSectionId" element={<SchoolClassSectionDetail />} />
       </Route>
-
-      {/* PELAJARAN (CSST) */}
-      <Route path="pelajaran">
-        {/* /kelas/pelajaran */}
-        <Route index element={<SchoolCSST />} />
-
-        {/* /kelas/pelajaran/new */}
-        <Route path="new" element={<SchoolCSSTForm />} />
-
-        {/* /kelas/pelajaran/:csstId */}
-        <Route path=":csstId" element={<SchoolCSSTDetail />} />
-
-        {/* /kelas/pelajaran/:csstId/edit */}
-        <Route path=":csstId/edit" element={<SchoolCSSTForm />} />
-      </Route>
     </Route>
 
     <Route path="keuangan">
@@ -239,8 +221,6 @@ export const SchoolRoutes = (
         path="semua-kelas/:classSectionId"
         element={<SchoolClassSectionDetail />}
       />
-      <Route path="pelajaran" element={<SchoolCSST />} />
-      <Route path="pelajaran/:csstId" element={<SchoolCSSTDetail />} />
 
       {/* Jadwal */}
       <Route path="agenda" element={<SchoolScheduleAgenda showBack />} />

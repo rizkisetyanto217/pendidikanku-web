@@ -524,7 +524,7 @@ const StudentCSST: React.FC = () => {
             {/* Laporan Kehadiran */}
             <Card
               className="cursor-pointer transition hover:shadow-md"
-              onClick={() => navigate("daily-progress")}
+              onClick={() => navigate("laporan-harian")}
             >
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="space-y-1">

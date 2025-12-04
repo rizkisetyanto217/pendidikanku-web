@@ -11,7 +11,6 @@ import {
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -29,6 +28,7 @@ import {
 } from "@/components/ui/select";
 
 import CRowActions, { NO_ROW_CLICK_ATTR as RA_NO_CLICK } from "./CRowAction";
+import CMenuSearch from "../common/CMenuSearch";
 
 /* =========================
    Types
@@ -98,6 +98,8 @@ export type DataTableProps<T> = {
 
   pageSize?: number;
   pageSizeOptions?: number[];
+  onPageSizeChange?: (n: number) => void;
+
 
   defaultAlign?: Align;
 
@@ -262,7 +264,7 @@ export function CDataTable<T>(props: DataTableProps<T>) {
       onViewModeChange?.(fallback);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewModes.join(",")]);
+  }, [viewModes]);
 
   const changeView = React.useCallback(
     (m: ViewMode) => {
@@ -288,12 +290,13 @@ export function CDataTable<T>(props: DataTableProps<T>) {
     <div className="w-full flex flex-col gap-3 sm:flex-row sm:items-center">
       {/* LEFT: Search full-width */}
       <div className="min-w-0 flex-1">
-        <Input
-          placeholder={searchPlaceholder}
+        <CMenuSearch
           value={query}
-          onChange={(e) => handleQueryChange(e.target.value)}
+          onChange={handleQueryChange}
+          placeholder={searchPlaceholder}
           className="h-10"
         />
+
       </div>
 
       {/* RIGHT: default LEFT on mobile, shift RIGHT on >= sm */}
@@ -335,7 +338,12 @@ export function CDataTable<T>(props: DataTableProps<T>) {
             <span className="hidden sm:inline">Baris/hal</span>
             <Select
               value={String(limit)}
-              onValueChange={(v) => setLimit(Number(v))}>
+              onValueChange={(v) => {
+                const n = Number(v);
+                setLimit(n);
+                props.onPageSizeChange?.(n);  // ← penting
+              }}
+            >
               <SelectTrigger className="h-9 w-[84px] text-sm" data-interactive>
                 <SelectValue placeholder={String(limit)} />
               </SelectTrigger>
@@ -461,7 +469,7 @@ export function CDataTable<T>(props: DataTableProps<T>) {
               <div
                 className="block w-full align-top"
                 style={scrollX ? { minWidth: tableMinW } : undefined}>
-                <Table className="w-full table-fixed text-center align-middle">
+                <Table className="w-full table-fixed align-middle">
                   <TableHeader
                     className={cn(
                       stickyHeader &&
@@ -472,7 +480,7 @@ export function CDataTable<T>(props: DataTableProps<T>) {
                         <TableHead
                           key={col.id}
                           className={cn(
-                            "text-primary font-semibold",
+                            "text-primary font-semibold px-4",
                             col.headerClassName,
                             alignToHeader(col.align ?? defaultAlign)
                           )}
@@ -537,6 +545,7 @@ export function CDataTable<T>(props: DataTableProps<T>) {
                             <TableCell
                               key={col.id}
                               className={cn(
+                                "px-4 whitespace-normal break-words align-top",
                                 col.className,
                                 alignToCell(col.align ?? defaultAlign),
                                 cellHoverCls
@@ -736,10 +745,11 @@ function PaginationFooter(props: {
    Utils (PERBAIKAN ALIGN)
 ========================= */
 function alignToHeader(a: Align = "left") {
-  // Semua header default di tengah
   switch (a) {
     case "left":
       return "text-left";
+    case "center":
+      return "text-center";
     case "right":
       return "text-right";
     default:
@@ -748,16 +758,18 @@ function alignToHeader(a: Align = "left") {
 }
 
 function alignToCell(a: Align = "left") {
-  // Semua sel isi default di tengah
   switch (a) {
     case "left":
       return "text-left";
+    case "center":
+      return "text-center";
     case "right":
       return "text-right";
     default:
       return "text-left";
   }
 }
+
 
 function safeLSGet(key: string): string | null {
   try {

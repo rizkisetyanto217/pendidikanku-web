@@ -8,7 +8,6 @@ import axios, { getActiveschoolId } from "@/lib/axios";
 /* shadcn/ui */
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Select } from "@/components/ui/select";
 
 /* Layout header hook */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
@@ -22,6 +21,7 @@ import {
 /* Auth */
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import CRowActions from "@/components/costum/table/CRowAction";
+import { Select } from "@/components/ui/select";
 
 /* ========== Types ========== */
 export type ClassStatus = "active" | "inactive";
@@ -121,9 +121,9 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
         { label: "Kelas" },
         { label: "Daftar Kelas" },
       ],
-      actions: null,
+      showBack,
     });
-  }, [setHeader]);
+  }, [setHeader, showBack]);
 
   /* Query params */
   const [query, setQuery] = useState("");
@@ -210,12 +210,13 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
       {
         id: "name",
         header: "Nama Kelas",
-        minW: "260px",
+        minW: "160px sm:200px md:260px",
+        align: "left",
+        className: "text-left",
         cell: (r) => (
-          <div className="text-center">
-            <div className="font-medium truncate">{r.name}</div>
-            <div className="mt-0.5 text-xs text-muted-foreground truncate">
-              Slug: {r.slug}
+          <div>
+            <div className="font-medium whitespace-normal break-words">
+              {r.name}
             </div>
           </div>
         ),
@@ -224,7 +225,8 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
         id: "parent",
         header: "Tingkat",
         minW: "160px",
-        align: "center",
+        align: "left",
+        className: "text-left",
         cell: (r) => (
           <span className="truncate">
             {r.parentName ?? "-"}
@@ -236,18 +238,20 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
         id: "term",
         header: "Periode Akademik",
         minW: "180px",
-        align: "center",
+        align: "left",
+        className: "text-left",
         cell: (r) => r.term ?? "-",
       },
       {
         id: "reg",
         header: "Jendela Pendaftaran",
-        minW: "220px",
-        align: "center",
+        minW: "160px sm:200px md:260px",
+        align: "left",
+        className: "text-left",
         cell: (r) => (
-          <span className="truncate">
+          <div className="text-sm whitespace-normal break-words">
             {fmtDate(r.regOpen)} — {fmtDate(r.regClose)}
-          </span>
+          </div>
         ),
       },
       {
@@ -348,6 +352,10 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
             onRowClick={(r) => navigate(`${r.id}`)}
             pageSize={perPage}
             pageSizeOptions={[10, 20, 50, 100, 200]}
+            onPageSizeChange={(size) => {
+              setPerPage(size);
+              setPage(1);
+            }}
 
             /* ===================================
                ACTIONS (diambil alih oleh CRowActions)
@@ -377,7 +385,11 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
                ======================= */
             renderCard={(r) => (
               <div
-                className="p-4 border rounded-xl space-y-3 cursor-pointer hover:border-primary/40"
+                className={cn(
+                  "p-4 border rounded-xl space-y-3 cursor-pointer",
+                  "transition-all duration-150 transform",
+                  "hover:-translate-y-1 hover:border-primary/40 hover:bg-accent/10 hover:shadow-sm"
+                )}
                 onClick={() => navigate(`${r.id}`)}
               >
                 <div className="font-semibold">{r.name}</div>
@@ -403,7 +415,7 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
                   </div>
 
                   <div className="border rounded p-2">
-                    <div className="text-xs text-muted-foreground">Status</div>
+                    <div className="text-xs text-muted-foreground mb-1">Status</div>
                     <span
                       className={cn(
                         "inline-flex px-2 py-0.5 rounded text-xs ring-1",
@@ -443,7 +455,8 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
                   setPerPage(Number(v));
                   setPage(1);
                 }}
-              ></Select>
+              >
+              </Select>
             </div>
           </div>
         </div>

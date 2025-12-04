@@ -9,7 +9,6 @@ import axios from "@/lib/axios";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -38,6 +37,7 @@ import {
   AlertCircle,
   CheckCircle2,
 } from "lucide-react";
+import CMenuSearch from "@/components/costum/common/CMenuSearch";
 
 /* =======================
    Types — sesuai JSON
@@ -150,11 +150,11 @@ const MODE_TABS: SegmentedTabItem[] = [
   },
   {
     value: "class_announce",
-    label: "Class announce",
+    label: "Belum Dikerjakan",
   },
   {
     value: "general",
-    label: "Tugas umum",
+    label: "Sudah Dikerjakan",
   },
 ];
 
@@ -289,17 +289,19 @@ export default function TeacherCSSTAssignment() {
       <Card>
         <CardContent className="pt-4 space-y-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="flex-1">
+            <div className="flex-1 min-w-[260px]">
               <label className="text-xs font-medium text-muted-foreground">
                 Cari penilaian
               </label>
-              <Input
-                placeholder="Cari berdasarkan judul, slug, atau deskripsi…"
-                className="mt-1"
+
+              <CMenuSearch
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={setSearch}
+                placeholder="Cari berdasarkan judul atau deskripsi…"
+                className="w-full mt-1"
               />
             </div>
+
 
             <div className="flex flex-col gap-2 text-xs text-muted-foreground md:items-end">
               <div className="flex items-center gap-1">
@@ -322,18 +324,35 @@ export default function TeacherCSSTAssignment() {
             />
             <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground">
               <span>
-                Class announce:{" "}
+                Semua:{" "}
                 <span className="font-semibold">{totalClassAnnounce}</span>
               </span>
               <span>
-                Tugas umum:{" "}
+                Belum Dikerjakan:{" "}
                 <span className="font-semibold">{totalGeneral}</span>
               </span>
               <span>
-                Total:{" "}
+                Sudah Dikerjakan:{" "}
                 <span className="font-semibold">{assessments.length}</span>
               </span>
             </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2 mt-1">
+            <Badge className="gap-1 text-[11px] py-1">
+              <ListChecks size={12} />
+              Semua: {assessments.length}
+            </Badge>
+
+            <Badge variant="secondary" className="gap-1 text-[11px] py-1">
+              <Timer size={12} />
+              Belum Dikerjakan: {totalClassAnnounce}
+            </Badge>
+
+            <Badge variant="secondary" className="gap-1 text-[11px] py-1">
+              <CheckCircle2 size={12} className="text-emerald-500" />
+              Sudah Dikerjakan: {totalGeneral}
+            </Badge>
           </div>
         </CardContent>
       </Card>

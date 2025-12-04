@@ -23,6 +23,7 @@ import {
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
 import CRowActions from "@/components/costum/table/CRowAction";
+import { cn } from "@/lib/utils";
 
 /* ================= Types ================= */
 export interface Level {
@@ -184,7 +185,8 @@ const SchoolClassParent: React.FC = () => {
         id: "name",
         header: "Nama Tingkat",
         minW: "240px",
-        align: "center",
+        align: "left",
+        className: "text-left",
         cell: (r) => (
           <div>
             <div className="font-medium truncate">{r.name}</div>
@@ -293,7 +295,11 @@ const SchoolClassParent: React.FC = () => {
             // TAMBAH
             renderCard={(r) => (
               <div
-                className="rounded-xl border p-4 space-y-3 cursor-pointer hover:border-primary/40 transition"
+                className={cn(
+                  "rounded-xl border p-4 space-y-3 cursor-pointer",
+                  "transition-all duration-150 transform",
+                  "hover:-translate-y-1 hover:border-primary/40 hover:bg-accent/10 hover:shadow-sm"
+                )}
                 onClick={() => navigate(`${r.id}`)}
               >
                 <div className="font-semibold">{r.name}</div>
@@ -311,7 +317,7 @@ const SchoolClassParent: React.FC = () => {
                   </div>
 
                   <div className="border rounded p-2">
-                    <div className="text-xs text-muted-foreground">Status</div>
+                    <div className="text-xs text-muted-foreground mb-1">Status</div>
                     <CBadgeStatus
                       status={r.is_active ? "active" : "inactive"}
                     />

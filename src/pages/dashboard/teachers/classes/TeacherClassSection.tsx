@@ -5,7 +5,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -18,7 +17,6 @@ import {
   UserSquare2,
   ArrowLeft,
   ChevronRight,
-  Search,
   AlertTriangle,
 } from "lucide-react";
 
@@ -28,6 +26,7 @@ import axios, { getAccessToken } from "@/lib/axios";
 /* Tambahan untuk breadcrumb sistem dashboard */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
+import CMenuSearch from "@/components/costum/common/CMenuSearch";
 
 /* ==========================================================
    Types API
@@ -460,26 +459,21 @@ export default function TeacherClassSection({
           </div>
 
           {/* Filters */}
-          <Card className="p-4 space-y-4">
-            <div className="flex items-center gap-3">
-              <Search className="h-4 w-4 text-muted-foreground" />
-              <Input
-                value={f.q}
-                onChange={(e) => f.setQ(e.target.value)}
-                placeholder="Cari nama kelas / wali / ruang…"
-                className="w-full"
-              />
-            </div>
+          <CMenuSearch
+            value={f.q}
+            onChange={f.setQ}
+            placeholder="Cari nama kelas / wali / ruang…"
+            className="w-full"
+          />
 
-            <div className="flex flex-wrap gap-3">
-              <Select value={f.active} onValueChange={f.setActive}>
-                <SelectContent>
-                  <SelectItem value="active">Aktif</SelectItem>
-                  <SelectItem value="inactive">Nonaktif</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </Card>
+          <div className="flex flex-wrap gap-3">
+            <Select value={f.active} onValueChange={f.setActive}>
+              <SelectContent>
+                <SelectItem value="active">Aktif</SelectItem>
+                <SelectItem value="inactive">Nonaktif</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* Grid */}
           <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-2">

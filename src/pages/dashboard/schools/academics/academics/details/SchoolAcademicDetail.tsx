@@ -79,6 +79,7 @@ type TermClass = {
   class_delivery_mode: string;
   class_status: string;
   class_image_url: string | null;
+  // di-backend: class_class_parent_*_cache
   class_parent_name_snapshot: string | null;
   class_parent_slug_snapshot: string | null;
   class_parent_level_snapshot: number | null;
@@ -93,6 +94,7 @@ type TermClassSection = {
   class_section_total_students: number | null;
   class_section_image_url: string | null;
   class_section_class_id: string;
+  // di-backend: *_cache
   class_section_class_name_snapshot: string;
   class_section_class_slug_snapshot: string;
   class_section_class_parent_name_snapshot: string;
@@ -109,8 +111,22 @@ type TermBundle = {
   class_sections: TermClassSection[];
 };
 
+/**
+ * Bentuk response backend:
+ * {
+ *   data: Term[],
+ *   include: {
+ *     classes: [...],
+ *     class_sections: [...]
+ *   }
+ * }
+ */
 type TermListResp = {
-  data: TermBundle[];
+  data: Term[];
+  include?: {
+    classes?: any[];
+    class_sections?: any[];
+  };
 };
 
 /* ===== Helpers ===== */
@@ -160,8 +176,63 @@ function useAcademicTermDetail(termId?: string) {
           per_page: 1,
         },
       });
-      const first = res.data?.data?.[0] ?? null;
-      return first;
+
+      const term = res.data?.data?.[0];
+      if (!term) return null;
+
+      const include = (res.data as any).include ?? {};
+      const rawClasses: any[] = include.classes ?? [];
+      const rawSections: any[] = include.class_sections ?? [];
+
+      const classes: TermClass[] = rawClasses.map((cls) => ({
+        class_id: cls.class_id,
+        class_school_id: cls.class_school_id,
+        class_name: cls.class_name,
+        class_slug: cls.class_slug,
+        class_start_date: cls.class_start_date ?? null,
+        class_end_date: cls.class_end_date ?? null,
+        class_registration_opens_at: cls.class_registration_opens_at ?? null,
+        class_registration_closes_at: cls.class_registration_closes_at ?? null,
+        class_quota_taken: cls.class_quota_taken ?? null,
+        class_delivery_mode: cls.class_delivery_mode ?? "offline",
+        class_status: cls.class_status,
+        class_image_url: cls.class_image_url ?? null,
+        class_parent_name_snapshot: cls.class_class_parent_name_cache ?? null,
+        class_parent_slug_snapshot: cls.class_class_parent_slug_cache ?? null,
+        class_parent_level_snapshot: cls.class_class_parent_level_cache ?? null,
+      }));
+
+      const class_sections: TermClassSection[] = rawSections.map((sec) => ({
+        class_section_id: sec.class_section_id,
+        class_section_school_id: sec.class_section_school_id,
+        class_section_slug: sec.class_section_slug,
+        class_section_name: sec.class_section_name,
+        class_section_code: sec.class_section_code ?? null,
+        // pakai total_students_active sebagai total siswa tampilan
+        class_section_total_students:
+          sec.class_section_total_students_active ?? 0,
+        class_section_image_url: sec.class_section_image_url ?? null,
+        class_section_class_id: sec.class_section_class_id,
+        class_section_class_name_snapshot: sec.class_section_class_name_cache,
+        class_section_class_slug_snapshot: sec.class_section_class_slug_cache,
+        class_section_class_parent_name_snapshot:
+          sec.class_section_class_parent_name_cache,
+        class_section_class_parent_slug_snapshot:
+          sec.class_section_class_parent_slug_cache,
+        class_section_class_parent_level_snapshot:
+          sec.class_section_class_parent_level_cache,
+        class_section_subject_teachers_enrollment_mode:
+          sec.class_section_subject_teachers_enrollment_mode,
+        class_section_subject_teachers_self_select_requires_approval:
+          sec.class_section_subject_teachers_self_select_requires_approval,
+        class_section_is_active: sec.class_section_is_active,
+      }));
+
+      return {
+        term,
+        classes,
+        class_sections,
+      };
     },
   });
 }
@@ -180,7 +251,6 @@ export default function SchoolAcademicDetail() {
   const sections = bundle?.class_sections ?? [];
 
   useEffect(() => {
-    // ⛔ Jangan jalankan sebelum data term ada
     if (!term) return;
 
     const schoolId = term.academic_term_school_id;
@@ -269,7 +339,8 @@ export default function SchoolAcademicDetail() {
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:opacity-90"
               onClick={() => deleteMut.mutate()}
-              disabled={deleteMut.isPending}>
+              disabled={deleteMut.isPending}
+            >
               {deleteMut.isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : null}
@@ -284,9 +355,7 @@ export default function SchoolAcademicDetail() {
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="md:flex hidden items-center gap-3">
-              <Button
-                variant="ghost"
-                onClick={() => navigate(-1)}>
+              <Button variant="ghost" onClick={() => navigate(-1)}>
                 <ArrowLeft size={20} />
               </Button>
               <h1 className="font-semibold text-lg md:text-xl">
@@ -294,6 +363,7 @@ export default function SchoolAcademicDetail() {
               </h1>
             </div>
           </div>
+
           {/* Loading / kosong */}
           {isLoading && (
             <Card>
@@ -352,14 +422,16 @@ export default function SchoolAcademicDetail() {
                   <Button
                     variant="outline"
                     onClick={() => setOpenEdit(true)}
-                    disabled={patchMut.isPending || deleteMut.isPending}>
+                    disabled={patchMut.isPending || deleteMut.isPending}
+                  >
                     <Pencil size={16} className="mr-2" />
                     Edit
                   </Button>
                   <Button
                     variant="destructive"
                     onClick={() => setConfirmDelete(true)}
-                    disabled={deleteMut.isPending}>
+                    disabled={deleteMut.isPending}
+                  >
                     <Trash2 size={16} className="mr-2" />
                     {deleteMut.isPending ? "Menghapus..." : "Hapus"}
                   </Button>
@@ -396,7 +468,8 @@ export default function SchoolAcademicDetail() {
                   {classes.map((cls) => (
                     <div
                       key={cls.class_id}
-                      className="flex gap-3 rounded-lg border bg-background/50 p-3 text-xs">
+                      className="flex gap-3 rounded-lg border bg-background/50 p-3 text-xs"
+                    >
                       {cls.class_image_url ? (
                         <img
                           src={cls.class_image_url}
@@ -493,7 +566,8 @@ export default function SchoolAcademicDetail() {
                   {sections.map((sec) => (
                     <div
                       key={sec.class_section_id}
-                      className="flex gap-3 rounded-lg border bg-background/50 p-3 text-xs">
+                      className="flex gap-3 rounded-lg border bg-background/50 p-3 text-xs"
+                    >
                       {sec.class_section_image_url ? (
                         <img
                           src={sec.class_section_image_url}
@@ -628,7 +702,6 @@ function EditTermDialog({
     data.academic_term_is_active
   );
 
-  // kalau data berubah (misal reload), sinkron lagi
   useEffect(() => {
     setAcademicYear(data.academic_term_academic_year);
     setName(data.academic_term_name);
@@ -728,7 +801,8 @@ function EditTermDialog({
                 academic_terms_is_active: isActive,
               })
             }
-            disabled={loading}>
+            disabled={loading}
+          >
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Simpan
           </Button>

@@ -64,9 +64,9 @@ export const TeacherRoutes = (
         <Route path="murid/:id" element={<TeacherCSSTStudentDetail />} />
 
         {/* Daily progress */}
-        <Route path="daily-progress" element={<TeacherCSSTDailyReport />} />
+        <Route path="laporan-harian" element={<TeacherCSSTDailyReport />} />
         <Route
-          path="daily-progress/:id"
+          path="laporan-harian/:id"
           element={<TeacherCSSTDailyReportDetail />}
         />
 
@@ -148,9 +148,9 @@ export const TeacherRoutes = (
           <Route path="murid/:id" element={<TeacherCSSTStudentDetail />} />
 
           {/* Daily progress */}
-          <Route path="daily-progress" element={<TeacherCSSTDailyReport />} />
+          <Route path="laporan-harian" element={<TeacherCSSTDailyReport />} />
           <Route
-            path="daily-progress/:id"
+            path="laporan-harian/:id"
             element={<TeacherCSSTDailyReportDetail />}
           />
 

@@ -17,7 +17,6 @@ import { Button } from "@/components/ui/button";
 import {
   CDataTable,
   type ColumnDef,
-  type Align,
 } from "@/components/costum/table/CDataTable";
 
 /* ---------- BreadCrum ---------- */
@@ -213,58 +212,68 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
     {
       id: "academic_year",
       header: "Tahun Ajaran",
+      align: "center",
+      className: "text-center",
       minW: "160px",
-      cell: (t) => <span className="font-medium">{t.academic_year}</span>,
+      cell: (t) => (
+        <span className="font-medium block text-center">
+          {t.academic_year}
+        </span>
+      ),
     },
+
     {
       id: "name",
       header: "Nama",
       minW: "140px",
-      cell: (t) => t.name,
+      align: "left",
+      className: "text-left",
+      cell: (t) => <span className="block text-left">{t.name}</span>,
     },
+
     {
       id: "date_range",
       header: "Tanggal",
       minW: "200px",
+      align: "left",
+      className: "text-left",
       cell: (t) => (
-        <span>
+        <span className="block text-left">
           {dateShort(t.start_date)} — {dateShort(t.end_date)}
         </span>
       ),
     },
+
     {
       id: "angkatan",
       header: "Angkatan",
       minW: "120px",
-      align: "center" as Align,
-      cell: (t) => t.angkatan,
+      align: "center",
+      className: "text-center",
+      cell: (t) => (
+        <span className="block text-center">{t.angkatan}</span>
+      ),
     },
+
     {
       id: "status",
       header: "Status",
       minW: "120px",
+      align: "center",
+      className: "text-center",
       cell: (t) => {
         let status: "active" | "inactive" | "pending" = "inactive";
 
-        // ======== RULE PENDING ========
-        // Pending jika tanggal belum lengkap
-        if (!t.start_date || !t.end_date) {
-          status = "pending";
-        }
-        // Active
-        else if (t.is_active) {
-          status = "active";
-        }
-        // Nonaktif
-        else {
-          status = "inactive";
-        }
+        if (!t.start_date || !t.end_date) status = "pending";
+        else if (t.is_active) status = "active";
 
-        return <CBadgeStatus status={status} />;
+        return (
+          <div className="flex justify-center">
+            <CBadgeStatus status={status} />
+          </div>
+        );
       },
     },
-
-
   ];
 
   const statsSlot = termsQ.isLoading ? (
@@ -336,9 +345,9 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
             }
             addLabel="Tambah"
             controlsPlacement="above"
+            statsSlot={statsSlot}
             defaultQuery=""
             searchByKeys={["academic_year", "name", "angkatan"]}
-            statsSlot={statsSlot}
             loading={termsQ.isLoading}
             error={termsQ.isError ? extractErrorMessage(termsQ.error) : null}
             columns={columns}

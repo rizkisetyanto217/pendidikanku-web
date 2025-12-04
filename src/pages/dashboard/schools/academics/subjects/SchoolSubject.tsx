@@ -302,12 +302,16 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
       id: "code",
       header: "Kode",
       minW: "120px",
+      align: "left",
+      className: "text-left",
       cell: (r) => (r.code ? <span className="font-mono">{r.code}</span> : "-"),
     },
     {
       id: "name",
       header: "Nama",
       minW: "220px",
+      align: "left",
+      className: "text-left",
       cell: (r) => (
         <div>
           <div className="font-medium">{r.name}</div>
@@ -378,7 +382,7 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
   );
 
   return (
-    <div className="w-full">
+    <div className="w-full bg-background text-foreground">
       <main className="w-full">
         <div className="flex flex-col gap-6">
           {/* Header minimal (back + title) */}
@@ -456,11 +460,13 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
               renderCard={(r) => (
                 <div
                   className={cn(
-                    "rounded-xl border p-4 space-y-3 cursor-pointer transition-all duration-150",
-                    "hover:border-primary/40 hover:bg-accent/10 hover:shadow-sm"
+                    "rounded-xl border p-4 space-y-3 cursor-pointer",
+                    "transition-all duration-150 transform",
+                    "hover:-translate-y-1 hover:border-primary/40 hover:bg-accent/10 hover:shadow-sm"
                   )}
                   onClick={() => navigate(`${r.id}`)}
                 >
+
                   {/* Header + Status */}
                   <div className="flex items-center justify-between">
                     <div className="font-semibold">{r.name}</div>
@@ -493,7 +499,9 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
                   {/* Aksi */}
                   <div
                     className="flex justify-end"
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
                   >
                     <CRowActions
                       row={r}
@@ -505,6 +513,7 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
                       forceMenu={false}
                     />
                   </div>
+
                 </div>
               )}
 

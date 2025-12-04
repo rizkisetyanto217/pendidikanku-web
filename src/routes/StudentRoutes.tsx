@@ -93,9 +93,9 @@ export const StudentRoutes = (
           <Route index element={<StudentCSST />} />
           <Route path="detail" element={<StudentCSSTDetail />} />
           <Route path="ruangan" element={<StudentCSSTRoomDetail />} />
-          <Route path="daily-progress" element={<StudentCSSTDailyReport />} />
+          <Route path="laporan-harian" element={<StudentCSSTDailyReport />} />
           <Route
-            path="daily-progress/:id"
+            path="laporan-harian/:id"
             element={<StudentCSSTDailyReportDetail />}
           />
           <Route path="ujian" element={<StudentExam showBack />} />

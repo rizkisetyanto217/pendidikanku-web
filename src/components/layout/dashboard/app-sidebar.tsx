@@ -199,18 +199,15 @@ export function AppSidebar(props: AppSidebarProps) {
     return MAP[raw] ?? raw;
   }, [membership]);
 
-  // Susun items dari nav terpilih
   const items = rawNavItems
-    // filter dashboard kalau perlu (khusus nav sekolah)
     .filter((it) => {
       if (!applyHideDashboard) return true;
-      const label = it.label?.toLowerCase?.() ?? "";
+
       const path = (it.path ?? "").toLowerCase();
-      return !(
-        label.includes("dashboard") ||
-        path === "dashboard" ||
-        path === ""
-      );
+
+      // ❌ Jangan buang "dashboard" lagi
+      // ✅ Cuma sembunyiin item yang path-nya kosong (root)
+      return !(path === "" || path === ".");
     })
     .map((it) => {
       const targetParentUrl =

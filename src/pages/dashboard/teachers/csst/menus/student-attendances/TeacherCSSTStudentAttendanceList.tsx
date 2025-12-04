@@ -6,7 +6,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableHeader,
@@ -22,7 +21,6 @@ import {
   Users,
   User,
   MessageCircle,
-  UserCircle2,
   NotebookPen,
 
 } from "lucide-react";
@@ -31,6 +29,7 @@ import api from "@/lib/axios";
 import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
 
 import CRowActions from "@/components/costum/table/CRowAction";
+import CMenuSearch from "@/components/costum/common/CMenuSearch";
 
 /* =========================================================
    KONFIG + TIPE
@@ -287,106 +286,96 @@ const TeacherCSSTStudentsList: React.FC = () => {
 
   return (
     <div className="w-full bg-background text-foreground">
-      <main className="mx-auto space-y-6">
-        {/* Header local (backup mobile) */}
-        <div className="flex items-center justify-between">
-          <div className="md:flex hidden items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate(-1)}
-              className="mr-1"
-            >
-              <ArrowLeft size={20} />
-            </Button>
-            <div>
-              <h1 className="font-semibold text-lg">Daftar Murid</h1>
-              <p className="text-xs text-muted-foreground">
-                Mapel / kelas: {csstId}
-              </p>
+      <main className="w-full">
+        <div className="flex flex-col gap-6">
+          {/* Header local (backup mobile) */}
+          <div className="flex items-center justify-between">
+            <div className="md:flex hidden items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate(-1)}
+                className="mr-1"
+              >
+                <ArrowLeft size={20} />
+              </Button>
+              <div>
+                <h1 className="font-semibold text-lg">Daftar Murid</h1>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Summary & Search */}
-        <Card className="p-4 space-y-4">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div>
-              <h2 className="font-semibold flex items-center gap-2">
-                <UserCircle2 size={18} />
-                Daftar Murid Mapel
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Data murid lengkap dengan kontak dan orang tua.
-              </p>
+          {/* Summary & Search */}
+          <div className="w-full flex items-center justify-between gap-3 flex-wrap">
+
+            <div className="flex-1 min-w-[240px]">
+              <CMenuSearch
+                value={q}
+                onChange={setQ}
+                placeholder="Cari nama murid / Kode / orang tua…"
+                className="w-full"
+
+              />
             </div>
-            <div className="flex flex-wrap gap-2">
+
+            <div className="flex flex-wrap gap-2 shrink-0">
               <Badge className="gap-1">
                 <Users size={12} /> Total: {total}
               </Badge>
               <Badge variant="secondary" className="gap-1">
                 <User size={12} /> L: {totalL}
               </Badge>
-              <Badge variant="outline" className="gap-1">
+              <Badge variant="secondary" className="gap-1">
                 <User size={12} /> P: {totalP}
               </Badge>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-1 min-w-[260px]">
-            <Search size={18} className="text-muted-foreground" />
-            <Input
-              placeholder="Cari nama murid / NIS / orang tua…"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-            />
-          </div>
-        </Card>
 
-        {/* TABLE */}
-        <Card className="p-0">
-          <ScrollArea className="w-full">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[56px]">No</TableHead>
-                  <TableHead>Murid</TableHead>
-                  <TableHead className="hidden sm:table-cell">NIS</TableHead>
-                  <TableHead className="hidden sm:table-cell">L/P</TableHead>
-                  <TableHead className="hidden md:table-cell">Kontak Murid </TableHead>
-                  <TableHead className="hidden md:table-cell">Catatan</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
+          {/* TABLE */}
+          <Card className="p-0">
+            <ScrollArea className="w-full">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell
-                      colSpan={7}
-                      className="py-8 text-center text-muted-foreground"
-                    >
-                      Memuat daftar murid…
-                    </TableCell>
+                    <TableHead className="w-[56px]">No</TableHead>
+                    <TableHead>Murid</TableHead>
+                    <TableHead className="hidden sm:table-cell">Kode</TableHead>
+                    <TableHead className="hidden sm:table-cell">L/P</TableHead>
+                    <TableHead className="hidden md:table-cell">Kontak Murid </TableHead>
+                    <TableHead className="hidden md:table-cell">Catatan</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Aksi</TableHead>
                   </TableRow>
-                ) : isError ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={7}
-                      className="py-8 text-center text-destructive text-sm"
-                    >
-                      Gagal memuat daftar murid. Coba refresh atau hubungi
-                      admin.
-                    </TableCell>
-                  </TableRow>
-                ) : filtered.length > 0 ? (
-                  filtered.map((r, idx) => {
-                    const waStudent = buildWhatsAppLink(r.whatsappUrl);
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="py-8 text-center text-muted-foreground"
+                      >
+                        Memuat daftar murid…
+                      </TableCell>
+                    </TableRow>
+                  ) : isError ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="py-8 text-center text-destructive text-sm"
+                      >
+                        Gagal memuat daftar murid. Coba refresh atau hubungi
+                        admin.
+                      </TableCell>
+                    </TableRow>
+                  ) : filtered.length > 0 ? (
+                    filtered.map((r, idx) => {
+                      const waStudent = buildWhatsAppLink(r.whatsappUrl);
 
-                    return (
-                      <TableRow
-                        key={r.id}
-                        className="
+                      return (
+                        <TableRow
+                          key={r.id}
+                          className="
                           group/row 
                           border-b border-border 
                           transition-all duration-150 
@@ -395,130 +384,130 @@ const TeacherCSSTStudentsList: React.FC = () => {
                           hover:border-primary 
                           hover:shadow-sm
                         "
-                      >
+                        >
 
-                        <TableCell>{idx + 1}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <div className="flex flex-col">
-                              <span className="font-medium">{r.name}</span>
-                              <span className="text-[11px] text-muted-foreground">
-                                ID: {r.id.slice(0, 8)}…
-                              </span>
-                            </div>
-                          </div>
-                        </TableCell>
-
-                        <TableCell className="hidden sm:table-cell">
-                          <span className="font-mono text-xs">
-                            {r.nis || "-"}
-                          </span>
-                        </TableCell>
-
-                        <TableCell className="hidden sm:table-cell">
-                          {r.gender ? (
-                            <Badge variant="outline" className="uppercase">
-                              {r.gender}
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-
-
-                        {/* Kontak murid */}
-                        <TableCell className="hidden md:table-cell text-xs">
-                          {waStudent ? (
-                            <div className="flex flex-col gap-1">
-                              <div className="flex items-center gap-1">
-                                <MessageCircle size={12} />
-                                <a
-                                  href={waStudent}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="underline text-primary"
-                                >
-                                  WhatsApp
-                                </a>
+                          <TableCell>{idx + 1}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <div className="flex flex-col">
+                                <span className="font-medium">{r.name}</span>
+                                <span className="text-[11px] text-muted-foreground">
+                                  ID: {r.id.slice(0, 8)}…
+                                </span>
                               </div>
                             </div>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
+                          </TableCell>
 
-                        {/* Catatan */}
-                        <TableCell className="hidden md:table-cell text-xs">
-                          {(() => {
-                            const items = extractImportantNotes(r);
-                            if (!items.length)
-                              return <span className="text-muted-foreground">-</span>;
+                          <TableCell className="hidden sm:table-cell">
+                            <span className="font-mono text-xs">
+                              {r.nis || "-"}
+                            </span>
+                          </TableCell>
 
-                            const [first, ...rest] = items;
-                            return (
-                              <div className="text-sm">
-                                <div className="flex items-center gap-2 font-medium mb-0.5">
-                                  <NotebookPen size={14} />
-                                  <span>Keterangan penting</span>
-                                </div>
-                                <div className="text-muted-foreground">
-                                  {first}
-                                  {rest.length ? ` (+${rest.length} lagi)` : ""}
+                          <TableCell className="hidden sm:table-cell">
+                            {r.gender ? (
+                              <Badge variant="outline" className="uppercase">
+                                {r.gender}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+
+
+                          {/* Kontak murid */}
+                          <TableCell className="hidden md:table-cell text-xs">
+                            {waStudent ? (
+                              <div className="flex flex-col gap-1">
+                                <div className="flex items-center gap-1">
+                                  <MessageCircle size={12} />
+                                  <a
+                                    href={waStudent}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="underline text-primary"
+                                  >
+                                    WhatsApp
+                                  </a>
                                 </div>
                               </div>
-                            );
-                          })()}
-                        </TableCell>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
 
-                        {/* Status */}
-                        <TableCell>
-                          <CBadgeStatus
-                            status={r.isActive ? "active" : "inactive"}
-                            className="text-[10px]"
-                          />
-                        </TableCell>
+                          {/* Catatan */}
+                          <TableCell className="hidden md:table-cell text-xs">
+                            {(() => {
+                              const items = extractImportantNotes(r);
+                              if (!items.length)
+                                return <span className="text-muted-foreground">-</span>;
 
-                        {/* Aksi */}
-                        <TableCell>
-                          <CRowActions
-                            mode="inline"
-                            size="sm"
-                            row={r}
-                            onView={() => navigate(`/guru/murid/${r.id}`)}
-                            onEdit={() => navigate(`/guru/murid/edit/${r.id}`, { state: { student: r } })}
-                            onDelete={async () => {
-                              console.log("DELETE:", r.id);
-                              // TODO: panggil API delete jika sudah ada endpoint
-                            }}
-                          />
-                        </TableCell>
+                              const [first, ...rest] = items;
+                              return (
+                                <div className="text-sm">
+                                  <div className="flex items-center gap-2 font-medium mb-0.5">
+                                    <NotebookPen size={14} />
+                                    <span>Keterangan penting</span>
+                                  </div>
+                                  <div className="text-muted-foreground">
+                                    {first}
+                                    {rest.length ? ` (+${rest.length} lagi)` : ""}
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </TableCell>
+
+                          {/* Status */}
+                          <TableCell>
+                            <CBadgeStatus
+                              status={r.isActive ? "active" : "inactive"}
+                              className="text-[10px]"
+                            />
+                          </TableCell>
+
+                          {/* Aksi */}
+                          <TableCell>
+                            <CRowActions
+                              mode="inline"
+                              size="sm"
+                              row={r}
+                              onView={() => navigate(`/guru/murid/${r.id}`)}
+                              onEdit={() => navigate(`/guru/murid/edit/${r.id}`, { state: { student: r } })}
+                              onDelete={async () => {
+                                console.log("DELETE:", r.id);
+                                // TODO: panggil API delete jika sudah ada endpoint
+                              }}
+                            />
+                          </TableCell>
 
 
-                      </TableRow>
-                    );
-                  })
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={7} className="py-10 text-center">
-                      <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                        <Search size={20} />
-                        <p className="font-medium text-foreground">
-                          Tidak ada murid
-                        </p>
-                        <p className="text-sm">
-                          Coba cek kembali kelas/mapel atau hubungi admin
-                          sekolah.
-                        </p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </ScrollArea>
-        </Card>
+                        </TableRow>
+                      );
+                    })
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={7} className="py-10 text-center">
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                          <Search size={20} />
+                          <p className="font-medium text-foreground">
+                            Tidak ada murid
+                          </p>
+                          <p className="text-sm">
+                            Coba cek kembali kelas/mapel atau hubungi admin
+                            sekolah.
+                          </p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          </Card>
+        </div>
       </main>
-
     </div>
   );
 };

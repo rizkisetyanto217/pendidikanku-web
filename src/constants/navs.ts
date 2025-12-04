@@ -132,11 +132,6 @@ export const NAVS: NavDict = {
           path: "semua-kelas",
           label: "Semua Kelas",
         },
-        {
-          // -> /sekolah/kelas/pelajaran
-          path: "pelajaran",
-          label: "Pelajaran",
-        },
       ],
     },
 
