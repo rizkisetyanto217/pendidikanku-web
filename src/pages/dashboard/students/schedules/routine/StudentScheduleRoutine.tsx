@@ -13,9 +13,9 @@ import {
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+
 import {
   Select,
   SelectTrigger,
@@ -23,6 +23,8 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/ui/select";
+
+import { CSegmentedTabs } from "@/components/costum/common/CSegmentedTabs";
 
 /* =========================
    Types
@@ -207,6 +209,12 @@ const studentOnceApi = {
 };
 
 /* =========================
+   Shared Hover Class
+========================= */
+const cardHover =
+  "transition-all duration-200 hover:bg-accent/40 hover:shadow-md hover:-translate-y-1 cursor-pointer";
+
+/* =========================
    Read-only Board Rutin
 ========================= */
 function RoutineBoardStudent({ data }: { data: RoutineItem[] }) {
@@ -251,12 +259,10 @@ function RoutineBoardStudent({ data }: { data: RoutineItem[] }) {
         const isToday = d === todayIdx;
         return (
           <div
-            key={d}
-            className={[
-              "rounded-xl border bg-card text-card-foreground transition-shadow",
-              isToday ? "ring-2 ring-primary/40 bg-primary/5" : "",
-            ].join(" ")}
+            className={`rounded-xl border bg-card text-card-foreground ${cardHover} ${isToday ? "ring-2 ring-primary/40 bg-primary/5" : ""
+              }`}
           >
+
             <div className="p-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="font-medium">{weekdayName[d]}</div>
@@ -271,12 +277,8 @@ function RoutineBoardStudent({ data }: { data: RoutineItem[] }) {
             <div className="p-2 space-y-2">
               {byDay[d].map((it) => (
                 <div
-                  key={it.id}
-                  className={[
-                    "rounded-lg border p-2 bg-background",
-                    it.active === false ? "opacity-60" : "",
-                    isToday ? "border-primary/50" : "",
-                  ].join(" ")}
+                  className={`rounded-xl border bg-card text-card-foreground ${cardHover} ${isToday ? "ring-2 ring-primary/40 bg-primary/5" : ""
+                    }`}
                 >
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary" className="gap-1">
@@ -382,11 +384,8 @@ function OnceListStudent({
             const today = isSameDay(r.date);
             return (
               <div
-                key={r.id}
-                className={[
-                  "rounded-lg border p-3 bg-background",
-                  today ? "border-primary/60 bg-primary/5" : "",
-                ].join(" ")}
+                className={`rounded-lg border p-3 bg-background ${cardHover} ${today ? "border-primary/60 bg-primary/5" : ""
+                  }`}
               >
                 <div className="flex items-center gap-2">
                   <Badge variant="secondary" className="capitalize">
@@ -503,34 +502,32 @@ export default function StudentScheduleRoutine({
         </div>
 
         {/* Tabs */}
-        <Tabs
+        <CSegmentedTabs
           value={tab}
-          onValueChange={(v) => setTab(v as any)}
-          className="w-full"
-        >
-          <TabsList className="w-fit flex-wrap">
-            <TabsTrigger value="routine">Rutin (Mingguan)</TabsTrigger>
-            <TabsTrigger value="once">Sekali / Acara</TabsTrigger>
-          </TabsList>
+          onValueChange={(v) => setTab(v as "routine" | "once")}
+          tabs={[
+            { value: "routine", label: "Rutin (Mingguan)" },
+            { value: "once", label: "Sekali / Acara" },
+          ]}
+          className="w-full md:w-fit"
+        />
 
-          {/* Rutin */}
-          <TabsContent value="routine" className="mt-4">
-            <RoutineBoardStudent data={routineQ.data ?? []} />
-            {/* Keterangan kecil */}
-            <div className="text-xs text-muted-foreground mt-3">
-              Jadwal disediakan oleh guru. Hubungi wali kelas jika ada
-              perbedaan.
-            </div>
-          </TabsContent>
+        {/* Konten berdasarkan tab yang dipilih */}
+        <div className="mt-4">
+          {tab === "routine" && (
+            <>
+              <RoutineBoardStudent data={routineQ.data ?? []} />
+              <div className="text-xs text-muted-foreground mt-3">
+                Jadwal disediakan oleh guru. Hubungi wali kelas jika ada perbedaan.
+              </div>
+            </>
+          )}
 
-          {/* Sekali / Acara */}
-          <TabsContent value="once" className="mt-4">
-            <OnceListStudent
-              data={onceQ.data ?? []}
-              loading={onceQ.isLoading}
-            />
-          </TabsContent>
-        </Tabs>
+          {tab === "once" && (
+            <OnceListStudent data={onceQ.data ?? []} loading={onceQ.isLoading} />
+          )}
+        </div>
+
       </div>
     </div>
   );

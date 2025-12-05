@@ -257,7 +257,11 @@ export default function StudentFinance({
                   {paidList.map((b) => (
                     <div
                       key={b.id}
-                      className="border rounded-lg p-3 flex items-center justify-between"
+                      className="
+                          rounded-lg border bg-card p-3 md:p-4 flex items-start justify-between gap-3
+                          transition-all duration-200 cursor-pointer
+                          hover:bg-accent/40 hover:-translate-y-1 hover:shadow-md
+                        "
                     >
                       <div>
                         <div className="font-medium">{b.title}</div>

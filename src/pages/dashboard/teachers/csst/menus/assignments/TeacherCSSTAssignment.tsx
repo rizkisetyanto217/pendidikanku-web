@@ -154,7 +154,7 @@ const MODE_TABS: SegmentedTabItem[] = [
   },
   {
     value: "general",
-    label: "Sudah Dikerjakan",
+    label: "Selesai",
   },
 ];
 
@@ -317,45 +317,31 @@ export default function TeacherCSSTAssignment() {
 
           {/* Filter segmented tabs */}
           <div className="flex flex-col gap-2">
-            <CSegmentedTabs
-              value={modeFilter}
-              onValueChange={(v) => setModeFilter(v as ModeFilter)}
-              tabs={MODE_TABS}
-            />
-            <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground">
-              <span>
-                Semua:{" "}
-                <span className="font-semibold">{totalClassAnnounce}</span>
-              </span>
-              <span>
-                Belum Dikerjakan:{" "}
-                <span className="font-semibold">{totalGeneral}</span>
-              </span>
-              <span>
-                Sudah Dikerjakan:{" "}
-                <span className="font-semibold">{assessments.length}</span>
-              </span>
+            <div className="flex flex-wrap gap-2 mt-1">
+              <Badge className="gap-1 text-[11px] py-1">
+                <ListChecks size={12} />
+                Semua: {assessments.length}
+              </Badge>
+
+              <Badge variant="secondary" className="gap-1 text-[11px] py-1">
+                <Timer size={12} />
+                Belum Dikerjakan: {totalClassAnnounce}
+              </Badge>
+
+              <Badge variant="secondary" className="gap-1 text-[11px] py-1">
+                <CheckCircle2 size={12} className="text-emerald-500" />
+                Selesai: {totalGeneral}
+              </Badge>
             </div>
-          </div>
-
-          <div className="flex flex-wrap gap-2 mt-1">
-            <Badge className="gap-1 text-[11px] py-1">
-              <ListChecks size={12} />
-              Semua: {assessments.length}
-            </Badge>
-
-            <Badge variant="secondary" className="gap-1 text-[11px] py-1">
-              <Timer size={12} />
-              Belum Dikerjakan: {totalClassAnnounce}
-            </Badge>
-
-            <Badge variant="secondary" className="gap-1 text-[11px] py-1">
-              <CheckCircle2 size={12} className="text-emerald-500" />
-              Sudah Dikerjakan: {totalGeneral}
-            </Badge>
           </div>
         </CardContent>
       </Card>
+
+      <CSegmentedTabs
+        value={modeFilter}
+        onValueChange={(v) => setModeFilter(v as ModeFilter)}
+        tabs={MODE_TABS}
+      />
 
       {/* List */}
       {isLoading ? (

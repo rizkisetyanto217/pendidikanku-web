@@ -8,7 +8,6 @@ import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 import CalendarView from "@/pages/dashboard/components/calender/CalenderView";
 import ScheduleList from "@/pages/dashboard/components/calender/ScheduleList";
@@ -20,6 +19,7 @@ import {
 import type { ScheduleRow } from "@/pages/dashboard/components/calender/types/types";
 
 import api from "@/lib/axios";
+import { CSegmentedTabs } from "@/components/costum/common/CSegmentedTabs";
 
 /* =============================
    Types API student timeline (API terbaru)
@@ -143,8 +143,8 @@ function mapItemToScheduleRow(item: ApiStudentTimelineItem): ScheduleRow {
     participantState === "present"
       ? `${baseDesc}${baseDesc ? " — " : ""}Status kehadiran: hadir`
       : participantState === "sick"
-      ? `${baseDesc}${baseDesc ? " — " : ""}Status kehadiran: izin sakit`
-      : baseDesc;
+        ? `${baseDesc}${baseDesc ? " — " : ""}Status kehadiran: izin sakit`
+        : baseDesc;
 
   return {
     id: s.class_attendance_session_id,
@@ -270,18 +270,20 @@ export default function StudentScheduleAgenda({
           </div>
         </div>
 
-        {/* Tabs */}
-        <Tabs
+        {/* Segmented Tabs */}
+        <CSegmentedTabs
           value={tab}
           onValueChange={(v) => setTab(v as "calendar" | "list")}
-          className="w-full"
-        >
-          <TabsList className="w-fit">
-            <TabsTrigger value="calendar">Kalender</TabsTrigger>
-            <TabsTrigger value="list">List</TabsTrigger>
-          </TabsList>
+          tabs={[
+            { value: "calendar", label: "Kalender" },
+            { value: "list", label: "List" },
+          ]}
+          className="w-full md:w-fit"
+        />
 
-          <TabsContent value="calendar" className="mt-4">
+        {/* Konten bergantung tab */}
+        <div className="mt-4">
+          {tab === "calendar" && (
             <CalendarView
               month={month}
               data={schedulesQ.data ?? []}
@@ -291,16 +293,17 @@ export default function StudentScheduleAgenda({
               readOnly
               canAdd={false}
             />
-          </TabsContent>
+          )}
 
-          <TabsContent value="list" className="mt-4">
+          {tab === "list" && (
             <ScheduleList
               data={schedulesQ.data ?? []}
               loading={schedulesQ.isLoading}
               readOnly
             />
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
+
       </div>
     </div>
   );

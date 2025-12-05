@@ -278,11 +278,11 @@ export function CDataTable<T>(props: DataTableProps<T>) {
 
   /* ========== Hover classes ========== */
   const hoverCls = rowHover
-    ? "transition cursor-pointer hover:bg-primary/5 hover:border-primary hover:-translate-y-1"
+    ? "transition-all duration-200 cursor-pointer hover:bg-accent/20 hover:shadow-sm"
     : "";
 
   const cellHoverCls = rowHover
-    ? "transition-colors group-hover/row:bg-muted/60 dark:group-hover/row:bg-muted/30"
+    ? "transition-colors group-hover/row:bg-accent/10"
     : "";
 
   /* ========== Controls ========== */
@@ -403,7 +403,7 @@ export function CDataTable<T>(props: DataTableProps<T>) {
   const suppressView = Boolean(onRowClick);
 
   const cardHoverCls = rowHover
-    ? "transition-all hover:bg-primary/5 hover:border-primary hover:-translate-y-1 cursor-pointer hover:-translate-y-1"
+    ? "transition-all duration-200 hover:bg-accent/40 hover:shadow-md hover:-translate-y-1 cursor-pointer"
     : "";
 
   /* ========== Render ========== */

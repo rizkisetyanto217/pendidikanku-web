@@ -19,7 +19,6 @@ import { CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -292,168 +291,171 @@ export default function StudentAdministrationReEnrollment({
       </div>
 
       {/* List */}
-      <ScrollArea className="h-[460px] rounded-md border bg-card/40">
-        <div className="p-3 sm:p-4 flex flex-col gap-3">
-          {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-2 py-16 text-center text-muted-foreground">
-              <CheckCircle2 className="h-6 w-6" />
-              <div className="text-sm font-medium">
-                Tidak ada tagihan daftar ulang aktif.
-              </div>
-              <p className="text-xs max-w-xs">
-                Semua kewajiban daftar ulang sudah lunas atau belum ada kelas
-                yang naik jenjang.
-              </p>
+      {/* List */}
+      <div className="rounded-md border bg-card/40 p-3 sm:p-4 flex flex-col gap-3">
+        {filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-2 py-16 text-center text-muted-foreground">
+            <CheckCircle2 className="h-6 w-6" />
+            <div className="text-sm font-medium">
+              Tidak ada tagihan daftar ulang aktif.
             </div>
-          ) : (
-            filtered.map((item) => {
-              const isPaid = item.status === "paid";
-              const isExpired = item.status === "expired";
-              const canAction = item.canReEnroll && !isExpired && !isPaid;
+            <p className="text-xs max-w-xs">
+              Semua kewajiban daftar ulang sudah lunas atau belum ada kelas
+              yang naik jenjang.
+            </p>
+          </div>
+        ) : (
+          filtered.map((item) => {
+            const isPaid = item.status === "paid";
+            const isExpired = item.status === "expired";
+            const canAction = item.canReEnroll && !isExpired && !isPaid;
 
-              return (
-                <Card
-                  key={item.id}
-                  className="border-muted bg-background/80 hover:bg-accent/40 transition-colors"
-                >
-                  <CardHeader className="flex flex-row items-start justify-between gap-3 pb-3">
-                    <div className="space-y-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <CardTitle className="text-base font-semibold leading-tight">
-                          {item.newClassName}
-                        </CardTitle>
-                        {statusBadge(item.status)}
+            return (
+              <Card
+                key={item.id}
+                className="
+                    border-muted bg-background/80
+                    hover:bg-accent/40 hover:-translate-y-1 hover:shadow-md
+                    transition-all duration-200 cursor-pointer
+                  "
+              >
+                <CardHeader className="flex flex-row items-start justify-between gap-3 pb-3">
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <CardTitle className="text-base font-semibold leading-tight">
+                        {item.newClassName}
+                      </CardTitle>
+                      {statusBadge(item.status)}
+                    </div>
+                    <div className="text-xs text-muted-foreground space-y-0.5">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="font-medium text-[11px]">Dari:</span>
+                        <span>{item.oldClassName}</span>
+                        <span className="text-muted-foreground/50">→</span>
+                        <span className="font-medium text-[11px]">Ke:</span>
+                        <span>{item.newClassName}</span>
                       </div>
-                      <div className="text-xs text-muted-foreground space-y-0.5">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="font-medium text-[11px]">Dari:</span>
-                          <span>{item.oldClassName}</span>
-                          <span className="text-muted-foreground/50">→</span>
-                          <span className="font-medium text-[11px]">Ke:</span>
-                          <span>{item.newClassName}</span>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          {item.levelLabel && (
-                            <span className="text-[11px]">
-                              {item.levelLabel}
-                            </span>
-                          )}
-                          <span className="text-muted-foreground/40 text-[10px]">
-                            •
+                      <div className="flex flex-wrap items-center gap-2">
+                        {item.levelLabel && (
+                          <span className="text-[11px]">
+                            {item.levelLabel}
                           </span>
-                          <span className="inline-flex items-center gap-1 text-[11px]">
-                            <CalendarClock className="h-3 w-3" />
-                            {item.academicYearFrom} → {item.academicYearTo}
+                        )}
+                        <span className="text-muted-foreground/40 text-[10px]">
+                          •
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-[11px]">
+                          <CalendarClock className="h-3 w-3" />
+                          {item.academicYearFrom} → {item.academicYearTo}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col items-end gap-1">
+                    <div className="text-[11px] text-muted-foreground">
+                      Total tagihan:
+                    </div>
+                    <div className="text-sm font-semibold">
+                      {item.totalBillLabel}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      Sisa:{" "}
+                      <span className="font-medium">
+                        {item.outstandingLabel}
+                      </span>
+                    </div>
+                    {item.dueDateLabel && (
+                      <span className="text-[10px] text-muted-foreground mt-1">
+                        Batas daftar ulang: {item.dueDateLabel}
+                      </span>
+                    )}
+                  </div>
+                </CardHeader>
+
+                <CardContent className="flex flex-col gap-3 pt-0">
+                  <div className="rounded-md border bg-background/80 p-3 text-xs flex flex-col gap-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                        <CreditCard className="h-3 w-3" />
+                        Rincian biaya
+                      </span>
+                    </div>
+                    <Separator className="my-1" />
+                    <div className="grid grid-cols-1 gap-1 text-[11px] sm:grid-cols-2">
+                      <div className="flex justify-between gap-2">
+                        <span>Biaya pendaftaran</span>
+                        <span className="font-medium">
+                          {item.registrationFeeLabel}
+                        </span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span>SPP</span>
+                        <span className="text-right">
+                          <span className="font-medium">
+                            {item.sppMonthlyLabel}
                           </span>
-                        </div>
+                          <span className="ml-1 text-muted-foreground">
+                            × {item.sppMonthsCount} bln
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-start gap-2 text-xs text-muted-foreground max-w-md">
+                      {isPaid ? (
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-500" />
+                      ) : (
+                        <AlertCircle className="mt-0.5 h-4 w-4" />
+                      )}
+                      <div className="space-y-0.5">
+                        <p className="font-medium text-[11px]">
+                          {statusLabel(item.status)}
+                        </p>
+                        {item.lastPaymentLabel && (
+                          <p className="text-[11px]">
+                            {item.lastPaymentLabel}
+                          </p>
+                        )}
                       </div>
                     </div>
 
-                    <div className="flex flex-col items-end gap-1">
-                      <div className="text-[11px] text-muted-foreground">
-                        Total tagihan:
-                      </div>
-                      <div className="text-sm font-semibold">
-                        {item.totalBillLabel}
-                      </div>
-                      <div className="text-[11px] text-muted-foreground">
-                        Sisa:{" "}
-                        <span className="font-medium">
-                          {item.outstandingLabel}
-                        </span>
-                      </div>
-                      {item.dueDateLabel && (
-                        <span className="text-[10px] text-muted-foreground mt-1">
-                          Batas daftar ulang: {item.dueDateLabel}
-                        </span>
+                    <div className="flex justify-start sm:justify-end">
+                      {canAction ? (
+                        <Button
+                          size="sm"
+                          className="text-xs inline-flex items-center gap-1"
+                          onClick={() => handleReEnroll(item.id)}
+                        >
+                          <span>
+                            {item.status === "partial"
+                              ? "Lanjutkan pembayaran"
+                              : "Daftar ulang sekarang"}
+                          </span>
+                          <ChevronRight className="h-3 w-3" />
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-xs"
+                          disabled
+                        >
+                          {isPaid
+                            ? "Tagihan sudah lunas"
+                            : "Daftar ulang tidak tersedia"}
+                        </Button>
                       )}
                     </div>
-                  </CardHeader>
-
-                  <CardContent className="flex flex-col gap-3 pt-0">
-                    <div className="rounded-md border bg-background/80 p-3 text-xs flex flex-col gap-2">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-                          <CreditCard className="h-3 w-3" />
-                          Rincian biaya
-                        </span>
-                      </div>
-                      <Separator className="my-1" />
-                      <div className="grid grid-cols-1 gap-1 text-[11px] sm:grid-cols-2">
-                        <div className="flex justify-between gap-2">
-                          <span>Biaya pendaftaran</span>
-                          <span className="font-medium">
-                            {item.registrationFeeLabel}
-                          </span>
-                        </div>
-                        <div className="flex justify-between gap-2">
-                          <span>SPP</span>
-                          <span className="text-right">
-                            <span className="font-medium">
-                              {item.sppMonthlyLabel}
-                            </span>
-                            <span className="ml-1 text-muted-foreground">
-                              × {item.sppMonthsCount} bln
-                            </span>
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="flex items-start gap-2 text-xs text-muted-foreground max-w-md">
-                        {isPaid ? (
-                          <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-500" />
-                        ) : (
-                          <AlertCircle className="mt-0.5 h-4 w-4" />
-                        )}
-                        <div className="space-y-0.5">
-                          <p className="font-medium text-[11px]">
-                            {statusLabel(item.status)}
-                          </p>
-                          {item.lastPaymentLabel && (
-                            <p className="text-[11px]">
-                              {item.lastPaymentLabel}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex justify-start sm:justify-end">
-                        {canAction ? (
-                          <Button
-                            size="sm"
-                            className="text-xs inline-flex items-center gap-1"
-                            onClick={() => handleReEnroll(item.id)}
-                          >
-                            <span>
-                              {item.status === "partial"
-                                ? "Lanjutkan pembayaran"
-                                : "Daftar ulang sekarang"}
-                            </span>
-                            <ChevronRight className="h-3 w-3" />
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-xs"
-                            disabled
-                          >
-                            {isPaid
-                              ? "Tagihan sudah lunas"
-                              : "Daftar ulang tidak tersedia"}
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })
-          )}
-        </div>
-      </ScrollArea>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
+        )}
+      </div>
     </div>
   );
 }

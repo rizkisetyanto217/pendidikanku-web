@@ -25,7 +25,6 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectTrigger,
@@ -48,6 +47,7 @@ import {
 /* dashboard header */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 import type { AxiosError } from "axios";
+import { CSegmentedTabs } from "@/components/costum/common/CSegmentedTabs";
 
 /* =========================
    TYPES (sesuai API /u/assessments/list)
@@ -589,222 +589,210 @@ const StudentCSSTAssignment: React.FC<StudentClassesAssignmentProps> = ({
 
           <Separator className="my-1" />
 
-          {/* Tabs status + filter pertemuan */}
-          <Tabs
-            value={statusTab}
-            onValueChange={(v) =>
-              setStatusTab(v as "all" | "not_started" | "done")
-            }
-            className="w-full"
-          >
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <TabsList className="w-full md:w-auto">
-                <TabsTrigger value="all" className="flex-1 md:flex-none">
-                  Semua
-                </TabsTrigger>
-                <TabsTrigger
-                  value="not_started"
-                  className="flex-1 md:flex-none"
-                >
-                  Belum dikerjakan
-                </TabsTrigger>
-                <TabsTrigger value="done" className="flex-1 md:flex-none">
-                  Sudah dikerjakan
-                </TabsTrigger>
-              </TabsList>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            {/* ⬅️ Status Tabs menggunakan CSegmentedTabs */}
+            <CSegmentedTabs
+              value={statusTab}
+              onValueChange={(v) => setStatusTab(v as "all" | "not_started" | "done")}
+              tabs={[
+                { value: "all", label: "Semua" },
+                { value: "not_started", label: "Belum Dikerjakan" },
+                { value: "done", label: "Selesai" },
+              ]}
+              className="w-full md:w-auto"
+            />
 
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Pertemuan</span>
-                <Select
-                  value={meetingFilter}
-                  onValueChange={(v) => setMeetingFilter(v)}
-                >
-                  <SelectTrigger className="h-8 w-[190px] text-xs">
-                    <SelectValue placeholder="Semua pertemuan" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Semua pertemuan</SelectItem>
-                    {meetingOptions.map((key) => (
-                      <SelectItem key={key} value={key}>
-                        {formatMeetingLabel(key)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Pertemuan</span>
+              <Select
+                value={meetingFilter}
+                onValueChange={(v) => setMeetingFilter(v)}
+              >
+                <SelectTrigger className="h-8 w-[190px] text-xs">
+                  <SelectValue placeholder="Semua pertemuan" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua pertemuan</SelectItem>
+                  {meetingOptions.map((key) => (
+                    <SelectItem key={key} value={key}>
+                      {formatMeetingLabel(key)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+          </div>
 
-            {/* List tugas */}
-            {!hasItems && (
-              <Card className="border-dashed mt-3">
-                <CardContent className="p-6 text-center text-sm text-muted-foreground space-y-2">
-                  <ClipboardList className="h-8 w-8 mx-auto mb-1 text-muted-foreground" />
-                  <p>Tidak ada tugas yang cocok dengan filter yang dipilih.</p>
-                  <p className="text-xs">
-                    Coba ganti tab status atau pertemuan yang dipilih.
-                  </p>
-                </CardContent>
-              </Card>
-            )}
+          {/* List tugas */}
+          {!hasItems && (
+            <Card className="border-dashed mt-3">
+              <CardContent className="p-6 text-center text-sm text-muted-foreground space-y-2">
+                <ClipboardList className="h-8 w-8 mx-auto mb-1 text-muted-foreground" />
+                <p>Tidak ada tugas yang cocok dengan filter yang dipilih.</p>
+                <p className="text-xs">
+                  Coba ganti tab status atau pertemuan yang dipilih.
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
-            {hasItems && (
-              <div className="space-y-3 mt-3">
-                {filteredItems.map((assessment) => {
-                  const progress = assessment.student_progress;
-                  const { label, variant, icon } =
-                    getProgressLabelAndVariant(progress);
+          {hasItems && (
+            <div className="space-y-3 mt-3">
+              {filteredItems.map((assessment) => {
+                const progress = assessment.student_progress;
+                const { label, variant, icon } =
+                  getProgressLabelAndVariant(progress);
 
-                  const canStartOrView =
-                    assessment.assessment_allow_submission &&
-                    assessment.assessment_is_published;
+                const canStartOrView =
+                  assessment.assessment_allow_submission &&
+                  assessment.assessment_is_published;
 
-                  const isOngoing = progress?.state === "ongoing";
+                const isOngoing = progress?.state === "ongoing";
 
-                  const scoreText =
-                    progress?.score != null
-                      ? `${progress.score}/${assessment.assessment_max_score ?? 100
-                      }`
-                      : "-";
+                const scoreText =
+                  progress?.score != null
+                    ? `${progress.score}/${assessment.assessment_max_score ?? 100
+                    }`
+                    : "-";
 
-                  const dateRangeText = formatDateRange(
-                    assessment.assessment_start_at,
-                    assessment.assessment_due_at
-                  );
+                const dateRangeText = formatDateRange(
+                  assessment.assessment_start_at,
+                  assessment.assessment_due_at
+                );
 
-                  const submittedText = progress?.submitted_at
-                    ? formatDateTime(progress.submitted_at)
-                    : null;
+                const submittedText = progress?.submitted_at
+                  ? formatDateTime(progress.submitted_at)
+                  : null;
 
-                  const isLate = progress?.state === "submitted_late";
+                const isLate = progress?.state === "submitted_late";
 
-                  const quizSummary = getQuizSummary(assessment.quizzes);
+                const quizSummary = getQuizSummary(assessment.quizzes);
 
-                  return (
-                    <Card
-                      key={assessment.assessment_id}
-                      className="transition hover:shadow-md"
-                    >
-                      <CardHeader className="pb-2 flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-                        <div className="space-y-1">
-                          <CardTitle className="text-base md:text-lg flex flex-wrap items-center gap-2">
-                            {assessment.assessment_title}
-                            <Badge variant="outline" className="text-[10px]">
-                              {getKindLabel(assessment.assessment_kind)}
-                            </Badge>
-                          </CardTitle>
-                          {assessment.assessment_description && (
-                            <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">
-                              {assessment.assessment_description}
-                            </p>
-                          )}
+                return (
+                  <Card
+                    key={assessment.assessment_id}
+                    className="transition hover:shadow-md"
+                  >
+                    <CardHeader className="pb-2 flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                      <div className="space-y-1">
+                        <CardTitle className="text-base md:text-lg flex flex-wrap items-center gap-2">
+                          {assessment.assessment_title}
+                          <Badge variant="outline" className="text-[10px]">
+                            {getKindLabel(assessment.assessment_kind)}
+                          </Badge>
+                        </CardTitle>
+                        {assessment.assessment_description && (
+                          <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">
+                            {assessment.assessment_description}
+                          </p>
+                        )}
+                      </div>
+
+                      <Badge
+                        variant={variant}
+                        className="mt-1 md:mt-0 flex items-center gap-1 text-[10px]"
+                      >
+                        {icon}
+                        <span>{label}</span>
+                      </Badge>
+                    </CardHeader>
+
+                    <CardContent className="pb-3 pt-0 text-xs md:text-sm space-y-2">
+                      <div className="flex flex-wrap items-center gap-3 text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <CalendarDays className="h-3 w-3" />
+                          <span>{dateRangeText}</span>
                         </div>
 
-                        <Badge
-                          variant={variant}
-                          className="mt-1 md:mt-0 flex items-center gap-1 text-[10px]"
-                        >
-                          {icon}
-                          <span>{label}</span>
-                        </Badge>
-                      </CardHeader>
-
-                      <CardContent className="pb-3 pt-0 text-xs md:text-sm space-y-2">
-                        <div className="flex flex-wrap items-center gap-3 text-muted-foreground">
+                        {assessment.assessment_duration_minutes != null && (
                           <div className="flex items-center gap-1">
-                            <CalendarDays className="h-3 w-3" />
-                            <span>{dateRangeText}</span>
-                          </div>
-
-                          {assessment.assessment_duration_minutes != null && (
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              <span>
-                                Durasi:{" "}
-                                <span className="font-mono">
-                                  {assessment.assessment_duration_minutes} menit
-                                </span>
+                            <Clock className="h-3 w-3" />
+                            <span>
+                              Durasi:{" "}
+                              <span className="font-mono">
+                                {assessment.assessment_duration_minutes} menit
                               </span>
-                            </div>
-                          )}
-
-                          {assessment.assessment_quiz_total != null && (
-                            <div className="flex items-center gap-1">
-                              <ClipboardList className="h-3 w-3" />
-                              <span>
-                                Bagian kuis:{" "}
-                                <span className="font-mono">
-                                  {assessment.assessment_quiz_total}
-                                </span>
-                              </span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Ringkasan quiz singkat */}
-                        {quizSummary && (
-                          <div className="flex items-start gap-1 text-xs md:text-[13px] text-muted-foreground">
-                            <ClipboardList className="h-3 w-3 mt-[2px]" />
-                            <span>{quizSummary}</span>
+                            </span>
                           </div>
                         )}
 
-                        <div className="flex flex-wrap items-center gap-3 text-xs">
-                          <div>
-                            <span className="text-muted-foreground">
-                              Nilai kamu:{" "}
-                            </span>
-                            <span className="font-mono font-semibold">
-                              {scoreText}
+                        {assessment.assessment_quiz_total != null && (
+                          <div className="flex items-center gap-1">
+                            <ClipboardList className="h-3 w-3" />
+                            <span>
+                              Bagian kuis:{" "}
+                              <span className="font-mono">
+                                {assessment.assessment_quiz_total}
+                              </span>
                             </span>
                           </div>
+                        )}
+                      </div>
 
-                          {submittedText && (
-                            <div className="text-muted-foreground flex items-center gap-1">
-                              <CheckCircle2 className="h-3 w-3" />
-                              <span>
-                                Dikumpulkan:{" "}
-                                <span
-                                  className={
-                                    isLate ? "text-destructive font-medium" : ""
-                                  }
-                                >
-                                  {submittedText}
-                                  {isLate && " (terlambat)"}
-                                </span>
-                              </span>
-                            </div>
-                          )}
+                      {/* Ringkasan quiz singkat */}
+                      {quizSummary && (
+                        <div className="flex items-start gap-1 text-xs md:text-[13px] text-muted-foreground">
+                          <ClipboardList className="h-3 w-3 mt-[2px]" />
+                          <span>{quizSummary}</span>
                         </div>
-                      </CardContent>
+                      )}
 
-                      <CardFooter className="pt-0 flex items-center justify-between gap-3">
-                        <div className="text-[11px] text-muted-foreground">
-                          ID Penilaian:{" "}
-                          <span className="font-mono">
-                            {assessment.assessment_slug}
+                      <div className="flex flex-wrap items-center gap-3 text-xs">
+                        <div>
+                          <span className="text-muted-foreground">
+                            Nilai kamu:{" "}
+                          </span>
+                          <span className="font-mono font-semibold">
+                            {scoreText}
                           </span>
                         </div>
 
-                        <Button
-                          size="sm"
-                          disabled={!canStartOrView}
-                          onClick={() => handleOpenAssignment(assessment)}
-                        >
-                          {isOngoing
-                            ? "Kerjakan sekarang"
-                            : progress?.state === "submitted" ||
-                              progress?.state === "submitted_late" ||
-                              progress?.state === "completed"
-                              ? "Lihat hasil"
-                              : "Lihat detail"}
-                        </Button>
-                      </CardFooter>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
-          </Tabs>
+                        {submittedText && (
+                          <div className="text-muted-foreground flex items-center gap-1">
+                            <CheckCircle2 className="h-3 w-3" />
+                            <span>
+                              Dikumpulkan:{" "}
+                              <span
+                                className={
+                                  isLate ? "text-destructive font-medium" : ""
+                                }
+                              >
+                                {submittedText}
+                                {isLate && " (terlambat)"}
+                              </span>
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+
+                    <CardFooter className="pt-0 flex items-center justify-between gap-3">
+                      <div className="text-[11px] text-muted-foreground">
+                        ID Penilaian:{" "}
+                        <span className="font-mono">
+                          {assessment.assessment_slug}
+                        </span>
+                      </div>
+
+                      <Button
+                        size="sm"
+                        disabled={!canStartOrView}
+                        onClick={() => handleOpenAssignment(assessment)}
+                      >
+                        {isOngoing
+                          ? "Kerjakan sekarang"
+                          : progress?.state === "submitted" ||
+                            progress?.state === "submitted_late" ||
+                            progress?.state === "completed"
+                            ? "Lihat hasil"
+                            : "Lihat detail"}
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
 
           {/* Pagination sederhana */}
           {pagination && pagination.total_pages > 1 && (

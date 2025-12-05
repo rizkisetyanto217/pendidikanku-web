@@ -23,15 +23,15 @@ export function CSegmentedTabs({
   className,
 }: CSegmentedTabsProps) {
   return (
-    <Tabs
-      // ✅ FULLY CONTROLLED — nilai aktif dari parent
-      value={value}
-      onValueChange={onValueChange}
-    >
+    <Tabs value={value} onValueChange={onValueChange}>
       <TabsList
         className={cn(
-          "inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground",
-          "w-full md:w-auto gap-1",
+          // sama seperti student progress
+          "flex w-full md:inline-flex md:w-auto items-center gap-1",
+          "h-9 rounded-lg p-1",
+          "bg-[#F1ECE3] dark:bg-[#3a312b]/80", // light & dark bg
+          "text-muted-foreground text-sm",
+          "transition-none",
           className
         )}
       >
@@ -42,12 +42,19 @@ export function CSegmentedTabs({
               key={tab.value}
               value={tab.value}
               className={cn(
-                "flex items-center gap-1 rounded-md px-3 py-1 text-xs md:text-sm",
-                "data-[state=active]:bg-background data-[state=active]:text-foreground"
+                // ukuran mengikuti student progress
+                "flex-1 md:flex-none px-3 py-1.5 text-sm",
+                "rounded-md",
+                "transition-none",
+                "bg-transparent hover:bg-transparent active:bg-transparent",
+                "focus-visible:ring-0 focus-visible:ring-offset-0",
+
+                // ACTIVE STATE
+                "data-[state=active]:bg-emerald-600 data-[state=active]:text-white"
               )}
             >
-              {Icon && <Icon className="h-3 w-3 md:h-4 md:w-4" />}
-              <span>{tab.label}</span>
+              {Icon && <Icon className="h-4 w-4" />}
+              {tab.label}
             </TabsTrigger>
           );
         })}

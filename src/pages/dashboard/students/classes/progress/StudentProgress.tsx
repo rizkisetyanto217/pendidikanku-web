@@ -1,5 +1,5 @@
 // src/pages/ParentChildDetail.tsx
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -21,7 +21,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -32,6 +31,7 @@ import {
 } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { CSegmentedTabs } from "@/components/costum/common/CSegmentedTabs";
 
 /* ===================== Types (Diploma Ilmi) ===================== */
 
@@ -392,6 +392,8 @@ export default function StudentProgress({
     0
   );
 
+  const [activeTab, setActiveTab] = useState("courses");
+
   return (
     <div className="w-full bg-background text-foreground">
       <main className="w-full">
@@ -534,15 +536,19 @@ export default function StudentProgress({
           )}
 
           {/* ==== Tabs Akademik ==== */}
-          <Tabs defaultValue="courses" className="w-full">
-            <TabsList className="w-full sm:w-auto">
-              <TabsTrigger value="courses">Mata Kuliah</TabsTrigger>
-              <TabsTrigger value="grades">Nilai & IPS</TabsTrigger>
-              <TabsTrigger value="tasks">Tugas & Ujian</TabsTrigger>
-            </TabsList>
+          <CSegmentedTabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            tabs={[
+              { value: "courses", label: "Mata Kuliah" },
+              { value: "grades", label: "Nilai & IPS" },
+              { value: "tasks", label: "Tugas & Ujian" },
+            ]}
+          />
 
-            {/* === Mata Kuliah === */}
-            <TabsContent value="courses" className="mt-4">
+          {/* === Mata Kuliah === */}
+          {activeTab === "courses" && (
+            <div className="mt-4">
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base font-medium flex items-center gap-2">
@@ -571,9 +577,7 @@ export default function StudentProgress({
                         );
                         return (
                           <TableRow key={c.id} className="align-top">
-                            <TableCell className="font-medium">
-                              {c.code}
-                            </TableCell>
+                            <TableCell className="font-medium">{c.code}</TableCell>
                             <TableCell>
                               <div className="font-medium">{c.name}</div>
                               <div className="text-xs text-muted-foreground">
@@ -581,9 +585,7 @@ export default function StudentProgress({
                                 {c.meetings.map((m) => m.day).join(", ")}
                               </div>
                             </TableCell>
-                            <TableCell className="text-center">
-                              {c.sks}
-                            </TableCell>
+                            <TableCell className="text-center">{c.sks}</TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
                                 <Avatar className="h-6 w-6">
@@ -604,8 +606,7 @@ export default function StudentProgress({
                             </TableCell>
                             <TableCell className="text-center">
                               <div className="text-sm tabular-nums">
-                                {c.attendanceStats.hadir}/
-                                {c.attendanceStats.total}
+                                {c.attendanceStats.hadir}/{c.attendanceStats.total}
                               </div>
                               <Progress value={presentPct} className="mt-1" />
                             </TableCell>
@@ -637,10 +638,12 @@ export default function StudentProgress({
                   </Table>
                 </CardContent>
               </Card>
-            </TabsContent>
+            </div>
+          )}
 
-            {/* === Nilai & IPS === */}
-            <TabsContent value="grades" className="mt-4">
+          {/* === Nilai & IPS === */}
+          {activeTab === "grades" && (
+            <div className="mt-4">
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base font-medium flex items-center gap-2">
@@ -655,20 +658,14 @@ export default function StudentProgress({
                         <TableHead>Kode</TableHead>
                         <TableHead>Mata Kuliah</TableHead>
                         <TableHead className="text-center">SKS</TableHead>
-                        <TableHead className="text-center">
-                          Nilai Angka
-                        </TableHead>
-                        <TableHead className="text-center">
-                          Nilai Huruf
-                        </TableHead>
+                        <TableHead className="text-center">Nilai Angka</TableHead>
+                        <TableHead className="text-center">Nilai Huruf</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {(data?.courses ?? []).map((c) => (
                         <TableRow key={c.id}>
-                          <TableCell className="font-medium">
-                            {c.code}
-                          </TableCell>
+                          <TableCell className="font-medium">{c.code}</TableCell>
                           <TableCell>{c.name}</TableCell>
                           <TableCell className="text-center">{c.sks}</TableCell>
                           <TableCell className="text-center">
@@ -731,114 +728,109 @@ export default function StudentProgress({
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
+            </div>
+          )}
 
-            {/* === Tugas & Ujian === */}
-            <TabsContent value="tasks" className="mt-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* Tugas */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base font-medium flex items-center gap-2">
-                      <ClipboardList size={18} className="text-primary" />
-                      Tugas
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Mata Kuliah</TableHead>
-                          <TableHead>Judul</TableHead>
-                          <TableHead className="text-center">Batas</TableHead>
-                          <TableHead className="text-center">Status</TableHead>
-                          <TableHead className="text-center">Nilai</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {(data?.courses ?? []).flatMap((c) =>
-                          c.assignments.map((a) => (
-                            <TableRow key={a.id}>
-                              <TableCell className="font-medium">
-                                {c.name}
-                              </TableCell>
-                              <TableCell>{a.title}</TableCell>
-                              <TableCell className="text-center">
-                                {dateShort(a.dueISO)}
-                              </TableCell>
-                              <TableCell className="text-center">
-                                <Badge
-                                  variant={
-                                    a.status === "graded"
-                                      ? "default"
-                                      : a.status === "submitted"
-                                        ? "secondary"
-                                        : "outline"
-                                  }
-                                  className={
-                                    a.status === "graded" ? "bg-green-600" : ""
-                                  }
-                                >
-                                  {a.status === "graded"
-                                    ? "Dinilai"
+          {/* === Tugas & Ujian === */}
+          {activeTab === "tasks" && (
+            <div className="mt-4 flex flex-col gap-4">
+
+              {/* Tugas */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base font-medium flex items-center gap-2">
+                    <ClipboardList size={18} className="text-primary" />
+                    Tugas
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Mata Kuliah</TableHead>
+                        <TableHead>Judul</TableHead>
+                        <TableHead className="text-center">Batas</TableHead>
+                        <TableHead className="text-center">Status</TableHead>
+                        <TableHead className="text-center">Nilai</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(data?.courses ?? []).flatMap((c) =>
+                        c.assignments.map((a) => (
+                          <TableRow key={a.id}>
+                            <TableCell className="font-medium">{c.name}</TableCell>
+                            <TableCell>{a.title}</TableCell>
+                            <TableCell className="text-center">{dateShort(a.dueISO)}</TableCell>
+                            <TableCell className="text-center">
+                              <Badge
+                                variant={
+                                  a.status === "graded"
+                                    ? "default"
                                     : a.status === "submitted"
-                                      ? "Terkumpul"
-                                      : "Belum"}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-center">
-                                {typeof a.score === "number" ? a.score : "-"}
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
+                                      ? "secondary"
+                                      : "outline"
+                                }
+                                className={a.status === "graded" ? "bg-green-600" : ""}
+                              >
+                                {a.status === "graded"
+                                  ? "Dinilai"
+                                  : a.status === "submitted"
+                                    ? "Terkumpul"
+                                    : "Belum"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {typeof a.score === "number" ? a.score : "-"}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
 
-                {/* Ujian */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base font-medium flex items-center gap-2">
-                      <ClipboardList size={18} className="text-primary" />
-                      Ujian (UTS/UAS/Quiz)
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Tipe</TableHead>
-                          <TableHead>Mata Kuliah</TableHead>
-                          <TableHead className="text-center">Tanggal</TableHead>
-                          <TableHead className="text-center">Ruang</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {(data?.courses ?? []).flatMap((c) =>
-                          c.exams.map((e, idx) => (
-                            <TableRow key={c.id + idx}>
-                              <TableCell className="font-medium">
-                                {e.type}
-                              </TableCell>
-                              <TableCell>{c.name}</TableCell>
-                              <TableCell className="text-center">
-                                {dateLong(e.dateISO)}
-                              </TableCell>
-                              <TableCell className="text-center">
-                                {e.room ?? "-"}
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-          </Tabs>
+              {/* Ujian */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base font-medium flex items-center gap-2">
+                    <ClipboardList size={18} className="text-primary" />
+                    Ujian (UTS/UAS/Quiz)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Tipe</TableHead>
+                        <TableHead>Mata Kuliah</TableHead>
+                        <TableHead className="text-center">Tanggal</TableHead>
+                        <TableHead className="text-center">Ruang</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(data?.courses ?? []).flatMap((c) =>
+                        c.exams.map((e, idx) => (
+                          <TableRow key={c.id + idx}>
+                            <TableCell className="font-medium">{e.type}</TableCell>
+                            <TableCell>{c.name}</TableCell>
+                            <TableCell className="text-center">
+                              {dateLong(e.dateISO)}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {e.room ?? "-"}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+
+            </div>
+          )}
+
 
           {/* Footer ringkas total */}
           <div className="text-xs text-muted-foreground text-center">

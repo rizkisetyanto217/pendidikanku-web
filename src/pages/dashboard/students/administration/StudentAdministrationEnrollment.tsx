@@ -25,7 +25,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useNavigate } from "react-router-dom";
 
@@ -248,126 +247,123 @@ export default function StudentAdministrationEnrollment({ showBack = false, back
       </div>
 
       {/* List */}
-      <ScrollArea className="h-[480px] rounded-md border bg-card/40">
-        <div className="p-3 sm:p-4 flex flex-col gap-3">
-          {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-2 py-16 text-center text-muted-foreground">
-              <BookOpen className="h-6 w-6" />
-              <div className="text-sm font-medium">
-                Belum ada kelas yang cocok dengan filter ini.
-              </div>
-              <p className="text-xs max-w-xs">
-                Coba ganti kata kunci pencarian atau ubah filter jenjang.
-              </p>
+      <div className="rounded-md border bg-card/40 p-3 sm:p-4 flex flex-col gap-3">
+        {filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-2 py-16 text-center text-muted-foreground">
+            <BookOpen className="h-6 w-6" />
+            <div className="text-sm font-medium">
+              Belum ada kelas yang cocok dengan filter ini.
             </div>
-          ) : (
-            filtered.map((item) => (
-              <Card
-                key={item.id}
-                className=" bg-background/70 hover:bg-accent/40 transition-colors"
-              >
-                <CardHeader className="flex flex-row items-start justify-between gap-3 pb-3">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <CardTitle className="text-base font-semibold leading-tight">
-                        {item.name}
-                      </CardTitle>
-                      {item.code && (
-                        <Badge variant="outline" className="text-[10px]">
-                          {item.code}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                      {item.levelLabel && (
+            <p className="text-xs max-w-xs">
+              Coba ganti kata kunci pencarian atau ubah filter jenjang.
+            </p>
+          </div>
+        ) : (
+          filtered.map((item) => (
+            <Card
+              key={item.id}
+              className="
+                  border-muted bg-background/80
+                  hover:bg-accent/40 hover:-translate-y-1 hover:shadow-md
+                  transition-all duration-200 cursor-pointer
+                "
+            >
+              <CardHeader className="flex flex-row items-start justify-between gap-3 pb-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <CardTitle className="text-base font-semibold leading-tight">
+                      {item.name}
+                    </CardTitle>
+                    {item.code && (
+                      <Badge variant="outline" className="text-[10px]">
+                        {item.code}
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    {item.levelLabel && (
+                      <span className="flex items-center gap-1">
+                        <BookOpen className="h-3 w-3" />
+                        {item.levelLabel}
+                      </span>
+                    )}
+                    {item.homeroomTeacher && (
+                      <>
+                        <span className="text-muted-foreground/60">•</span>
                         <span className="flex items-center gap-1">
-                          <BookOpen className="h-3 w-3" />
-                          {item.levelLabel}
+                          <Users className="h-3 w-3" />
+                          Wali: {item.homeroomTeacher}
                         </span>
-                      )}
-                      {item.homeroomTeacher && (
-                        <>
-                          <span className="text-muted-foreground/60">•</span>
-                          <span className="flex items-center gap-1">
-                            <Users className="h-3 w-3" />
-                            Wali: {item.homeroomTeacher}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col items-end gap-1">
-                    <div className="flex flex-wrap justify-end gap-1.5">
-                      <ModeBadge mode={item.mode} />
-                      <SeatsBadge seatsLeft={item.seatsLeft} />
-                    </div>
-                    {item.enrollmentEndLabel && (
-                      <span className="text-[10px] text-muted-foreground">
-                        Pendaftaran: {item.enrollmentEndLabel}
-                      </span>
+                      </>
                     )}
                   </div>
-                </CardHeader>
+                </div>
 
-                <CardContent className="flex flex-col gap-3 pt-0">
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                    <span className="inline-flex items-center gap-1">
-                      <CalendarDays className="h-3 w-3" />
-                      {item.scheduleSummary}
+                <div className="flex flex-col items-end gap-1">
+                  <div className="flex flex-wrap justify-end gap-1.5">
+                    <ModeBadge mode={item.mode} />
+                    <SeatsBadge seatsLeft={item.seatsLeft} />
+                  </div>
+                  {item.enrollmentEndLabel && (
+                    <span className="text-[10px] text-muted-foreground">
+                      Pendaftaran: {item.enrollmentEndLabel}
                     </span>
-                    {item.roomLabel && (
-                      <span className="inline-flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        {item.roomLabel}
-                      </span>
-                    )}
-                  </div>
+                  )}
+                </div>
+              </CardHeader>
 
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    {item.isEnrolled ? (
-                      <div className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
-                        <CheckCircle2 className="h-4 w-4" />
-                        <span>Anda sudah terdaftar di kelas ini.</span>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-muted-foreground max-w-md">
-                        Pastikan jadwal dan lokasi cocok sebelum mendaftar.
-                      </p>
-                    )}
+              <CardContent className="flex flex-col gap-3 pt-0">
+                <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1">
+                    <CalendarDays className="h-3 w-3" />
+                    {item.scheduleSummary}
+                  </span>
 
-                    <div className="flex justify-start sm:justify-end">
-                      {item.isEnrolled ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled
-                          className="text-xs"
-                        >
-                          Sudah terdaftar
-                        </Button>
-                      ) : (
-                        <Button
-                          size="sm"
-                          className="text-xs"
-                          onClick={() => handleEnroll(item.id)}
-                          disabled={
-                            item.seatsLeft !== undefined && item.seatsLeft <= 0
-                          }
-                        >
-                          {item.seatsLeft !== undefined && item.seatsLeft <= 0
-                            ? "Kelas penuh"
-                            : "Daftar kelas"}
-                        </Button>
-                      )}
+                  {item.roomLabel && (
+                    <span className="inline-flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      {item.roomLabel}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  {item.isEnrolled ? (
+                    <div className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span>Anda sudah terdaftar di kelas ini.</span>
                     </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground max-w-md">
+                      Pastikan jadwal dan lokasi cocok sebelum mendaftar.
+                    </p>
+                  )}
+
+                  <div className="flex justify-start sm:justify-end">
+                    {item.isEnrolled ? (
+                      <Button variant="outline" size="sm" disabled className="text-xs">
+                        Sudah terdaftar
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        className="text-xs"
+                        onClick={() => handleEnroll(item.id)}
+                        disabled={item.seatsLeft !== undefined && item.seatsLeft <= 0}
+                      >
+                        {item.seatsLeft !== undefined && item.seatsLeft <= 0
+                          ? "Kelas penuh"
+                          : "Daftar kelas"}
+                      </Button>
+                    )}
                   </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
-      </ScrollArea>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
     </div>
   );
 }

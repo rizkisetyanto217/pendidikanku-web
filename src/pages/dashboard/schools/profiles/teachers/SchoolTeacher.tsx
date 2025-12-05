@@ -69,10 +69,10 @@ export interface TeacherApiRow {
 
   // gender snapshot dari user_teacher
   school_teacher_user_teacher_gender_snapshot?:
-    | "male"
-    | "female"
-    | string
-    | null;
+  | "male"
+  | "female"
+  | string
+  | null;
 
   school_teacher_school_name_snapshot?: string | null;
   school_teacher_school_slug_snapshot?: string | null;
@@ -338,6 +338,8 @@ const SchoolTeacher: React.FC<Props> = ({ showBack = false, backTo }) => {
         id: "name",
         header: "Nama",
         minW: "240px",
+        align: "left",
+        className: "text-left",
         cell: (r) => (
           <div>
             <div className="font-medium">{r.name}</div>
@@ -354,18 +356,24 @@ const SchoolTeacher: React.FC<Props> = ({ showBack = false, backTo }) => {
         id: "subject",
         header: "Mapel",
         minW: "160px",
+        align: "left",
+        className: "text-left",
         cell: (r) => r.subject ?? "-",
       },
       {
         id: "gender",
         header: "Gender",
         minW: "120px",
+        align: "left",
+        className: "text-left",
         cell: (r) => genderLabel(r.gender),
       },
       {
         id: "contact",
         header: "Kontak",
         minW: "220px",
+        align: "left",
+        className: "text-left",
         cell: (r) => (
           <div className="flex items-center gap-3 text-sm">
             {r.phone && (
