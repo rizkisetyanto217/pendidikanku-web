@@ -25,6 +25,7 @@ import axios, { getAccessToken } from "@/lib/axios";
 /* Tambahan untuk breadcrumb sistem dashboard */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 import CMenuSearch from "@/components/costum/common/CMenuSearch";
+import { cardHover } from "@/components/costum/table/CDataTable";
 
 /* =====================
    Types API CSST
@@ -360,22 +361,14 @@ export default function TeacherCSST({ showBack = false, backTo }: Props) {
           {filtered.map((s) => (
             <Card
               key={s.id}
-              className="
-              border 
-              transition-all 
-              duration-300 
-              cursor-pointer 
-              hover:bg-primary/5 
-              hover:border-primary 
-              hover:shadow-sm 
-              hover:shadow-xl 
-              hover:-translate-y-1"
+              className={`border rounded-xl bg-card ${cardHover}`}
             >
               <CardHeader className="flex justify-between items-start">
                 <div>
                   <CardTitle className="text-lg font-bold">{s.name}</CardTitle>
                   <p className="text-sm text-muted-foreground">{s.sectionName}</p>
                 </div>
+
                 <Badge variant="outline" className="flex items-center gap-1">
                   <MapPin size={12} />
                   {s.room || "-"}

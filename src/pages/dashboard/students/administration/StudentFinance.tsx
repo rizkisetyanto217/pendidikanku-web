@@ -11,6 +11,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 /* Tambahan untuk breadcrumb sistem dashboard */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+import { cardHover } from "@/components/costum/table/CDataTable";
 
 /* =========================
    Types & Helpers
@@ -257,12 +258,9 @@ export default function StudentFinance({
                   {paidList.map((b) => (
                     <div
                       key={b.id}
-                      className="
-                          rounded-lg border bg-card p-3 md:p-4 flex items-start justify-between gap-3
-                          transition-all duration-200 cursor-pointer
-                          hover:bg-accent/40 hover:-translate-y-1 hover:shadow-md
-                        "
+                      className={`rounded-lg border bg-card p-3 md:p-4 flex items-start justify-between gap-3 ${cardHover}`}
                     >
+
                       <div>
                         <div className="font-medium">{b.title}</div>
                         <div className="text-sm text-muted-foreground">

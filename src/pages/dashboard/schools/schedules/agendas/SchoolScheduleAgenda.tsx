@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 /* ✅ Breadcrumb header */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
@@ -23,6 +22,7 @@ import {
 import type { ScheduleRow } from "@/pages/dashboard/components/calender/types/types";
 
 import api from "@/lib/axios";
+import { CSegmentedTabs } from "@/components/costum/common/CSegmentedTabs";
 
 /* =========================================================
    Tipe respons API /u/attendance-sessions/list (mode=compact)
@@ -305,18 +305,20 @@ export default function SchoolScheduleAgenda({
           </div>
         </div>
 
-        {/* Tabs */}
-        <Tabs
+        {/* Tabs (NEW CSegmentedTabs) */}
+        <CSegmentedTabs
           value={tab}
           onValueChange={(v) => setTab(v as "calendar" | "list")}
-          className="w-full"
-        >
-          <TabsList className="w-fit">
-            <TabsTrigger value="calendar">Kalender</TabsTrigger>
-            <TabsTrigger value="list">List</TabsTrigger>
-          </TabsList>
+          tabs={[
+            { value: "calendar", label: "Kalender" },
+            { value: "list", label: "List" },
+          ]}
+          className="w-full md:w-fit"
+        />
 
-          <TabsContent value="calendar" className="mt-4">
+        {/* CONTENT */}
+        <div className="mt-4">
+          {tab === "calendar" && (
             <CalendarView
               month={month}
               data={schedulesQ.data ?? []}
@@ -329,9 +331,9 @@ export default function SchoolScheduleAgenda({
               updating={updateMut.isPending || createMut.isPending}
               deleting={deleteMut.isPending}
             />
-          </TabsContent>
+          )}
 
-          <TabsContent value="list" className="mt-4">
+          {tab === "list" && (
             <ScheduleList
               data={schedulesQ.data ?? []}
               loading={schedulesQ.isLoading}
@@ -341,26 +343,27 @@ export default function SchoolScheduleAgenda({
               updating={updateMut.isPending || createMut.isPending}
               deleting={deleteMut.isPending}
             />
-          </TabsContent>
-        </Tabs>
-      </div>
+          )}
+        </div>
 
-      {/* Dialog */}
-      {editing && (
-        <EditScheduleDialog
-          value={editing}
-          onClose={() => setEditing(null)}
-          onSubmit={(v) => {
-            if (!v.title.trim()) return;
-            if (v.id) {
-              updateMut.mutate(v, { onSuccess: () => setEditing(null) });
-            } else {
-              const { id, ...payload } = v;
-              createMut.mutate(payload, { onSuccess: () => setEditing(null) });
-            }
-          }}
-        />
-      )}
+
+        {/* Dialog */}
+        {editing && (
+          <EditScheduleDialog
+            value={editing}
+            onClose={() => setEditing(null)}
+            onSubmit={(v) => {
+              if (!v.title.trim()) return;
+              if (v.id) {
+                updateMut.mutate(v, { onSuccess: () => setEditing(null) });
+              } else {
+                const { id, ...payload } = v;
+                createMut.mutate(payload, { onSuccess: () => setEditing(null) });
+              }
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 }

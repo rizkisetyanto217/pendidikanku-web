@@ -26,6 +26,7 @@ import {
 
 /* DataTable */
 import {
+  cardHover,
   CDataTable as DataTable,
   type ColumnDef,
 } from "@/components/costum/table/CDataTable";
@@ -173,7 +174,7 @@ function useDeleteSubjectMutation(school_id: string) {
 /* ================= Page (TABLE) ================= */
 type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
-const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
+const SchoolSubject: React.FC<Props> = ({ showBack = false, backTo }) => {
   const navigate = useNavigate();
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
@@ -460,12 +461,12 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
               renderCard={(r) => (
                 <div
                   className={cn(
-                    "rounded-xl border p-4 space-y-3 cursor-pointer",
-                    "transition-all duration-150 transform",
-                    "hover:-translate-y-1 hover:border-primary/40 hover:bg-accent/10 hover:shadow-sm"
+                    "rounded-xl border p-4 space-y-3 bg-card",
+                    cardHover
                   )}
                   onClick={() => navigate(`${r.id}`)}
                 >
+
 
                   {/* Header + Status */}
                   <div className="flex items-center justify-between">
@@ -525,4 +526,4 @@ const SchoolSubjectTable: React.FC<Props> = ({ showBack = false, backTo }) => {
   );
 };
 
-export default SchoolSubjectTable;
+export default SchoolSubject;

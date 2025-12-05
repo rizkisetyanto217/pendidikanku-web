@@ -14,6 +14,7 @@ import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayou
 
 /* DataTable */
 import {
+  cardHover,
   CDataTable as DataTable,
   type ColumnDef,
   type ViewMode,
@@ -296,12 +297,12 @@ const SchoolClassParent: React.FC = () => {
             renderCard={(r) => (
               <div
                 className={cn(
-                  "rounded-xl border p-4 space-y-3 cursor-pointer",
-                  "transition-all duration-150 transform",
-                  "hover:-translate-y-1 hover:border-primary/40 hover:bg-accent/10 hover:shadow-sm"
+                  "rounded-xl border p-4 space-y-3 bg-card",
+                  cardHover
                 )}
                 onClick={() => navigate(`${r.id}`)}
               >
+
                 <div className="font-semibold">{r.name}</div>
                 <div className="text-xs text-muted-foreground">Slug: {r.slug}</div>
 

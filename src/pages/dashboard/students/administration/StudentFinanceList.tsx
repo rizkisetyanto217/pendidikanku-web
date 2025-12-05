@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+import { cardHover } from "@/components/costum/table/CDataTable";
 
 /* ---------------- Types ---------------- */
 type BillItem = {
@@ -178,11 +179,7 @@ export default function StudentListFinance({
                   return (
                     <div
                       key={b.id}
-                      className="
-                          rounded-lg border bg-card p-3 md:p-4 flex items-start justify-between gap-3
-                          transition-all duration-200 cursor-pointer
-                          hover:bg-accent/40 hover:-translate-y-1 hover:shadow-md
-                        "
+                      className={`rounded-lg border bg-card p-3 md:p-4 flex items-start justify-between gap-3 ${cardHover}`}
                     >
                       <div className="min-w-0">
                         <div className="font-semibold">{b.title}</div>

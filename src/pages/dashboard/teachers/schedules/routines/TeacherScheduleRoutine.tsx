@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+
 import {
   Dialog,
   DialogContent,
@@ -35,6 +35,8 @@ import { Separator } from "@/components/ui/separator";
 import EditScheduleDialog from "@/pages/dashboard/components/calender/components/EditSchedule";
 import type { ScheduleRow } from "@/pages/dashboard/components/calender/types/types";
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+import { cardHover } from "@/components/costum/table/CDataTable";
+import { CSegmentedTabs, type SegmentedTabItem } from "@/components/costum/common/CSegmentedTabs";
 
 /* =========================
    Types untuk Jadwal Rutin
@@ -303,6 +305,12 @@ function EditRoutineDialog({
   );
 }
 
+const TAB_ITEMS: SegmentedTabItem[] = [
+  { value: "routine", label: "Rutin" },
+  { value: "once", label: "Sekali / Acara" },
+];
+
+
 /* =========================
    Board Rutin (3 kolom, hide empty days)
 ========================= */
@@ -372,11 +380,8 @@ function RoutineBoard({
         const isToday = d === todayIdx;
         return (
           <div
-            key={d}
-            className={[
-              "rounded-xl border bg-card text-card-foreground transition-shadow",
-              isToday ? "ring-2 ring-primary/40 bg-primary/5" : "",
-            ].join(" ")}
+            className={`rounded-lg border p-2 bg-card ${cardHover} ${isToday ? "ring-2 ring-primary/40 bg-primary/5" : ""
+              }`}
           >
             <div className="p-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -398,11 +403,12 @@ function RoutineBoard({
                   key={it.id}
                   onClick={() => onView(it)}
                   className={[
-                    "rounded-lg border p-2 bg-background cursor-pointer",
+                    "rounded-lg border p-2 bg-background cursor-pointer cardHover",
                     it.active === false ? "opacity-60" : "",
                     isToday ? "border-primary/50" : "",
                   ].join(" ")}
                 >
+
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary" className="gap-1">
                       <Clock size={12} />
@@ -513,11 +519,8 @@ function OnceList({
             const today = isSameDay(r.date);
             return (
               <div
-                key={r.id}
-                className={[
-                  "rounded-lg border p-3 bg-background",
-                  today ? "border-primary/60 bg-primary/5" : "",
-                ].join(" ")}
+                className={`rounded-xl border p-3 bg-card ${cardHover} ${today ? "ring-2 ring-primary/40 bg-primary/5" : ""
+                  }`}
               >
                 <div className="flex items-center gap-2">
                   <Badge variant="secondary" className="capitalize">
@@ -718,40 +721,38 @@ export default function TeacherScheduleRoutine({
           <span className="font-semibold text-base">Jadwal Rutin</span>
         </div>
 
-        {/* Tabs (2 saja) */}
-        <Tabs
+        {/* Segmented Tabs */}
+        <CSegmentedTabs
           value={tab}
-          onValueChange={(v) => setTab(v as any)}
-          className="w-full"
-        >
-          <TabsList className="w-fit flex-wrap">
-            <TabsTrigger value="routine">Rutin (Mingguan)</TabsTrigger>
-            <TabsTrigger value="once">Sekali / Acara</TabsTrigger>
-          </TabsList>
+          onValueChange={(v) => setTab(v as "routine" | "once")}
+          tabs={TAB_ITEMS}
+          className="mt-2"
+        />
 
-          {/* Rutin */}
-          <TabsContent value="routine" className="mt-4">
-            <RoutineBoard
-              data={routineQ.data ?? []}
-              onAdd={onAddRoutine}
-              onEdit={(it) => setEditingRoutine(it)}
-              onDelete={(id) => routineDelete.mutate(id)}
-              deleting={routineDelete.isPending}
-              onView={(it) =>
-                navigate(`${it.id}`, {
-                  state: { routine: it },
-                })
-              }
-            />
-            <div className="mt-3">
-              <Button onClick={() => onAddRoutine()}>
-                <Plus className="mr-2 h-4 w-4" /> Tambah Jadwal Rutin
-              </Button>
-            </div>
-          </TabsContent>
+        {/* Content */}
+        <div className="mt-4">
+          {tab === "routine" ? (
+            <>
+              <RoutineBoard
+                data={routineQ.data ?? []}
+                onAdd={onAddRoutine}
+                onEdit={(it) => setEditingRoutine(it)}
+                onDelete={(id) => routineDelete.mutate(id)}
+                deleting={routineDelete.isPending}
+                onView={(it) =>
+                  navigate(`${it.id}`, {
+                    state: { routine: it },
+                  })
+                }
+              />
 
-          {/* Sekali / Acara */}
-          <TabsContent value="once" className="mt-4">
+              <div className="mt-3">
+                <Button onClick={() => onAddRoutine()}>
+                  <Plus className="mr-2 h-4 w-4" /> Tambah Jadwal Rutin
+                </Button>
+              </div>
+            </>
+          ) : (
             <OnceList
               data={onceQ.data ?? []}
               loading={onceQ.isLoading}
@@ -760,49 +761,50 @@ export default function TeacherScheduleRoutine({
               onDelete={(id) => onceDelete.mutate(id)}
               deleting={onceDelete.isPending}
             />
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
+
+
+        {/* Dialog Sekali / Acara */}
+        {editing && (
+          <EditScheduleDialog
+            value={editing}
+            onClose={() => setEditing(null)}
+            onSubmit={(v) => {
+              if (!v.title?.trim()) return;
+              if (v.id) {
+                onceUpdate.mutate(v, { onSuccess: () => setEditing(null) });
+              } else {
+                const { id, ...payload } = v;
+                onceCreate.mutate(payload, {
+                  onSuccess: () => setEditing(null),
+                });
+              }
+            }}
+          />
+        )}
+
+        {/* Dialog Rutin */}
+        {editingRoutine && (
+          <EditRoutineDialog
+            value={editingRoutine}
+            onClose={() => setEditingRoutine(null)}
+            onSubmit={(v) => {
+              if (!v.title.trim()) return;
+              if (v.id) {
+                routineUpdate.mutate(v, {
+                  onSuccess: () => setEditingRoutine(null),
+                });
+              } else {
+                const { id, ...payload } = v as RoutineItem & { id: string };
+                routineCreate.mutate(payload, {
+                  onSuccess: () => setEditingRoutine(null),
+                });
+              }
+            }}
+          />
+        )}
       </div>
-
-      {/* Dialog Sekali / Acara */}
-      {editing && (
-        <EditScheduleDialog
-          value={editing}
-          onClose={() => setEditing(null)}
-          onSubmit={(v) => {
-            if (!v.title?.trim()) return;
-            if (v.id) {
-              onceUpdate.mutate(v, { onSuccess: () => setEditing(null) });
-            } else {
-              const { id, ...payload } = v;
-              onceCreate.mutate(payload, {
-                onSuccess: () => setEditing(null),
-              });
-            }
-          }}
-        />
-      )}
-
-      {/* Dialog Rutin */}
-      {editingRoutine && (
-        <EditRoutineDialog
-          value={editingRoutine}
-          onClose={() => setEditingRoutine(null)}
-          onSubmit={(v) => {
-            if (!v.title.trim()) return;
-            if (v.id) {
-              routineUpdate.mutate(v, {
-                onSuccess: () => setEditingRoutine(null),
-              });
-            } else {
-              const { id, ...payload } = v as RoutineItem & { id: string };
-              routineCreate.mutate(payload, {
-                onSuccess: () => setEditingRoutine(null),
-              });
-            }
-          }}
-        />
-      )}
     </div>
   );
 }

@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
+import { cardHover } from "@/components/costum/table/CDataTable";
 
 /* ============================================
    Types
@@ -313,12 +314,9 @@ export default function StudentAdministrationReEnrollment({
             return (
               <Card
                 key={item.id}
-                className="
-                    border-muted bg-background/80
-                    hover:bg-accent/40 hover:-translate-y-1 hover:shadow-md
-                    transition-all duration-200 cursor-pointer
-                  "
+                className={`border-muted bg-background/80 transition-all duration-200 ${cardHover}`}
               >
+
                 <CardHeader className="flex flex-row items-start justify-between gap-3 pb-3">
                   <div className="space-y-1">
                     <div className="flex flex-wrap items-center gap-2">

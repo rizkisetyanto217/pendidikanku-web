@@ -3,11 +3,9 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
-  CalendarDays,
   ChevronLeft,
   ChevronRight,
   ArrowLeft,
-  Rows3,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -149,12 +147,10 @@ const TAB_ITEMS: SegmentedTabItem[] = [
   {
     value: "calendar",
     label: "Kalender",
-    icon: CalendarDays,
   },
   {
     value: "list",
     label: "List",
-    icon: Rows3,
   },
 ];
 
@@ -355,7 +351,7 @@ export default function TeacherScheduleAgenda({
               setSelectedDay={setSelectedDay}
               // klik agenda di kalender → detail
               onEdit={(row) => goToDetail(row)}
-              // ❌ tidak ada onAddNew/onDelete di sini, karena jadwal dari sistem akademik / attendance
+            // tidak ada onAddNew/onDelete di sini, karena jadwal dari sistem akademik / attendance
             />
           ) : (
             <ScheduleList

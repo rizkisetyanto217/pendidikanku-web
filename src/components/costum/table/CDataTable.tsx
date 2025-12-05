@@ -786,5 +786,12 @@ function safeLSSet(key: string, value: string) {
   } catch { }
 }
 
+/* EXPORT HOVER STYLE AGAR BISA DIPAKAI DI HALAMAN LAIN */
+export const cardHover =
+  "transition-all duration-200 hover:bg-accent/40 hover:shadow-md hover:-translate-y-1 cursor-pointer";
+
+export const rowHover =
+  "transition-all duration-200 hover:bg-accent/20 cursor-pointer";
+
 /* Re-export */
 export { CDataTable as DataTable };

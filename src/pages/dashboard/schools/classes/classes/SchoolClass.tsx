@@ -14,6 +14,7 @@ import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayou
 
 /* DataTable */
 import {
+  cardHover,
   CDataTable as DataTable,
   type ColumnDef,
 } from "@/components/costum/table/CDataTable";
@@ -386,17 +387,14 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
             renderCard={(r) => (
               <div
                 className={cn(
-                  "p-4 border rounded-xl space-y-3 cursor-pointer",
-                  "transition-all duration-150 transform",
-                  "hover:-translate-y-1 hover:border-primary/40 hover:bg-accent/10 hover:shadow-sm"
+                  "p-4 border rounded-xl space-y-3 bg-card",
+                  cardHover
                 )}
                 onClick={() => navigate(`${r.id}`)}
               >
                 <div className="font-semibold">{r.name}</div>
 
-                <div className="text-xs text-muted-foreground">
-                  Slug: {r.slug}
-                </div>
+                <div className="text-xs text-muted-foreground">Slug: {r.slug}</div>
 
                 <div className="grid grid-cols-3 gap-2 text-sm">
                   <div className="border rounded p-2">
@@ -429,6 +427,7 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
                   </div>
                 </div>
 
+                {/* Actions */}
                 <div
                   className="flex justify-end"
                   onClick={(e) => e.stopPropagation()}
@@ -444,6 +443,7 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
                 </div>
               </div>
             )}
+
           />
 
           {/* Footer pagination */}

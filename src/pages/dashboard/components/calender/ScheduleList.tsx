@@ -15,6 +15,7 @@ import { pad2, fmtFullDate } from "./types/types";
 import type { ScheduleRow } from "./types/types";
 
 import { CRowActions } from "@/components/costum/table/CRowAction";
+import { cardHover } from "@/components/costum/table/CDataTable";
 
 type Props = {
   data: ScheduleRow[];
@@ -245,12 +246,13 @@ export default function ScheduleList({
                           isToday
                             ? "before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-primary/70"
                             : "",
-                          readOnly ? "" : "hover:bg-muted/50 cursor-pointer",
+                          !readOnly ? cardHover : "",
                         ].join(" ")}
                         onClick={() =>
                           !readOnly && !isBusy && onEdit ? onEdit(s) : undefined
                         }
                       >
+
                         <div className="flex items-start gap-3">
                           <div className="w-16 shrink-0 text-left">
                             <div className="text-[11px]">{s.time}</div>

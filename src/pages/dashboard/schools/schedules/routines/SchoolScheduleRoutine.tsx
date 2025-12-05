@@ -22,7 +22,6 @@ import {
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -45,6 +44,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 import EditScheduleDialog from "@/pages/dashboard/components/calender/components/EditSchedule";
 import type { ScheduleRow } from "@/pages/dashboard/components/calender/types/types";
+import { CSegmentedTabs } from "@/components/costum/common/CSegmentedTabs";
 
 /* =====================================================
    Tipe & Dummy Data Model (Admin pegang semua kelas)
@@ -1212,51 +1212,57 @@ export default function SchoolScheduleRoutine({
         {/* Stats */}
         <QuickStats routines={filteredRoutines} onces={filteredOnce} />
 
-        {/* Tabs */}
-        <Tabs
+        {/* ==== TABS (CSegmentedTabs Baru) ==== */}
+        <CSegmentedTabs
           value={tab}
           onValueChange={(v) => setTab(v as any)}
-          className="w-full">
-          <TabsList className="w-fit flex-wrap">
-            <TabsTrigger value="calendar">Kalender</TabsTrigger>
-            <TabsTrigger value="routine">Rutin (Mingguan)</TabsTrigger>
-            <TabsTrigger value="once">Sekali / Acara</TabsTrigger>
-          </TabsList>
+          tabs={[
+            { value: "calendar", label: "Kalender" },
+            { value: "routine", label: "Rutin (Mingguan)" },
+            { value: "once", label: "Sekali / Acara" },
+          ]}
+          className="w-full md:w-fit"
+        />
 
-          {/* Kalender */}
-          <TabsContent value="calendar" className="mt-4">
-            {view === "calendar" ? (
-              <SimpleWeekCalendar
-                routines={filteredRoutines}
-                onces={filteredOnce}
-                onClickItem={onCalendarClickItem}
-              />
-            ) : (
-              <div className="grid md:grid-cols-2 gap-3">
-                <RoutineBoardAdmin
-                  data={filteredRoutines}
-                  checked={checkedRoutine}
-                  setChecked={setCheckedRoutine}
-                  onAdd={(preset) => onAddRoutine(preset)}
-                  onEdit={(it) => setEditingRoutine(it)}
-                  onBulkDelete={(ids) => routineBulkDelete.mutate(ids)}
-                  deleting={routineBulkDelete.isPending}
-                />
-                <OnceListAdmin
-                  data={filteredOnce}
-                  checked={checkedOnce}
-                  setChecked={setCheckedOnce}
-                  onAdd={onAddOnce}
-                  onEdit={(row) => setEditingOnce(row)}
-                  onBulkDelete={(ids) => onceBulkDelete.mutate(ids)}
-                  deleting={onceBulkDelete.isPending}
-                />
-              </div>
-            )}
-          </TabsContent>
+        {/* ==== TABS CONTENT ==== */}
+        <div className="mt-4">
 
-          {/* Rutin */}
-          <TabsContent value="routine" className="mt-4">
+          {/* ==== Kalender ==== */}
+          {tab === "calendar" && (
+            <>
+              {view === "calendar" ? (
+                <SimpleWeekCalendar
+                  routines={filteredRoutines}
+                  onces={filteredOnce}
+                  onClickItem={onCalendarClickItem}
+                />
+              ) : (
+                <div className="grid md:grid-cols-2 gap-3">
+                  <RoutineBoardAdmin
+                    data={filteredRoutines}
+                    checked={checkedRoutine}
+                    setChecked={setCheckedRoutine}
+                    onAdd={(preset) => onAddRoutine(preset)}
+                    onEdit={(it) => setEditingRoutine(it)}
+                    onBulkDelete={(ids) => routineBulkDelete.mutate(ids)}
+                    deleting={routineBulkDelete.isPending}
+                  />
+                  <OnceListAdmin
+                    data={filteredOnce}
+                    checked={checkedOnce}
+                    setChecked={setCheckedOnce}
+                    onAdd={onAddOnce}
+                    onEdit={(row) => setEditingOnce(row)}
+                    onBulkDelete={(ids) => onceBulkDelete.mutate(ids)}
+                    deleting={onceBulkDelete.isPending}
+                  />
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ==== Rutin ==== */}
+          {tab === "routine" && (
             <RoutineBoardAdmin
               data={filteredRoutines}
               checked={checkedRoutine}
@@ -1266,10 +1272,10 @@ export default function SchoolScheduleRoutine({
               onBulkDelete={(ids) => routineBulkDelete.mutate(ids)}
               deleting={routineBulkDelete.isPending}
             />
-          </TabsContent>
+          )}
 
-          {/* Once / Acara */}
-          <TabsContent value="once" className="mt-4">
+          {/* ==== Once / Acara ==== */}
+          {tab === "once" && (
             <OnceListAdmin
               data={filteredOnce}
               checked={checkedOnce}
@@ -1279,49 +1285,50 @@ export default function SchoolScheduleRoutine({
               onBulkDelete={(ids) => onceBulkDelete.mutate(ids)}
               deleting={onceBulkDelete.isPending}
             />
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
+
+
+        {/* Dialog Once */}
+        {editingOnce && (
+          <EditScheduleDialog
+            value={editingOnce}
+            onClose={() => setEditingOnce(null)}
+            onSubmit={(v) => {
+              if (!v.title?.trim()) return;
+              if (v.id) {
+                onceUpdate.mutate(v, { onSuccess: () => setEditingOnce(null) });
+              } else {
+                const { id, ...payload } = v;
+                onceCreate.mutate(payload, {
+                  onSuccess: () => setEditingOnce(null),
+                });
+              }
+            }}
+          />
+        )}
+
+        {/* Dialog Rutin */}
+        {editingRoutine && (
+          <EditRoutineDialog
+            value={editingRoutine}
+            onClose={() => setEditingRoutine(null)}
+            onSubmit={(v) => {
+              if (!v.title.trim()) return;
+              if (v.id) {
+                routineUpdate.mutate(v, {
+                  onSuccess: () => setEditingRoutine(null),
+                });
+              } else {
+                const { id, ...payload } = v as RoutineItem & { id: string };
+                routineCreate.mutate(payload, {
+                  onSuccess: () => setEditingRoutine(null),
+                });
+              }
+            }}
+          />
+        )}
       </div>
-
-      {/* Dialog Once */}
-      {editingOnce && (
-        <EditScheduleDialog
-          value={editingOnce}
-          onClose={() => setEditingOnce(null)}
-          onSubmit={(v) => {
-            if (!v.title?.trim()) return;
-            if (v.id) {
-              onceUpdate.mutate(v, { onSuccess: () => setEditingOnce(null) });
-            } else {
-              const { id, ...payload } = v;
-              onceCreate.mutate(payload, {
-                onSuccess: () => setEditingOnce(null),
-              });
-            }
-          }}
-        />
-      )}
-
-      {/* Dialog Rutin */}
-      {editingRoutine && (
-        <EditRoutineDialog
-          value={editingRoutine}
-          onClose={() => setEditingRoutine(null)}
-          onSubmit={(v) => {
-            if (!v.title.trim()) return;
-            if (v.id) {
-              routineUpdate.mutate(v, {
-                onSuccess: () => setEditingRoutine(null),
-              });
-            } else {
-              const { id, ...payload } = v as RoutineItem & { id: string };
-              routineCreate.mutate(payload, {
-                onSuccess: () => setEditingRoutine(null),
-              });
-            }
-          }}
-        />
-      )}
     </div>
   );
 }

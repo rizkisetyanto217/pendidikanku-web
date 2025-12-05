@@ -27,6 +27,7 @@ import axios, { getAccessToken } from "@/lib/axios";
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
 import CMenuSearch from "@/components/costum/common/CMenuSearch";
+import { cardHover } from "@/components/costum/table/CDataTable";
 
 /* ==========================================================
    Types API
@@ -313,18 +314,8 @@ function useFilters(rows: SectionRow[]) {
 function SectionCard({ s }: { s: SectionRow }) {
   return (
     <Card
-      className="
-        p-4 
-        border 
-        transition-all duration-150 
-        cursor-pointer
-        hover:bg-primary/5 
-        hover:border-primary 
-        hover:shadow-sm
-        hover:-translate-y-1
-      "
+      className={`p-4 border rounded-xl bg-card ${cardHover}`}
     >
-
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
