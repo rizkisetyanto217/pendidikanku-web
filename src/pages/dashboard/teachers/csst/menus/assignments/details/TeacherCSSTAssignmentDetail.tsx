@@ -35,6 +35,7 @@ import {
 
 /* Reuse type dari list (supaya konsisten) */
 import type { AssessmentItem } from "../TeacherCSSTAssignment";
+import CBadgeAssignment from "@/components/costum/common/badges/CBadgeAssignment";
 
 /* =======================
    Types
@@ -111,47 +112,6 @@ function formatDurationSec(sec?: number | null) {
   if (!sec || sec <= 0) return "-";
   const minutes = Math.round(sec / 60);
   return `${minutes} menit`;
-}
-
-function renderStatusBadge(status: DummyStudentProgressStatus) {
-  switch (status) {
-    case "not_started":
-      return (
-        <Badge
-          variant="outline"
-          className="border-muted-foreground/40 text-muted-foreground text-[10px]"
-        >
-          Belum mulai
-        </Badge>
-      );
-    case "in_progress":
-      return (
-        <Badge
-          variant="outline"
-          className="border-blue-400/60 bg-blue-500/5 text-blue-600 dark:text-blue-300 text-[10px]"
-        >
-          Sedang dikerjakan
-        </Badge>
-      );
-    case "submitted":
-      return (
-        <Badge
-          variant="outline"
-          className="border-amber-400/60 bg-amber-500/5 text-amber-600 dark:text-amber-300 text-[10px]"
-        >
-          Sudah dikumpulkan
-        </Badge>
-      );
-    case "graded":
-      return (
-        <Badge
-          variant="outline"
-          className="border-emerald-500/60 bg-emerald-500/5 text-emerald-600 dark:text-emerald-300 text-[10px]"
-        >
-          Sudah dinilai
-        </Badge>
-      );
-  }
 }
 
 /* =======================
@@ -320,14 +280,6 @@ export default function TeacherCSSTAssessmentDetail() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* kembali ke daftar tugas (pakai relative supaya ikut route :csstId/tugas) */}
-          <Button variant="outline" size="sm" asChild>
-            <Link to="..">
-              <ArrowLeft className="mr-1 h-3 w-3" />
-              Kembali ke daftar
-            </Link>
-          </Button>
-
           <Button
             variant="outline"
             size="sm"
@@ -794,7 +746,7 @@ export default function TeacherCSSTAssessmentDetail() {
                         <TableCell>{s.name}</TableCell>
                         <TableCell>{s.nis}</TableCell>
                         <TableCell className="text-center">
-                          {renderStatusBadge(s.status)}
+                          <CBadgeAssignment status={s.status} />
                         </TableCell>
                         <TableCell className="text-center">
                           {s.submitted_at

@@ -26,12 +26,9 @@ export function CSegmentedTabs({
     <Tabs value={value} onValueChange={onValueChange}>
       <TabsList
         className={cn(
-          // sama seperti student progress
+          "tabs-list",
           "flex w-full md:inline-flex md:w-auto items-center gap-1",
-          "h-9 rounded-lg p-1",
-          "bg-[#F1ECE3] dark:bg-[#3a312b]/80", // light & dark bg
-          "text-muted-foreground text-sm",
-          "transition-none",
+          "h-9 rounded-lg p-1 transition-none",
           className
         )}
       >
@@ -42,15 +39,9 @@ export function CSegmentedTabs({
               key={tab.value}
               value={tab.value}
               className={cn(
-                // ukuran mengikuti student progress
+                "tabs-trigger",
                 "flex-1 md:flex-none px-3 py-1.5 text-sm",
-                "rounded-md",
-                "transition-none",
-                "bg-transparent hover:bg-transparent active:bg-transparent",
-                "focus-visible:ring-0 focus-visible:ring-offset-0",
-
-                // ACTIVE STATE
-                "data-[state=active]:bg-emerald-600 data-[state=active]:text-white"
+                Icon ? "flex items-center gap-1" : ""
               )}
             >
               {Icon && <Icon className="h-4 w-4" />}
@@ -60,5 +51,6 @@ export function CSegmentedTabs({
         })}
       </TabsList>
     </Tabs>
+
   );
 }

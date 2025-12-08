@@ -108,9 +108,10 @@
   }
 
   .dark {
-    --tabs-bg: var(--tabs-bg-dark);
+    --tabs-bg: 25 18% 20%;
+    /* #3a312b */
     --tabs-active-bg: 142 72% 45%;
-    /* emerald brighter a bit */
+    /* emerald brighter */
     --tabs-active-text: 0 0% 100%;
 
     --paid-text: var(--paid-text-dark);
@@ -425,18 +426,88 @@ html {
 /* =============================================== */
 
 @layer utilities {
+  /* ========================= */
+  /*   BADGE ASSIGNMENT STATUS */
+  /* ========================= */
+
+  .badge-assignment-not-started {
+    @apply text-[10px];
+    border-color: hsl(0 84% 60% / 0.6);
+    /* red-400/60 */
+    background-color: hsl(0 84% 60% / 0.05);
+    /* red-500/5 */
+    color: hsl(0 84% 60%);
+    /* red-600 */
+  }
+
+  .dark .badge-assignment-not-started {
+    color: hsl(0 72% 80%);
+    /* red-300 */
+  }
+
+  /* In Progress — Blue */
+  .badge-assignment-in-progress {
+    @apply text-[10px];
+    border-color: hsl(213 94% 68% / 0.6);
+    /* blue-400 */
+    background-color: hsl(213 94% 68% / 0.05);
+    /* blue-500/5 */
+    color: hsl(213 94% 48%);
+    /* blue-600 */
+  }
+
+  .dark .badge-assignment-in-progress {
+    color: hsl(213 94% 82%);
+    /* blue-300 */
+  }
+
+  /* Submitted — Amber */
+  .badge-assignment-submitted {
+    @apply text-[10px];
+    border-color: hsl(48 96% 53% / 0.6);
+    /* amber-400 */
+    background-color: hsl(48 96% 53% / 0.05);
+    /* amber-500/5 */
+    color: hsl(48 96% 40%);
+    /* amber-600 */
+  }
+
+  .dark .badge-assignment-submitted {
+    color: hsl(48 96% 72%);
+    /* amber-300 */
+  }
+
+  /* Graded — Emerald */
+  .badge-assignment-graded {
+    @apply text-[10px];
+    border-color: hsl(142 72% 45% / 0.6);
+    /* emerald-500 */
+    background-color: hsl(142 72% 45% / 0.05);
+    /* emerald-500/5 */
+    color: hsl(142 72% 35%);
+    /* emerald-600 */
+  }
+
+  .dark .badge-assignment-graded {
+    color: hsl(142 72% 78%);
+    /* emerald-300 */
+  }
+
+
+  /* Tabs wrapper background */
   .tabs-list {
-    @apply flex w-full md:inline-flex md:w-auto items-center gap-1 h-9 rounded-lg p-1 text-sm transition-none;
-    background-color: hsl(var(--tabs-bg));
+    background-color: hsl(var(--tabs-bg)) !important;
   }
 
+  /* Tab button */
   .tabs-trigger {
-    @apply flex-1 md:flex-none px-3 py-1.5 text-sm rounded-md transition-none bg-transparent hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-muted-foreground;
+    @apply flex items-center justify-center rounded-md px-3 py-1.5 text-sm transition-none bg-transparent hover:bg-transparent active:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0;
   }
 
+  /* Active state */
   .tabs-trigger[data-state="active"] {
-    background-color: hsl(var(--tabs-active-bg));
-    color: hsl(var(--tabs-active-text));
+    background-color: hsl(var(--tabs-active-bg)) !important;
+    color: hsl(var(--tabs-active-text)) !important;
   }
 
   .badge-paid {

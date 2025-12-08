@@ -26,6 +26,8 @@ import {
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 import type { AxiosError } from "axios";
 import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
+import { cardHover } from "@/components/costum/table/CDataTable";
+import { cn } from "@/lib/utils";
 
 /* ========= Types dari API /u/class-section-subject-teachers/list ========= */
 
@@ -432,7 +434,7 @@ const TeacherCSSTDetail: React.FC = () => {
           <div className="grid gap-3 md:grid-cols-2">
             {/* Absensi hari ini - wide card */}
             <Card
-              className="cursor-pointer transition hover:shadow-md"
+              className={cn("cursor-pointer bg-card", cardHover)}
               onClick={() => navigate("")}
             >
               <CardContent className="p-4 md:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -458,12 +460,8 @@ const TeacherCSSTDetail: React.FC = () => {
 
             {/* Ruangan - wide card */}
             <Card
-              className="cursor-pointer transition hover:shadow-md"
-              onClick={() => {
-                if (roomView?.joinUrl) {
-                  window.open(roomView.joinUrl, "_blank");
-                }
-              }}
+              className={cn("cursor-pointer bg-card", cardHover)}
+              onClick={() => navigate("")}
             >
               <CardContent className="p-4 md:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <div className="space-y-1">
@@ -491,7 +489,7 @@ const TeacherCSSTDetail: React.FC = () => {
           <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {/* Profil Murid */}
             <Card
-              className="cursor-pointer transition hover:shadow-md"
+              className={cn("cursor-pointer bg-card", cardHover)}
               onClick={() => navigate("absensi")}
             >
               <CardContent className="p-4 flex items-center justify-between">
@@ -508,7 +506,7 @@ const TeacherCSSTDetail: React.FC = () => {
 
             {/* Laporan Kehadiran / Harian */}
             <Card
-              className="cursor-pointer transition hover:shadow-md"
+              className={cn("cursor-pointer bg-card", cardHover)}
               onClick={() => navigate("laporan-harian")}
             >
               <CardContent className="p-4 flex items-center justify-between">
@@ -525,7 +523,7 @@ const TeacherCSSTDetail: React.FC = () => {
 
             {/* Materi */}
             <Card
-              className="cursor-pointer transition hover:shadow-md"
+              className={cn("cursor-pointer bg-card", cardHover)}
               onClick={() => navigate("materi")}
             >
               <CardContent className="p-4 flex items-center justify-between">
@@ -542,7 +540,7 @@ const TeacherCSSTDetail: React.FC = () => {
 
             {/* Latihan */}
             <Card
-              className="cursor-pointer transition hover:shadow-md"
+              className={cn("cursor-pointer bg-card", cardHover)}
               onClick={() => navigate("tugas")}
             >
               <CardContent className="p-4 flex items-center justify-between">
@@ -561,7 +559,7 @@ const TeacherCSSTDetail: React.FC = () => {
 
             {/* Ujian */}
             <Card
-              className="cursor-pointer transition hover:shadow-md"
+              className={cn("cursor-pointer bg-card", cardHover)}
               onClick={() => navigate("ujian")}
             >
               <CardContent className="p-4 flex items-center justify-between">
@@ -580,7 +578,7 @@ const TeacherCSSTDetail: React.FC = () => {
 
             {/* Buku */}
             <Card
-              className="cursor-pointer transition hover:shadow-md"
+              className={cn("cursor-pointer bg-card", cardHover)}
               onClick={() => navigate("buku")}
             >
               <CardContent className="p-4 flex items-center justify-between">
@@ -597,7 +595,7 @@ const TeacherCSSTDetail: React.FC = () => {
 
             {/* Profil Mapel */}
             <Card
-              className="cursor-pointer transition hover:shadow-md"
+              className={cn("cursor-pointer bg-card", cardHover)}
               onClick={() => navigate("kelola-kelas")}
             >
               <CardContent className="p-4 flex items-center justify-between">
@@ -614,7 +612,7 @@ const TeacherCSSTDetail: React.FC = () => {
 
             {/* Grup WhatsApp */}
             <Card
-              className="cursor-pointer transition hover:shadow-md"
+              className={cn("cursor-pointer bg-card", cardHover)}
               onClick={() => window.open(whatsappGroupLink, "_blank")}
             >
               <CardContent className="p-4 flex items-center justify-between">
