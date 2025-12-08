@@ -7,7 +7,6 @@ import StudentDetailSchedule from "@/pages/dashboard/students/schedules/agendas/
 import StudentMenuGrids from "@/pages/dashboard/students/menus/StudentMenuGrids";
 import StudentClassesAssignment from "@/pages/dashboard/students/my-classes/csst/menus/assignments/StudentCSSTAssignment";
 import StudentFinance from "@/pages/dashboard/students/administration/StudentFinance";
-import StudentListFinance from "@/pages/dashboard/students/administration/StudentFinanceList";
 import StudentProgress from "@/pages/dashboard/students/classes/progress/StudentProgress";
 import StudentRaport from "@/pages/dashboard/students/classes/progress/raports/StudentProgressRaport";
 import StudentAbsence from "@/pages/dashboard/students/classes/progress/absences/StudentProgessAbsence";
@@ -72,7 +71,6 @@ export const StudentRoutes = (
         KEUANGAN / TAGIHAN
     ===================== */}
     <Route path="keuangan" element={<StudentFinance />} />
-    <Route path="keuangan-list" element={<StudentListFinance />} />
 
     {/* =====================
         PROFIL
@@ -152,7 +150,6 @@ export const StudentRoutes = (
       <Route path="pendaftaran" element={<StudentEnrollment />} />
       <Route path="daftar-ulang" element={<StudentReEnrollment />} />
       <Route path="keuangan" element={<StudentFinance />} />
-      <Route path="keuangan-list" element={<StudentListFinance />} />
     </Route>
 
     {/* ==================================================
@@ -212,7 +209,6 @@ export const StudentRoutes = (
       <Route path="pendaftaran" element={<StudentEnrollment showBack />} />
       <Route path="daftar-ulang" element={<StudentReEnrollment showBack />} />
       <Route path="keuangan" element={<StudentFinance showBack />} />
-      <Route path="keuangan-list" element={<StudentListFinance showBack />} />
     </Route>
   </Route>
 );

@@ -49,7 +49,7 @@ import {
   type ColumnDef,
 } from "@/components/costum/table/CDataTable";
 import { useNavigate } from "react-router-dom";
-import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
+import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
 
 /* utils */
 const fmtIDR = (n: number) =>

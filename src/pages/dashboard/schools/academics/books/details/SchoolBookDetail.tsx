@@ -162,56 +162,70 @@ export default function SchoolBookDetail() {
           </div>
 
           {/* Detail Buku */}
-          <Card>
-            <CardContent className="p-4 md:p-6 grid grid-cols-1 md:grid-cols-12 gap-6">
+          <Card className="border bg-card shadow-sm">
+            <CardContent className="p-4 md:p-6 grid grid-cols-1 md:grid-cols-12 gap-8">
+
               {/* Cover */}
-              <div className="md:col-span-4">
-                <div className="w-full aspect-[3/4] rounded-md overflow-hidden grid place-items-center bg-muted">
+              <div className="md:col-span-4 flex justify-center">
+                <div className="w-full max-w-xs aspect-[3/4] rounded-xl overflow-hidden bg-muted relative shadow-md">
                   {isLoading ? (
                     <Skeleton className="h-full w-full" />
                   ) : book?.books_image_url ? (
                     <img
                       src={book.books_image_url}
                       alt={book.books_title}
-                      className="w-full h-full object-cover"
+                      className="h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="flex flex-col items-center text-sm text-muted-foreground">
-                      <ImageOff size={18} />
-                      <span>Tidak ada cover</span>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground gap-2">
+                      <ImageOff size={30} />
+                      <span className="text-sm">Tidak ada cover</span>
                     </div>
                   )}
                 </div>
               </div>
 
               {/* Meta */}
-              <div className="md:col-span-8 space-y-4">
-                <InfoBlock label="Judul" value={book?.books_title ?? "—"} />
+              <div className="md:col-span-8 space-y-6">
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InfoBlock
-                    label="Penulis"
-                    value={book?.books_author ?? "—"}
-                  />
-                  <InfoBlock label="Slug" value={book?.books_slug ?? "—"} />
+                {/* Title Section */}
+                <div className="space-y-1">
+                  <h2 className="text-2xl font-bold tracking-tight">
+                    {book?.books_title ?? "—"}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Penulis: {book?.books_author ?? "Tidak diketahui"}
+                  </p>
                 </div>
 
-                {book?.books_url && (
-                  <a
-                    href={book.books_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-sm underline"
-                  >
-                    <ExternalLink size={14} /> Kunjungi URL Buku
-                  </a>
-                )}
+                <Separator />
 
+                {/* Other info */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <InfoBlock label="Slug" value={book?.books_slug ?? "—"} />
+                  <InfoBlock
+                    label="URL Buku"
+                    value={
+                      book?.books_url ? (
+                        <a
+                          href={book.books_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-2 text-primary hover:underline"
+                        >
+                          <ExternalLink size={14} /> Kunjungi Buku
+                        </a>
+                      ) : (
+                        "—"
+                      )
+                    }
+                  />
+                </div>
+
+                {/* Deskripsi */}
                 {book?.books_desc && (
-                  <div>
-                    <div className="text-sm text-muted-foreground mb-1">
-                      Deskripsi
-                    </div>
+                  <div className="space-y-2">
+                    <div className="text-sm text-muted-foreground">Deskripsi</div>
                     <p className="text-sm leading-relaxed">{book.books_desc}</p>
                   </div>
                 )}
@@ -229,28 +243,27 @@ export default function SchoolBookDetail() {
             <Separator />
             <CardContent className="p-4 md:p-6">
               {isLoading ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {Array.from({ length: 6 }).map((_, i) => (
                     <Skeleton key={i} className="h-7 w-40" />
                   ))}
                 </div>
               ) : !book ? (
-                <p className="text-sm text-muted-foreground">
-                  Buku tidak ditemukan.
-                </p>
+                <p className="text-sm text-muted-foreground">Buku tidak ditemukan.</p>
               ) : sectionsFlat.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   Belum terhubung ke kelas/section.
                 </p>
               ) : (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-3">
                   {sectionsFlat.map((s) => (
                     <Link
                       key={s.class_sections_id}
                       to={`${base}/sekolah/classes/${s.class_sections_id}`}
-                      className="px-3 py-1 rounded-full text-sm border hover:bg-muted"
+                      className="px-3 py-1.5 rounded-md text-sm bg-muted hover:bg-muted/70 
+                       border shadow-sm transition-all"
                     >
-                      {s.class_sections_name}
+                      📘 {s.class_sections_name}
                       {s.class_sections_code && ` (${s.class_sections_code})`}
                     </Link>
                   ))}
@@ -258,6 +271,7 @@ export default function SchoolBookDetail() {
               )}
             </CardContent>
           </Card>
+
         </div>
       </main>
     </div>

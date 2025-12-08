@@ -22,7 +22,7 @@ import {
 
 /* ✅ Current user context (ambil school_id dari token) */
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
+import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
 import CRowActions from "@/components/costum/table/CRowAction";
 import { cn } from "@/lib/utils";
 

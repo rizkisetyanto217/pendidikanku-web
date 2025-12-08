@@ -304,12 +304,6 @@ export const NAVS: NavDict = {
           path: "keuangan",
           label: "Keuangan",
         },
-        {
-          // kalau mau beda page list:
-          // -> /murid/keuangan/list
-          path: "keuangan-list",
-          label: "Keuangan List",
-        },
       ],
     },
 

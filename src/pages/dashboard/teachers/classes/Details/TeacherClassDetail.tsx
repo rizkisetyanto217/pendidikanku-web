@@ -19,7 +19,9 @@ import {
 
 /* Tambahan untuk breadcrumb sistem dashboard */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
-import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
+import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
+import { cardHover } from "@/components/costum/table/CDataTable";
+import { cn } from "@/lib/utils";
 
 /* ========== Types ========== */
 type AttendanceStatus = "hadir" | "sakit" | "izin" | "alpa" | "online";
@@ -210,16 +212,7 @@ export default function TeacherClassDetail() {
             <CardContent className="p-4">
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                 <Card
-                  className="
-                    p-4 
-                    border
-                    transition-all duration-150 
-                    cursor-pointer
-                    hover:bg-primary/5 
-                    hover:border-primary 
-                    hover:shadow-sm
-                    hover:-translate-y-1
-                  "
+                  className={cn("p-4 border cursor-pointer bg-card", cardHover)}
                   onClick={() => navigate("murid")}
                 >
                   <div className="text-xs text-muted-foreground flex items-center gap-2">
@@ -233,19 +226,9 @@ export default function TeacherClassDetail() {
                 </Card>
 
                 <Card
-                  className="
-                    p-4
-                    border
-                    transition-all duration-150 
-                    cursor-pointer
-                    hover:bg-primary/5 
-                    hover:border-primary 
-                    hover:shadow-sm
-                    hover:-translate-y-1
-                  "
+                  className={cn("p-4 border cursor-pointer bg-card", cardHover)}
                   onClick={() => window.open(whatsappClassGroupLink, "_blank")}
                 >
-
                   <div className="text-xs text-muted-foreground flex items-center gap-2">
                     <Users className="h-3 w-3 text-muted-foreground" />
                     <span>Grup WhatsApp Kelas</span>
@@ -258,16 +241,7 @@ export default function TeacherClassDetail() {
 
                 {/* === CARD RUANGAN === */}
                 <Card
-                  className="
-                    p-4
-                    border
-                    transition-all duration-150 
-                    cursor-pointer
-                    hover:bg-primary/5 
-                    hover:border-primary 
-                    hover:shadow-sm
-                    hover:-translate-y-1
-                  "
+                  className={cn("p-4 border cursor-pointer bg-card", cardHover)}
                   onClick={() => navigate("ruangan")}
                 >
                   <div className="text-xs text-muted-foreground flex items-center gap-2">
@@ -296,20 +270,13 @@ export default function TeacherClassDetail() {
                 {DUMMY_CSST.map((m) => (
                   <Card
                     key={m.id}
-                    className={`
-                      p-4 
-                      border
-                      transition-all duration-150  
-                      cursor-pointer
-                      hover:bg-primary/5 
-                      hover:border-primary 
-                      hover:shadow-sm
-                      hover:-translate-y-1 
-                      ${m.isActive ? "ring-1 ring-primary/30" : ""}
-                    `}
+                    className={cn(
+                      "p-4 border bg-card cursor-pointer",
+                      cardHover,
+                      m.isActive && "ring-1 ring-primary/30"
+                    )}
                     onClick={() => navigate(`csst/${m.id}`)}
                   >
-
                     <div className="flex items-start justify-between">
                       <div className="min-w-0">
                         <div className="text-sm font-semibold truncate">

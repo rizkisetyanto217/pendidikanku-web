@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 
 /* ✅ Breadcrumb header */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
-import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
+import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
 
 /* ========= Types dari API /u/class-sections/list?with_csst=true ========= */
 

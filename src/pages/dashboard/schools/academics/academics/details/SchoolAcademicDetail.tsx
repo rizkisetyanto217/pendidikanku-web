@@ -47,7 +47,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 /* === header layout hook === */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
-import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
+import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
 
 /* ===== Types dari API baru ===== */
 

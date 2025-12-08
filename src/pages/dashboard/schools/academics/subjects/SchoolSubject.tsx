@@ -31,7 +31,7 @@ import {
   type ColumnDef,
 } from "@/components/costum/table/CDataTable";
 
-import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
+import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
 import CRowActions from "@/components/costum/table/CRowAction";
 import { cn } from "@/lib/utils";
 

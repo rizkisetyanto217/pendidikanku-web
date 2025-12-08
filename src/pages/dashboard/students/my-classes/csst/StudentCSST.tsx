@@ -24,7 +24,7 @@ import {
 /* dashboard header */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 import type { AxiosError } from "axios";
-import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
+import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
 
 /* ========= Types dari API /u/class-section-subject-teachers/list ========= */
 

@@ -23,7 +23,7 @@ import {
 /* icons */
 import { Copy, Save, Globe2, Link as LinkIcon, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
+import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
 
 /* utils */
 const fmtIDR = (n: number) =>

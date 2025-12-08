@@ -14,7 +14,7 @@ import type {
   StudentClassEnrollmentRow,
   ClassSectionRow,
 } from "../StudentMyClass";
-import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
+import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
 
 // kalau API punya field group_url, kita tampung di sini
 type SectionWithMeta = ClassSectionRow & {

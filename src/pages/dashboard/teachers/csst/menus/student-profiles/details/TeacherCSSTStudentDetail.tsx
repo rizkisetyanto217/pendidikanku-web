@@ -22,7 +22,7 @@ import {
   Phone,
 } from "lucide-react";
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
-import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
+import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
 
 /* =========================================================
    TYPES — mirror kolom penting dari tabel (school_students + snapshots)

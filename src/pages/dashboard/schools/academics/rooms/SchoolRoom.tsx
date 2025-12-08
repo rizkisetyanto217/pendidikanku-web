@@ -30,7 +30,7 @@ import {
 
 
 import CRowActions from "@/components/costum/table/CRowAction";
-import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
+import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
 
 /* ===================== TYPES ===================== */
 export type Room = {

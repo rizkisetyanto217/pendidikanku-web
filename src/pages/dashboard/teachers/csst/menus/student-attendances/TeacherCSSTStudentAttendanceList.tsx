@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 import api from "@/lib/axios";
-import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
+import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
 
 import CRowActions from "@/components/costum/table/CRowAction";
 import CMenuSearch from "@/components/costum/common/CMenuSearch";

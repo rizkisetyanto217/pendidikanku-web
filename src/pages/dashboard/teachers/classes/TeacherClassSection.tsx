@@ -25,7 +25,7 @@ import axios, { getAccessToken } from "@/lib/axios";
 
 /* Tambahan untuk breadcrumb sistem dashboard */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
-import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
+import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
 import CMenuSearch from "@/components/costum/common/CMenuSearch";
 import { cardHover } from "@/components/costum/table/CDataTable";
 

@@ -15,17 +15,17 @@ import { Input } from "@/components/ui/input";
 /* Data fetching */
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/axios";
-import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
+import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
 
 /* ===== Helpers ===== */
 const dateLong = (iso?: string | null) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        weekday: "long",
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      })
+      weekday: "long",
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    })
     : "-";
 
 const mapEnrollmentToBadge = (

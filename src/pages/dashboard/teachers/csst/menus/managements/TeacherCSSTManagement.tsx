@@ -33,7 +33,7 @@ import ModalEditManagementClass from "@/pages/dashboard/teachers/csst/menus/mana
 import type { ClassInfo } from "@/pages/dashboard/teachers/csst/menus/managements/components/CTeacherModalEditManagementClass";
 
 import AddStudent from "@/pages/dashboard/teachers/csst/menus/managements/components/CTeacherAddStudent";
-import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
+import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
 
 const TeacherCSSTManagement = () => {
   const { className } = useParams();

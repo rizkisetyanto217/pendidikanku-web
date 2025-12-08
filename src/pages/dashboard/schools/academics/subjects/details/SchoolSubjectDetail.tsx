@@ -17,7 +17,7 @@ import {
   DataTable,
   type ColumnDef,
 } from "@/components/costum/table/CDataTable";
-import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
+import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
 
 /* ====== Types ====== */
 type SubjectStatus = "active" | "inactive";

@@ -24,7 +24,7 @@ import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayou
 
 /* 🔐 Context user dari simple-context (JWT) */
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import CBadgeStatus from "@/components/costum/common/CBadgeStatus";
+import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
 import CRowActions from "@/components/costum/table/CRowAction";
 
 /* ===================== Types ===================== */
