@@ -124,10 +124,10 @@ export default function TeacherCSSTMaterialForm() {
 
   const handleChange =
     (field: keyof FormValues) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      const value = e.target.value;
-      setForm((prev) => ({ ...prev, [field]: value }));
-    };
+      (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const value = e.target.value;
+        setForm((prev) => ({ ...prev, [field]: value }));
+      };
 
   const handleTypeChange = (value: string) => {
     setForm((prev) => ({
@@ -193,28 +193,28 @@ export default function TeacherCSSTMaterialForm() {
           m.id !== materialId
             ? m
             : {
-                ...m,
-                title: form.title.trim(),
-                type: form.type,
-                description: form.description.trim() || undefined,
-                content:
-                  form.type === "article"
-                    ? form.content.trim() || undefined
-                    : undefined,
-                url:
-                  form.type !== "article"
-                    ? form.url.trim() || undefined
-                    : undefined,
-                fileName:
-                  form.type === "file"
-                    ? form.fileName.trim() || undefined
-                    : undefined,
-                fileSize:
-                  form.type === "file"
-                    ? parsedFileSize ?? undefined
-                    : undefined,
-                updatedAt: nowISO,
-              }
+              ...m,
+              title: form.title.trim(),
+              type: form.type,
+              description: form.description.trim() || undefined,
+              content:
+                form.type === "article"
+                  ? form.content.trim() || undefined
+                  : undefined,
+              url:
+                form.type !== "article"
+                  ? form.url.trim() || undefined
+                  : undefined,
+              fileName:
+                form.type === "file"
+                  ? form.fileName.trim() || undefined
+                  : undefined,
+              fileSize:
+                form.type === "file"
+                  ? parsedFileSize ?? undefined
+                  : undefined,
+              updatedAt: nowISO,
+            }
         );
       }
 
@@ -269,7 +269,7 @@ export default function TeacherCSSTMaterialForm() {
     );
 
   return (
-    <div className="w-full bg-background text-foreground py-6">
+    <div className="w-full bg-background text-foreground">
       <main className="mx-auto space-y-6">
         {/* Header */}
         <div className="md:flex hidden items-center gap-3">
@@ -484,7 +484,7 @@ export default function TeacherCSSTMaterialForm() {
               Batal
             </Button>
             <Button type="submit" disabled={isBusy} className="min-w-[150px]">
-              {isEdit ? "Simpan Perubahan" : "Simpan"}
+              {isEdit ? "Simpan" : "Simpan"}
             </Button>
           </div>
         </form>

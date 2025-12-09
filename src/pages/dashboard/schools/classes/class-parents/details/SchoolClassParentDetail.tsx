@@ -505,7 +505,7 @@ const SchoolClassParentDetail: React.FC = () => {
 
   /* ========== Render utama ========== */
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Header lokal halaman */}
       <div className="flex items-center justify-between gap-3">
         <div className="md:flex hidden items-center gap-3">
@@ -517,7 +517,7 @@ const SchoolClassParentDetail: React.FC = () => {
             <ArrowLeft size={20} />
           </Button>
           <div>
-            <h1 className="font-semibold text-lg">
+            <h1 className="font-semibold md:text-xl text-lg">
               {parent.class_parent_name}
             </h1>
             <p className="text-xs text-muted-foreground">

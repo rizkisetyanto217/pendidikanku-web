@@ -16,7 +16,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 
-import { Separator } from "@/components/ui/separator";
+
 import {
   Dialog,
   DialogContent,
@@ -335,6 +335,19 @@ const StudentCSSTAssignment: React.FC<StudentClassesAssignmentProps> = ({
   const { setHeader } = useDashboardHeader();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  useEffect(() => {
+    setHeader({
+      title: "Tugas & Penilaian",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Mata Pelajaran Saya", href: "../mapel-saya" },
+        { label: "Detail Mapel", href: "../" },
+        { label: "Tugas" },
+      ],
+      showBack,
+    });
+  }, [setHeader, showBack]);
+
   // state untuk dialog pilih quiz
   const [startAssessment, setStartAssessment] =
     useState<StudentAssessmentItem | null>(null);
@@ -429,19 +442,6 @@ const StudentCSSTAssignment: React.FC<StudentClassesAssignmentProps> = ({
   const hasItems = filteredItems.length > 0;
   const startQuizzes = startAssessment?.quizzes ?? [];
 
-  useEffect(() => {
-    setHeader({
-      title: "Tugas & Penilaian",
-      breadcrumbs: [
-        { label: "Dashboard", href: "dashboard" },
-        { label: "Mata Pelajaran Saya", href: "../mapel-saya" },
-        { label: "Detail Mapel", href: "../" },
-        { label: "Tugas" },
-      ],
-      actions: null,
-    });
-  }, [setHeader]);
-
   const handlePageChange = (nextPage: number) => {
     if (!pagination) return;
     const p = Math.min(Math.max(1, nextPage), pagination.total_pages || 1);
@@ -529,8 +529,11 @@ const StudentCSSTAssignment: React.FC<StudentClassesAssignmentProps> = ({
     return (
       <div className="p-6 space-y-4">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-5 w-5" />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(-1)}>
+            <ArrowLeft size={20} />
           </Button>
           <div>
             <h1 className="text-lg font-semibold md:text-xl">
@@ -569,16 +572,18 @@ const StudentCSSTAssignment: React.FC<StudentClassesAssignmentProps> = ({
       <main className="w-full">
         <div className="mx-auto flex flex-col gap-4">
           {/* Top bar */}
-          <div className="flex items-center gap-3">
+          <div className="md:flex hidden items-center gap-3">
             {showBack && (
-              <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-                <ArrowLeft className="h-5 w-5" />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate(-1)}>
+                <ArrowLeft size={20} />
               </Button>
             )}
             <div className="space-y-0.5">
               <h1 className="text-lg font-semibold md:text-xl flex items-center gap-2">
-                <ClipboardList className="h-5 w-5 text-primary" />
-                <span>Tugas & Penilaian</span>
+                Tugas & Penilaian
               </h1>
               <p className="text-xs md:text-sm text-muted-foreground">
                 Daftar semua tugas yang terkait dengan mata pelajaran ini,
@@ -587,10 +592,9 @@ const StudentCSSTAssignment: React.FC<StudentClassesAssignmentProps> = ({
             </div>
           </div>
 
-          <Separator className="my-1" />
+
 
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            {/* ⬅️ Status Tabs menggunakan CSegmentedTabs */}
             <CSegmentedTabs
               value={statusTab}
               onValueChange={(v) => setStatusTab(v as "all" | "not_started" | "done")}

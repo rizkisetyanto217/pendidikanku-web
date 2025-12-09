@@ -4,7 +4,6 @@ import { useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "@/lib/axios";
-import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 /* lucide icons */
 import {
@@ -51,26 +50,62 @@ type Employment =
 
 interface TeacherSectionItem {
   class_section_id: string;
-  role: "homeroom" | "teacher" | "assistant";
+  role: "homeroom" | "teacher" | "assistant" | string;
   is_active: boolean;
+
   from?: string; // "YYYY-MM-DD"
   to?: string;
+
   class_section_name?: string;
   class_section_slug?: string;
+
   class_section_image_url?: string;
   class_section_image_object_key?: string;
+
+  class_section_class_parent_id?: string;
+  class_section_class_parent_name?: string;
+  class_section_class_parent_slug?: string;
+  class_section_class_parent_level?: number | null;
+
+  total_students?: number;
+  total_students_male?: number;
+  total_students_female?: number;
+  total_students_active?: number;
+  total_students_male_active?: number;
+  total_students_female_active?: number;
 }
 
 interface TeacherCSSTItem {
   csst_id: string;
   is_active: boolean;
+
+  csst_role?: "main" | "assistant" | string;
+
   from?: string;
   to?: string;
+
+  subject_id?: string;
+  class_subject_id?: string;
+
   subject_name?: string;
   subject_slug?: string;
+
   class_section_id?: string;
   class_section_name?: string;
   class_section_slug?: string;
+
+  quota_taken?: number;
+  total_attendance?: number;
+  total_assessments?: number;
+  total_students_passed?: number;
+  total_assessments_graded?: number;
+  total_assessments_ungraded?: number;
+}
+
+/* Sertifikat dari user_teacher */
+interface TeacherCertificateItem {
+  year?: number;
+  title?: string;
 }
 
 /* Detail teacher yang kita tampilkan (snapshot + profile ringkas) */
@@ -86,8 +121,8 @@ interface TeacherDetail {
   school_teacher_is_active: boolean;
 
   // Periode kerja
-  school_teacher_joined_at?: string | null; // YYYY-MM-DD
-  school_teacher_left_at?: string | null; // YYYY-MM-DD
+  school_teacher_joined_at?: string | null; // YYYY-MM-DD / ISO
+  school_teacher_left_at?: string | null; // YYYY-MM-DD / ISO
 
   // Verifikasi
   school_teacher_is_verified: boolean;
@@ -113,7 +148,7 @@ interface TeacherDetail {
   school_teacher_sections: TeacherSectionItem[];
   school_teacher_csst: TeacherCSSTItem[];
 
-  // ====== Tambahan dari user_profiles (opsional untuk tampilan) ======
+  // ====== Tambahan dari user_profiles / user_teacher ======
   profile_gender?: Gender | null;
   profile_phone?: string | null;
   profile_email?: string | null;
@@ -123,132 +158,30 @@ interface TeacherDetail {
   profile_linkedin_url?: string | null;
   profile_github_url?: string | null;
 
-  // Field populer lokal (untuk row "NIP", "Subject")
+  // Field populer (row "NIP", "Subject")
   nip?: string | null;
   default_subject?: string | null;
+
+  // Profil lengkap guru (user_teacher)
+  teacher_field?: string | null;
+  teacher_long_bio?: string | null;
+  teacher_greeting?: string | null;
+  teacher_education?: string | null;
+  teacher_activity?: string | null;
+  teacher_experience_years?: number | null;
+  teacher_location?: string | null;
+  teacher_city?: string | null;
+  teacher_specialties?: string[] | null;
+  teacher_certificates?: TeacherCertificateItem[] | null;
+  teacher_youtube_url?: string | null;
+  teacher_telegram_username?: string | null;
+
+  // Agregat
+  total_class_sections?: number | null;
+  total_csst?: number | null;
+  total_class_sections_active?: number | null;
+  total_csst_active?: number | null;
 }
-
-/* ================= Dummy 1 data (lengkap & konsisten dengan DB) ================= */
-const DUMMY_DETAIL: TeacherDetail = {
-  school_teacher_id: "3e5197e0-aaaa-4b2d-bb55-111122223333",
-  school_teacher_school_id: "0c864ac5-74f4-4a2a-9f1d-c88b7fb7ad12",
-
-  school_teacher_code: "TCH-2025-001",
-  school_teacher_slug: "ust-hendra-saputra",
-  school_teacher_employment: "tetap",
-  school_teacher_is_active: true,
-
-  school_teacher_joined_at: "2023-07-01",
-  school_teacher_left_at: null,
-
-  school_teacher_is_verified: true,
-  school_teacher_verified_at: "2024-01-12T08:30:00Z",
-
-  school_teacher_is_public: true,
-  school_teacher_notes:
-    "Fokus pada penguatan dasar logika bahasa & evaluasi formatif mingguan.",
-
-  school_teacher_user_teacher_name_snapshot: "Ust. Hendra Saputra",
-  school_teacher_user_teacher_avatar_url_snapshot:
-    "https://i.pravatar.cc/200?img=12",
-  school_teacher_user_teacher_whatsapp_url_snapshot:
-    "https://wa.me/6281234567890",
-  school_teacher_user_teacher_title_prefix_snapshot: "Ust.",
-  school_teacher_user_teacher_title_suffix_snapshot: "M.Pd.I",
-
-  school_teacher_school_name_snapshot: "SekolahIslamku",
-  school_teacher_school_slug_snapshot: "sekolahislamku",
-  school_teacher_school_logo_url_snapshot:
-    "https://dummyimage.com/64x64/0f592a/ffffff&text=SI",
-
-  school_teacher_sections: [
-    {
-      class_section_id: "csec-001",
-      role: "homeroom",
-      is_active: true,
-      from: "2024-07-15",
-      class_section_name: "Kelas Balaghoh B",
-      class_section_slug: "balaghoh-b",
-      class_section_image_url: "https://dummyimage.com/80x80/0f592a/fff&text=B",
-    },
-    {
-      class_section_id: "csec-002",
-      role: "teacher",
-      is_active: true,
-      from: "2025-01-10",
-      class_section_name: "Kelas Nahwu 1",
-      class_section_slug: "nahwu-1",
-    },
-  ],
-  school_teacher_csst: [
-    {
-      csst_id: "csst-001",
-      is_active: true,
-      from: "2024-08-01",
-      subject_name: "Ilmu Balaghoh Dasar 1",
-      subject_slug: "balaghoh-dasar-1",
-      class_section_id: "csec-001",
-      class_section_name: "Kelas Balaghoh B",
-      class_section_slug: "balaghoh-b",
-    },
-    {
-      csst_id: "csst-002",
-      is_active: true,
-      from: "2025-02-01",
-      subject_name: "Nahwu Dasar",
-      subject_slug: "nahwu-dasar",
-      class_section_id: "csec-002",
-      class_section_name: "Kelas Nahwu 1",
-      class_section_slug: "nahwu-1",
-    },
-  ],
-
-  // ===== profile tambahan (opsional tampilan)
-  profile_gender: "male",
-  profile_phone: "081234567890",
-  profile_email: "ust.hendra@sekolahislamku.sch.id",
-  profile_bio_short:
-    "Pengajar bahasa Arab dengan fokus Balaghoh & Nahwu. Mengutamakan praktik melalui contoh sederhana dan diskusi.",
-  profile_instagram_url: "https://instagram.com/ust_hendra",
-  profile_whatsapp_url: "https://wa.me/6281234567890",
-  profile_linkedin_url: "https://www.linkedin.com/in/ust-hendra",
-  profile_github_url: "https://github.com/ust-hendra",
-
-  nip: "19801212 200501 1 001",
-  default_subject: "Ilmu Balaghoh",
-};
-
-/* ===================== HeaderBackArea (mobile) ===================== */
-// function HeaderBackArea({
-//   title,
-//   onBack,
-// }: {
-//   title: string;
-//   onBack: () => void;
-// }) {
-//   return (
-//     <div className="min-w-0">
-//       {/* Mobile only */}
-//       <div className="md:hidden flex items-center gap-1 min-w-0">
-//         <Button
-//           variant="ghost"
-//           size="icon"
-//           className="h-9 w-9 rounded-xl"
-//           aria-label="Kembali"
-//           onClick={onBack}
-//         >
-//           <ArrowLeft className="w-5 h-5" />
-//         </Button>
-//         <div
-//           className="text-base font-semibold truncate max-w-[60vw]"
-//           title={title}
-//         >
-//           {title}
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
 
 /* ================= Helpers ================= */
 const genderLabel = (g?: Gender | GenderLP | null) =>
@@ -257,8 +190,6 @@ const genderLabel = (g?: Gender | GenderLP | null) =>
     : g === "female" || g === "P"
       ? "Perempuan"
       : "-";
-
-
 
 const toDateLong = (d?: string | null) =>
   d
@@ -327,121 +258,301 @@ const initials = (name?: string | null) =>
     .join("")
     .toUpperCase();
 
+const isUUID = (s: string) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+
+const formatExperience = (years?: number | null) => {
+  if (years == null) return "-";
+  if (years === 0) return "Baru mulai";
+  if (years === 1) return "1 tahun";
+  return `${years} tahun`;
+};
+
+const formatLocation = (city?: string | null, loc?: string | null) => {
+  if (city && loc) return `${city}, ${loc}`;
+  if (city) return city;
+  if (loc) return loc;
+  return "-";
+};
+
+const formatStatNumber = (n?: number | null) =>
+  typeof n === "number" ? n.toString() : "-";
+
 /* ================= Component ================= */
 
-
-const SchoolDetailTeacher: React.FC = ({
-}) => {
+const SchoolDetailTeacher: React.FC = () => {
+  // id di route bisa berupa UUID atau slug
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: user } = useCurrentUser();
 
-  /* Atur breadcrumb dan title seperti SchoolAcademic */
-    const { setHeader } = useDashboardHeader();
-    useEffect(() => {
-      setHeader({
-        title: "Detail Guru",
-        breadcrumbs: [
-          { label: "Dashboard", href: "dashboard" },
-          { label: "profil" },
-          { label: "guru", href: "profil/guru" },
-          { label: "Detail" },
-        ],
-        showBack: true,
-      });
-    }, [setHeader]);
+  /* Atur breadcrumb dan title */
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Detail Guru",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "profil" },
+        { label: "guru", href: "profil/guru" },
+        { label: "Detail" },
+      ],
+      showBack: true,
+    });
+  }, [setHeader]);
 
-  const schoolId = useMemo(() => {
-    const u: any = user || {};
-    return u.school_id || u.lembaga_id || u?.school?.id || u?.lembaga?.id || "";
-  }, [user]);
-
-  // Fetch ringan (opsional) — dipakai kalau endpoint kamu sudah siap
+  // Fetch detail dari list endpoint (pakai filter id/slug)
   const { data: resp } = useQuery({
-    queryKey: ["school-teacher-detail", schoolId, id],
-    enabled: !!schoolId && !!id,
+    queryKey: ["school-teacher-detail", id],
+    enabled: !!id,
     queryFn: async () => {
-      const res = await axios.get("/api/a/school-teachers/by-school", {
-        params: schoolId ? { school_id: schoolId } : undefined,
-      });
-      return res.data;
+      const params: Record<string, any> = {
+        include: "user_teachers",
+        per_page: 1,
+      };
+
+      if (id) {
+        if (isUUID(id)) {
+          params.school_teacher_id = id;
+        } else {
+          params.school_teacher_slug = id;
+        }
+      }
+
+      const res = await axios.get("/api/u/school-teachers/list", { params });
+      return res.data as {
+        success: boolean;
+        message: string;
+        data: any[];
+        pagination: any;
+      };
     },
   });
 
-  // Mapping API -> TeacherDetail (sesuaikan ketika endpoint siap)
-  const fromApi: TeacherDetail | undefined = (() => {
-    const list = resp?.data?.teachers as any[] | undefined;
-    if (!list || !id) return undefined;
-    const t = list.find((x) => x.school_teacher_id === id || x.id === id);
+  // Mapping API -> TeacherDetail (atau undefined kalau nggak ada)
+  const detail: TeacherDetail | undefined = useMemo(() => {
+    if (!resp || !Array.isArray(resp.data) || resp.data.length === 0) {
+      return undefined;
+    }
+
+    const list = resp.data as any[];
+
+    // Kalau backend belum filter, cari manual by id/slug/code
+    let t: any = list[0];
+    if (id) {
+      t =
+        list.find(
+          (x) =>
+            x.school_teacher_id === id ||
+            x.school_teacher_slug === id ||
+            x.school_teacher_code === id
+        ) ?? t;
+    }
+
     if (!t) return undefined;
+
+    const ut = t.user_teacher || {};
+
+    // Ambil subject default dari CSST pertama (kalau ada)
+    let defaultSubject: string | null = null;
+    if (Array.isArray(t.school_teacher_csst) && t.school_teacher_csst.length) {
+      defaultSubject =
+        t.school_teacher_csst[0]
+          .class_section_subject_teacher_subject_name_cache ?? null;
+    }
+
+    // Derive phone dari whatsapp_url (kalau mau)
+    const rawWaUrl: string | undefined =
+      t.school_teacher_user_teacher_whatsapp_url_cache ||
+      ut.user_teacher_whatsapp_url ||
+      undefined;
+    const derivedPhone =
+      rawWaUrl && rawWaUrl.includes("wa.me")
+        ? rawWaUrl.replace(/\D/g, "") || null
+        : null;
+
+    const sections: TeacherSectionItem[] = Array.isArray(
+      t.school_teacher_sections
+    )
+      ? t.school_teacher_sections.map(
+        (s: any): TeacherSectionItem => ({
+          class_section_id: s.class_section_id,
+          role: s.class_section_role,
+          is_active: !!s.class_section_is_active,
+          from: s.class_section_from || undefined,
+          to: s.class_section_to || undefined,
+          class_section_name: s.class_section_name,
+          class_section_slug: s.class_section_slug,
+          class_section_image_url: s.class_section_image_url,
+          class_section_image_object_key: s.class_section_image_object_key,
+
+          class_section_class_parent_id: s.class_section_class_parent_id,
+          class_section_class_parent_name:
+            s.class_section_class_parent_name_cache,
+          class_section_class_parent_slug:
+            s.class_section_class_parent_slug_cache,
+          class_section_class_parent_level:
+            s.class_section_class_parent_level_cache,
+
+          total_students: s.class_section_total_students_active ?? undefined,
+          total_students_male:
+            s.class_section_total_students_male ?? undefined,
+          total_students_female:
+            s.class_section_total_students_female ?? undefined,
+          total_students_active:
+            s.class_section_total_students_active ?? undefined,
+          total_students_male_active:
+            s.class_section_total_students_male_active ?? undefined,
+          total_students_female_active:
+            s.class_section_total_students_female_active ?? undefined,
+        })
+      )
+      : [];
+
+    const csst: TeacherCSSTItem[] = Array.isArray(t.school_teacher_csst)
+      ? t.school_teacher_csst.map(
+        (c: any): TeacherCSSTItem => ({
+          csst_id: c.class_section_subject_teacher_id,
+          is_active: !!c.class_section_subject_teacher_is_active,
+          csst_role: c.class_section_subject_teacher_role,
+          from: c.class_section_subject_teacher_from || undefined,
+          to: c.class_section_subject_teacher_to || undefined,
+
+          subject_id: c.class_section_subject_teacher_subject_id,
+          class_subject_id: c.class_section_subject_teacher_class_subject_id,
+
+          subject_name:
+            c.class_section_subject_teacher_subject_name_cache || undefined,
+          subject_slug:
+            c.class_section_subject_teacher_subject_slug_cache || undefined,
+
+          class_section_id: c.class_section_id,
+          class_section_name: c.class_section_name,
+          class_section_slug: c.class_section_slug,
+
+          quota_taken: c.class_section_subject_teacher_quota_taken,
+          total_attendance: c.class_section_subject_teacher_total_attendance,
+          total_assessments:
+            c.class_section_subject_teacher_total_assessments,
+          total_students_passed:
+            c.class_section_subject_teacher_total_students_passed,
+          total_assessments_graded:
+            c.class_section_subject_teacher_total_assessments_graded,
+          total_assessments_ungraded:
+            c.class_section_subject_teacher_total_assessments_ungraded,
+        })
+      )
+      : [];
+
+    const teacherSpecialties: string[] | null = Array.isArray(
+      ut.user_teacher_specialties
+    )
+      ? ut.user_teacher_specialties
+      : null;
+
+    const teacherCertificates: TeacherCertificateItem[] | null = Array.isArray(
+      ut.user_teacher_certificates
+    )
+      ? ut.user_teacher_certificates
+      : null;
+
     return {
       school_teacher_id: t.school_teacher_id,
       school_teacher_school_id: t.school_teacher_school_id,
+
       school_teacher_code: t.school_teacher_code,
       school_teacher_slug: t.school_teacher_slug,
       school_teacher_employment: t.school_teacher_employment,
       school_teacher_is_active: !!t.school_teacher_is_active,
+
       school_teacher_joined_at: t.school_teacher_joined_at,
       school_teacher_left_at: t.school_teacher_left_at,
+
       school_teacher_is_verified: !!t.school_teacher_is_verified,
       school_teacher_verified_at: t.school_teacher_verified_at,
+
       school_teacher_is_public: !!t.school_teacher_is_public,
       school_teacher_notes: t.school_teacher_notes,
+
       school_teacher_user_teacher_name_snapshot:
-        t.school_teacher_user_teacher_name_snapshot || t.user_name,
+        t.school_teacher_user_teacher_full_name_cache ||
+        ut.user_teacheru_user_full_name_cache ||
+        ut.user_teacher_full_name ||
+        ut.user_teacher_name,
+
       school_teacher_user_teacher_avatar_url_snapshot:
-        t.school_teacher_user_teacher_avatar_url_snapshot || t.avatar_url,
-      school_teacher_user_teacher_whatsapp_url_snapshot:
-        t.school_teacher_user_teacher_whatsapp_url_snapshot || t.whatsapp_url,
+        t.school_teacher_user_teacher_avatar_url_cache ||
+        ut.user_teacher_avatar_url,
+
+      school_teacher_user_teacher_whatsapp_url_snapshot: rawWaUrl || null,
+
       school_teacher_user_teacher_title_prefix_snapshot:
-        t.school_teacher_user_teacher_title_prefix_snapshot,
+        t.school_teacher_user_teacher_title_prefix_cache ||
+        ut.user_teacher_title_prefix,
+
       school_teacher_user_teacher_title_suffix_snapshot:
-        t.school_teacher_user_teacher_title_suffix_snapshot,
+        t.school_teacher_user_teacher_title_suffix_cache ||
+        ut.user_teacher_title_suffix,
 
+      // Snapshot sekolah: belum ada di response contoh, biarkan null dulu (siap kalau nanti ada)
       school_teacher_school_name_snapshot:
-        t.school_teacher_school_name_snapshot,
+        t.school_teacher_school_name_snapshot || null,
       school_teacher_school_slug_snapshot:
-        t.school_teacher_school_slug_snapshot,
+        t.school_teacher_school_slug_snapshot || null,
       school_teacher_school_logo_url_snapshot:
-        t.school_teacher_school_logo_url_snapshot,
+        t.school_teacher_school_logo_url_snapshot || null,
 
-      school_teacher_sections: Array.isArray(t.school_teacher_sections)
-        ? t.school_teacher_sections
-        : [],
-      school_teacher_csst: Array.isArray(t.school_teacher_csst)
-        ? t.school_teacher_csst
-        : [],
+      school_teacher_sections: sections,
+      school_teacher_csst: csst,
 
-      profile_gender: t.profile_gender,
-      profile_phone: t.phone,
-      profile_email: t.email,
-      profile_bio_short: t.profile_bio_short,
-      profile_instagram_url: t.profile_instagram_url,
-      profile_whatsapp_url: t.profile_whatsapp_url,
-      profile_linkedin_url: t.profile_linkedin_url,
-      profile_github_url: t.profile_github_url,
+      profile_gender: ut.user_teacher_gender ?? null,
+      profile_phone: derivedPhone,
+      profile_email: ut.user_teacher_email ?? null,
+      profile_bio_short: ut.user_teacher_short_bio ?? null,
+      profile_instagram_url: ut.user_teacher_instagram_url ?? null,
+      profile_whatsapp_url: ut.user_teacher_whatsapp_url ?? null,
+      profile_linkedin_url: ut.user_teacher_linkedin_url ?? null,
+      profile_github_url: ut.user_teacher_github_url ?? null,
 
-      nip: t.nip,
-      default_subject: t.subject,
+      nip: ut.user_teacher_nip ?? null,
+      default_subject: defaultSubject,
+
+      teacher_field: ut.user_teacher_field ?? null,
+      teacher_long_bio: ut.user_teacher_long_bio ?? null,
+      teacher_greeting: ut.user_teacher_greeting ?? null,
+      teacher_education: ut.user_teacher_education ?? null,
+      teacher_activity: ut.user_teacher_activity ?? null,
+      teacher_experience_years: ut.user_teacher_experience_years ?? null,
+      teacher_location: ut.user_teacher_location ?? null,
+      teacher_city: ut.user_teacher_city ?? null,
+      teacher_specialties: teacherSpecialties,
+      teacher_certificates: teacherCertificates,
+      teacher_youtube_url: ut.user_teacher_youtube_url ?? null,
+      teacher_telegram_username: ut.user_teacher_telegram_username ?? null,
+
+      total_class_sections: t.school_teacher_total_class_sections ?? null,
+      total_csst: t.school_teacher_total_class_section_subject_teachers ?? null,
+      total_class_sections_active:
+        t.school_teacher_total_class_sections_active ?? null,
+      total_csst_active:
+        t.school_teacher_total_class_section_subject_teachers_active ?? null,
     };
-  })();
+  }, [resp, id]);
 
-  const detail: TeacherDetail = fromApi ?? DUMMY_DETAIL;
+  const prefix = detail?.school_teacher_user_teacher_title_prefix_snapshot
+    ?.trim()
+    .trim();
+  const suffix = detail?.school_teacher_user_teacher_title_suffix_snapshot
+    ?.trim()
+    .trim();
+  const name = detail?.school_teacher_user_teacher_name_snapshot?.trim() || "-";
 
-
-  const prefix =
-    detail.school_teacher_user_teacher_title_prefix_snapshot?.trim();
-  const suffix =
-    detail.school_teacher_user_teacher_title_suffix_snapshot?.trim();
-  const name = detail.school_teacher_user_teacher_name_snapshot || "Nama Guru";
-
-  const emp = empBadge(detail.school_teacher_employment);
-  const isActive = !!detail.school_teacher_is_active;
+  const emp = empBadge(detail?.school_teacher_employment ?? null);
+  const isActive = !!detail?.school_teacher_is_active;
 
   const waHref =
-    detail.school_teacher_user_teacher_whatsapp_url_snapshot ||
-    detail.profile_whatsapp_url ||
-    (detail.profile_phone
+    detail?.school_teacher_user_teacher_whatsapp_url_snapshot ||
+    detail?.profile_whatsapp_url ||
+    (detail?.profile_phone
       ? `https://wa.me/${detail.profile_phone.replace(/\D/g, "")}`
       : undefined);
 
@@ -461,19 +572,7 @@ const SchoolDetailTeacher: React.FC = ({
                 <ArrowLeft size={20} />
               </Button>
               <h1 className="font-semibold text-lg md:text-xl">Detail Guru</h1>
-              {/* <div className="flex flex-col">
-                <h1 className="font-semibold text-lg md:text-xl">Detail</h1>
-                <span className="text-xs text-muted-foreground">
-                  {hijriWithWeekday(new Date().toISOString())}
-                </span>
-              </div> */}
             </div>
-
-            {/* {usingDummy && (
-              <Badge variant="outline" className="text-xs">
-                Data Dummy
-              </Badge>
-            )} */}
           </div>
         </header>
 
@@ -488,7 +587,7 @@ const SchoolDetailTeacher: React.FC = ({
                   <Avatar className="size-20 ring-2 ring-white shadow -mt-6">
                     <AvatarImage
                       src={
-                        detail.school_teacher_user_teacher_avatar_url_snapshot ||
+                        detail?.school_teacher_user_teacher_avatar_url_snapshot ||
                         ""
                       }
                       alt={name}
@@ -502,7 +601,7 @@ const SchoolDetailTeacher: React.FC = ({
                       {suffix ? `, ${suffix}` : ""}
                     </h2>
                     <p className="text-sm text-muted-foreground">
-                      {detail.default_subject || "Umum"}
+                      {detail?.teacher_field || detail?.default_subject || "-"}
                     </p>
                   </div>
 
@@ -511,7 +610,7 @@ const SchoolDetailTeacher: React.FC = ({
                     <Badge className={statusBadgeClass(isActive)}>
                       {isActive ? "Aktif" : "Nonaktif"}
                     </Badge>
-                    {detail.school_teacher_is_verified ? (
+                    {detail?.school_teacher_is_verified ? (
                       <Badge className="bg-emerald-600 text-white hover:bg-emerald-600">
                         <CheckCircle2 className="mr-1 size-3.5" />
                         Terverifikasi
@@ -524,8 +623,8 @@ const SchoolDetailTeacher: React.FC = ({
                     )}
                   </div>
 
-                  <div className="mt-4 flex gap-2">
-                    {detail.profile_phone && (
+                  <div className="mt-4 flex flex-wrap gap-2 justify-center">
+                    {detail?.profile_phone && (
                       <Button asChild size="sm" variant="outline">
                         <a href={`tel:${detail.profile_phone}`}>
                           <Phone className="mr-2 size-4" />
@@ -545,7 +644,7 @@ const SchoolDetailTeacher: React.FC = ({
                         </a>
                       </Button>
                     )}
-                    {detail.profile_email && (
+                    {detail?.profile_email && (
                       <Button asChild size="sm" variant="secondary">
                         <a href={`mailto:${detail.profile_email}`}>
                           <Mail className="mr-2 size-4" />
@@ -553,11 +652,35 @@ const SchoolDetailTeacher: React.FC = ({
                         </a>
                       </Button>
                     )}
+                    {detail?.teacher_youtube_url && (
+                      <Button asChild size="sm" variant="outline">
+                        <a
+                          href={detail.teacher_youtube_url}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <LinkIcon className="mr-2 size-4" />
+                          YouTube
+                        </a>
+                      </Button>
+                    )}
                   </div>
 
-                  {detail.profile_bio_short && (
-                    <p className="mt-4 text-sm text-muted-foreground leading-relaxed px-2">
+                  {detail?.teacher_greeting && (
+                    <p className="mt-4 text-sm font-medium">
+                      {detail.teacher_greeting}
+                    </p>
+                  )}
+
+                  {detail?.profile_bio_short && (
+                    <p className="mt-2 text-sm text-muted-foreground leading-relaxed px-2">
                       {detail.profile_bio_short}
+                    </p>
+                  )}
+
+                  {detail?.teacher_long_bio && (
+                    <p className="mt-2 text-xs text-muted-foreground leading-relaxed px-2">
+                      {detail.teacher_long_bio}
                     </p>
                   )}
 
@@ -566,20 +689,35 @@ const SchoolDetailTeacher: React.FC = ({
                   {/* Meta table compact */}
                   <Table className="text-sm">
                     <TableBody>
-                      <MetaRow label="NIP" value={detail.nip || "-"} />
+                      <MetaRow label="NIP" value={detail?.nip ?? "-"} />
                       <MetaRow
                         label="Gender"
-                        value={genderLabel(detail.profile_gender)}
+                        value={genderLabel(detail?.profile_gender ?? null)}
+                      />
+                      <MetaRow
+                        label="Lokasi"
+                        value={formatLocation(
+                          detail?.teacher_city ?? null,
+                          detail?.teacher_location ?? null
+                        )}
+                      />
+                      <MetaRow
+                        label="Pengalaman"
+                        value={formatExperience(
+                          detail?.teacher_experience_years ?? null
+                        )}
                       />
                       <MetaRow
                         label="Bergabung"
-                        value={toDateLong(detail.school_teacher_joined_at)}
+                        value={toDateLong(
+                          detail?.school_teacher_joined_at ?? null
+                        )}
                         icon={<CalendarDays className="size-3.5" />}
                       />
                       <MetaRow
                         label="Berakhir"
                         value={
-                          detail.school_teacher_left_at
+                          detail?.school_teacher_left_at
                             ? toDateLong(detail.school_teacher_left_at)
                             : "—"
                         }
@@ -590,22 +728,28 @@ const SchoolDetailTeacher: React.FC = ({
 
                   {/* Socials */}
                   <div className="mt-4 flex flex-wrap justify-center gap-2">
-                    {detail.profile_instagram_url && (
+                    {detail?.profile_instagram_url && (
                       <SocialChip
                         href={detail.profile_instagram_url}
                         label="Instagram"
                       />
                     )}
-                    {detail.profile_linkedin_url && (
+                    {detail?.profile_linkedin_url && (
                       <SocialChip
                         href={detail.profile_linkedin_url}
                         label="LinkedIn"
                       />
                     )}
-                    {detail.profile_github_url && (
+                    {detail?.profile_github_url && (
                       <SocialChip
                         href={detail.profile_github_url}
                         label="GitHub"
+                      />
+                    )}
+                    {detail?.teacher_telegram_username && (
+                      <SocialChip
+                        href={`https://t.me/${detail.teacher_telegram_username}`}
+                        label="Telegram"
                       />
                     )}
                   </div>
@@ -620,16 +764,15 @@ const SchoolDetailTeacher: React.FC = ({
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base flex items-center gap-2">
                     <BadgeInfo className="size-4" />
-                    Tentang & Catatan
+                    Tentang Guru & Catatan
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="pt-0">
+                <CardContent className="pt-0 space-y-4">
                   <div className="grid sm:grid-cols-2 gap-4 text-sm">
                     <div className="space-y-1">
                       <div className="text-muted-foreground">Sekolah</div>
                       <div className="flex items-center gap-2">
-                        {detail.school_teacher_school_logo_url_snapshot ? (
-                          // eslint-disable-next-line @next/next/no-img-element
+                        {detail?.school_teacher_school_logo_url_snapshot ? (
                           <img
                             src={detail.school_teacher_school_logo_url_snapshot}
                             alt="logo"
@@ -637,22 +780,170 @@ const SchoolDetailTeacher: React.FC = ({
                           />
                         ) : null}
                         <span className="font-medium">
-                          {detail.school_teacher_school_name_snapshot || "—"}
+                          {detail?.school_teacher_school_name_snapshot || "-"}
                         </span>
                       </div>
                     </div>
                     <div className="space-y-1">
-                      <div className="text-muted-foreground">Slug</div>
+                      <div className="text-muted-foreground">Slug Guru</div>
                       <div className="font-medium">
-                        {detail.school_teacher_slug || "—"}
+                        {detail?.school_teacher_slug || "-"}
                       </div>
                     </div>
-                    <div className="space-y-1 sm:col-span-2">
-                      <div className="text-muted-foreground">Catatan</div>
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground">Bidang</div>
                       <div className="font-normal">
-                        {detail.school_teacher_notes || "—"}
+                        {detail?.teacher_field ||
+                          detail?.default_subject ||
+                          "-"}
                       </div>
                     </div>
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground">Aktivitas</div>
+                      <div className="font-normal">
+                        {detail?.teacher_activity || "—"}
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground">Pendidikan</div>
+                      <div className="font-normal whitespace-pre-line">
+                        {detail?.teacher_education || "—"}
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground">Status Publik</div>
+                      <div className="font-normal">
+                        {detail?.school_teacher_is_public
+                          ? "Ditampilkan ke publik"
+                          : "Hanya internal sekolah"}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-muted-foreground">Catatan</div>
+                    <div className="font-normal">
+                      {detail?.school_teacher_notes || "—"}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Statistik Mengajar */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">
+                    Statistik Mengajar
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-1">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                    <div className="rounded-lg border p-3">
+                      <div className="text-xs text-muted-foreground">
+                        Total Section
+                      </div>
+                      <div className="mt-1 text-lg font-semibold">
+                        {formatStatNumber(detail?.total_class_sections)}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        Aktif:{" "}
+                        {formatStatNumber(detail?.total_class_sections_active)}
+                      </div>
+                    </div>
+                    <div className="rounded-lg border p-3">
+                      <div className="text-xs text-muted-foreground">
+                        Total CSST
+                      </div>
+                      <div className="mt-1 text-lg font-semibold">
+                        {formatStatNumber(detail?.total_csst)}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        Aktif: {formatStatNumber(detail?.total_csst_active)}
+                      </div>
+                    </div>
+                    <div className="rounded-lg border p-3">
+                      <div className="text-xs text-muted-foreground">
+                        Mapel aktif
+                      </div>
+                      <div className="mt-1 text-lg font-semibold">
+                        {detail?.school_teacher_csst?.filter((c) => c.is_active)
+                          .length ?? 0}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        Berdasarkan CSST
+                      </div>
+                    </div>
+                    <div className="rounded-lg border p-3">
+                      <div className="text-xs text-muted-foreground">
+                        Section wali kelas
+                      </div>
+                      <div className="mt-1 text-lg font-semibold">
+                        {detail?.school_teacher_sections?.filter(
+                          (s) => s.role === "homeroom"
+                        ).length ?? 0}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        Per tahun ajaran
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Spesialisasi & Sertifikat */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">
+                    Spesialisasi & Sertifikat
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-1 space-y-3">
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-1.5">
+                      Spesialisasi
+                    </div>
+                    {detail?.teacher_specialties &&
+                      detail.teacher_specialties.length ? (
+                      <div className="flex flex-wrap gap-2">
+                        {detail.teacher_specialties.map((sp) => (
+                          <Badge key={sp} variant="outline" className="text-xs">
+                            {sp}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-muted-foreground">
+                        Belum ada data spesialisasi.
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-1.5">
+                      Sertifikat
+                    </div>
+                    {detail?.teacher_certificates &&
+                      detail.teacher_certificates.length ? (
+                      <ul className="space-y-1.5 text-sm">
+                        {detail.teacher_certificates.map((c, idx) => (
+                          <li
+                            key={`${c.title}-${c.year}-${idx}`}
+                            className="flex items-center gap-2"
+                          >
+                            <span className="inline-flex h-1.5 w-1.5 rounded-full bg-primary/70" />
+                            <span className="font-medium">
+                              {c.title || "-"}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {c.year || ""}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="text-xs text-muted-foreground">
+                        Belum ada data sertifikat.
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -660,35 +951,75 @@ const SchoolDetailTeacher: React.FC = ({
               {/* Sections (Homeroom / Mengajar) */}
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Sections</CardTitle>
+                  <CardTitle className="text-base">Kelas (Sections)</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  {detail.school_teacher_sections?.length ? (
+                  {detail?.school_teacher_sections?.length ? (
                     <div className="grid md:grid-cols-2 gap-3">
-                      {detail.school_teacher_sections.map((s) => (
-                        <ChipCard
-                          key={s.class_section_id}
-                          title={
-                            s.class_section_name ||
-                            s.class_section_slug ||
-                            s.class_section_id
-                          }
-                          subtitle={
-                            s.role === "homeroom"
-                              ? "Wali Kelas"
-                              : s.role === "assistant"
-                                ? "Asisten"
-                                : "Pengajar"
-                          }
-                          imageUrl={s.class_section_image_url}
-                          rightBadge={s.is_active ? "Aktif" : "Nonaktif"}
-                          rightBadgeClass={
-                            s.is_active ? "bg-green-600" : "bg-slate-500"
-                          }
-                          metaLeft={s.from ? toDateLong(s.from) : undefined}
-                          metaRight={s.to ? toDateLong(s.to) : undefined}
-                        />
-                      ))}
+                      {detail.school_teacher_sections.map((s) => {
+                        const roleLabel =
+                          s.role === "homeroom"
+                            ? "Wali Kelas"
+                            : s.role === "assistant"
+                              ? "Asisten"
+                              : "Pengajar";
+
+                        const parentLabel =
+                          s.class_section_class_parent_name ||
+                          s.class_section_class_parent_slug ||
+                          "";
+
+                        const studentsTotal =
+                          s.total_students ??
+                          s.total_students_active ??
+                          s.total_students_male_active ??
+                          s.total_students_female_active ??
+                          undefined;
+
+                        const studentsDesc =
+                          studentsTotal != null
+                            ? `Siswa: ${studentsTotal}${s.total_students_active != null &&
+                              s.total_students_active !== studentsTotal
+                              ? ` (aktif ${s.total_students_active})`
+                              : ""
+                            }`
+                            : undefined;
+
+                        const metaLeft =
+                          s.from || s.to
+                            ? [
+                              s.from ? toDateLong(s.from) : null,
+                              s.to ? `s.d. ${toDateLong(s.to)}` : null,
+                            ]
+                              .filter(Boolean)
+                              .join(" • ")
+                            : undefined;
+
+                        const metaRight = studentsDesc;
+
+                        return (
+                          <ChipCard
+                            key={s.class_section_id}
+                            title={
+                              s.class_section_name ||
+                              s.class_section_slug ||
+                              s.class_section_id
+                            }
+                            subtitle={
+                              parentLabel
+                                ? `${parentLabel} • ${roleLabel}`
+                                : roleLabel
+                            }
+                            imageUrl={s.class_section_image_url}
+                            rightBadge={s.is_active ? "Aktif" : "Nonaktif"}
+                            rightBadgeClass={
+                              s.is_active ? "bg-green-600" : "bg-slate-500"
+                            }
+                            metaLeft={metaLeft}
+                            metaRight={metaRight}
+                          />
+                        );
+                      })}
                     </div>
                   ) : (
                     <EmptyNote />
@@ -704,26 +1035,66 @@ const SchoolDetailTeacher: React.FC = ({
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  {detail.school_teacher_csst?.length ? (
+                  {detail?.school_teacher_csst?.length ? (
                     <div className="grid md:grid-cols-2 gap-3">
-                      {detail.school_teacher_csst.map((c) => (
-                        <ChipCard
-                          key={c.csst_id}
-                          title={
-                            c.subject_name || c.subject_slug || "Mata Pelajaran"
-                          }
-                          subtitle={
-                            c.class_section_name || c.class_section_slug || "—"
-                          }
-                          icon={<LinkIcon className="size-4" />}
-                          rightBadge={c.is_active ? "Aktif" : "Nonaktif"}
-                          rightBadgeClass={
-                            c.is_active ? "bg-green-600" : "bg-slate-500"
-                          }
-                          metaLeft={c.from ? toDateLong(c.from) : undefined}
-                          metaRight={c.to ? toDateLong(c.to) : undefined}
-                        />
-                      ))}
+                      {detail.school_teacher_csst.map((c) => {
+                        const metaLeft =
+                          c.total_attendance != null ||
+                            c.total_assessments != null
+                            ? [
+                              c.total_attendance != null
+                                ? `Pertemuan: ${c.total_attendance}`
+                                : null,
+                              c.total_assessments != null
+                                ? `Penilaian: ${c.total_assessments}`
+                                : null,
+                            ]
+                              .filter(Boolean)
+                              .join(" • ")
+                            : undefined;
+
+                        const metaRight =
+                          c.total_assessments_graded != null ||
+                            c.total_assessments_ungraded != null ||
+                            c.total_students_passed != null
+                            ? [
+                              c.total_assessments_graded != null
+                                ? `Nilai masuk: ${c.total_assessments_graded}`
+                                : null,
+                              c.total_assessments_ungraded != null
+                                ? `Belum dinilai: ${c.total_assessments_ungraded}`
+                                : null,
+                              c.total_students_passed != null
+                                ? `Lulus: ${c.total_students_passed}`
+                                : null,
+                            ]
+                              .filter(Boolean)
+                              .join(" • ")
+                            : undefined;
+
+                        return (
+                          <ChipCard
+                            key={c.csst_id}
+                            title={
+                              c.subject_name ||
+                              c.subject_slug ||
+                              "Mata Pelajaran"
+                            }
+                            subtitle={
+                              c.class_section_name ||
+                              c.class_section_slug ||
+                              "—"
+                            }
+                            icon={<LinkIcon className="size-4" />}
+                            rightBadge={c.is_active ? "Aktif" : "Nonaktif"}
+                            rightBadgeClass={
+                              c.is_active ? "bg-green-600" : "bg-slate-500"
+                            }
+                            metaLeft={metaLeft}
+                            metaRight={metaRight}
+                          />
+                        );
+                      })}
                     </div>
                   ) : (
                     <EmptyNote />
@@ -806,7 +1177,6 @@ function ChipCard({
     <div className="flex items-center justify-between gap-3 rounded-xl border p-3 hover:bg-muted/50 transition">
       <div className="flex items-center gap-3">
         {imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={imageUrl}
             alt={title}

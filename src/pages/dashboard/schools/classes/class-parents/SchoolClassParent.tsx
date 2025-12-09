@@ -2,7 +2,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Info, Loader2 } from "lucide-react";
+import { Info, Loader2, ImageOff } from "lucide-react";
 import axios, { getActiveschoolId } from "@/lib/axios";
 
 /* shadcn/ui */
@@ -27,54 +27,92 @@ import CRowActions from "@/components/costum/table/CRowAction";
 import { cn } from "@/lib/utils";
 
 /* ================= Types ================= */
-export interface Level {
-  id: string;
-  name: string;
-  slug: string;
-  level?: string | null;
-  fee?: number | null;
-  is_active: boolean;
-}
 
 type ApiClassParent = {
   class_parent_id: string;
   class_parent_school_id: string;
+  class_parent_class_section_active_count: number;
+  class_parent_class_section_count: number;
+  class_parent_student_active_count: number;
+  class_parent_student_count: number;
   class_parent_name: string;
   class_parent_code?: string | null;
   class_parent_slug: string;
-  class_parent_description?: string | null;
   class_parent_level?: number | null;
   class_parent_is_active: boolean;
-  class_parent_total_classes?: number | null;
   class_parent_image_url?: string | null;
   class_parent_created_at: string;
   class_parent_updated_at: string;
+  class_parent_is_deleted: boolean;
 };
 
-function mapClassParent(x: ApiClassParent): Level & {
-  totalClasses?: number | null;
-} {
+export interface Level {
+  id: string;
+  school_id: string;
+  name: string;
+  code?: string | null;
+  slug: string;
+  level?: string | null;
+  fee?: number | null;
+  is_active: boolean;
+  is_deleted: boolean;
+
+  class_section_active_count: number;
+  class_section_count: number;
+  student_active_count: number;
+  student_count: number;
+
+  image_url?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+function mapClassParent(x: ApiClassParent): Level {
   return {
     id: x.class_parent_id,
+    school_id: x.class_parent_school_id,
     name: x.class_parent_name,
+    code: x.class_parent_code ?? null,
     slug: x.class_parent_slug,
     level: x.class_parent_level != null ? String(x.class_parent_level) : null,
     fee: null,
     is_active: x.class_parent_is_active,
-    totalClasses: x.class_parent_total_classes ?? null,
+    is_deleted: x.class_parent_is_deleted,
+
+    class_section_active_count: x.class_parent_class_section_active_count,
+    class_section_count: x.class_parent_class_section_count,
+    student_active_count: x.class_parent_student_active_count,
+    student_count: x.class_parent_student_count,
+
+    image_url: x.class_parent_image_url ?? null,
+    created_at: x.class_parent_created_at,
+    updated_at: x.class_parent_updated_at,
   };
 }
 
 /* ================= Fetchers ================= */
-async function fetchLevelsPublic(
-  schoolId: string | null
-): Promise<(Level & { totalClasses?: number | null })[]> {
+
+async function fetchClassParents(schoolId: string | null): Promise<Level[]> {
   if (!schoolId) return [];
   const res = await axios.get<{ data: ApiClassParent[] }>(
-    `/public/${schoolId}/class-parents/list`
+    "/api/u/class-parents/list",
+    {
+      params: {
+        mode: "compact",
+      },
+    }
   );
   return (res.data?.data ?? []).map(mapClassParent);
 }
+
+/* ================= Utils ================= */
+
+const formatDate = (iso: string) => {
+  if (!iso) return "-";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("id-ID");
+};
 
 /* ================= Page ================= */
 const SchoolClassParent: React.FC = () => {
@@ -119,9 +157,9 @@ const SchoolClassParent: React.FC = () => {
 
   /* Query */
   const levelsQ = useQuery({
-    queryKey: ["levels-public", schoolId],
+    queryKey: ["class-parents-compact", schoolId],
     enabled: hasSchool,
-    queryFn: () => fetchLevelsPublic(schoolId),
+    queryFn: () => fetchClassParents(schoolId),
     staleTime: 60_000,
   });
 
@@ -131,16 +169,33 @@ const SchoolClassParent: React.FC = () => {
   const filtered = useMemo(() => {
     if (!q) return allLevels;
     const qq = q.toLowerCase();
-    return allLevels.filter(
-      (lv) =>
+    return allLevels.filter((lv) => {
+      const levelStr = lv.level ?? "";
+      return (
         lv.name.toLowerCase().includes(qq) ||
         lv.slug.toLowerCase().includes(qq) ||
-        (lv.level ?? "").toLowerCase().includes(qq)
-    );
+        (lv.code ?? "").toLowerCase().includes(qq) ||
+        levelStr.toLowerCase().includes(qq)
+      );
+    });
   }, [allLevels, q]);
 
   const totalLocal = filtered.length;
   const pagedRows = filtered.slice((page - 1) * perPage, page * perPage);
+
+  const totalClassesActive = filtered.reduce(
+    (acc, lv) => acc + lv.class_section_active_count,
+    0
+  );
+  const totalClasses = filtered.reduce(
+    (acc, lv) => acc + lv.class_section_count,
+    0
+  );
+  const totalStudentsActive = filtered.reduce(
+    (acc, lv) => acc + lv.student_active_count,
+    0
+  );
+  const totalStudents = filtered.reduce((acc, lv) => acc + lv.student_count, 0);
 
   /* Stats */
   const statsSlot = levelsQ.isLoading ? (
@@ -159,40 +214,44 @@ const SchoolClassParent: React.FC = () => {
   ) : (
     <div className="grid gap-3 md:grid-cols-3 text-sm">
       <div className="rounded-xl border p-3">
-        <div className="text-xs text-muted-foreground">Jumlah Tingkat</div>
+        <div className="text-xs text-muted-foreground">Jumlah Level</div>
         <div className="font-medium">{totalLocal}</div>
       </div>
       <div className="rounded-xl border p-3">
-        <div className="text-xs text-muted-foreground">Aktif</div>
-        <div className="font-medium">
-          {filtered.filter((lv) => lv.is_active).length}
+        <div className="text-xs text-muted-foreground">
+          Total Kelas (aktif / total)
+        </div>
+        <div className="font-medium tabular-nums">
+          {totalClassesActive} / {totalClasses}
         </div>
       </div>
       <div className="rounded-xl border p-3">
-        <div className="text-xs text-muted-foreground">Total Kelas</div>
-        <div className="font-medium">
-          {filtered.reduce((acc, lv) => acc + (lv.totalClasses ?? 0), 0)}
+        <div className="text-xs text-muted-foreground">
+          Total Siswa (aktif / total)
+        </div>
+        <div className="font-medium tabular-nums">
+          {totalStudentsActive} / {totalStudents}
         </div>
       </div>
     </div>
   );
 
   /* Columns */
-  type Row = Level & { totalClasses?: number | null };
+  type Row = Level;
 
   const columns: ColumnDef<Row>[] = useMemo(
     () => [
       {
         id: "name",
-        header: "Nama Tingkat",
-        minW: "240px",
+        header: "Nama Level",
+        minW: "260px",
         align: "left",
         className: "text-left",
         cell: (r) => (
-          <div>
+          <div className="space-y-0.5">
             <div className="font-medium truncate">{r.name}</div>
-            <div className="mt-0.5 text-xs text-muted-foreground truncate">
-              Slug: {r.slug}
+            <div className="text-xs text-muted-foreground truncate">
+              Kode: {r.code || "-"} • Slug: {r.slug}
             </div>
           </div>
         ),
@@ -205,12 +264,25 @@ const SchoolClassParent: React.FC = () => {
         cell: (r) => r.level ?? "-",
       },
       {
-        id: "total",
-        header: "Jumlah Kelas",
-        minW: "120px",
+        id: "classes",
+        header: "Kelas (aktif / total)",
+        minW: "150px",
         align: "center",
         cell: (r) => (
-          <span className="tabular-nums">{r.totalClasses ?? 0}</span>
+          <span className="tabular-nums">
+            {r.class_section_active_count} / {r.class_section_count}
+          </span>
+        ),
+      },
+      {
+        id: "students",
+        header: "Siswa (aktif / total)",
+        minW: "160px",
+        align: "center",
+        cell: (r) => (
+          <span className="tabular-nums">
+            {r.student_active_count} / {r.student_count}
+          </span>
         ),
       },
       {
@@ -220,14 +292,36 @@ const SchoolClassParent: React.FC = () => {
         align: "center",
         cell: (r) => {
           const status =
-            r.is_active === true
-              ? "active"
-              : r.is_active === false
-                ? "inactive"
-                : "pending"; // untuk nilai null / kondisi pending
+            r.is_deleted === true
+              ? "inactive"
+              : r.is_active === true
+                ? "active"
+                : "inactive";
 
           return <CBadgeStatus status={status} />;
         },
+      },
+      {
+        id: "created_at",
+        header: "Dibuat",
+        minW: "140px",
+        align: "center",
+        cell: (r) => (
+          <span className="text-xs text-muted-foreground">
+            {formatDate(r.created_at)}
+          </span>
+        ),
+      },
+      {
+        id: "updated_at",
+        header: "Diupdate",
+        minW: "140px",
+        align: "center",
+        cell: (r) => (
+          <span className="text-xs text-muted-foreground">
+            {formatDate(r.updated_at)}
+          </span>
+        ),
       },
     ],
     []
@@ -254,14 +348,14 @@ const SchoolClassParent: React.FC = () => {
 
           {/* Daftar Tingkat */}
           <DataTable<Row>
-            onAdd={() => navigate("new")} // ⬅️ sekarang pakai route
+            onAdd={() => navigate("new")}
             addLabel="Tambah"
             controlsPlacement="above"
             defaultQuery={q}
             onQueryChange={handleQueryChange}
             filterer={() => true}
-            searchByKeys={["name", "slug", "level"]}
-            searchPlaceholder="Cari nama/slug/level…"
+            searchByKeys={["name", "slug", "level", "code"]}
+            searchPlaceholder="Cari nama/kode/slug/level…"
             statsSlot={statsSlot}
             loading={levelsQ.isLoading}
             error={
@@ -281,7 +375,6 @@ const SchoolClassParent: React.FC = () => {
             onRowClick={(r) => navigate(`${r.id}`)}
             pageSize={perPage}
             pageSizeOptions={[10, 20, 50, 100, 200]}
-            // TAMBAH
             renderActions={(row, view) => (
               <CRowActions
                 row={row}
@@ -293,7 +386,6 @@ const SchoolClassParent: React.FC = () => {
                 forceMenu={view === "table"} // TABLE = menu, CARD = inline
               />
             )}
-            // TAMBAH
             renderCard={(r) => (
               <div
                 className={cn(
@@ -302,26 +394,77 @@ const SchoolClassParent: React.FC = () => {
                 )}
                 onClick={() => navigate(`${r.id}`)}
               >
+                {/* Thumbnail */}
+                {r.image_url ? (
+                  <div className="relative w-full pb-[40%] overflow-hidden rounded-lg border bg-muted">
+                    <img
+                      src={r.image_url}
+                      alt={r.name}
+                      className="absolute inset-0 h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center rounded-lg border bg-muted/40 py-6 text-xs text-muted-foreground gap-2">
+                    <ImageOff size={14} />
+                    Tidak ada gambar
+                  </div>
+                )}
 
-                <div className="font-semibold">{r.name}</div>
-                <div className="text-xs text-muted-foreground">Slug: {r.slug}</div>
+                <div className="space-y-0.5">
+                  <div className="font-semibold">{r.name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    Kode: {r.code || "-"} • Slug: {r.slug}
+                  </div>
+                </div>
 
-                <div className="grid grid-cols-3 gap-2 text-sm">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
                   <div className="border rounded p-2">
                     <div className="text-xs text-muted-foreground">Level</div>
                     <div className="font-medium">{r.level ?? "-"}</div>
                   </div>
 
                   <div className="border rounded p-2">
-                    <div className="text-xs text-muted-foreground">Kelas</div>
-                    <div className="font-medium">{r.totalClasses ?? 0}</div>
+                    <div className="text-xs text-muted-foreground">
+                      Kelas (aktif / total)
+                    </div>
+                    <div className="font-medium tabular-nums">
+                      {r.class_section_active_count} / {r.class_section_count}
+                    </div>
                   </div>
 
                   <div className="border rounded p-2">
-                    <div className="text-xs text-muted-foreground mb-1">Status</div>
+                    <div className="text-xs text-muted-foreground">
+                      Siswa (aktif / total)
+                    </div>
+                    <div className="font-medium tabular-nums">
+                      {r.student_active_count} / {r.student_count}
+                    </div>
+                  </div>
+
+                  <div className="border rounded p-2">
+                    <div className="text-xs text-muted-foreground mb-1">
+                      Status
+                    </div>
                     <CBadgeStatus
-                      status={r.is_active ? "active" : "inactive"}
+                      status={
+                        r.is_deleted
+                          ? "inactive"
+                          : r.is_active
+                            ? "active"
+                            : "inactive"
+                      }
                     />
+                  </div>
+
+                  <div className="border rounded p-2 col-span-2 md:col-span-1">
+                    <div className="text-xs text-muted-foreground">
+                      Dibuat / Diupdate
+                    </div>
+                    <div className="text-[11px] leading-tight text-muted-foreground">
+                      <div>Dibuat: {formatDate(r.created_at)}</div>
+                      <div>Update: {formatDate(r.updated_at)}</div>
+                    </div>
                   </div>
                 </div>
 
@@ -344,7 +487,7 @@ const SchoolClassParent: React.FC = () => {
             )}
           />
 
-          {/* Footer pagination (kalau mau diisi kombo perPage lengkap, tinggal tambahin Trigger/Content) */}
+          {/* Footer pagination (opsi perPage) */}
           <div className="mt-2 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
             <div className="order-1 sm:order-2 flex items-center gap-2">
               <Select
@@ -353,7 +496,9 @@ const SchoolClassParent: React.FC = () => {
                   setPerPage(Number(v));
                   setPage(1);
                 }}
-              ></Select>
+              >
+                {/* Kalau mau, nanti bisa diisi SelectTrigger/Content */}
+              </Select>
             </div>
           </div>
         </div>

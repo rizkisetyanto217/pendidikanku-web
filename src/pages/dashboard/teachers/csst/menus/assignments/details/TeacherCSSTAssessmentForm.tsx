@@ -32,6 +32,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* =========================
    Types minimal payload
@@ -191,6 +192,21 @@ export default function TeacherCSSTAssessmentForm() {
   const isEdit = !!assessmentId;
 
   const navigate = useNavigate();
+
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Buat Penilaian Baru",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Guru Mata Pelajaran" },
+        { label: "Detail Mata Pelajaran" },
+        { label: "Penilaian Mata Pelajaran" },
+        { label: "Buat Penilaian Baru" },
+      ],
+      showBack: true,
+    });
+  }, [setHeader]);
   const qc = useQueryClient();
 
   /* state utama */
@@ -421,21 +437,20 @@ export default function TeacherCSSTAssessmentForm() {
   const saveLabel = isEdit ? "Simpan perubahan" : "Simpan penilaian";
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Top bar */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-3">
+        <div className="md:flex hidden items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full"
             onClick={() => navigate(-1)}
             disabled={submitting}
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft size={20} />
           </Button>
           <div>
-            <h1 className="text-lg font-semibold leading-tight">{pageTitle}</h1>
+            <h1 className="text-lg md:text-xl font-semibold leading-tight">{pageTitle}</h1>
             <p className="text-xs text-muted-foreground">
               {isEdit
                 ? "Perbarui pengaturan penilaian untuk kelas-mapel ini."
@@ -444,8 +459,8 @@ export default function TeacherCSSTAssessmentForm() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" asChild disabled={submitting}>
+        <div className="flex items-center justify-end gap-2">
+          {/* <Button variant="outline" size="sm" asChild disabled={submitting}>
             <Link
               to={
                 csstId
@@ -456,7 +471,7 @@ export default function TeacherCSSTAssessmentForm() {
               <ArrowLeft className="mr-1 h-3 w-3" />
               Kembali ke daftar
             </Link>
-          </Button>
+          </Button> */}
 
           <Button
             size="sm"

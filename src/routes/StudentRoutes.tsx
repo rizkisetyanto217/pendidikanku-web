@@ -157,19 +157,19 @@ export const StudentRoutes = (
         (versi "Menu Utama Kelas Saya" dengan showBack)
        ================================================== */}
     <Route path="menu-utama">
-      {/* /:school_slug/murid/menu-utama */}
       <Route index element={<StudentMenuGrids />} />
 
-      {/* /:school_slug/murid/menu-utama/kelas-saya */}
+      {/* Kelas Saya */}
       <Route path="kelas-saya" element={<StudentMyClass showBack />} />
+      <Route path="kelas-saya/:enrollment_id/pilih-kelas" element={<StudentChooseClassSection />} />
+      <Route path="mapel/:csstId" element={<StudentCSST />} />
+      <Route path="kelas-saya/:id/materi" element={<StudentMaterial />} />
+      <Route path="kelas-saya/:id/tugas" element={<StudentClassesAssignment />} />
+      <Route path="kelas-saya/:id/quiz" element={<StudentQuiz />} />
+      <Route path="kelas-saya/:id/kehadiran" element={<StudentCSSTStudentList />} />
 
-      {/* /:school_slug/murid/menu-utama/kelas-saya/:enrollment_id/pilih-kelas */}
-      <Route
-        path="kelas-saya/:enrollment_id/pilih-kelas"
-        element={<StudentChooseClassSection />}
-      />
 
-      {/* Jadwal dari menu utama */}
+      {/* Jadwal */}
       <Route path="agenda" element={<StudentAllSchedule showBack />} />
       <Route path="rutin" element={<StudentScheduleRoutine showBack />} />
 
@@ -180,32 +180,16 @@ export const StudentRoutes = (
       {/* Kontak */}
       <Route path="kontak" element={<StudentClassesContact showBack />} />
 
-      {/* Detail per kelas */}
-      <Route path="kelas-saya/:id/materi" element={<StudentMaterial />} />
-      <Route
-        path="kelas-saya/:id/tugas"
-        element={<StudentClassesAssignment />}
-      />
-      <Route path="kelas-saya/:id/quiz" element={<StudentQuiz />} />
-      <Route
-        path="kelas-saya/:id/kehadiran"
-        element={<StudentCSSTStudentList />}
-      />
-
-      {/* Progress dari menu utama */}
+      {/* Progress */}
       <Route path="progress" element={<StudentProgress showBack />} />
       <Route path="raport" element={<StudentRaport />} />
       <Route path="absensi" element={<StudentAbsence />} />
       <Route path="catatan-hasil" element={<StudentNotesSummary />} />
 
-      {/* Profil dari menu utama */}
+      {/* Profil */}
       <Route path="profil-murid" element={<StudentProfil showBack />} />
 
-      {/* /:school_slug/murid/menu-utama/mapel-saya/:csst_id */}
-      <Route path="mapel/:csstId" element={<StudentCSST />} />
-
       {/* === Administrasi === */}
-
       <Route path="pendaftaran" element={<StudentEnrollment showBack />} />
       <Route path="daftar-ulang" element={<StudentReEnrollment showBack />} />
       <Route path="keuangan" element={<StudentFinance showBack />} />

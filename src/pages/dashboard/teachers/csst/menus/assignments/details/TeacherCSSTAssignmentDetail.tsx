@@ -1,6 +1,6 @@
 // src/pages/sekolahislamku/teacher/TeacherAssessmentDetail.tsx
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "@/lib/axios";
@@ -36,6 +36,8 @@ import {
 /* Reuse type dari list (supaya konsisten) */
 import type { AssessmentItem } from "../TeacherCSSTAssignment";
 import CBadgeAssignment from "@/components/costum/common/badges/CBadgeAssignment";
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+
 
 /* =======================
    Types
@@ -142,7 +144,7 @@ const DUMMY_PROGRESS: DummyStudentProgress[] = [
     id: "s3",
     name: "Budi Santoso",
     nis: "2025003",
-    status: "submitted",
+    status: "graded",
     submitted_at: "2025-03-10T02:40:00Z",
     score: null,
     max_score: 100,
@@ -151,7 +153,7 @@ const DUMMY_PROGRESS: DummyStudentProgress[] = [
     id: "s4",
     name: "Nurul Hidayah",
     nis: "2025004",
-    status: "in_progress",
+    status: "not_started",
     submitted_at: null,
     score: null,
     max_score: 100,
@@ -178,6 +180,21 @@ export default function TeacherCSSTAssessmentDetail() {
   }>();
 
   const navigate = useNavigate();
+
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Detail Penilaian",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Guru Mata Pelajaran" },
+        { label: "Detail Mata Pelajaran" },
+        { label: "Penilaian Mata Pelajaran" },
+        { label: "Detail Penilaian" },
+      ],
+      showBack: true,
+    });
+  }, [setHeader]);
 
   const { data, isLoading, isError, error, refetch, isFetching } =
     useQuery<AssessmentListByIdResponse>({
@@ -256,20 +273,20 @@ export default function TeacherCSSTAssessmentDetail() {
   const gradedTotal = assessment?.assessment_submissions_graded_total ?? 0;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Top bar */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-3">
+        <div className="md:flex hidden items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
             className="rounded-full"
             onClick={() => navigate(-1)}
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft size={20} />
           </Button>
           <div>
-            <h1 className="text-lg font-semibold leading-tight">
+            <h1 className="text-lg font-semibold md:text-xl leading-tight">
               Detail Penilaian
             </h1>
             <p className="text-xs text-muted-foreground">
@@ -724,24 +741,25 @@ export default function TeacherCSSTAssessmentDetail() {
               </div>
             </CardHeader>
 
-            <CardContent className="pt-2 space-y-3">
+            <CardContent>
               <div className="w-full overflow-x-auto">
                 <Table className="min-w-[720px] text-xs">
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[40px] text-center">#</TableHead>
+                      <TableHead className="w-[40px] text-center">No</TableHead>
                       <TableHead>Nama siswa</TableHead>
                       <TableHead>NIS</TableHead>
                       <TableHead className="text-center">Status</TableHead>
-                      <TableHead className="text-center">
-                        Waktu submit
-                      </TableHead>
+                      <TableHead className="text-center">Waktu submit</TableHead>
                       <TableHead className="text-center">Nilai</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {DUMMY_PROGRESS.map((s, idx) => (
-                      <TableRow key={s.id}>
+                      <TableRow
+                        key={s.id}
+                        className="table-row-hover cursor-pointer"
+                      >
                         <TableCell className="text-center">{idx + 1}</TableCell>
                         <TableCell>{s.name}</TableCell>
                         <TableCell>{s.nis}</TableCell>
@@ -749,9 +767,7 @@ export default function TeacherCSSTAssessmentDetail() {
                           <CBadgeAssignment status={s.status} />
                         </TableCell>
                         <TableCell className="text-center">
-                          {s.submitted_at
-                            ? formatDateTime(s.submitted_at)
-                            : "-"}
+                          {s.submitted_at ? formatDateTime(s.submitted_at) : "-"}
                         </TableCell>
                         <TableCell className="text-center">
                           {typeof s.score === "number"
@@ -770,6 +786,7 @@ export default function TeacherCSSTAssessmentDetail() {
                 memberi gambaran UI.
               </p>
             </CardContent>
+
           </Card>
         </>
       )}

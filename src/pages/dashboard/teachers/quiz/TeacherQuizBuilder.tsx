@@ -52,6 +52,7 @@ import { cn } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 import { htmlToPlainText, RichTextInput } from "@/components/costum/CRichTextEditor";
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* =========================
    Types & Helpers
@@ -193,8 +194,8 @@ function mapApiQuestionToQuestion(q: QuizQuestionFromApi): Question {
     required: true, // API belum punya flag required, anggap wajib
     points: q.quiz_question_points ?? 1,
     options,
-    collapsed: true, // ⬅️ dari API: awalnya tertutup
-    dirty: false, // ⬅️ belum ada perubahan di FE
+    collapsed: true, // dari API: awalnya tertutup
+    dirty: false, // belum ada perubahan di FE
   };
 }
 
@@ -209,6 +210,22 @@ export default function TeacherQuizBuilder() {
     quizId: string;
   }>();
   const navigate = useNavigate();
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Buat Quiz",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Guru Mata Pelajaran" },
+        { label: "Detail Mata Pelajaran" },
+        { label: "Penilaian Mata Pelajaran" },
+        { label: "Detail Penilaian" },
+        { label: "Buat Quiz" },
+      ],
+      showBack: true,
+    });
+  }, [setHeader]);
+
   const endRef = useRef<HTMLDivElement | null>(null);
 
   // Build new or load from storage (per quiz)
@@ -532,66 +549,67 @@ export default function TeacherQuizBuilder() {
   ========================= */
   return (
     <div className="w-full bg-background text-foreground">
-      <main className="w-full px-4 md:px-6 md:py-6 bg-gradient-to-b from-secondary/10 via-background to-background">
-        <div className="mx-auto max-w-screen-2xl flex flex-col gap-4">
+      <main className="w-full px-4 md:px-4 bg-gradient-to-b from-secondary/10 via-background to-background">
+        <div className="mx-auto flex flex-col gap-4">
           {/* Header Bar */}
-          <div className="rounded-xl border bg-gradient-to-r from-secondary/20 via-background to-background p-2 md:p-3">
-            <div className="flex flex-wrap items-center gap-2 md:gap-3">
+          <div className="rounded-xl bg-gradient-to-r from-secondary/20 via-background to-background p-3">
+
+            {/* Baris 1: Back + Title (selalu di atas dan full width) */}
+            <div className="md:flex hidden items-center gap-2 mb-3">
               <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-                <ArrowLeft className="h-5 w-5" />
+                <ArrowLeft size={20} />
+              </Button>
+              <h1 className="text-lg md:text-xl font-semibold">Buat Quiz</h1>
+            </div>
+
+            {/* Baris 2: Judul Kuis (full width di semua device) */}
+            <Input
+              value={doc.title}
+              onChange={(e) =>
+                setDoc((d) => ({
+                  ...d,
+                  title: e.target.value,
+                  updatedAt: new Date().toISOString(),
+                }))
+              }
+              className="font-semibold text-base md:text-lg h-10 md:h-11 w-full mb-3"
+              placeholder="Judul kuis…"
+            />
+
+            {/* Baris 3: Tombol-tombol (stack di mobile, inline di desktop) */}
+            <div className="flex flex-wrap md:flex-nowrap items-center gap-2">
+
+              <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
+                <Settings2 className="h-4 w-4 mr-1" />
+                Pengaturan
               </Button>
 
-              <Input
-                value={doc.title}
-                onChange={(e) =>
-                  setDoc((d) => ({
-                    ...d,
-                    title: e.target.value,
-                    updatedAt: new Date().toISOString(),
-                  }))
-                }
-                className="font-semibold text-base md:text-lg h-10 md:h-11 w-full md:w-[32rem]"
-                placeholder="Judul kuis…"
-              />
+              <Button variant="outline" size="sm" onClick={exportJSON}>
+                <Download className="h-4 w-4 mr-1" />
+              </Button>
 
-              <div className="ml-auto flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSettingsOpen(true)}
-                >
-                  <Settings2 className="h-4 w-4 mr-1" />
-                  Pengaturan
+              <label className="cursor-pointer">
+                <input
+                  type="file"
+                  accept="application/json"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) importJSON(f);
+                  }}
+                />
+                <Button variant="outline" size="sm">
+                  <Upload className="h-4 w-4 mr-1" />
                 </Button>
+              </label>
 
-                <Button variant="outline" size="sm" onClick={exportJSON}>
-                  <Download className="h-4 w-4 mr-1" />
-                </Button>
-
-                <label className="cursor-pointer">
-                  <input
-                    type="file"
-                    accept="application/json"
-                    className="hidden"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) importJSON(f);
-                    }}
-                  />
-                  <span>
-                    <Button variant="outline" size="sm">
-                      <Upload className="h-4 w-4 mr-1" />
-                    </Button>
-                  </span>
-                </label>
-
-                <Button size="sm" onClick={publish} disabled={!quizId}>
-                  <GraduationCap className="h-4 w-4 mr-1" />
-                  Publish
-                </Button>
-              </div>
+              <Button size="sm" onClick={publish} disabled={!quizId}>
+                <GraduationCap className="h-4 w-4 mr-1" />
+                Publish
+              </Button>
             </div>
           </div>
+
 
           {/* Error dari API */}
           {apiErrorMessage && (

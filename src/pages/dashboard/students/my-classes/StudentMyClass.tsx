@@ -254,7 +254,7 @@ export default function StudentMyClass({ showBack = false, backTo }: Props) {
       <main className="mx-auto space-y-6">
         {/* Back + title */}
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+          <div className="md:flex hidden items-center gap-3">
             {showBack && (
               <Button
                 onClick={handleBack}

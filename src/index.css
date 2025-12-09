@@ -559,4 +559,11 @@ html {
     /* strong gold */
     --tw-ring-color: hsl(var(--warn-ring) / 0.25);
   }
+
+  /* ==== Hover tabel global (MENANG dari Tailwind default) ==== */
+  .table-row-hover:hover {
+    background-color: rgba(120, 100, 50, 0.28) !important;
+    /* darker brown-gold */
+    transition: background-color 0.25s ease;
+  }
 }

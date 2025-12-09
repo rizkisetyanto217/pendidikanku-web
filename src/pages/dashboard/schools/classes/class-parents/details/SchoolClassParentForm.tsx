@@ -382,7 +382,7 @@ const SchoolClassParentForm: React.FC = () => {
                           Menyimpan…
                         </>
                       ) : isEdit ? (
-                        "Simpan Perubahan"
+                        "Simpan"
                       ) : (
                         "Simpan"
                       )}

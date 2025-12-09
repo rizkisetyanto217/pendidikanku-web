@@ -72,10 +72,7 @@ export const TeacherRoutes = (
 
         {/* Absensi */}
         <Route path="absensi" element={<TeacherCSSTStudentAttendanceList />} />
-        <Route
-          path="absensi/:id"
-          element={<TeacherCSSTStudentAttendanceDetail />}
-        />
+        <Route path="absensi/:id" element={<TeacherCSSTStudentAttendanceDetail />} />
 
         {/* Ujian */}
         <Route path="ujian" element={<TeacherCSSTExam />} />
@@ -83,10 +80,7 @@ export const TeacherRoutes = (
         {/* Materi */}
         <Route path="materi" element={<TeacherCSSTMaterialList />} />
         <Route path="materi/new" element={<TeacherCSSTMaterialForm />} />
-        <Route
-          path="materi/edit/:materialId"
-          element={<TeacherCSSTMaterialForm />}
-        />
+        <Route path="materi/edit/:materialId" element={<TeacherCSSTMaterialForm />} />
 
         {/* Buku */}
         <Route path="buku" element={<TeacherCSSTBookList />} />
@@ -97,14 +91,8 @@ export const TeacherRoutes = (
         {/* Tugas */}
         <Route path="tugas" element={<TeacherCSSTAssignment />} />
         <Route path="tugas/new" element={<TeacherCSSTAssessmentForm />} />
-        <Route
-          path="tugas/:assessmentId"
-          element={<TeacherCSSTAssessmentDetail />}
-        />
-        <Route
-          path="tugas/:assessmentId/:quizId"
-          element={<TeacherQuizBuilder />}
-        />
+        <Route path="tugas/:assessmentId" element={<TeacherCSSTAssessmentDetail />} />
+        <Route path="tugas/:assessmentId/:quizId" element={<TeacherQuizBuilder />} />
 
         {/* Kelola */}
         <Route path="kelola-kelas" element={<TeacherCSSTManagement />} />
@@ -117,10 +105,7 @@ export const TeacherRoutes = (
       <Route path="agenda" element={<TeacherScheduleAgenda />} />
       <Route path="agenda/:id" element={<TeacherScheduleAgendaDetail />} />
       <Route path="rutin" element={<TeacherScheduleRoutine />} />
-      <Route
-        path="rutin/:routineId"
-        element={<TeacherScheduleRoutineDetail />}
-      />
+      <Route path="rutin/:routineId" element={<TeacherScheduleRoutineDetail />} />
     </Route>
 
     {/* Profil */}

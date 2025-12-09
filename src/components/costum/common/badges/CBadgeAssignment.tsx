@@ -1,27 +1,58 @@
+// src/components/costum/common/CBadgeAssignment.tsx
+
 import { Badge } from "@/components/ui/badge";
 
-export type AssignmentStatus =
+export type StatusType =
     | "not_started"
     | "in_progress"
     | "submitted"
-    | "graded";
+    | "graded"
+    | "not_graded";
 
-export default function CBadgeAssignment({ status }: { status: AssignmentStatus }) {
-    const isSubmitted = status === "submitted" || status === "graded";
+type StatusBadgeProps = {
+    status: StatusType;
+};
 
-    return isSubmitted ? (
-        <Badge
-            variant="outline"
-            className="border-emerald-500/60 bg-emerald-500/5 text-emerald-500 dark:text-emerald-300 text-[12px]"
-        >
-            Selesai
-        </Badge>
-    ) : (
-        <Badge
-            variant="outline"
-            className="border-red-400/60 bg-red-500/5 text-red-500 dark:text-red-300 text-[12px]"
-        >
-            Belum Dikumpulkan
-        </Badge>
-    );
+export default function CBadgeAssignment({ status }: StatusBadgeProps) {
+    const base = "!text-[12px]"; // force font size 12px
+
+    switch (status) {
+        case "not_started":
+            return (
+                <Badge variant="outline" className={`${base} badge-assignment-not-started`}>
+                    Belum Dikumpulkan
+                </Badge>
+            );
+
+        case "in_progress":
+            return (
+                <Badge variant="outline" className={`${base} badge-assignment-in-progress`}>
+                    Sedang Dikerjakan
+                </Badge>
+            );
+
+        case "submitted":
+            return (
+                <Badge variant="outline" className={`${base} badge-assignment-submitted`}>
+                    Sudah Dinilai
+                </Badge>
+            );
+
+        case "graded":
+            return (
+                <Badge variant="outline" className={`${base} badge-assignment-graded`}>
+                    Selesai
+                </Badge>
+            );
+
+        case "not_graded":
+            return (
+                <Badge variant="outline" className={`${base} badge-assignment-not-started`}>
+                    Belum Dinilai
+                </Badge>
+            );
+
+        default:
+            return null;
+    }
 }

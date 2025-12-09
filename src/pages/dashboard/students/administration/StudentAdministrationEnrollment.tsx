@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
+
 import { useNavigate } from "react-router-dom";
 import { cardHover } from "@/components/costum/table/CDataTable";
 
@@ -215,7 +215,7 @@ export default function StudentAdministrationEnrollment({ showBack = false, back
         </div>
       </div>
 
-      <Separator />
+
 
       {/* Filter bar */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

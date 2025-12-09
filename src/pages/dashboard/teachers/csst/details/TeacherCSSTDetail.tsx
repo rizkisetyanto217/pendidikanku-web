@@ -396,7 +396,6 @@ const TeacherCSSTDetail: React.FC = () => {
                 </div>
 
                 <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                  <Badge variant="outline">{sectionView.sectionName}</Badge>
                   <span>
                     Kode kelas:{" "}
                     <span className="font-mono">{sectionView.sectionCode}</span>

@@ -1,5 +1,5 @@
 // src/pages/sekolahislamku/teachers/TeacherCSSTManagement.tsx
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, Users, BookOpen, Calendar, Loader2 } from "lucide-react";
 
@@ -34,6 +34,8 @@ import type { ClassInfo } from "@/pages/dashboard/teachers/csst/menus/management
 
 import AddStudent from "@/pages/dashboard/teachers/csst/menus/managements/components/CTeacherAddStudent";
 import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
+import { cardHover } from "@/components/costum/table/CDataTable";
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 const TeacherCSSTManagement = () => {
   const { className } = useParams();
@@ -41,6 +43,20 @@ const TeacherCSSTManagement = () => {
     state?: { className?: string; students?: number; lastSubject?: string };
   };
   const navigate = useNavigate();
+
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Kelola Kelas",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Guru Mata Pelajaran" },
+        { label: "Detail Mata Pelajaran" },
+        { label: "Kelola Kelas" },
+      ],
+      showBack: true,
+    });
+  }, [setHeader]);
   const { toast } = useToast();
 
   const info = location.state;
@@ -63,7 +79,7 @@ const TeacherCSSTManagement = () => {
   // modal edit
   const [editOpen, setEditOpen] = useState(false);
 
-  // modal tambah siswa
+  // modal tambah Murid
   const [openAdd, setOpenAdd] = useState(false);
 
   // konfirmasi & loading state (pengganti SweetAlert)
@@ -108,7 +124,7 @@ const TeacherCSSTManagement = () => {
         onSubmit={(val) => setOverrides(val)}
       />
 
-      {/* Modal Tambah Siswa */}
+      {/* Modal Tambah Murid */}
       <AddStudent
         open={openAdd}
         onClose={() => setOpenAdd(false)}
@@ -140,12 +156,12 @@ const TeacherCSSTManagement = () => {
             <div className="md:flex hidden gap-3 items-center">
               <Button
                 variant="ghost"
+                size="icon"
                 onClick={() => navigate(-1)}
-                className="gap-1 h-9"
               >
-                <ArrowLeft className="h-5 w-5" />
+                <ArrowLeft size={20} />
               </Button>
-              <h1 className="text-lg font-semibold">Pengelolaan Kelas</h1>
+              <h1 className="text-lg md:text-xl font-semibold">Pengelolaan Kelas</h1>
             </div>
 
             {/* Card informasi kelas */}
@@ -169,18 +185,18 @@ const TeacherCSSTManagement = () => {
                     </p>
                   </div>
 
-                  {/* Jumlah Siswa */}
+                  {/* Jumlah Murid */}
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
                       <Users className="h-3.5 w-3.5" />
-                      JUMLAH SISWA
+                      JUMLAH MURID
                     </div>
                     <p className="text-xl font-bold flex items-center gap-2 text-muted-foreground">
                       {typeof info?.students === "number" ? (
                         <>
                           {info?.students}
                           <span className="text-sm font-normal opacity-80">
-                            siswa
+                            Murid
                           </span>
                         </>
                       ) : (
@@ -210,14 +226,15 @@ const TeacherCSSTManagement = () => {
                 <Separator className="my-6" />
 
                 {/* Action buttons */}
-                <div className="flex flex-wrap gap-3 justify-end">
+                <div className="flex items-center gap-3 justify-center flex-wrap">
                   <Button
                     variant="secondary"
                     onClick={() => setOpenAdd(true)}
                     className="px-6"
                   >
-                    Tambah Siswa
+                    Tambah Murid
                   </Button>
+
                   <Button
                     variant="ghost"
                     onClick={() => setEditOpen(true)}
@@ -302,16 +319,16 @@ const TeacherCSSTManagement = () => {
                   </h3>
                   <div className="space-y-3">
                     <button
-                      className="w-full text-left p-3 rounded-lg border bg-card hover:bg-accent transition-all"
+                      className={`w-full text-left p-3 rounded-lg border ${cardHover}`}
                       onClick={() => alert("Lihat daftar siswa")}
                     >
-                      <div className="font-medium">Lihat Daftar Siswa</div>
+                      <div className="font-medium">Lihat Daftar Murid</div>
                       <div className="text-xs text-muted-foreground mt-1">
                         Kelola data siswa dalam kelas
                       </div>
                     </button>
                     <button
-                      className="w-full text-left p-3 rounded-lg border bg-card hover:bg-accent transition-all"
+                      className={`w-full text-left p-3 rounded-lg border ${cardHover}`}
                       onClick={() => alert("Buat jadwal")}
                     >
                       <div className="font-medium">Atur Jadwal Pelajaran</div>

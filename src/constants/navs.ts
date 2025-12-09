@@ -79,6 +79,11 @@ export const NAVS: NavDict = {
           path: "guru",
           label: "Guru",
         },
+        {
+          // daftar guru -> /sekolah/guru
+          path: "murid",
+          label: "Murid",
+        },
       ],
     },
 

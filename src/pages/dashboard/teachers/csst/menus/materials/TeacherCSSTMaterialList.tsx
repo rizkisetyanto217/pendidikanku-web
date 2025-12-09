@@ -39,10 +39,13 @@ import {
 
 /* DataTable reusable */
 import {
+  cardHover,
   DataTable,
   type ColumnDef,
 } from "@/components/costum/table/CDataTable";
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+import { cn } from "@/lib/utils";
+import CRowActions from "@/components/costum/table/CRowAction";
 
 /* =========================================================
    TYPES
@@ -189,11 +192,11 @@ const bytesToHuman = (n?: number) => {
 const dateLong = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
     : "-";
 
 function extractYouTubeId(url?: string) {
@@ -208,7 +211,7 @@ function extractYouTubeId(url?: string) {
       const idx = segs.findIndex((s) => s === "embed");
       if (idx >= 0 && segs[idx + 1]) return segs[idx + 1];
     }
-  } catch {}
+  } catch { }
   return null;
 }
 
@@ -389,7 +392,10 @@ export default function TeacherCSSTMaterialList() {
   const renderCard = (m: Material) => {
     const ytId = m.type === "youtube" ? extractYouTubeId(m.url) : null;
     return (
-      <Card className="transition-shadow hover:shadow-md">
+      <Card className={cn(
+        "transition-shadow h-full flex flex-col justify-between",
+        cardHover
+      )}>
         <CardHeader className="pb-3">
           <CardTitle className="text-base truncate">{m.title}</CardTitle>
           {m.description && (
@@ -398,7 +404,7 @@ export default function TeacherCSSTMaterialList() {
             </p>
           )}
         </CardHeader>
-        <CardContent className="pt-0 space-y-3">
+        <CardContent className="pt-0 space-y-3 flex-1">
           <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
             <div className="flex items-center gap-2">
               <CalendarDays className="h-3.5 w-3.5" />
@@ -418,7 +424,7 @@ export default function TeacherCSSTMaterialList() {
           </div>
 
           {m.type === "article" && m.content && (
-            <div className="text-sm border rounded-md p-3 bg-muted/30 max-h-40 overflow-auto">
+            <div className="text-sm border rounded-md p-3 bg-muted/30 max-h-32 overflow-auto">
               {m.content}
             </div>
           )}
@@ -438,9 +444,9 @@ export default function TeacherCSSTMaterialList() {
           )}
 
           {m.type === "youtube" && ytId && (
-            <div className="aspect-video w-full overflow-hidden rounded-md border">
+            <div className="w-full h-40 overflow-hidden rounded-md border">
               <iframe
-                className="w-full h-full"
+                className="w-full h-full object-cover"
                 src={`https://www.youtube.com/embed/${ytId}`}
                 title={m.title}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -539,10 +545,10 @@ export default function TeacherCSSTMaterialList() {
         </div>
 
         {/* DATATABLE */}
-        <div className="px-4 md:px-6 pb-8">
+        <div>
           <DataTable<Material>
             onAdd={() => navigate("new")}
-            addLabel="Tambah Materi"
+            addLabel="Tambah"
             defaultQuery={q}
             onQueryChange={setQ}
             searchByKeys={["title", "description", "author"]}
@@ -560,49 +566,26 @@ export default function TeacherCSSTMaterialList() {
                 <span className="text-xs text-muted-foreground">Memuat…</span>
               ) : null
             }
-            renderActions={(m: Material) => (
-              <div className="flex items-center justify-center gap-2">
-                {m.url && (
-                  <a href={m.url} target="_blank" rel="noreferrer">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-2"
-                      data-no-row-click
-                      title={m.type === "file" ? "Unduh file" : "Buka tautan"}
-                    >
-                      {m.type === "file" ? (
-                        <Download className="h-4 w-4" />
-                      ) : (
-                        <ExternalLink className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </a>
-                )}
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  data-no-row-click
-                  onClick={() => navigate(`edit/${m.id}`)}
-                  title="Edit materi"
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="gap-2"
-                  data-no-row-click
-                  onClick={() => setDeleteTarget(m)}
-                  title="Hapus materi"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+            renderActions={(m: Material, view) => (
+              <CRowActions
+                row={m}
+                mode="menu"               // ⬅ hanya dropdown di table
+                forceMenu={view === "table"}
+                onEdit={() => navigate(`edit/${m.id}`)}
+                onDelete={() => setDeleteTarget(m)}
+                onDownload={
+                  m.type === "file" && m.url
+                    ? () => window.open(m.url!, "_blank")
+                    : undefined
+                }
+                onOpenLink={
+                  (m.type === "link" || m.type === "youtube") && m.url
+                    ? () => window.open(m.url!, "_blank")
+                    : undefined
+                }
+              />
             )}
+
             rowHover
             emptySlot={
               <div className="text-sm text-muted-foreground">

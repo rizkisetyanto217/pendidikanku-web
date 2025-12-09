@@ -49,6 +49,7 @@ import SchoolClassSectionForm from "@/pages/dashboard/schools/classes/class-sect
 import SchoolClassStudentList from "@/pages/dashboard/schools/classes/classes/student-list/SchoolClassStudentList";
 import SchoolRegistrationPaymentDetail from "@/pages/dashboard/schools/registrations/student-list/SchoolRegistrationsStudentDetail";
 import SchoolClassSection from "@/pages/dashboard/schools/classes/class-sections/SchoolClassSections";
+import SchoolStudent from "@/pages/dashboard/schools/profiles/students/SchoolStudent";
 
 export const SchoolRoutes = (
   <Route path="sekolah" element={<DashboardLayout />}>
@@ -66,6 +67,11 @@ export const SchoolRoutes = (
       <Route path="guru">
         <Route index element={<SchoolTeacher />} />
         <Route path=":id" element={<SchoolDetailTeacher />} />
+      </Route>
+      <Route path="murid">
+        <Route index element={<SchoolStudent />} />
+        {/* detail: /sekolah/profil/guru/:id */}
+        {/* <Route path=":id" element={<SchoolDetailTeacher />} /> */}
       </Route>
     </Route>
 
@@ -182,6 +188,11 @@ export const SchoolRoutes = (
         <Route path="guru">
           <Route index element={<SchoolTeacher showBack />} />
           <Route path="guru/:id" element={<SchoolDetailTeacher />} />
+        </Route>
+        <Route path="murid">
+          <Route index element={<SchoolStudent />} />
+          {/* detail: /sekolah/profil/guru/:id */}
+          {/* <Route path=":id" element={<SchoolDetailTeacher />} /> */}
         </Route>
       </Route>
 

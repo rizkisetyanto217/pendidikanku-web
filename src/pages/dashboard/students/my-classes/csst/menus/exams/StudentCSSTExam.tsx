@@ -16,8 +16,6 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 
-import { Separator } from "@/components/ui/separator";
-
 import {
   Dialog,
   DialogContent,
@@ -334,6 +332,19 @@ const StudentCSSTExam: React.FC<StudentClassesExam> = ({ showBack }) => {
   const { setHeader } = useDashboardHeader();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  useEffect(() => {
+    setHeader({
+      title: "Ujian & Penilaian",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Mata Pelajaran Saya", href: "../mapel-saya" },
+        { label: "Detail Mapel", href: "../" },
+        { label: "Ujian" },
+      ],
+      showBack
+    });
+  }, [setHeader, showBack]);
+
   // state untuk dialog pilih quiz
   const [startAssessment, setStartAssessment] =
     useState<StudentAssessmentItem | null>(null);
@@ -427,19 +438,6 @@ const StudentCSSTExam: React.FC<StudentClassesExam> = ({ showBack }) => {
 
   const hasItems = filteredItems.length > 0;
   const startQuizzes = startAssessment?.quizzes ?? [];
-
-  useEffect(() => {
-    setHeader({
-      title: "Ujian & Penilaian",
-      breadcrumbs: [
-        { label: "Dashboard", href: "dashboard" },
-        { label: "Mata Pelajaran Saya", href: "../mapel-saya" },
-        { label: "Detail Mapel", href: "../" },
-        { label: "Ujian" },
-      ],
-      actions: null,
-    });
-  }, [setHeader]);
 
   const handlePageChange = (nextPage: number) => {
     if (!pagination) return;
@@ -567,16 +565,18 @@ const StudentCSSTExam: React.FC<StudentClassesExam> = ({ showBack }) => {
       <main className="w-full">
         <div className="mx-auto flex flex-col gap-4">
           {/* Top bar */}
-          <div className="flex items-center gap-3">
+          <div className="md:flex hidden items-center gap-3">
             {showBack && (
-              <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-                <ArrowLeft className="h-5 w-5" />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate(-1)}>
+                <ArrowLeft size={20} />
               </Button>
             )}
             <div className="space-y-0.5">
               <h1 className="text-lg font-semibold md:text-xl flex items-center gap-2">
-                <ClipboardList className="h-5 w-5 text-primary" />
-                <span>Ujian & Penilaian</span>
+                Ujian & Penilaian
               </h1>
               <p className="text-xs md:text-sm text-muted-foreground">
                 Daftar semua ujian yang terkait dengan mata pelajaran ini,
@@ -584,8 +584,6 @@ const StudentCSSTExam: React.FC<StudentClassesExam> = ({ showBack }) => {
               </p>
             </div>
           </div>
-
-          <Separator className="my-1" />
 
           {/* Tabs status + filter pertemuan */}
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">

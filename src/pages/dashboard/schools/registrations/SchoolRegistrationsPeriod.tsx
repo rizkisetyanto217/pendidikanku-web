@@ -532,6 +532,7 @@ export default function SchoolRegistrationsPeriod({
             label="Status"
             value={
               <CBadgeStatus
+                className="mt-1"
                 status={term.academic_term_is_active ? "active" : "inactive"}
               />
 

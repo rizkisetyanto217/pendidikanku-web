@@ -44,6 +44,48 @@ import {
 } from "@/components/costum/table/CDataTable";
 
 /* ================= Types (API) ================= */
+
+// Disamakan dengan enum di backend:
+//
+// const (
+//   TeacherEmploymentTetap      TeacherEmployment = "tetap"
+//   TeacherEmploymentKontrak    TeacherEmployment = "kontrak"
+//   TeacherEmploymentParuhWaktu TeacherEmployment = "paruh_waktu"
+//   TeacherEmploymentMagang     TeacherEmployment = "magang"
+//   TeacherEmploymentHonorer    TeacherEmployment = "honorer"
+//   TeacherEmploymentRelawan    TeacherEmployment = "relawan"
+//   TeacherEmploymentTamu       TeacherEmployment = "tamu"
+// )
+export type TeacherEmployment =
+  | "tetap"
+  | "kontrak"
+  | "paruh_waktu"
+  | "magang"
+  | "honorer"
+  | "relawan"
+  | "tamu";
+
+const employmentLabel = (e?: TeacherEmployment | string | null) => {
+  switch (e) {
+    case "tetap":
+      return "Tetap";
+    case "kontrak":
+      return "Kontrak";
+    case "paruh_waktu":
+      return "Paruh waktu";
+    case "magang":
+      return "Magang";
+    case "honorer":
+      return "Honorer";
+    case "relawan":
+      return "Relawan";
+    case "tamu":
+      return "Guru tamu";
+    default:
+      return e || "-";
+  }
+};
+
 export interface TeacherApiRow {
   school_teacher_id: string;
   school_teacher_school_id: string;
@@ -52,7 +94,8 @@ export interface TeacherApiRow {
   school_teacher_code: string | null;
   school_teacher_slug: string | null;
 
-  school_teacher_employment?: "tetap" | "honor" | string;
+  // ✅ pakai enum baru
+  school_teacher_employment?: TeacherEmployment | null;
   school_teacher_is_active: boolean;
   school_teacher_joined_at: string | null;
   school_teacher_left_at?: string | null;
@@ -61,26 +104,24 @@ export interface TeacherApiRow {
   school_teacher_is_public: boolean;
   school_teacher_notes?: string | null;
 
-  school_teacher_user_teacher_name_snapshot: string | null;
-  school_teacher_user_teacher_avatar_url_snapshot: string | null;
-  school_teacher_user_teacher_whatsapp_url_snapshot: string | null;
-  school_teacher_user_teacher_title_prefix_snapshot: string | null;
-  school_teacher_user_teacher_title_suffix_snapshot: string | null;
+  // ✅ sekarang pakai *_cache sesuai API
+  school_teacher_user_teacher_full_name_cache: string | null;
+  school_teacher_user_teacher_avatar_url_cache: string | null;
+  school_teacher_user_teacher_whatsapp_url_cache: string | null;
+  school_teacher_user_teacher_title_prefix_cache: string | null;
+  school_teacher_user_teacher_title_suffix_cache: string | null;
 
-  // gender snapshot dari user_teacher
-  school_teacher_user_teacher_gender_snapshot?:
-  | "male"
-  | "female"
-  | string
-  | null;
+  // gender snapshot dari user_teacher (string "male" / "female")
+  school_teacher_user_teacher_gender_cache?: "male" | "female" | string | null;
 
-  school_teacher_school_name_snapshot?: string | null;
-  school_teacher_school_slug_snapshot?: string | null;
+  // kalau nanti ada di API, boleh tetap optional
+  school_teacher_school_name_cache?: string | null;
+  school_teacher_school_slug_cache?: string | null;
 
   school_teacher_sections: any[] | string;
   school_teacher_csst: any[] | string;
 
-  // agregat (kalau ada di API)
+  // agregat
   school_teacher_total_class_sections?: number;
   school_teacher_total_class_section_subject_teachers?: number;
   school_teacher_total_class_sections_active?: number;
@@ -99,6 +140,8 @@ type PublicTeachersResponse = {
     total_pages: number;
     has_next: boolean;
     has_prev: boolean;
+    count?: number;
+    per_page_options?: number[];
   };
   data: TeacherApiRow[];
 };
@@ -140,6 +183,15 @@ const buildTeacherName = (
   const s = parts.join(" ").trim();
   return s.length ? s : "Tanpa Nama";
 };
+
+const formatShortDate = (d?: string | null) =>
+  d
+    ? new Date(d).toLocaleDateString("id-ID", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
+    : "-";
 
 function safeParseArray(v: unknown): any[] {
   if (Array.isArray(v)) return v;
@@ -272,6 +324,7 @@ const SchoolTeacher: React.FC<Props> = ({ showBack = false, backTo }) => {
           params: {
             page: 1,
             per_page: 999,
+            mode: "compact", // ✅ pakai API terbaru: ?mode=compact
             // kalau nanti mau server-side search, tinggal aktifin:
             // q: q || undefined,
           },
@@ -297,11 +350,11 @@ const SchoolTeacher: React.FC<Props> = ({ showBack = false, backTo }) => {
         csstArr?.[0]?.subject_name_snapshot ??
         undefined;
 
-      // map gender snapshot → "L" / "P"
+      // map gender cache → "L" / "P"
       let gender: "L" | "P" | undefined;
-      if (t.school_teacher_user_teacher_gender_snapshot === "male") {
+      if (t.school_teacher_user_teacher_gender_cache === "male") {
         gender = "L";
-      } else if (t.school_teacher_user_teacher_gender_snapshot === "female") {
+      } else if (t.school_teacher_user_teacher_gender_cache === "female") {
         gender = "P";
       }
 
@@ -310,23 +363,23 @@ const SchoolTeacher: React.FC<Props> = ({ showBack = false, backTo }) => {
         code: t.school_teacher_code,
         slug: t.school_teacher_slug,
         name: buildTeacherName(
-          t.school_teacher_user_teacher_title_prefix_snapshot,
-          t.school_teacher_user_teacher_name_snapshot,
-          t.school_teacher_user_teacher_title_suffix_snapshot
+          t.school_teacher_user_teacher_title_prefix_cache,
+          t.school_teacher_user_teacher_full_name_cache,
+          t.school_teacher_user_teacher_title_suffix_cache
         ),
-        avatarUrl: t.school_teacher_user_teacher_avatar_url_snapshot,
+        avatarUrl: t.school_teacher_user_teacher_avatar_url_cache,
         phone: parsePhoneFromWa(
-          t.school_teacher_user_teacher_whatsapp_url_snapshot
+          t.school_teacher_user_teacher_whatsapp_url_cache
         ),
         subject,
-        employment: t.school_teacher_employment,
+        employment: t.school_teacher_employment || undefined,
         isActive: t.school_teacher_is_active,
         isPublic: t.school_teacher_is_public,
         isVerified: t.school_teacher_is_verified,
         joinedAt: t.school_teacher_joined_at,
         leftAt: t.school_teacher_left_at,
         gender,
-        // email belum ada di snapshot → biarkan undefined
+        // email belum ada di snapshot/cache → biarkan undefined
       } as TeacherItem;
     });
   }, [data]);
@@ -337,36 +390,64 @@ const SchoolTeacher: React.FC<Props> = ({ showBack = false, backTo }) => {
       {
         id: "name",
         header: "Nama",
-        minW: "240px",
+        minW: "260px",
         align: "left",
         className: "text-left",
         cell: (r) => (
-          <div>
-            <div className="font-medium">{r.name}</div>
-            <div className="mt-0.5 text-xs text-muted-foreground">
-              {(r.employment ?? "-") +
-                " • " +
-                (r.isActive ? "Aktif" : "Nonaktif") +
-                (r.isVerified ? " • Terverifikasi" : "")}
+          <div className="flex items-center gap-3">
+            {r.avatarUrl ? (
+              <div className="h-8 w-8 rounded-full overflow-hidden border bg-muted shrink-0">
+                <img
+                  src={r.avatarUrl}
+                  alt={r.name}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs shrink-0">
+                {r.name?.charAt(0) ?? "?"}
+              </div>
+            )}
+            <div>
+              <div className="font-medium">{r.name}</div>
+              <div className="mt-0.5 text-xs text-muted-foreground">
+                {employmentLabel(r.employment)}
+              </div>
             </div>
           </div>
         ),
       },
       {
-        id: "subject",
-        header: "Mapel",
-        minW: "160px",
+        id: "code",
+        header: "Nomor guru",
+        minW: "140px",
         align: "left",
         className: "text-left",
-        cell: (r) => r.subject ?? "-",
+        cell: (r) => r.code ?? "-",
       },
       {
         id: "gender",
-        header: "Gender",
-        minW: "120px",
+        header: "JK",
+        minW: "80px",
         align: "left",
         className: "text-left",
-        cell: (r) => genderLabel(r.gender),
+        cell: (r) => r.gender ?? "-",
+      },
+      {
+        id: "joined_at",
+        header: "Bergabung",
+        minW: "140px",
+        align: "left",
+        className: "text-left whitespace-nowrap",
+        cell: (r) => formatShortDate(r.joinedAt),
+      },
+      {
+        id: "employment",
+        header: "Status kerja",
+        minW: "160px",
+        align: "left",
+        className: "text-left",
+        cell: (r) => employmentLabel(r.employment),
       },
       {
         id: "contact",
@@ -396,13 +477,18 @@ const SchoolTeacher: React.FC<Props> = ({ showBack = false, backTo }) => {
                 <Mail size={14} /> Email
               </a>
             )}
+            {!r.phone && r.code && (
+              <span className="text-xs text-muted-foreground">
+                Nomor WA tersimpan
+              </span>
+            )}
           </div>
         ),
       },
       {
         id: "status",
         header: "Status",
-        minW: "120px",
+        minW: "140px",
         cell: (r) => (
           <span
             className={[
@@ -463,12 +549,18 @@ const SchoolTeacher: React.FC<Props> = ({ showBack = false, backTo }) => {
           {t.isActive ? "Aktif" : "Nonaktif"}
         </Badge>
       </div>
-      <div className="text-xs text-muted-foreground">{t.subject ?? "-"}</div>
+
+      {/* Nomor guru */}
+      <div className="text-xs text-muted-foreground">
+        Nomor guru: {t.code ?? "-"}
+      </div>
+
+      {/* Status kerja + gender */}
+      <div className="text-xs text-muted-foreground">
+        Status kerja: {employmentLabel(t.employment)} • {genderLabel(t.gender)}
+      </div>
+
       <div className="text-sm space-y-1">
-        <div>
-          <span className="text-muted-foreground">Status: </span>
-          {(t.employment ?? "-") + (t.isVerified ? " • Terverifikasi" : "")}
-        </div>
         <div className="flex gap-3 mt-1">
           {t.phone && (
             <a
@@ -492,13 +584,14 @@ const SchoolTeacher: React.FC<Props> = ({ showBack = false, backTo }) => {
           )}
         </div>
       </div>
+
       <div className="pt-1 flex justify-end">
         <Button
           size="sm"
           className="gap-1"
           onClick={(e) => {
             e.stopPropagation();
-            navigate(`/sekolah/profil/guru/${t.id}`);
+            navigate(`${t.id}`);
           }}
         >
           Lihat <Eye size={14} />
@@ -585,11 +678,11 @@ const SchoolTeacher: React.FC<Props> = ({ showBack = false, backTo }) => {
             storageKey={`teachers:${schoolId || "unknown"}`}
             renderCard={renderCard}
             /* Klik baris → detail */
-            onRowClick={(r) => navigate(`/sekolah/profil/guru/${r.id}`)}
+            onRowClick={(r) => navigate(`${r.id}`)}
             /* Actions dropdown ala Room */
             renderActions={(r) => (
               <ActionsMenu
-                onView={() => navigate(`/sekolah/profil/guru/${r.id}`)}
+                onView={() => navigate(`${r.id}`)}
               />
             )}
             /* Pagination client-side (pakai bawaan DataTable) */

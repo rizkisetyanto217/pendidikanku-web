@@ -187,7 +187,7 @@ export default function SchoolRoomDetail() {
   }
 
   return (
-    <main className="">
+    <main>
       <div className="mx-auto space-y-6">
         {/* Header atas */}
         <div className="md:flex hidden items-center gap-3 mb-4">

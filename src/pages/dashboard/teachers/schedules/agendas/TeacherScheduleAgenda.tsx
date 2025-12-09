@@ -305,64 +305,50 @@ export default function TeacherScheduleAgenda({
           </div>
         </div>
 
-        {/* Header: Mobile (< md) - hanya navigasi bulan (tanpa title/desc) */}
-        <div className="flex md:hidden items-center gap-2">
-          {showBack && (
-            <Button
-              onClick={handleBack}
-              variant="ghost"
-              size="icon"
-              className="cursor-pointer"
-            >
-              <ArrowLeft size={18} />
-            </Button>
-          )}
-
-          <div className="ml-auto flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={gotoPrev}>
-              <ChevronLeft size={16} />
-            </Button>
-            <span className="font-medium text-xs">{monthLabel(month)}</span>
-            <Button variant="outline" size="icon" onClick={gotoNext}>
-              <ChevronRight size={16} />
-            </Button>
-            <Button variant="secondary" size="sm" onClick={goToToday}>
-              Hari ini
-            </Button>
-          </div>
+        <div className="ml-auto flex items-center gap-2 mb-2">
+          <Button variant="outline" size="icon" onClick={gotoPrev}>
+            <ChevronLeft size={16} />
+          </Button>
+          <span className="font-medium text-xs">{monthLabel(month)}</span>
+          <Button variant="outline" size="icon" onClick={gotoNext}>
+            <ChevronRight size={16} />
+          </Button>
+          <Button variant="secondary" size="sm" onClick={goToToday}>
+            Hari ini
+          </Button>
         </div>
+      </div>
 
-        {/* Segmented Tabs */}
-        <CSegmentedTabs
-          value={tab}
-          onValueChange={(v) => setTab(v as "calendar" | "list")}
-          tabs={TAB_ITEMS}
-          className="mt-1"
-        />
+      {/* Segmented Tabs */}
+      <CSegmentedTabs
+        value={tab}
+        onValueChange={(v) => setTab(v as "calendar" | "list")}
+        tabs={TAB_ITEMS}
+        className="mt-1"
+      />
 
-        {/* Content */}
-        <div className="mt-4">
-          {tab === "calendar" ? (
-            <CalendarView
-              month={month}
-              data={schedulesQ.data ?? []}
-              loading={schedulesQ.isLoading}
-              selectedDay={selectedDay}
-              setSelectedDay={setSelectedDay}
-              // klik agenda di kalender → detail
-              onEdit={(row) => goToDetail(row)}
-            // tidak ada onAddNew/onDelete di sini, karena jadwal dari sistem akademik / attendance
-            />
-          ) : (
-            <ScheduleList
-              data={schedulesQ.data ?? []}
-              loading={schedulesQ.isLoading}
-              // klik agenda di list → detail
-              onEdit={(row) => goToDetail(row)}
-              scrollSignal={scrollToTodaySig}
-            />
-          )}
-        </div>
+      {/* Content */}
+      <div className="mt-4">
+        {tab === "calendar" ? (
+          <CalendarView
+            month={month}
+            data={schedulesQ.data ?? []}
+            loading={schedulesQ.isLoading}
+            selectedDay={selectedDay}
+            setSelectedDay={setSelectedDay}
+            // klik agenda di kalender → detail
+            onEdit={(row) => goToDetail(row)}
+          // tidak ada onAddNew/onDelete di sini, karena jadwal dari sistem akademik / attendance
+          />
+        ) : (
+          <ScheduleList
+            data={schedulesQ.data ?? []}
+            loading={schedulesQ.isLoading}
+            // klik agenda di list → detail
+            onEdit={(row) => goToDetail(row)}
+            scrollSignal={scrollToTodaySig}
+          />
+        )}
       </div>
     </div>
   );

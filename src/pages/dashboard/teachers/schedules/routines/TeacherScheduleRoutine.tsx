@@ -687,7 +687,7 @@ export default function TeacherScheduleRoutine({
     <div className="w-full bg-background text-foreground">
       <div className="mx-auto flex flex-col gap-4">
         {/* Header: Desktop (>= md) - lengkap */}
-        <div className="hidden md:flex gap-3 items-center">
+        <div className="md:flex hidden gap-3 items-center">
           {showBack && (
             <Button
               onClick={handleBack}
@@ -698,27 +698,13 @@ export default function TeacherScheduleRoutine({
               <ArrowLeft size={20} />
             </Button>
           )}
+
           <div>
             <div className="font-semibold text-lg md:text-xl">Jadwal Rutin</div>
             <p className="text-sm text-muted-foreground">
               Kelola jadwal rutin mingguan dan kegiatan sekali
             </p>
           </div>
-        </div>
-
-        {/* Header: Mobile (< md) - title pendek saja */}
-        <div className="flex md:hidden items-center gap-2">
-          {showBack && (
-            <Button
-              onClick={handleBack}
-              variant="ghost"
-              size="icon"
-              className="cursor-pointer"
-            >
-              <ArrowLeft size={18} />
-            </Button>
-          )}
-          <span className="font-semibold text-base">Jadwal Rutin</span>
         </div>
 
         {/* Segmented Tabs */}

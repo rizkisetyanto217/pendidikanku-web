@@ -1,6 +1,6 @@
 // src/pages/sekolahislamku/teacher/TeacherCSSTAssignment.tsx
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "@/lib/axios";
@@ -38,6 +38,9 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import CMenuSearch from "@/components/costum/common/CMenuSearch";
+import { cardHover } from "@/components/costum/table/CDataTable";
+import { cn } from "@/lib/utils";
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* =======================
    Types — sesuai JSON
@@ -166,6 +169,20 @@ export default function TeacherCSSTAssignment() {
   const { csstId } = useParams<{ csstId: string }>();
   const navigate = useNavigate();
 
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Penilaian Mata Pelajaran",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Guru Mata Pelajaran" },
+        { label: "Detail Mata Pelajaran" },
+        { label: "Penilaian Mata Pelajaran" },
+      ],
+      showBack: true,
+    });
+  }, [setHeader]);
+
   const [search, setSearch] = useState("");
   const [modeFilter, setModeFilter] = useState<ModeFilter>("all");
 
@@ -233,14 +250,13 @@ export default function TeacherCSSTAssignment() {
   ).length;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Top bar */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-3">
+        <div className="md:flex hidden items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full"
             onClick={() => navigate(-1)}
           >
             <ArrowLeft className="h-4 w-4" />
@@ -625,7 +641,7 @@ function AssessmentCard({
   const gradedTotal = assessment.assessment_submissions_graded_total ?? 0;
 
   return (
-    <Card className="border-border/70">
+    <Card className={cn("border-border/70", cardHover)}>
       <CardHeader className="pb-3">
         <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
           <div className="space-y-1">

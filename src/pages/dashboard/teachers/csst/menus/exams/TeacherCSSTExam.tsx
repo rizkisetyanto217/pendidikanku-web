@@ -1,6 +1,6 @@
 // src/pages/sekolahislamku/teacher/TeacherCSSTExam.tsx
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "@/lib/axios";
@@ -38,6 +38,9 @@ import {
   AlertCircle,
   CheckCircle2,
 } from "lucide-react";
+import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+import { cardHover } from "@/components/costum/table/CDataTable";
+import { cn } from "@/lib/utils";
 
 /* =======================
    Types — sesuai JSON
@@ -166,6 +169,20 @@ export default function TeacherCSSTExam() {
   const { csstId } = useParams<{ csstId: string }>();
   const navigate = useNavigate();
 
+  const { setHeader } = useDashboardHeader();
+  useEffect(() => {
+    setHeader({
+      title: "Penilaian Ujian",
+      breadcrumbs: [
+        { label: "Dashboard", href: "dashboard" },
+        { label: "Guru Mata Pelajaran" },
+        { label: "Detail Mata Pelajaran" },
+        { label: "Penilaian Ujian" },
+      ],
+      showBack: true,
+    });
+  }, [setHeader]);
+
   const [search, setSearch] = useState("");
   const [modeFilter, setModeFilter] = useState<ModeFilter>("all");
 
@@ -187,7 +204,7 @@ export default function TeacherCSSTExam() {
   const assessments = data?.data ?? [];
 
   const csstName =
-    assessments[0]?.assessment_csst_snapshot?.name ?? "Kelas / Mapel";
+    assessments[0]?.assessment_csst_snapshot?.name ?? "Ujian Kelas / Mapel";
 
   // 1) Filter berdasarkan mode (class announce vs tugas umum)
   const filteredByMode = useMemo(() => {
@@ -233,20 +250,19 @@ export default function TeacherCSSTExam() {
   ).length;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Top bar */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-3">
+        <div className="md:flex hidden items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full"
             onClick={() => navigate(-1)}
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft size={20} />
           </Button>
           <div>
-            <h1 className="text-lg font-semibold leading-tight">
+            <h1 className="text-lg md:text-xl font-semibold leading-tight">
               Penilaian untuk {csstName}
             </h1>
             <p className="text-xs text-muted-foreground">
@@ -620,7 +636,7 @@ function AssessmentCard({
   const gradedTotal = assessment.assessment_submissions_graded_total ?? 0;
 
   return (
-    <Card className="border-border/70">
+    <Card className={cn("border-border/70 transition-shadow", cardHover)}>
       <CardHeader className="pb-3">
         <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
           <div className="space-y-1">
