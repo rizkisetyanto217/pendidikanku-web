@@ -295,8 +295,8 @@ const SchoolClassParent: React.FC = () => {
             r.is_deleted === true
               ? "inactive"
               : r.is_active === true
-                ? "active"
-                : "inactive";
+              ? "active"
+              : "inactive";
 
           return <CBadgeStatus status={status} />;
         },
@@ -451,8 +451,8 @@ const SchoolClassParent: React.FC = () => {
                         r.is_deleted
                           ? "inactive"
                           : r.is_active
-                            ? "active"
-                            : "inactive"
+                          ? "active"
+                          : "inactive"
                       }
                     />
                   </div>

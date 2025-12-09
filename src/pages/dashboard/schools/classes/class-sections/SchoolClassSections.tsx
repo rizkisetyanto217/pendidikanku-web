@@ -4,7 +4,15 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "@/lib/axios";
 
-import { ArrowLeft, Layers, Users, BookOpen, Hash } from "lucide-react";
+import {
+  ArrowLeft,
+  Layers,
+  Users,
+  BookOpen,
+  Hash,
+  User,
+  ClipboardList,
+} from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,96 +22,85 @@ import { Button } from "@/components/ui/button";
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
 
-/* ========= Types dari API /u/class-sections/list?with_csst=true ========= */
+/* ========= Types dari API /api/u/class-sections/list?mode=compact&nested=csst ========= */
 
-type EnrollmentMode = "self_select" | "assigned" | "closed" | string;
-
-type CsstStats = {
-  total_attendance?: number | null;
-};
-
-type CsstSubject = {
+type CompactTeacher = {
   id: string;
-  subject?: {
-    id: string;
-    name: string;
-  } | null;
+  name: string;
+  avatar_url?: string | null;
+  teacher_code?: string | null;
+  title_prefix?: string | null;
+  title_suffix?: string | null;
+  whatsapp_url?: string | null;
+  gender?: string | null;
 };
 
-type CsstTeacher = {
+type CompactTeacherCache = {
   id: string;
+  name: string;
+  avatar_url?: string | null;
+  teacher_code?: string | null;
+  title_prefix?: string | null;
+  title_suffix?: string | null;
+  whatsapp_url?: string | null;
+  gender?: string | null;
 };
 
-type CsstRoom = {
-  id: string;
+type ApiCsstCompact = {
+  class_section_subject_teacher_id: string;
+  class_section_subject_teacher_school_id: string;
+  class_section_subject_teacher_class_section_id: string;
+  class_section_subject_teacher_class_subject_id: string;
+  class_section_subject_teacher_school_teacher_id: string;
+  class_section_subject_teacher_slug: string;
+  class_section_subject_teacher_delivery_mode: string;
+  class_section_subject_teacher_total_attendance: number;
+  class_section_subject_teacher_total_assessments: number;
+  class_section_subject_teacher_total_assessments_graded: number;
+  class_section_subject_teacher_total_assessments_ungraded: number;
+  class_section_subject_teacher_total_students_passed: number;
+
+  class_section_subject_teacher_class_section_slug_cache: string;
+  class_section_subject_teacher_class_section_name_cache: string;
+  class_section_subject_teacher_class_section_code_cache: string;
+
+  class_section_subject_teacher_school_teacher_slug_cache: string;
+  class_section_subject_teacher_school_teacher_cache: CompactTeacherCache;
+  class_section_subject_teacher_school_teacher_name_cache: string;
+
+  class_section_subject_teacher_subject_id: string;
+  class_section_subject_teacher_subject_name_cache: string;
+  class_section_subject_teacher_subject_code_cache: string;
+  class_section_subject_teacher_subject_slug_cache: string;
+
+  class_section_subject_teacher_is_active: boolean;
+  class_section_subject_teacher_created_at: string;
+  class_section_subject_teacher_updated_at: string;
 };
 
-type ApiCsstItem = {
-  id: string;
-  is_active: boolean;
-  teacher?: CsstTeacher | null;
-  class_subject?: CsstSubject | null;
-  room?: CsstRoom | null;
-  stats?: CsstStats | null;
-};
-
-export type ApiClassSection = {
-  // agregat siswa
-  class_section_total_students?: number | null;
-  class_section_total_students_active?: number | null;
-  class_section_total_students_male?: number | null;
-  class_section_total_students_female?: number | null;
-  class_section_total_students_male_active?: number | null;
-  class_section_total_students_female_active?: number | null;
-
-  // info akademik
-  class_section_academic_term_id?: string | null;
-  class_section_academic_year_snapshot?: string | null;
-  class_section_academic_term_name_snapshot?: string | null;
-  class_section_academic_term_slug_snapshot?: string | null;
-
-  // agregat mapel/pengajar
-  class_section_total_class_class_section_subject_teachers?: number | null;
-  class_section_total_class_class_section_subject_teachers_active?:
-  | number
-  | null;
-  class_sections_csst_count?: number | null;
-  class_sections_csst_active_count?: number | null;
-
-  // CSST detail
-  class_sections_csst?: ApiCsstItem[];
-
-  // info guru/ruang (opsional)
-  class_section_school_teacher_id?: string | null;
-  class_section_class_room_id?: string | null;
-  class_section_class_room_name_snapshot?: string | null;
-  class_section_class_room_slug_snapshot?: string | null;
-  class_section_class_room_location_snapshot?: string | null;
-
-  // existing fields yang mungkin tetap ada
+export type ApiClassSectionCompact = {
   class_section_id: string;
-  class_section_class_id: string;
   class_section_slug: string;
   class_section_name: string;
   class_section_code?: string | null;
+
   class_section_image_url?: string | null;
   class_section_is_active: boolean;
 
-  // optional snapshots lama (kalau ada)
-  class_section_class_name_snapshot?: string;
-  class_section_class_slug_snapshot?: string;
-  class_section_class_parent_id?: string;
-  class_section_class_parent_name_snapshot?: string;
-  class_section_class_parent_slug_snapshot?: string;
-  class_section_class_parent_level_snapshot?: number;
+  class_section_quota_total: number;
+  class_section_quota_taken: number;
 
-  // enrollment mode (kalau di-join)
-  class_section_subject_teachers_enrollment_mode?: EnrollmentMode;
-  class_section_subject_teachers_self_select_requires_approval?: boolean;
+  class_section_school_teacher_id?: string | null;
+  class_section_school_teacher?: CompactTeacher | null;
+
+  class_section_subject_teacher_count: number;
+  class_section_subject_teacher_active_count: number;
+
+  class_section_subject_teacher: ApiCsstCompact[];
 };
 
 type ApiSectionList = {
-  data: ApiClassSection[];
+  data: ApiClassSectionCompact[];
   pagination?: {
     page: number;
     per_page: number;
@@ -114,14 +111,15 @@ type ApiSectionList = {
     count: number;
     per_page_options: number[];
   };
+  success: boolean;
+  message: string;
 };
 
-/* ========= Filter Types & Options ========= */
+/* ========= Filter Types ========= */
 
 type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
 type StatusFilter = "all" | "active" | "inactive";
-type ModeFilter = "all" | "self_select" | "assigned" | "closed";
 
 const STATUS_FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
   { value: "all", label: "Semua" },
@@ -129,29 +127,26 @@ const STATUS_FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
   { value: "inactive", label: "Nonaktif" },
 ];
 
-const MODE_FILTER_OPTIONS: { value: ModeFilter; label: string }[] = [
-  { value: "all", label: "Semua" },
-  { value: "self_select", label: "Siswa pilih sendiri" },
-  { value: "assigned", label: "Ditentukan admin" },
-  { value: "closed", label: "Tutup" },
-];
-
-/* ========= Query: ambil semua sections (API user-scope) ========= */
+/* ========= Query: ambil semua sections (API user-scope, compact+csst) ========= */
 
 function useSections(classId?: string | undefined | null) {
-  return useQuery<ApiClassSection[]>({
-    queryKey: ["sections-user-all", classId ?? null, "with_csst"],
+  return useQuery<ApiClassSectionCompact[]>({
+    queryKey: ["sections-user-compact-csst", classId ?? null],
     queryFn: async () => {
       const params: Record<string, any> = {
         page: 1,
         per_page: 100,
-        with_csst: true,
+        mode: "compact",
+        nested: "csst",
       };
       if (classId) params.class_id = classId;
 
-      const res = await axios.get<ApiSectionList>("/u/class-sections/list", {
-        params,
-      });
+      const res = await axios.get<ApiSectionList>(
+        "/api/u/class-sections/list",
+        {
+          params,
+        }
+      );
       return res.data?.data ?? [];
     },
     staleTime: 60_000,
@@ -204,63 +199,47 @@ function LoadingGrid() {
   );
 }
 
-/* ========= Section Card ========= */
+/* ========= Section Card (pakai compact + csst) ========= */
 
 function SectionCard({
   section,
   onOpenDetail,
 }: {
-  section: ApiClassSection;
+  section: ApiClassSectionCompact;
   onOpenDetail: () => void;
-  onEdit?: () => void;
 }) {
-  // agregat siswa
-  const totalStudents = section.class_section_total_students ?? 0;
-  const totalStudentsActive = section.class_section_total_students_active ?? 0;
-  const male = section.class_section_total_students_male ?? 0;
-  const female = section.class_section_total_students_female ?? 0;
-  const maleActive = section.class_section_total_students_male_active ?? 0;
-  const femaleActive = section.class_section_total_students_female_active ?? 0;
-
-  // agregat CSST
-  const csstList = section.class_sections_csst ?? [];
-  const csstCount = section.class_sections_csst_count ?? csstList.length;
-  const csstActiveCount = section.class_sections_csst_active_count ?? 0;
-
   const isActive = section.class_section_is_active;
-  const className = section.class_section_class_name_snapshot;
-  const classSlug = section.class_section_class_slug_snapshot;
+
+  const quotaTotal = section.class_section_quota_total ?? 0;
+  const quotaTaken = section.class_section_quota_taken ?? 0;
+  const quotaRemaining =
+    quotaTotal > 0 ? Math.max(quotaTotal - quotaTaken, 0) : 0;
+
+  const homeroom = section.class_section_school_teacher ?? null;
+
+  const csstList = section.class_section_subject_teacher ?? [];
+  const csstCount =
+    section.class_section_subject_teacher_count ?? csstList.length;
+  const csstActiveCount =
+    section.class_section_subject_teacher_active_count ??
+    csstList.filter((x) => x.class_section_subject_teacher_is_active).length;
 
   const cardClassName = `
-  group relative flex cursor-pointer flex-col overflow-hidden border rounded-xl
-  transition-all duration-200
-  hover:-translate-y-1 hover:bg-primary/5 hover:border-primary
-  ${isActive
-      ? "border-emerald-500/60"
-      : "border-border/70"
-    }
-`;
+    group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border
+    transition-all duration-200
+    hover:-translate-y-1 hover:bg-primary/5 hover:border-primary
+    ${isActive ? "border-emerald-500/60" : "border-border/70"}
+  `;
 
+  const stripClassName = `
+    absolute inset-y-0 left-0 w-1 rounded-r-full
+    ${isActive ? "bg-emerald-500" : "bg-muted-foreground/40"}
+  `;
 
-  const stripClassName = `absolute inset-y-0 left-0 w-1 rounded-r-full ${isActive ? "bg-emerald-500" : "bg-muted-foreground/40"
-    }`;
-
-  const statusBadgeClassName = `pointer-events-auto border px-2 py-0.5 text-[10px] font-semibold ${isActive ? "bg-emerald-500 text-emerald-950" : "bg-black/40"
-    }`;
-
-  const academicYear = section.class_section_academic_year_snapshot;
-  const termName = section.class_section_academic_term_name_snapshot;
-  const termSlug = section.class_section_academic_term_slug_snapshot;
-
-  const parentName =
-    section.class_section_class_parent_name_snapshot ?? "Tanpa level";
-  const parentSlug = section.class_section_class_parent_slug_snapshot ?? "-";
-  const parentLevel =
-    section.class_section_class_parent_level_snapshot ?? undefined;
-
-  const roomName = section.class_section_class_room_name_snapshot;
-  const roomLocation = section.class_section_class_room_location_snapshot;
-  const roomSlug = section.class_section_class_room_slug_snapshot;
+  const statusBadgeClassName = `
+    pointer-events-auto border px-2 py-0.5 text-[10px] font-semibold
+    ${isActive ? "bg-emerald-500 text-emerald-950" : "bg-black/40"}
+  `;
 
   return (
     <Card className={cardClassName} onClick={onOpenDetail}>
@@ -269,7 +248,7 @@ function SectionCard({
 
       <div className="flex flex-col gap-0 md:flex-row">
         {/* Thumbnail kiri */}
-        <div className="relative w-full md:w-64 md:min-h-[160px] overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="relative w-full overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 md:w-64 md:min-h-[160px]">
           {section.class_section_image_url ? (
             <img
               src={section.class_section_image_url}
@@ -284,23 +263,21 @@ function SectionCard({
             </div>
           )}
 
-          {/* overlay nama kelas singkat di pojok kiri bawah */}
+          {/* overlay nama kelas di bawah */}
           <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/80 via-black/40 to-transparent px-3 pb-2 pt-6 text-xs text-white">
             <div className="space-y-0.5">
               <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-wide text-white/80">
                 <Layers className="h-3 w-3" />
-                {parentName}
+                Rombel
               </div>
               <div className="text-xs font-semibold leading-tight">
-                {section.class_section_class_name_snapshot ??
-                  section.class_section_name}
+                {section.class_section_name}
               </div>
             </div>
             <CBadgeStatus
               status={isActive ? "active" : "inactive"}
               className={statusBadgeClassName}
             />
-
           </div>
         </div>
 
@@ -312,108 +289,114 @@ function SectionCard({
                 <CardTitle className="text-base font-semibold leading-tight">
                   {section.class_section_name}
                 </CardTitle>
+
                 <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
                   <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5">
                     <BookOpen className="h-3 w-3" />
-                    {classSlug ?? section.class_section_class_id}
-                  </span>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-muted/60 px-2 py-0.5">
-                    <Hash className="h-3 w-3" />
                     {section.class_section_slug}
                   </span>
+                  {section.class_section_code && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-muted/60 px-2 py-0.5">
+                      <Hash className="h-3 w-3" />
+                      {section.class_section_code}
+                    </span>
+                  )}
                 </div>
               </div>
 
-              {section.class_section_code && (
-                <div className="rounded-md bg-muted px-2 py-1 text-right">
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                    Kode
-                  </div>
-                  <div className="font-mono text-[11px]">
-                    {section.class_section_code}
-                  </div>
-                </div>
-              )}
+              {quotasBadge(quotaTotal, quotaTaken, quotaRemaining)}
             </div>
           </CardHeader>
 
           <CardContent className="space-y-4 pb-3 pt-0 text-xs md:px-4 md:pb-4">
             {/* Meta grid */}
             <div className="grid gap-3 md:grid-cols-2">
+              {/* Wali kelas */}
               <div className="rounded-lg border bg-background/40 p-3">
                 <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Level / Parent &amp; Tahun Ajaran
+                  Wali kelas
                 </div>
-
-                {/* Parent / level utama */}
-                <div className="font-medium">{parentName}</div>
-                <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                  <span>{parentSlug}</span>
-                  {parentLevel != null && <span>Level {parentLevel}</span>}
-                </div>
-
-                {(className || classSlug) && (
-                  <div className="mt-1 text-[11px] text-muted-foreground">
-                    Program / Kelas:{" "}
-                    <span className="font-medium">
-                      {className ?? classSlug}
-                    </span>
-                  </div>
-                )}
-
-                {(academicYear || termName) && (
-                  <div className="mt-1 text-[11px] text-muted-foreground">
-                    {academicYear && <span>TA {academicYear}</span>}
-                    {academicYear && termName && " • "}
-                    {termName && (
-                      <span>
-                        {termName}
-                        {termSlug && ` (${termSlug})`}
-                      </span>
+                {homeroom ? (
+                  <div className="flex items-center gap-3">
+                    {homeroom.avatar_url ? (
+                      <img
+                        src={homeroom.avatar_url}
+                        alt={homeroom.name}
+                        className="h-8 w-8 rounded-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                      </div>
                     )}
+                    <div className="space-y-0.5">
+                      <div className="text-sm font-semibold">
+                        {homeroom.title_prefix
+                          ? `${homeroom.title_prefix} ${homeroom.name}${
+                              homeroom.title_suffix
+                                ? `, ${homeroom.title_suffix}`
+                                : ""
+                            }`
+                          : homeroom.name}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        Kode: {homeroom.teacher_code ?? "-"}
+                      </div>
+                      {homeroom.whatsapp_url && (
+                        <a
+                          href={homeroom.whatsapp_url}
+                          onClick={(e) => e.stopPropagation()}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center text-[11px] text-emerald-600 hover:underline"
+                        >
+                          WhatsApp
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-[11px] text-muted-foreground">
+                    Belum diatur wali kelas.
                   </div>
                 )}
               </div>
 
+              {/* Kuota & summary CSST */}
               <div className="rounded-lg border bg-background/40 p-3">
                 <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Siswa, Kapasitas &amp; Ruang
+                  Kuota &amp; Pengajar Mapel
                 </div>
+
                 <div className="flex items-center justify-between text-[13px]">
                   <span className="inline-flex items-center gap-1.5">
                     <Users className="h-3 w-3" />
-                    <span className="font-semibold">
-                      {totalStudents > 0 ? totalStudents : "-"}
-                    </span>
+                    <span className="font-semibold">{quotaTotal}</span>
                     <span className="text-[11px] text-muted-foreground">
-                      siswa
+                      kapasitas
                     </span>
                   </span>
                   <span className="text-[11px] text-muted-foreground">
-                    Aktif: {totalStudentsActive}
+                    Terisi: {quotaTaken} • Sisa: {quotaRemaining}
                   </span>
                 </div>
-                <div className="mt-1 space-y-0.5 text-[11px] text-muted-foreground">
-                  <div>
-                    Laki-laki / Perempuan: {male} / {female}
-                  </div>
-                  <div>
-                    Aktif Lk / Pr: {maleActive} / {femaleActive}
-                  </div>
-                  {(roomName || roomLocation || roomSlug) && (
-                    <div className="pt-1 text-[11px]">
-                      Ruang:{" "}
-                      <span className="font-medium">
-                        {roomName ?? roomSlug ?? "-"}
-                      </span>
-                      {roomLocation && ` • ${roomLocation}`}
-                    </div>
-                  )}
+
+                <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    <ClipboardList className="h-3 w-3" />
+                    Mapel/Pengajar:{" "}
+                    <span className="font-semibold">{csstCount}</span>
+                  </Badge>
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    Aktif:{" "}
+                    <span className="font-semibold">{csstActiveCount}</span>
+                  </Badge>
                 </div>
               </div>
             </div>
 
-            {/* Mapel & pengajar – grid card 2 kolom */}
+            {/* Mapel & pengajar – grid card 2 kolom (dari class_section_subject_teacher) */}
             <Card className="rounded-2xl border bg-background/40">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 py-3 pb-2">
                 <CardTitle className="text-sm">Mapel &amp; pengajar</CardTitle>
@@ -433,16 +416,31 @@ function SectionCard({
                   <div className="grid gap-3 md:grid-cols-2">
                     {csstList.map((csst) => {
                       const subjectName =
-                        csst.class_subject?.subject?.name ??
-                        csst.class_subject?.id ??
-                        "Tanpa nama mapel";
+                        csst.class_section_subject_teacher_subject_name_cache ||
+                        csst.class_section_subject_teacher_subject_code_cache ||
+                        csst.class_section_subject_teacher_subject_id;
 
-                      const isCsstActive = csst.is_active;
-                      const attendance = csst.stats?.total_attendance ?? 0;
+                      const teacher =
+                        csst.class_section_subject_teacher_school_teacher_cache;
+
+                      const isCsstActive =
+                        csst.class_section_subject_teacher_is_active;
+                      const attendance =
+                        csst.class_section_subject_teacher_total_attendance ??
+                        0;
+                      const totalAssess =
+                        csst.class_section_subject_teacher_total_assessments ??
+                        0;
+                      const graded =
+                        csst.class_section_subject_teacher_total_assessments_graded ??
+                        0;
+                      const ungraded =
+                        csst.class_section_subject_teacher_total_assessments_ungraded ??
+                        0;
 
                       return (
                         <div
-                          key={csst.id}
+                          key={csst.class_section_subject_teacher_id}
                           className="flex h-full flex-col justify-between rounded-2xl border bg-background/70 px-4 py-3 text-[11px]"
                         >
                           <div className="flex items-start justify-between gap-2">
@@ -450,17 +448,52 @@ function SectionCard({
                               <div className="text-sm font-semibold">
                                 {subjectName}
                               </div>
+                              <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                                {teacher?.avatar_url ? (
+                                  <img
+                                    src={teacher.avatar_url}
+                                    alt={teacher.name}
+                                    className="h-5 w-5 rounded-full object-cover"
+                                    loading="lazy"
+                                  />
+                                ) : (
+                                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-muted">
+                                    <User className="h-3 w-3 text-muted-foreground" />
+                                  </div>
+                                )}
+                                <span className="font-medium">
+                                  {teacher?.name ??
+                                    csst.class_section_subject_teacher_school_teacher_name_cache}
+                                </span>
+                              </div>
+                              <div className="text-[10px] text-muted-foreground">
+                                Mode:{" "}
+                                {
+                                  csst.class_section_subject_teacher_delivery_mode
+                                }
+                              </div>
                             </div>
                             <CBadgeStatus
                               status={isCsstActive ? "active" : "inactive"}
                               className="h-6 rounded-full px-3 text-[10px] font-semibold"
                             />
-
                           </div>
 
-                          <div className="mt-1 text-[10px] text-muted-foreground">
-                            Kehadiran:{" "}
-                            <span className="font-semibold">{attendance}</span>
+                          <div className="mt-2 grid grid-cols-3 gap-2 text-[10px] text-muted-foreground">
+                            <div>
+                              <div className="text-[10px]">Kehadiran</div>
+                              <div className="font-semibold">{attendance}</div>
+                            </div>
+                            <div>
+                              <div className="text-[10px]">Penilaian</div>
+                              <div className="font-semibold">{totalAssess}</div>
+                            </div>
+                            <div>
+                              <div className="text-[10px]">Nilai</div>
+                              <div className="font-semibold">
+                                {graded} / {ungraded}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       );
@@ -473,6 +506,26 @@ function SectionCard({
         </div>
       </div>
     </Card>
+  );
+}
+
+function quotasBadge(
+  quotaTotal: number,
+  quotaTaken: number,
+  quotaRemaining: number
+) {
+  return (
+    <div className="rounded-md bg-muted px-2 py-1 text-right">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+        Kuota
+      </div>
+      <div className="font-mono text-[11px]">
+        {quotaTaken}/{quotaTotal} &nbsp;
+        <span className="text-[10px] text-muted-foreground">
+          (sisa {quotaRemaining})
+        </span>
+      </div>
+    </div>
   );
 }
 
@@ -505,23 +558,22 @@ export default function SchoolClassSection({
   const { data: sections = [], isLoading } = useSections(classId);
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [modeFilter, setModeFilter] = useState<ModeFilter>("all");
 
   const activeCount = sections.filter((s) => s.class_section_is_active).length;
-  const totalStudentsAll = sections.reduce(
-    (acc, s) => acc + (s.class_section_total_students ?? 0),
+  const totalQuota = sections.reduce(
+    (acc, s) => acc + (s.class_section_quota_total ?? 0),
     0
   );
-  const totalStudentsActiveAll = sections.reduce(
-    (acc, s) => acc + (s.class_section_total_students_active ?? 0),
+  const totalTaken = sections.reduce(
+    (acc, s) => acc + (s.class_section_quota_taken ?? 0),
     0
   );
   const totalCsstAll = sections.reduce(
-    (acc, s) => acc + (s.class_sections_csst_count ?? 0),
+    (acc, s) => acc + (s.class_section_subject_teacher_count ?? 0),
     0
   );
   const totalCsstActiveAll = sections.reduce(
-    (acc, s) => acc + (s.class_sections_csst_active_count ?? 0),
+    (acc, s) => acc + (s.class_section_subject_teacher_active_count ?? 0),
     0
   );
 
@@ -530,31 +582,20 @@ export default function SchoolClassSection({
       if (statusFilter === "active" && !s.class_section_is_active) return false;
       if (statusFilter === "inactive" && s.class_section_is_active)
         return false;
-      if (modeFilter !== "all") {
-        if (
-          s.class_section_subject_teachers_enrollment_mode !== undefined &&
-          s.class_section_subject_teachers_enrollment_mode !== modeFilter
-        ) {
-          return false;
-        }
-      }
       return true;
     });
-  }, [sections, statusFilter, modeFilter]);
+  }, [sections, statusFilter]);
 
-  const isFiltered = statusFilter !== "all" || modeFilter !== "all";
+  const isFiltered = statusFilter !== "all";
 
-  const programName =
-    sections[0]?.class_section_class_name_snapshot ??
-    sections[0]?.class_section_name ??
-    "yang dipilih";
+  const programName = sections[0]?.class_section_name ?? "yang dipilih";
 
   return (
     <div className="w-full overflow-x-hidden bg-background text-foreground">
       <main className="mx-auto flex flex-col gap-6 py-4">
         {/* Header lokal */}
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="md:flex hidden gap-3 items-center">
+          <div className="md:flex hidden items-center gap-3">
             {showBack && (
               <Button
                 onClick={handleBack}
@@ -586,9 +627,9 @@ export default function SchoolClassSection({
               Aktif: <span className="ml-1 font-semibold">{activeCount}</span>
             </Badge>
             <Badge variant="outline" className="font-normal">
-              Siswa:{" "}
+              Kuota:{" "}
               <span className="ml-1 font-semibold">
-                {totalStudentsAll} / {totalStudentsActiveAll} aktif
+                {totalTaken} / {totalQuota} terisi
               </span>
             </Badge>
             <Badge variant="outline" className="font-normal">
@@ -621,8 +662,8 @@ export default function SchoolClassSection({
                       value === "all"
                         ? "rounded-l-md"
                         : value === "inactive"
-                          ? "rounded-r-md"
-                          : "";
+                        ? "rounded-r-md"
+                        : "";
 
                     return (
                       <Button
@@ -632,28 +673,6 @@ export default function SchoolClassSection({
                         size="sm"
                         className={`h-8 rounded-none px-3 text-xs ${extraClass}`}
                         onClick={() => setStatusFilter(value)}
-                      >
-                        {label}
-                      </Button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Mode filter */}
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-muted-foreground">Mode:</span>
-                <div className="flex rounded-md border bg-background">
-                  {MODE_FILTER_OPTIONS.map(({ value, label }) => {
-                    const active = modeFilter === value;
-                    return (
-                      <Button
-                        key={value}
-                        type="button"
-                        variant={active ? "default" : "ghost"}
-                        size="sm"
-                        className="h-8 rounded-none px-3 text-[11px]"
-                        onClick={() => setModeFilter(value)}
                       >
                         {label}
                       </Button>
@@ -680,12 +699,12 @@ export default function SchoolClassSection({
               <SectionCard
                 key={section.class_section_id}
                 section={section}
-                // ⬇️ detail rombel = pakai class_section_id
+                // detail rombel = pakai class_section_id
                 onOpenDetail={() =>
                   navigate(`${section.class_section_id}`, {
                     state: {
-                      sections, // kirim semua rombel kelas ini
-                      selectedSectionId: section.class_section_id, // rombel yang diklik
+                      sections,
+                      selectedSectionId: section.class_section_id,
                     },
                   })
                 }

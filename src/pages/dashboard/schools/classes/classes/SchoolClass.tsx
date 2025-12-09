@@ -22,80 +22,78 @@ import {
 /* Auth */
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import CRowActions from "@/components/costum/table/CRowAction";
-import { Select } from "@/components/ui/select";
 
 /* ========== Types ========== */
 export type ClassStatus = "active" | "inactive";
 
-
-type ApiClass = {
+/** Bentuk data dari API compact: /api/u/classes/list?mode=compact */
+type ApiClassCompact = {
   class_id: string;
-  class_school_id: string;
-  class_parent_id: string;
   class_slug: string;
   class_name: string;
   class_start_date?: string | null;
   class_end_date?: string | null;
-  class_term_id?: string | null;
-  class_registration_opens_at?: string | null;
-  class_registration_closes_at?: string | null;
   class_quota_total?: number | null;
   class_quota_taken?: number | null;
   class_status: "active" | "inactive";
-  class_image_url?: string | null;
-  class_parent_code_snapshot?: string | null;
-  class_parent_name_snapshot?: string | null;
-  class_parent_slug_snapshot?: string | null;
-  class_parent_level_snapshot?: number | null;
-  class_term_academic_year_snapshot?: string | null;
-  class_term_name_snapshot?: string | null;
-  class_term_slug_snapshot?: string | null;
-  class_term_angkatan_snapshot?: string | null;
+
+  class_total_class_sections_active: number;
+  class_total_students_active: number;
+  class_total_teachers_active: number;
+  class_total_class_enrollments_active: number;
+
   class_created_at: string;
   class_updated_at: string;
 };
 
-
-/* Table Row */
+/* Row yang dipakai di tabel */
 type MiddleClassRow = {
   id: string;
   name: string;
   slug: string;
-  parentId?: string | null;
-  parentSlug?: string | null;
-  parentName?: string | null;
-  parentLevel?: number | null;
-  term?: string | null;
-  regOpen?: string | null;
-  regClose?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
   quotaTaken?: number | null;
   quotaTotal?: number | null;
   status: "active" | "inactive";
+
+  totalSectionsActive: number;
+  totalStudentsActive: number;
+  totalTeachersActive: number;
+  totalEnrollmentsActive: number;
 };
 
 /* Helpers */
 const fmtDate = (iso?: string | null) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    })
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
     : "-";
 
-/* ================= Fetchers ================= */
-async function fetchClassesPublic(
-  schoolId: string | null,
-  params?: { q?: string; status?: ClassStatus | "all"; levelId?: string }
-): Promise<ApiClass[]> {
-  if (!schoolId) return [];
-  const p: Record<string, any> = {};
-  if (params?.q?.trim()) p.search = params.q.trim();
-  if (params?.status && params.status !== "all")
-    p.active_only = params.status === "active";
-  if (params?.levelId) p.class_parent_id = params.levelId;
+const USER_PREFIX = "/api/u";
 
-  const res = await axios.get(`/public/${schoolId}/classes/list`, { params: p });
+/* ================= Fetcher (API baru) ================= */
+async function fetchClassesCompact(
+  schoolId: string | null,
+  params?: { q?: string }
+): Promise<ApiClassCompact[]> {
+  if (!schoolId) return [];
+
+  const p: Record<string, any> = {
+    page: 1,
+    per_page: 200,
+    mode: "compact",
+  };
+
+  if (params?.q?.trim()) {
+    // backend list-list lain biasanya pakai q atau search, di sini pakai q
+    p.q = params.q.trim();
+  }
+
+  const res = await axios.get(`${USER_PREFIX}/classes/list`, { params: p });
   return res.data?.data ?? [];
 }
 
@@ -104,10 +102,9 @@ type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
 const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
   const navigate = useNavigate();
-
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
-  /* school id */
+  /* school id (buat queryKey & guard, API tetap pakai JWT) */
   const currentUserQ = useCurrentUser();
   const membership = currentUserQ.data?.membership;
   const schoolId = membership?.school_id || getActiveschoolId() || null;
@@ -126,92 +123,101 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
     });
   }, [setHeader, showBack]);
 
-  /* Query params */
+  /* Query text (search) */
   const [query, setQuery] = useState("");
-  const [status] = useState<ClassStatus | "all">("all");
-  const [levelId] = useState<string>("");
 
-
-  /* Pagination */
-  const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(20);
-
-
-
-  /* Fetch Query */
+  /* Fetch Query (API baru) */
   const classesQ = useQuery({
-    queryKey: ["classes-public", schoolId, query, status, levelId],
+    queryKey: ["classes-compact", schoolId, query],
     enabled: Boolean(schoolId),
-    queryFn: () => fetchClassesPublic(schoolId, { q: query, status, levelId }),
-    staleTime: 60000,
+    queryFn: () => fetchClassesCompact(schoolId, { q: query }),
+    staleTime: 60_000,
   });
 
-  /* Convert rows */
+  /* Convert rows dari API compact → MiddleClassRow */
   const rows: MiddleClassRow[] = useMemo(
     () =>
       (classesQ.data ?? []).map((c) => ({
         id: c.class_id,
-        name: c.class_name ?? c.class_parent_name_snapshot ?? "-",
+        name: c.class_name,
         slug: c.class_slug,
-        parentName: c.class_parent_name_snapshot,
-        parentLevel: c.class_parent_level_snapshot ?? undefined,
-        term:
-          c.class_term_academic_year_snapshot &&
-            c.class_term_name_snapshot
-            ? `${c.class_term_academic_year_snapshot} — ${c.class_term_name_snapshot}`
-            : c.class_term_academic_year_snapshot ??
-            c.class_term_name_snapshot ??
-            "-",
-        regOpen: c.class_registration_opens_at,
-        regClose: c.class_registration_closes_at,
+        startDate: c.class_start_date,
+        endDate: c.class_end_date,
         quotaTaken: c.class_quota_taken,
         quotaTotal: c.class_quota_total,
         status: c.class_status,
+
+        totalSectionsActive: c.class_total_class_sections_active,
+        totalStudentsActive: c.class_total_students_active,
+        totalTeachersActive: c.class_total_teachers_active,
+        totalEnrollmentsActive: c.class_total_class_enrollments_active,
       })),
     [classesQ.data]
   );
-
-  /* Page slice */
-  const filtered = rows.filter((r) => !levelId || r.parentLevel === Number(levelId));
-  const pagedRows = filtered.slice((page - 1) * perPage, page * perPage);
-
-
 
   /* Stats */
   const statsSlot = classesQ.isLoading ? (
     <div className="flex items-center gap-2 text-sm text-muted-foreground">
       <Loader2 className="animate-spin h-4 w-4" /> Memuat kelas…
     </div>
+  ) : classesQ.isError ? (
+    <div className="text-sm text-destructive">Gagal memuat kelas.</div>
   ) : (
-    <div className="grid gap-3 md:grid-cols-3 text-sm">
-      <div className="rounded-xl border p-3">
-        <div className="text-xs text-muted-foreground">Jumlah Kelas</div>
-        <div className="font-medium">{filtered.length}</div>
-      </div>
+    (() => {
+      const totalClasses = rows.length;
+      const activeClasses = rows.filter((r) => r.status === "active").length;
 
-      <div className="rounded-xl border p-3">
-        <div className="text-xs text-muted-foreground">Aktif</div>
-        <div className="font-medium">
-          {filtered.filter((r) => r.status === "active").length}
-        </div>
-      </div>
+      const totalStudentsActive = rows.reduce(
+        (acc, r) => acc + (r.totalStudentsActive ?? 0),
+        0
+      );
+      // "total" di sini bisa kamu sesuaikan nanti kalau API kirim total semua siswa.
+      // Untuk sementara aku pakai jumlah terisi (quotaTaken) sebagai total terdaftar.
+      const totalStudents = rows.reduce(
+        (acc, r) => acc + (r.quotaTaken ?? 0),
+        0
+      );
 
-      <div className="rounded-xl border p-3">
-        <div className="text-xs text-muted-foreground">Total Terisi</div>
-        <div className="font-medium">
-          {filtered.reduce((a, r) => a + (r.quotaTaken ?? 0), 0)}
+      return (
+        <div className="w-full overflow-hidden rounded-xl border">
+          {/* Header hijau */}
+          <div className="grid grid-cols-2 bg-emerald-950 text-emerald-300 text-xs sm:text-sm font-medium">
+            <div className="px-3 py-2 text-center border-r border-emerald-800">
+              Kelas (aktif / total)
+            </div>
+            <div className="px-3 py-2 text-center">Siswa (aktif / total)</div>
+          </div>
+
+          {/* Angka */}
+          <div className="grid grid-cols-2 text-sm bg-card">
+            <div className="px-3 py-3 text-center">
+              <span className="font-semibold tabular-nums">
+                {activeClasses}
+              </span>
+              <span className="mx-1">/</span>
+              <span className="tabular-nums">{totalClasses}</span>
+            </div>
+
+            <div className="px-3 py-3 text-center">
+              <span className="font-semibold tabular-nums">
+                {totalStudentsActive}
+              </span>
+              <span className="mx-1">/</span>
+              <span className="tabular-nums">{totalStudents}</span>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      );
+    })()
   );
 
-  /* ===== Columns: Kelas ===== */
+  /* ===== Columns: Kelas (pakai field compact) ===== */
   const columns: ColumnDef<MiddleClassRow>[] = useMemo(
     () => [
       {
         id: "name",
         header: "Nama Kelas",
-        minW: "160px sm:200px md:260px",
+        minW: "180px",
         align: "left",
         className: "text-left",
         cell: (r) => (
@@ -219,60 +225,61 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
             <div className="font-medium whitespace-normal break-words">
               {r.name}
             </div>
+            <div className="text-[11px] text-muted-foreground">
+              Slug: {r.slug}
+            </div>
           </div>
         ),
       },
       {
-        id: "parent",
-        header: "Tingkat",
-        minW: "160px",
-        align: "left",
-        className: "text-left",
-        cell: (r) => (
-          <span className="truncate">
-            {r.parentName ?? "-"}
-            {r.parentLevel != null ? ` (Level ${r.parentLevel})` : ""}
-          </span>
-        ),
-      },
-      {
-        id: "term",
-        header: "Periode Akademik",
-        minW: "180px",
-        align: "left",
-        className: "text-left",
-        cell: (r) => r.term ?? "-",
-      },
-      {
-        id: "reg",
-        header: "Jendela Pendaftaran",
-        minW: "160px sm:200px md:260px",
+        id: "period",
+        header: "Periode",
+        minW: "170px",
         align: "left",
         className: "text-left",
         cell: (r) => (
           <div className="text-sm whitespace-normal break-words">
-            {fmtDate(r.regOpen)} — {fmtDate(r.regClose)}
+            {fmtDate(r.startDate)} — {fmtDate(r.endDate)}
           </div>
         ),
       },
       {
+        id: "students",
+        header: "Siswa Aktif",
+        minW: "120px",
+        align: "center",
+        className: "text-center",
+        cell: (r) => (
+          <span className="font-medium tabular-nums">
+            {r.totalStudentsActive}
+          </span>
+        ),
+      },
+      {
+        id: "teachers",
+        header: "Guru Aktif",
+        minW: "120px",
+        align: "center",
+        className: "text-center",
+        cell: (r) => (
+          <span className="font-medium tabular-nums">
+            {r.totalTeachersActive}
+          </span>
+        ),
+      },
+      {
         id: "quota",
-        header: "Kuota",
+        header: "Kuota Terisi",
         align: "center",
         minW: "140px",
         cell: (r) => (
           <div className="flex items-center justify-center gap-1 text-sm tabular-nums">
-            <span className="font-medium">
-              {r.quotaTaken ?? 0}
-            </span>
+            <span className="font-medium">{r.quotaTaken ?? 0}</span>
             <span className="opacity-70">/</span>
-            <span className="font-medium">
-              {r.quotaTotal ?? "∞"}
-            </span>
+            <span className="font-medium">{r.quotaTotal ?? "∞"}</span>
           </div>
         ),
       },
-
       {
         id: "status",
         header: "Status",
@@ -332,18 +339,19 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
             onAdd={() => navigate("new")}
             addLabel="Tambah"
             controlsPlacement="above"
+            defaultQuery={query}
             onQueryChange={(val) => {
               if (val !== query) {
                 setQuery(val);
               }
             }}
-            searchByKeys={["name", "slug", "term", "parentName"]}
-            searchPlaceholder="Cari nama/slug/tingkat/periode…"
+            searchByKeys={["name", "slug"]}
+            searchPlaceholder="Cari nama/slug kelas…"
             statsSlot={statsSlot}
             loading={classesQ.isLoading}
             error={classesQ.isError ? "Gagal memuat kelas." : null}
             columns={columns}
-            rows={pagedRows}
+            rows={rows}
             getRowId={(r) => r.id}
             stickyHeader
             zebra
@@ -351,16 +359,9 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
             defaultView="table"
             storageKey={`classes:${schoolId}`}
             onRowClick={(r) => navigate(`${r.id}`)}
-            pageSize={perPage}
+            pageSize={20}
             pageSizeOptions={[10, 20, 50, 100, 200]}
-            onPageSizeChange={(size) => {
-              setPerPage(size);
-              setPage(1);
-            }}
-
-            /* ===================================
-               ACTIONS (diambil alih oleh CRowActions)
-               =================================== */
+            /* ACTIONS */
             renderActions={(row, view) => (
               <CRowActions
                 row={row}
@@ -371,8 +372,6 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
                   navigate(`${row.id}`, {
                     state: {
                       className: row.name,
-                      parentName: row.parentName,
-                      parentLevel: row.parentLevel,
                     },
                   })
                 }
@@ -380,10 +379,7 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
                 onDelete={() => console.log("hapus kelas", row.id)}
               />
             )}
-
-            /* =======================
-               CARD RENDERING
-               ======================= */
+            /* CARD RENDERING */
             renderCard={(r) => (
               <div
                 className={cn(
@@ -394,26 +390,31 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
               >
                 <div className="font-semibold">{r.name}</div>
 
-                <div className="text-xs text-muted-foreground">Slug: {r.slug}</div>
+                <div className="text-xs text-muted-foreground">
+                  Slug: {r.slug}
+                </div>
 
                 <div className="grid grid-cols-3 gap-2 text-sm">
                   <div className="border rounded p-2">
-                    <div className="text-xs text-muted-foreground">Tingkat</div>
+                    <div className="text-xs text-muted-foreground">Periode</div>
                     <div className="font-medium">
-                      {r.parentName}
-                      {r.parentLevel != null ? ` (Lvl ${r.parentLevel})` : ""}
+                      {fmtDate(r.startDate)} — {fmtDate(r.endDate)}
                     </div>
                   </div>
 
                   <div className="border rounded p-2">
-                    <div className="text-xs text-muted-foreground">Kuota</div>
+                    <div className="text-xs text-muted-foreground">
+                      Kuota Terisi
+                    </div>
                     <div className="font-medium">
                       {r.quotaTaken ?? 0} / {r.quotaTotal ?? "∞"}
                     </div>
                   </div>
 
                   <div className="border rounded p-2">
-                    <div className="text-xs text-muted-foreground mb-1">Status</div>
+                    <div className="text-xs text-muted-foreground mb-1">
+                      Status
+                    </div>
                     <span
                       className={cn(
                         "inline-flex px-2 py-0.5 rounded text-xs ring-1",
@@ -424,6 +425,26 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
                     >
                       {r.status === "active" ? "Aktif" : "Nonaktif"}
                     </span>
+                  </div>
+                </div>
+
+                {/* Siswa & Guru aktif */}
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="border rounded p-2">
+                    <div className="text-[11px] text-muted-foreground">
+                      Siswa aktif
+                    </div>
+                    <div className="font-medium text-sm">
+                      {r.totalStudentsActive}
+                    </div>
+                  </div>
+                  <div className="border rounded p-2">
+                    <div className="text-[11px] text-muted-foreground">
+                      Guru aktif
+                    </div>
+                    <div className="font-medium text-sm">
+                      {r.totalTeachersActive}
+                    </div>
                   </div>
                 </div>
 
@@ -443,22 +464,7 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
                 </div>
               </div>
             )}
-
           />
-
-          {/* Footer pagination */}
-          <div className="mt-2 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
-            <div className="order-1 sm:order-2 flex items-center gap-2">
-              <Select
-                value={String(perPage)}
-                onValueChange={(v) => {
-                  setPerPage(Number(v));
-                  setPage(1);
-                }}
-              >
-              </Select>
-            </div>
-          </div>
         </div>
       </main>
     </div>
