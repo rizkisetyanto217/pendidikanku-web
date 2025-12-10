@@ -30,7 +30,6 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 /* icons */
 import {
@@ -47,6 +46,12 @@ import {
   Lock,
   GraduationCap,
 } from "lucide-react";
+
+import {
+  CSegmentedTabs,
+  type SegmentedTabItem,
+} from "@/components/costum/common/CSegmentedTabs";
+
 
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -544,6 +549,11 @@ export default function TeacherQuizBuilder() {
     );
   };
 
+  const QUIZ_TABS: SegmentedTabItem[] = [
+    { value: "design", label: "Desain" },
+    { value: "preview", label: "Preview" },
+  ];
+
   /* =========================
      UI
   ========================= */
@@ -648,76 +658,71 @@ export default function TeacherQuizBuilder() {
             </CardContent>
           </Card>
 
-          <Tabs
+          {/* ========== QUIZ TABS ========== */}
+          <CSegmentedTabs
             value={tab}
-            onValueChange={(v) => setTab(v as any)}
-            className="w-full"
-          >
-            <TabsList className="w-fit">
-              <TabsTrigger value="design">Desain</TabsTrigger>
-              <TabsTrigger value="preview">Preview</TabsTrigger>
-            </TabsList>
+            onValueChange={(v) => setTab(v as "design" | "preview")}
+            tabs={QUIZ_TABS}
+            className="mt-2"
+          />
 
-            {/* =============== DESIGN =============== */}
-            <TabsContent value="design" className="mt-3">
-              {/* Loading skeleton first time */}
-              {isLoading && doc.questions.length === 0 && (
-                <div className="grid gap-3 mb-3">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <Card key={i}>
-                      <CardContent className="p-4 space-y-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="space-y-2 flex-1">
-                            <div className="h-4 w-3/4 bg-muted rounded" />
-                            <div className="h-3 w-2/3 bg-muted rounded" />
+          {/* ========== CONTENT ========== */}
+          <div className="mt-4">
+            {tab === "design" ? (
+              <>
+                {/* Loading skeleton */}
+                {isLoading && doc.questions.length === 0 && (
+                  <div className="grid gap-3 mb-3">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <Card key={i}>
+                        <CardContent className="p-4 space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="space-y-2 flex-1">
+                              <div className="h-4 w-3/4 bg-muted rounded" />
+                              <div className="h-3 w-2/3 bg-muted rounded" />
+                            </div>
+                            <div className="h-8 w-24 bg-muted rounded" />
                           </div>
-                          <div className="h-8 w-24 bg-muted rounded" />
-                        </div>
-                        <div className="h-3 w-full bg-muted rounded" />
-                        <div className="h-3 w-5/6 bg-muted rounded" />
-                      </CardContent>
-                    </Card>
+                          <div className="h-3 w-full bg-muted rounded" />
+                          <div className="h-3 w-5/6 bg-muted rounded" />
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+
+                {/* Question list */}
+                <div className="grid gap-3">
+                  {doc.questions.map((q, idx) => (
+                    <QuestionEditor
+                      key={q.id}
+                      q={q}
+                      idx={idx}
+                      onChange={(patch) => updateQuestion(q.id, patch)}
+                      onRemove={() => removeQuestion(q.id)}
+                      onDuplicate={() => duplicateQuestion(q.id)}
+                      onAddOption={() => addOption(q.id)}
+                      onOptionChange={(oid, patch) => updateOption(q.id, oid, patch)}
+                      onOptionRemove={(oid) => removeOption(q.id, oid)}
+                      onSetSingleCorrect={(oid) => setSingleCorrect(q.id, oid)}
+                      onFinish={() => finishEditingQuestion(q.id)}
+                    />
                   ))}
-                </div>
-              )}
 
-              {/* Question list */}
-              <div className="grid gap-3">
-                {doc.questions.map((q, idx) => (
-                  <QuestionEditor
-                    key={q.id}
-                    q={q}
-                    idx={idx}
-                    onChange={(patch) => updateQuestion(q.id, patch)}
-                    onRemove={() => removeQuestion(q.id)}
-                    onDuplicate={() => duplicateQuestion(q.id)}
-                    onAddOption={() => addOption(q.id)}
-                    onOptionChange={(oid, patch) =>
-                      updateOption(q.id, oid, patch)
-                    }
-                    onOptionRemove={(oid) => removeOption(q.id, oid)}
-                    onSetSingleCorrect={(oid) => setSingleCorrect(q.id, oid)}
-                    onFinish={() => finishEditingQuestion(q.id)}
+                  <div ref={endRef} />
+
+                  <StickyAddBar
+                    total={doc.questions.length}
+                    points={totalPoints}
+                    onAdd={addQuestion}
                   />
-                ))}
-
-                {/* anchor untuk scroll ke bawah */}
-                <div ref={endRef} />
-
-                {/* Sticky Add Bar di bawah */}
-                <StickyAddBar
-                  total={doc.questions.length}
-                  points={totalPoints}
-                  onAdd={addQuestion}
-                />
-              </div>
-            </TabsContent>
-
-            {/* =============== PREVIEW =============== */}
-            <TabsContent value="preview" className="mt-3">
+                </div>
+              </>
+            ) : (
               <PreviewPanel doc={doc} />
-            </TabsContent>
-          </Tabs>
+            )}
+          </div>
+
         </div>
       </main>
 

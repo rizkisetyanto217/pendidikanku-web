@@ -23,6 +23,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import CActionsButton from "@/components/costum/common/buttons/CActionsButton";
 
 /* ===================== TYPES ===================== */
 export type Room = {
@@ -440,26 +441,12 @@ const SchoolRoomForm: React.FC = () => {
               </CardContent>
 
               <CardFooter className="flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={handleBack}
-                  disabled={isSubmitting}
-                >
-                  Batal
-                </Button>
-                <Button type="submit" disabled={!canSubmit || isSubmitting}>
-                  {isSubmitting ? (
-                    <span className="inline-flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Menyimpan…
-                    </span>
-                  ) : isEditMode ? (
-                    "Simpan Perubahan"
-                  ) : (
-                    "Simpan"
-                  )}
-                </Button>
+                <CActionsButton
+                  onCancel={handleBack}
+                  onSave={() => { }}
+                  loadingSave={isSubmitting}
+                />
+
               </CardFooter>
             </form>
           </Card>

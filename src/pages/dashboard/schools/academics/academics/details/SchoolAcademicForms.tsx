@@ -28,8 +28,9 @@ import { Badge } from "@/components/ui/badge";
 /* Layout header */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
-/* 🔐 Context user dari simple-context (JWT) */
+/* Context user dari simple-context (JWT) */
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import CActionsButton from "@/components/costum/common/buttons/CActionsButton";
 
 /* ===================== Types ===================== */
 type AcademicTerm = {
@@ -610,28 +611,14 @@ const SchoolAcademicForms: React.FC = () => {
                   </div>
                 )}
               </CardContent>
-              <CardFooter className="flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={handleBack}
-                  disabled={isSubmitting}
-                >
-                  Batal
-                </Button>
-                <Button type="submit" disabled={!canSubmit || isSubmitting}>
-                  {isSubmitting ? (
-                    <span className="inline-flex items-center gap-2">
-                      <Loader2 className="animate-spin" size={16} />
-                      Menyimpan…
-                    </span>
-                  ) : isEditMode ? (
-                    "Simpan Perubahan"
-                  ) : (
-                    "Simpan"
-                  )}
-                </Button>
+              <CardFooter className="flex justify-end">
+                <CActionsButton
+                  onCancel={handleBack}
+                  onSave={() => { }}         // akan di-trigger oleh submit form
+                  loadingSave={isSubmitting}
+                />
               </CardFooter>
+
             </form>
           </Card>
         </div>

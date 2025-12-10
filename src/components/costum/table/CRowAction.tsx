@@ -9,19 +9,6 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-} from "@/components/ui/alert-dialog";
-
-import { useState } from "react";
-
 export const NO_ROW_CLICK_ATTR = "data-no-row-click";
 
 type Mode = "menu" | "inline" | "both";
@@ -116,14 +103,6 @@ export function CRowActions<T>({
 
   const effectiveMode: Mode = forceMenu ? "menu" : mode;
 
-  const [confirmOpen, setConfirmOpen] = useState(false);
-
-  const openDeleteModal = () => setConfirmOpen(true);
-  const handleConfirmDelete = async () => {
-    await onDelete?.(row);
-    setConfirmOpen(false);
-  };
-
   /* ---------------- INLINE MODE ---------------- */
   const inlinePart = (
     <div className={cn("flex items-center justify-center gap-2", className)}>
@@ -169,9 +148,10 @@ export function CRowActions<T>({
           kind="delete"
           label={text.delete}
           size={size}
-          onClick={openDeleteModal}
+          onClick={() => onDelete?.(row)}
         />
       )}
+
     </div>
   );
 
@@ -239,7 +219,7 @@ export function CRowActions<T>({
             className="gap-2 text-destructive hover:bg-destructive/10"
             onClick={(e) => {
               e.stopPropagation();
-              openDeleteModal();
+              onDelete?.(row);
             }}
           >
             <Trash2 className="h-4 w-4" /> {text.delete}
@@ -256,27 +236,6 @@ export function CRowActions<T>({
       {effectiveMode === "inline" ? inlinePart :
         effectiveMode === "both" ? <div className="flex gap-2">{inlinePart}{menuPart}</div> :
           menuPart}
-
-      {/* ALERT DELETE */}
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Hapus item ini?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tindakan ini tidak dapat dibatalkan.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground"
-              onClick={handleConfirmDelete}
-            >
-              Hapus
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }

@@ -426,10 +426,10 @@ html {
 /* =============================================== */
 
 @layer utilities {
+
   /* ========================= */
   /*   BADGE ASSIGNMENT STATUS */
   /* ========================= */
-
   .badge-assignment-not-started {
     @apply text-[10px];
     border-color: hsl(0 84% 60% / 0.6);

@@ -19,8 +19,6 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 /* shadcn/ui */
 import { Button } from "@/components/ui/button";
 
-
-
 /* Custom Table Components */
 import {
   CDataTable as DataTable,
@@ -31,6 +29,7 @@ import {
 
 import CRowActions from "@/components/costum/table/CRowAction";
 import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
+import CDeleteDialog from "@/components/costum/common/buttons/CDeleteDialog";
 
 /* ===================== TYPES ===================== */
 export type Room = {
@@ -157,6 +156,10 @@ export default function SchoolRoom({ showBack = false, backTo }: Props) {
     [data]
   );
 
+  // State dialog delete
+  const [deleteRoomData, setDeleteRoomData] = useState<Room | null>(null);
+
+
   /* DELETE Mutation */
   const deleteRoom = useDeleteRoom(schoolId);
 
@@ -219,6 +222,7 @@ export default function SchoolRoom({ showBack = false, backTo }: Props) {
     ],
     []
   );
+
 
   /* Stats Slot */
   const statsSlot = roomsQ.isLoading ? (
@@ -285,14 +289,26 @@ export default function SchoolRoom({ showBack = false, backTo }: Props) {
                 mode="inline"
                 size="sm"
                 onView={() => navigate(`./${row.id}`)}
-                onEdit={() =>
-                  navigate(`edit/${row.id}`, { state: { room: row } })
-                }
-                onDelete={() => deleteRoom.mutate(row.id)}
+                onEdit={() => navigate(`edit/${row.id}`, { state: { room: row } })}
+                onDelete={() => setDeleteRoomData(row)} // Tidak langsung delete!
                 forceMenu={view === "table"}
               />
             )}
           />
+          <CDeleteDialog
+            open={!!deleteRoomData}
+            onClose={() => setDeleteRoomData(null)}
+            loading={deleteRoom.isPending}
+            title={`Yakin Ingin Menghapus "${deleteRoomData?.name}"?`}
+            description="Tindakan ini tidak dapat dibatalkan."
+            onConfirm={() => {
+              if (!deleteRoomData) return;
+              deleteRoom.mutate(deleteRoomData.id, {
+                onSuccess: () => setDeleteRoomData(null),
+              });
+            }}
+          />
+
         </div>
       </main>
     </div>

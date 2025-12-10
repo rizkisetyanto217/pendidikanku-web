@@ -1,7 +1,7 @@
 // src/pages/sekolahislamku/dashboard-school/books/SchoolBookDetail.tsx
-import React, { useMemo, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import React, { useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import axios from "@/lib/axios";
 import { BookOpen, ArrowLeft, ExternalLink, ImageOff } from "lucide-react";
 
@@ -14,76 +14,88 @@ import { Skeleton } from "@/components/ui/skeleton";
 /* === header layout hook === */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
-
 /* ================= Types ================= */
-export type SectionLite = {
-  class_sections_id: string;
-  class_sections_name: string;
-  class_sections_slug?: string | null;
-  class_sections_code?: string | null;
-  class_sections_capacity?: number | null;
-  class_sections_is_active: boolean;
-};
 
-export type UsageItem = {
-  class_subject_books_id: string;
-  class_subjects_id: string;
-  subjects_id: string;
-  classes_id: string;
-  sections: SectionLite[];
+export type ClassSubjectLite = {
+  class_subject_id: string;
+  class_subject_school_id: string;
+  class_subject_class_parent_id: string;
+  class_subject_subject_id: string;
+  class_subject_slug: string;
+  class_subject_order_index: number;
+  class_subject_min_passing_score: number;
+  class_subject_is_core: boolean;
+  class_subject_is_active: boolean;
+  class_subject_subject_name_cache?: string | null;
+  class_subject_subject_code_cache?: string | null;
+  class_subject_subject_slug_cache?: string | null;
+  class_subject_class_parent_name_cache?: string | null;
+  class_subject_class_parent_code_cache?: string | null;
+  class_subject_class_parent_level_cache?: number | null;
 };
 
 export type BookAPI = {
-  books_id: string;
-  books_school_id: string;
-  books_title: string;
-  books_author?: string | null;
-  books_desc?: string | null;
-  books_url?: string | null;
-  books_image_url?: string | null;
-  books_slug?: string | null;
-  usages: UsageItem[];
+  book_id: string;
+  book_school_id: string;
+  book_title: string;
+  book_author?: string | null;
+  book_desc?: string | null;
+  book_slug?: string | null;
+  book_image_url?: string | null;
+  book_image_object_key?: string | null;
+  book_purchase_url?: string | null;
+  book_publisher?: string | null;
+  book_publication_year?: number | null;
+  book_created_at?: string;
+  book_updated_at?: string;
+  book_is_deleted?: boolean;
+  // hasil merge dari include.class_subjects
+  class_subjects?: ClassSubjectLite[];
 };
 
-type BookDetailResp = { data: BookAPI; message?: string };
+type BookListResp = {
+  data: BookAPI[];
+  include?: {
+    class_subjects?: ClassSubjectLite[];
+  };
+  message?: string;
+};
 
-/* ============ Dummy Data (fallback saat detail belum ada) ============ */
-const DUMMY_BOOKS: BookAPI[] = [
-  {
-    books_id: "dummy-1",
-    books_school_id: "school-1",
-    books_title: "Matematika Dasar",
-    books_author: "Ahmad Fauzi",
-    books_desc: "Buku dasar untuk memahami konsep matematika SD.",
-    books_url: "https://contoh.com/matematika-dasar",
-    books_image_url: null,
-    books_slug: "matematika-dasar",
-    usages: [
-      {
-        class_subject_books_id: "csb-1",
-        class_subjects_id: "sub-1",
-        subjects_id: "mat-1",
-        classes_id: "cls-1",
-        sections: [
-          {
-            class_sections_id: "sec-1",
-            class_sections_name: "Kelas 1A",
-            class_sections_slug: "kelas-1a",
-            class_sections_code: "1A",
-            class_sections_capacity: 30,
-            class_sections_is_active: true,
-          },
-        ],
-      },
-    ],
-  },
-];
+/* ============ Helpers ============ */
+function formatDate(value?: string) {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(d);
+}
 
 /* ============ API ============ */
 async function fetchBookDetail(id: string): Promise<BookAPI | null> {
   try {
-    const r = await axios.get<BookDetailResp>(`/api/a/books/${id}`);
-    return r.data?.data ?? null;
+    const r = await axios.get<BookListResp>("/api/u/books/list", {
+      params: {
+        include: "class_subjects",
+        id,
+      },
+    });
+
+    const list = r.data?.data ?? [];
+    const raw = list[0];
+    if (!raw) return null;
+
+    const classSubjects = r.data?.include?.class_subjects ?? [];
+
+    // gabungkan supaya komponen tinggal baca dari 1 object
+    return {
+      ...raw,
+      class_subjects: classSubjects,
+    };
   } catch {
     return null;
   }
@@ -91,8 +103,7 @@ async function fetchBookDetail(id: string): Promise<BookAPI | null> {
 
 /* ============ Page ============ */
 export default function SchoolBookDetail() {
-  const { slug = "", id = "" } = useParams<{ slug: string; id: string }>();
-  const base = slug ? `/${encodeURIComponent(slug)}` : "";
+  const { id = "" } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
   const { setHeader } = useDashboardHeader();
@@ -116,15 +127,35 @@ export default function SchoolBookDetail() {
     staleTime: 60_000,
   });
 
-  const book =
-    q.data ?? DUMMY_BOOKS.find((b) => b.books_id === id || b.books_slug === id);
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      if (!id) return;
+      await axios.delete(`/api/a/books/${id}`);
+    },
+    onSuccess: () => {
+      navigate(-1);
+    },
+  });
 
-  const sectionsFlat = useMemo(
-    () => (book?.usages ?? []).flatMap((u) => u.sections || []),
-    [book?.usages]
-  );
+  const isDeleting = deleteMutation.isPending;
 
-  const isLoading = q.isLoading && !book;
+  const book = q.data ?? null;
+  const isLoading = q.isLoading;
+
+  const handleEdit = () => {
+    // Kalau route-mu beda, ganti di sini.
+    // Misal: navigate(`/sekolah/.../books/${id}/edit`)
+    navigate("edit");
+  };
+
+  const handleDelete = () => {
+    if (!book || !id || isDeleting) return;
+    const ok = window.confirm(
+      "Yakin ingin menghapus buku ini? Tindakan ini tidak bisa dikembalikan."
+    );
+    if (!ok) return;
+    deleteMutation.mutate();
+  };
 
   return (
     <div className="bg-background text-foreground">
@@ -133,11 +164,7 @@ export default function SchoolBookDetail() {
           {/* Header */}
           <div className="flex items-center gap-3">
             <div className="md:flex hidden gap-3 items-center">
-              <Button
-                variant="ghost"
-                onClick={() => navigate(-1)}
-                size="icon"
-              >
+              <Button variant="ghost" onClick={() => navigate(-1)} size="icon">
                 <ArrowLeft size={20} />
               </Button>
               <h1 className="font-semibold text-lg md:text-xl">Detail Buku</h1>
@@ -147,73 +174,120 @@ export default function SchoolBookDetail() {
                     <Skeleton className="h-6 w-56" />
                     <Skeleton className="h-4 w-32 mt-2" />
                   </>
-                ) : (
-                  <>
-                    {/* <h1 className="text-lg md:text-xl font-semibold truncate">
-                    {book?.books_title ?? "Buku tidak ditemukan"}
-                  </h1>
-                  <p className="text-sm text-muted-foreground">
-                    {book?.books_author ?? "—"}
-                  </p> */}
-                  </>
-                )}
+                ) : null}
               </div>
             </div>
           </div>
 
           {/* Detail Buku */}
           <Card className="border bg-card shadow-sm">
-            <CardContent className="p-4 md:p-6 grid grid-cols-1 md:grid-cols-12 gap-8">
-
-              {/* Cover */}
-              <div className="md:col-span-4 flex justify-center">
-                <div className="w-full max-w-xs aspect-[3/4] rounded-xl overflow-hidden bg-muted relative shadow-md">
+            <CardContent className="p-4 md:p-6 grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8">
+              {/* Cover - DIPERKECIL */}
+              <div className="md:col-span-3 flex justify-start md:justify-center">
+                <div className="w-full max-w-[130px] md:max-w-[170px] aspect-[3/4] rounded-lg overflow-hidden bg-muted relative shadow-sm">
                   {isLoading ? (
                     <Skeleton className="h-full w-full" />
-                  ) : book?.books_image_url ? (
+                  ) : book?.book_image_url ? (
                     <img
-                      src={book.books_image_url}
-                      alt={book.books_title}
+                      src={book.book_image_url}
+                      alt={book.book_title}
                       className="h-full w-full object-cover"
                     />
                   ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground gap-2">
-                      <ImageOff size={30} />
-                      <span className="text-sm">Tidak ada cover</span>
+                      <ImageOff size={26} />
+                      <span className="text-xs">Tidak ada cover</span>
                     </div>
                   )}
                 </div>
               </div>
 
               {/* Meta */}
-              <div className="md:col-span-8 space-y-6">
+              <div className="md:col-span-9 space-y-6">
+                {/* Title + Actions */}
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div className="space-y-1">
+                    {isLoading ? (
+                      <>
+                        <Skeleton className="h-7 w-64" />
+                        <Skeleton className="h-4 w-40" />
+                      </>
+                    ) : (
+                      <>
+                        <h2 className="text-2xl font-bold tracking-tight">
+                          {book?.book_title ?? "Buku tidak ditemukan"}
+                        </h2>
+                        <p className="text-sm text-muted-foreground">
+                          Penulis: {book?.book_author ?? "Tidak diketahui"}
+                        </p>
+                      </>
+                    )}
+                  </div>
 
-                {/* Title Section */}
-                <div className="space-y-1">
-                  <h2 className="text-2xl font-bold tracking-tight">
-                    {book?.books_title ?? "—"}
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    Penulis: {book?.books_author ?? "Tidak diketahui"}
-                  </p>
+                  {/* Action buttons */}
+                  <div className="flex gap-2 shrink-0">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleEdit}
+                      disabled={!book || isDeleting}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={handleDelete}
+                      disabled={!book || isDeleting}
+                    >
+                      {isDeleting ? "Menghapus..." : "Hapus"}
+                    </Button>
+                  </div>
                 </div>
 
                 <Separator />
 
-                {/* Other info */}
+                {/* Info Utama */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InfoBlock label="Slug" value={book?.books_slug ?? "—"} />
                   <InfoBlock
-                    label="URL Buku"
+                    label="Penerbit"
+                    value={book?.book_publisher ?? "—"}
+                  />
+                  <InfoBlock
+                    label="Tahun Terbit"
+                    value={book?.book_publication_year ?? "—"}
+                  />
+                  <InfoBlock label="Slug" value={book?.book_slug ?? "—"} />
+                  <InfoBlock
+                    label="Status"
                     value={
-                      book?.books_url ? (
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${book?.book_is_deleted
+                            ? "bg-red-100 text-red-700"
+                            : "bg-emerald-100 text-emerald-700"
+                          }`}
+                      >
+                        {book?.book_is_deleted
+                          ? "Tidak aktif / dihapus"
+                          : "Aktif"}
+                      </span>
+                    }
+                  />
+                </div>
+
+                {/* Link Pembelian */}
+                <div className="pt-1">
+                  <InfoBlock
+                    label="Link Pembelian"
+                    value={
+                      book?.book_purchase_url ? (
                         <a
-                          href={book.books_url}
+                          href={book.book_purchase_url}
                           target="_blank"
                           rel="noreferrer"
                           className="inline-flex items-center gap-2 text-primary hover:underline"
                         >
-                          <ExternalLink size={14} /> Kunjungi Buku
+                          <ExternalLink size={14} /> Buka halaman pembelian
                         </a>
                       ) : (
                         "—"
@@ -222,22 +296,36 @@ export default function SchoolBookDetail() {
                   />
                 </div>
 
+                {/* Tanggal */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <InfoBlock
+                    label="Dibuat pada"
+                    value={formatDate(book?.book_created_at)}
+                  />
+                  <InfoBlock
+                    label="Terakhir diupdate"
+                    value={formatDate(book?.book_updated_at)}
+                  />
+                </div>
+
                 {/* Deskripsi */}
-                {book?.books_desc && (
+                {book?.book_desc && (
                   <div className="space-y-2">
-                    <div className="text-sm text-muted-foreground">Deskripsi</div>
-                    <p className="text-sm leading-relaxed">{book.books_desc}</p>
+                    <div className="text-sm text-muted-foreground">
+                      Deskripsi
+                    </div>
+                    <p className="text-sm leading-relaxed">{book.book_desc}</p>
                   </div>
                 )}
               </div>
             </CardContent>
           </Card>
 
-          {/* Pemakaian */}
+          {/* Pemakaian (berdasarkan include.class_subjects) */}
           <Card>
             <CardHeader className="py-3">
               <CardTitle className="text-base font-semibold inline-flex items-center gap-2">
-                <BookOpen size={18} /> Dipakai di Kelas/Section
+                <BookOpen size={18} /> Dipakai di Mata Pelajaran / Kelas
               </CardTitle>
             </CardHeader>
             <Separator />
@@ -249,29 +337,38 @@ export default function SchoolBookDetail() {
                   ))}
                 </div>
               ) : !book ? (
-                <p className="text-sm text-muted-foreground">Buku tidak ditemukan.</p>
-              ) : sectionsFlat.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  Belum terhubung ke kelas/section.
+                  Buku tidak ditemukan.
+                </p>
+              ) : !book.class_subjects || book.class_subjects.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Belum terhubung ke mata pelajaran.
                 </p>
               ) : (
                 <div className="flex flex-wrap gap-3">
-                  {sectionsFlat.map((s) => (
-                    <Link
-                      key={s.class_sections_id}
-                      to={`${base}/sekolah/classes/${s.class_sections_id}`}
+                  {book.class_subjects.map((cs) => (
+                    <div
+                      key={cs.class_subject_id}
                       className="px-3 py-1.5 rounded-md text-sm bg-muted hover:bg-muted/70 
                        border shadow-sm transition-all"
                     >
-                      📘 {s.class_sections_name}
-                      {s.class_sections_code && ` (${s.class_sections_code})`}
-                    </Link>
+                      📘{" "}
+                      {cs.class_subject_class_parent_name_cache ??
+                        "Tanpa nama kelas"}{" "}
+                      •{" "}
+                      {cs.class_subject_subject_name_cache ??
+                        "Tanpa nama mapel"}
+                      {cs.class_subject_subject_code_cache && (
+                        <span className="ml-1 text-xs text-muted-foreground">
+                          ({cs.class_subject_subject_code_cache})
+                        </span>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}
             </CardContent>
           </Card>
-
         </div>
       </main>
     </div>

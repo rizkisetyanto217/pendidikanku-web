@@ -1,4 +1,4 @@
-// src/pages/school/CSchoolDetailTeacher.tsx
+// src/pages/school/SchoolDetailTeacher.tsx
 /* ================= Imports ================= */
 import { useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -112,7 +112,7 @@ interface TeacherCertificateItem {
 interface TeacherDetail {
   // PK & scope
   school_teacher_id: string;
-  school_teacher_school_id: string;
+  school_teacher_school_id?: string;
 
   // Identitas/Kepegawaian
   school_teacher_code?: string | null;
@@ -144,7 +144,7 @@ interface TeacherDetail {
   school_teacher_school_slug_snapshot?: string | null;
   school_teacher_school_logo_url_snapshot?: string | null;
 
-  // JSONB
+  // JSONB/relasional "turunan"
   school_teacher_sections: TeacherSectionItem[];
   school_teacher_csst: TeacherCSSTItem[];
 
@@ -181,6 +181,10 @@ interface TeacherDetail {
   total_csst?: number | null;
   total_class_sections_active?: number | null;
   total_csst_active?: number | null;
+
+  // Raw data supaya "semua field ikut" kalau mau dipakai kedepan
+  raw_school_teacher: any;
+  raw_user_teacher: any;
 }
 
 /* ================= Helpers ================= */
@@ -258,9 +262,6 @@ const initials = (name?: string | null) =>
     .join("")
     .toUpperCase();
 
-const isUUID = (s: string) =>
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
-
 const formatExperience = (years?: number | null) => {
   if (years == null) return "-";
   if (years === 0) return "Baru mulai";
@@ -281,7 +282,6 @@ const formatStatNumber = (n?: number | null) =>
 /* ================= Component ================= */
 
 const SchoolDetailTeacher: React.FC = () => {
-  // id di route bisa berupa UUID atau slug
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -300,22 +300,20 @@ const SchoolDetailTeacher: React.FC = () => {
     });
   }, [setHeader]);
 
-  // Fetch detail dari list endpoint (pakai filter id/slug)
+  // Fetch detail dari list endpoint (pakai API terbaru: mode=compact + include=class_sections,csst,user_teachers)
   const { data: resp } = useQuery({
     queryKey: ["school-teacher-detail", id],
     enabled: !!id,
     queryFn: async () => {
       const params: Record<string, any> = {
-        include: "user_teachers",
+        mode: "compact",
+        include: "class_sections,csst,user_teachers",
         per_page: 1,
       };
 
       if (id) {
-        if (isUUID(id)) {
-          params.school_teacher_id = id;
-        } else {
-          params.school_teacher_slug = id;
-        }
+        // API baru contoh: ?id=<school_teacher_id>
+        params.id = id;
       }
 
       const res = await axios.get("/api/u/school-teachers/list", { params });
@@ -324,6 +322,11 @@ const SchoolDetailTeacher: React.FC = () => {
         message: string;
         data: any[];
         pagination: any;
+        include?: {
+          user_teachers?: any[];
+          class_sections?: any[];
+          class_section_subject_teachers?: any[];
+        };
       };
     },
   });
@@ -335,8 +338,11 @@ const SchoolDetailTeacher: React.FC = () => {
     }
 
     const list = resp.data as any[];
+    const include = resp.include || {};
+    const userTeachers: any[] = include.user_teachers || [];
+    const classSectionsAll: any[] = include.class_sections || [];
+    const csstAll: any[] = include.class_section_subject_teachers || [];
 
-    // Kalau backend belum filter, cari manual by id/slug/code
     let t: any = list[0];
     if (id) {
       t =
@@ -347,39 +353,29 @@ const SchoolDetailTeacher: React.FC = () => {
             x.school_teacher_code === id
         ) ?? t;
     }
-
     if (!t) return undefined;
 
-    const ut = t.user_teacher || {};
+    // Join ke user_teacher dari include
+    const ut =
+      userTeachers.find(
+        (u) => u.user_teacher_id === t.school_teacher_user_teacher_id
+      ) || {};
 
-    // Ambil subject default dari CSST pertama (kalau ada)
-    let defaultSubject: string | null = null;
-    if (Array.isArray(t.school_teacher_csst) && t.school_teacher_csst.length) {
-      defaultSubject =
-        t.school_teacher_csst[0]
-          .class_section_subject_teacher_subject_name_cache ?? null;
-    }
-
-    // Derive phone dari whatsapp_url (kalau mau)
-    const rawWaUrl: string | undefined =
-      t.school_teacher_user_teacher_whatsapp_url_cache ||
-      ut.user_teacher_whatsapp_url ||
-      undefined;
-    const derivedPhone =
-      rawWaUrl && rawWaUrl.includes("wa.me")
-        ? rawWaUrl.replace(/\D/g, "") || null
-        : null;
-
-    const sections: TeacherSectionItem[] = Array.isArray(
-      t.school_teacher_sections
-    )
-      ? t.school_teacher_sections.map(
+    // Sections (homeroom) dari include.class_sections
+    const sections: TeacherSectionItem[] = classSectionsAll
+      .filter(
+        (s) =>
+          s.class_section_school_teacher_id &&
+          s.class_section_school_teacher_id === t.school_teacher_id
+      )
+      .map(
         (s: any): TeacherSectionItem => ({
           class_section_id: s.class_section_id,
-          role: s.class_section_role,
+          role: "homeroom",
           is_active: !!s.class_section_is_active,
-          from: s.class_section_from || undefined,
-          to: s.class_section_to || undefined,
+          from: undefined,
+          to: undefined,
+
           class_section_name: s.class_section_name,
           class_section_slug: s.class_section_slug,
           class_section_image_url: s.class_section_image_url,
@@ -393,27 +389,29 @@ const SchoolDetailTeacher: React.FC = () => {
           class_section_class_parent_level:
             s.class_section_class_parent_level_cache,
 
-          total_students: s.class_section_total_students_active ?? undefined,
-          total_students_male:
-            s.class_section_total_students_male ?? undefined,
-          total_students_female:
-            s.class_section_total_students_female ?? undefined,
-          total_students_active:
-            s.class_section_total_students_active ?? undefined,
-          total_students_male_active:
-            s.class_section_total_students_male_active ?? undefined,
-          total_students_female_active:
-            s.class_section_total_students_female_active ?? undefined,
+          total_students: s.class_section_quota_total ?? undefined,
+          total_students_active: s.class_section_quota_taken ?? undefined,
+          total_students_male: undefined,
+          total_students_female: undefined,
+          total_students_male_active: undefined,
+          total_students_female_active: undefined,
         })
-      )
-      : [];
+      );
 
-    const csst: TeacherCSSTItem[] = Array.isArray(t.school_teacher_csst)
-      ? t.school_teacher_csst.map(
+    // CSST dari include.class_section_subject_teachers
+    const csst: TeacherCSSTItem[] = csstAll
+      .filter(
+        (c) =>
+          c.class_section_subject_teacher_school_teacher_id &&
+          c.class_section_subject_teacher_school_teacher_id ===
+          t.school_teacher_id
+      )
+      .map(
         (c: any): TeacherCSSTItem => ({
           csst_id: c.class_section_subject_teacher_id,
           is_active: !!c.class_section_subject_teacher_is_active,
           csst_role: c.class_section_subject_teacher_role,
+
           from: c.class_section_subject_teacher_from || undefined,
           to: c.class_section_subject_teacher_to || undefined,
 
@@ -425,23 +423,46 @@ const SchoolDetailTeacher: React.FC = () => {
           subject_slug:
             c.class_section_subject_teacher_subject_slug_cache || undefined,
 
-          class_section_id: c.class_section_id,
-          class_section_name: c.class_section_name,
-          class_section_slug: c.class_section_slug,
+          class_section_id:
+            c.class_section_subject_teacher_class_section_id || undefined,
+          class_section_name:
+            c.class_section_subject_teacher_class_section_name_cache ||
+            undefined,
+          class_section_slug:
+            c.class_section_subject_teacher_class_section_slug_cache ||
+            undefined,
 
           quota_taken: c.class_section_subject_teacher_quota_taken,
-          total_attendance: c.class_section_subject_teacher_total_attendance,
+          total_attendance:
+            c.class_section_subject_teacher_total_attendance ?? undefined,
           total_assessments:
-            c.class_section_subject_teacher_total_assessments,
+            c.class_section_subject_teacher_total_assessments ?? undefined,
           total_students_passed:
-            c.class_section_subject_teacher_total_students_passed,
+            c.class_section_subject_teacher_total_students_passed ?? undefined,
           total_assessments_graded:
-            c.class_section_subject_teacher_total_assessments_graded,
+            c.class_section_subject_teacher_total_assessments_graded ??
+            undefined,
           total_assessments_ungraded:
-            c.class_section_subject_teacher_total_assessments_ungraded,
+            c.class_section_subject_teacher_total_assessments_ungraded ??
+            undefined,
         })
-      )
-      : [];
+      );
+
+    // Ambil subject default dari CSST pertama (kalau ada)
+    let defaultSubject: string | null = null;
+    if (csst.length) {
+      defaultSubject = csst[0].subject_name ?? null;
+    }
+
+    // Derive phone dari whatsapp_url (kalau mau)
+    const rawWaUrl: string | undefined =
+      t.school_teacher_user_teacher_whatsapp_url_cache ||
+      ut.user_teacher_whatsapp_url ||
+      undefined;
+    const derivedPhone =
+      rawWaUrl && rawWaUrl.includes("wa.me")
+        ? rawWaUrl.replace(/\D/g, "") || null
+        : null;
 
     const teacherSpecialties: string[] | null = Array.isArray(
       ut.user_teacher_specialties
@@ -456,6 +477,7 @@ const SchoolDetailTeacher: React.FC = () => {
       : null;
 
     return {
+      // Basic
       school_teacher_id: t.school_teacher_id,
       school_teacher_school_id: t.school_teacher_school_id,
 
@@ -467,15 +489,16 @@ const SchoolDetailTeacher: React.FC = () => {
       school_teacher_joined_at: t.school_teacher_joined_at,
       school_teacher_left_at: t.school_teacher_left_at,
 
-      school_teacher_is_verified: !!t.school_teacher_is_verified,
+      school_teacher_is_verified:
+        t.school_teacher_is_verified ?? ut.user_teacher_is_verified ?? false,
       school_teacher_verified_at: t.school_teacher_verified_at,
 
-      school_teacher_is_public: !!t.school_teacher_is_public,
-      school_teacher_notes: t.school_teacher_notes,
+      school_teacher_is_public: t.school_teacher_is_public ?? false,
+      school_teacher_notes: t.school_teacher_notes ?? null,
 
       school_teacher_user_teacher_name_snapshot:
         t.school_teacher_user_teacher_full_name_cache ||
-        ut.user_teacheru_user_full_name_cache ||
+        ut.user_teacheru_user_full_name_cache || // typo key dari backend
         ut.user_teacher_full_name ||
         ut.user_teacher_name,
 
@@ -493,7 +516,7 @@ const SchoolDetailTeacher: React.FC = () => {
         t.school_teacher_user_teacher_title_suffix_cache ||
         ut.user_teacher_title_suffix,
 
-      // Snapshot sekolah: belum ada di response contoh, biarkan null dulu (siap kalau nanti ada)
+      // Snapshot sekolah (kalau nanti ada di API, ini siap terisi)
       school_teacher_school_name_snapshot:
         t.school_teacher_school_name_snapshot || null,
       school_teacher_school_slug_snapshot:
@@ -529,12 +552,14 @@ const SchoolDetailTeacher: React.FC = () => {
       teacher_youtube_url: ut.user_teacher_youtube_url ?? null,
       teacher_telegram_username: ut.user_teacher_telegram_username ?? null,
 
-      total_class_sections: t.school_teacher_total_class_sections ?? null,
-      total_csst: t.school_teacher_total_class_section_subject_teachers ?? null,
-      total_class_sections_active:
-        t.school_teacher_total_class_sections_active ?? null,
-      total_csst_active:
-        t.school_teacher_total_class_section_subject_teachers_active ?? null,
+      total_class_sections: sections.length,
+      total_csst: csst.length,
+      total_class_sections_active: sections.filter((s) => s.is_active).length,
+      total_csst_active: csst.filter((c) => c.is_active).length,
+
+      // Raw data ikut semua (kalau nanti ada field baru tinggal pakai dari sini)
+      raw_school_teacher: t,
+      raw_user_teacher: ut,
     };
   }, [resp, id]);
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "@/lib/axios";
 import { useNavigate } from "react-router-dom";
@@ -26,6 +26,7 @@ import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayou
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
 import CRowActions from "@/components/costum/table/CRowAction";
+import CDeleteDialog from "@/components/costum/common/buttons/CDeleteDialog";
 
 /* ===================== Types ===================== */
 type AcademicTerm = {
@@ -147,7 +148,7 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
   const navigate = useNavigate();
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
-  // 🔐 Ambil konteks sekolah dari simple-context (JWT)
+  // Ambil konteks sekolah dari simple-context (JWT)
   const { data: currentUser } = useCurrentUser();
   const schoolId = currentUser?.membership?.school_id ?? "";
   const schoolSlug = currentUser?.membership?.school_slug ?? "";
@@ -207,6 +208,10 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
   }, [terms]);
 
   const deleteTerm = useDeleteTerm(schoolId || undefined);
+
+  // tambah state untuk modal
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
 
   const columns: ColumnDef<AcademicTerm>[] = [
     {
@@ -376,17 +381,28 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
                     state: { term: row },
                   })
                 }
-                onDelete={async () => {
-                  await deleteTerm.mutateAsync(row.id);
-                }}
-
-                /* 🎯 Hanya TABLE VIEW yang pakai dropdown */
+                onDelete={() => setDeleteId(row.id)}
+                /* Hanya TABLE VIEW yang pakai dropdown */
                 forceMenu={view === "table"}
               />
             )}
 
             pageSize={20}
           />
+          <CDeleteDialog
+            open={!!deleteId}
+            onClose={() => setDeleteId(null)}
+            loading={deleteTerm.isPending}
+            title="Hapus Tahun Akademik?"
+            description="Tindakan ini tidak dapat dibatalkan."
+            onConfirm={() => {
+              if (!deleteId) return;
+              deleteTerm.mutate(deleteId, {
+                onSuccess: () => setDeleteId(null),
+              });
+            }}
+          />
+
         </div>
       </main>
     </div>

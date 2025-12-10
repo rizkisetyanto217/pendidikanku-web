@@ -8,6 +8,7 @@ import {
   Info,
   Loader2,
   ArrowLeft,
+  ExternalLink, // ✅ icon buat tombol link
 } from "lucide-react";
 
 /* Import untuk breadcrumb header */
@@ -15,7 +16,6 @@ import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayou
 
 /* shadcn/ui */
 import { Button } from "@/components/ui/button";
-
 
 /* DataTable */
 import {
@@ -27,7 +27,7 @@ import {
 import CRowActions from "@/components/costum/table/CRowAction";
 
 /* =========================================================
-   Types (disesuaikan dengan /api/u/books/list)
+   Types (disesuaikan dengan /api/u/books/list?mode=compact)
 ========================================================= */
 export type BookAPI = {
   book_id: string;
@@ -38,6 +38,7 @@ export type BookAPI = {
   book_slug?: string | null;
   book_image_url?: string | null;
   book_image_object_key?: string | null;
+  book_purchase_url?: string | null; // ✅ dari API
   book_created_at?: string;
   book_updated_at?: string;
   book_is_deleted?: boolean;
@@ -52,20 +53,25 @@ export type BooksResponse = {
     total_pages: number;
     has_next: boolean;
     has_prev: boolean;
+    count?: number;
+    per_page_options?: number[];
   };
 };
 
 /* =========================================================
-   Fetch list (USER) - /u/books/list
+   Fetch list (USER) - /u/books/list?mode=compact
 ========================================================= */
-function useBooksList(schoolId: string) {
-  return useQuery<BookAPI[]>({
-    queryKey: ["books-list-public", schoolId],
+function useBooksList(_schoolId: string) {
+  return useQuery<BooksResponse>({
+    queryKey: ["books-list-public"],
     queryFn: async () => {
-      const r = await axios.get("/u/books/list", { withCredentials: true });
-      return r.data?.data ?? [];
+      const r = await axios.get<BooksResponse>("/u/books/list", {
+        params: { mode: "compact" },
+        withCredentials: true,
+      });
+      return r.data;
     },
-    placeholderData: [],
+    placeholderData: { data: [] },
   });
 }
 
@@ -77,8 +83,7 @@ function useDeleteBook() {
   return useMutation({
     mutationFn: async (id: string) =>
       axios.delete(`/api/a/books/${id}`, { withCredentials: true }),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ["books-list-public"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["books-list-public"] }),
   });
 }
 
@@ -109,7 +114,8 @@ export default function SchoolBooks({ showBack = false, backTo }: Props) {
   const booksQuery = useBooksList(schoolId);
   const deleteBook = useDeleteBook();
 
-  const rows = booksQuery.data ?? [];
+  const rows = booksQuery.data?.data ?? [];
+  const totalBooks = booksQuery.data?.pagination?.total ?? rows.length ?? 0;
 
   /* ====== Kolom DataTable ====== */
   const columns = useMemo<ColumnDef<BookAPI>[]>(() => {
@@ -169,6 +175,30 @@ export default function SchoolBooks({ showBack = false, backTo }: Props) {
           </div>
         ),
       },
+      {
+        id: "purchase",
+        header: "Link Pembelian",
+        minW: "160px",
+        align: "center",
+        className: "text-center",
+
+        cell: (r) =>
+          r.book_purchase_url ? (
+            <Button variant="outline" asChild className="gap-1">
+              <a
+                href={r.book_purchase_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()} // biar tidak trigger row-click
+              >
+                <ExternalLink className="h-3 w-3" />
+                <span>Buka</span>
+              </a>
+            </Button>
+          ) : (
+            <span className="text-xs text-muted-foreground">—</span>
+          ),
+      },
     ];
   }, []);
 
@@ -188,7 +218,7 @@ export default function SchoolBooks({ showBack = false, backTo }: Props) {
     </div>
   ) : (
     <div className="text-sm text-muted-foreground">
-      Total buku: {rows.length}
+      Total buku: {totalBooks}
     </div>
   );
 
@@ -203,7 +233,8 @@ export default function SchoolBooks({ showBack = false, backTo }: Props) {
                 onClick={() => (backTo ? navigate(backTo) : navigate(-1))}
                 variant="ghost"
                 size="icon"
-                className="cursor-pointer self-start">
+                className="cursor-pointer self-start"
+              >
                 <ArrowLeft size={20} />
               </Button>
             )}
@@ -212,7 +243,7 @@ export default function SchoolBooks({ showBack = false, backTo }: Props) {
 
           {/* ======================================
               DATA TABLE PAKAI CRowActions
-        ====================================== */}
+          ====================================== */}
           <DataTable<BookAPI>
             onAdd={() => navigate("new")}
             addLabel="Tambah"
@@ -229,11 +260,7 @@ export default function SchoolBooks({ showBack = false, backTo }: Props) {
             stickyHeader
             zebra
             viewModes={["table", "card"]}
-
-            /* Row Click → Detail */
             onRowClick={(r) => navigate(`${r.book_id}`, { state: { book: r } })}
-
-            /* Aksi */
             renderActions={(r, view) => (
               <CRowActions
                 row={r}
@@ -244,7 +271,7 @@ export default function SchoolBooks({ showBack = false, backTo }: Props) {
                   navigate(`edit/${r.book_id}`, { state: { book: r } })
                 }
                 onDelete={() => deleteBook.mutate(r.book_id)}
-                forceMenu={view === "table"} // table = dropdown, card = inline
+                forceMenu={view === "table"}
               />
             )}
           />

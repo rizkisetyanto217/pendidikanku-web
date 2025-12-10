@@ -1,7 +1,7 @@
 // src/pages/pendidikanku-dashboard/dashboard-school/academic/SchoolDetailAcademic.tsx
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import axios from "@/lib/axios";
 
 /* icons */
@@ -11,8 +11,6 @@ import {
   Clock,
   School,
   Flag,
-  Pencil,
-  Trash2,
   Loader2,
   Users,
   Layers,
@@ -23,31 +21,14 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from "@/components/ui/alert-dialog";
-import { Checkbox } from "@/components/ui/checkbox";
 
 /* === header layout hook === */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
+
+import CActionsButton from "@/components/costum/common/buttons/CActionsButton";
+import CDeleteDialog from "@/components/costum/common/buttons/CDeleteDialog";
+
 
 /* ===== Types dari API baru ===== */
 
@@ -241,7 +222,7 @@ function useAcademicTermDetail(termId?: string) {
 export default function SchoolAcademicDetail() {
   const { id: termId } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const qc = useQueryClient();
+
 
   const { setHeader } = useDashboardHeader();
 
@@ -270,22 +251,6 @@ export default function SchoolAcademicDetail() {
     });
   }, [term, setHeader]);
 
-  /* === PATCH (edit) === */
-  const patchMut = useMutation({
-    mutationFn: async (payload: any) => {
-      if (!term || !termId) {
-        throw new Error("Data periode akademik belum siap.");
-      }
-      const url = `/schools/${term.academic_term_school_id}/academic-terms/${termId}`;
-      const res = await axios.patch(url, payload);
-      return res.data;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["academic-term-detail", termId] });
-      setOpenEdit(false);
-    },
-  });
-
   /* === DELETE === */
   const deleteMut = useMutation({
     mutationFn: async () => {
@@ -304,7 +269,6 @@ export default function SchoolAcademicDetail() {
     },
   });
 
-  const [openEdit, setOpenEdit] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const totalSections = sections.length;
@@ -315,40 +279,16 @@ export default function SchoolAcademicDetail() {
   return (
     <div className="w-full bg-background text-foreground">
       {/* Dialog Edit (hanya jika sudah ada term) */}
-      {term && (
-        <EditTermDialog
-          open={openEdit}
-          onOpenChange={setOpenEdit}
-          data={term}
-          loading={patchMut.isPending}
-          onSubmit={(payload) => patchMut.mutate(payload)}
-        />
-      )}
+
 
       {/* Konfirmasi Hapus */}
-      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Hapus periode ini?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tindakan ini tidak dapat dibatalkan.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:opacity-90"
-              onClick={() => deleteMut.mutate()}
-              disabled={deleteMut.isPending}
-            >
-              {deleteMut.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
-              Hapus
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <CDeleteDialog
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        onConfirm={() => deleteMut.mutate()}
+        loading={deleteMut.isPending}
+      />
+
 
       <main className="w-full">
         <div className="mx-auto flex flex-col gap-6">
@@ -418,24 +358,19 @@ export default function SchoolAcademicDetail() {
                   />
                 </div>
 
-                <div className="flex gap-2 px-5 pb-5">
-                  <Button
-                    variant="outline"
-                    onClick={() => setOpenEdit(true)}
-                    disabled={patchMut.isPending || deleteMut.isPending}
-                  >
-                    <Pencil size={16} className="mr-2" />
-                    Edit
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={() => setConfirmDelete(true)}
-                    disabled={deleteMut.isPending}
-                  >
-                    <Trash2 size={16} className="mr-2" />
-                    {deleteMut.isPending ? "Menghapus..." : "Hapus"}
-                  </Button>
+                <div className="px-5 pb-5">
+                  <CActionsButton
+                    onEdit={() =>
+                      navigate(
+                        `/${term.academic_term_school_id}/sekolah/akademik/tahun-akademik/edit/${term.academic_term_id}`,
+                        { state: { term } }
+                      )
+                    }
+                    onDelete={() => setConfirmDelete(true)}
+                    loadingDelete={deleteMut.isPending}
+                  />
                 </div>
+
               </CardContent>
             </Card>
           )}
@@ -670,144 +605,5 @@ function InfoRow({
         <div className="break-words text-sm font-medium">{value}</div>
       </div>
     </div>
-  );
-}
-
-/* ===================== ✏️ Modal Edit (shadcn) ===================== */
-function EditTermDialog({
-  open,
-  onOpenChange,
-  data,
-  onSubmit,
-  loading,
-}: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  data: Term;
-  onSubmit: (payload: any) => void;
-  loading?: boolean;
-}) {
-  const [academicYear, setAcademicYear] = useState(
-    data.academic_term_academic_year
-  );
-  const [name, setName] = useState(data.academic_term_name);
-  const [startDate, setStartDate] = useState(
-    data.academic_term_start_date.slice(0, 10)
-  );
-  const [endDate, setEndDate] = useState(
-    data.academic_term_end_date.slice(0, 10)
-  );
-  const [angkatan, setAngkatan] = useState<number>(data.academic_term_angkatan);
-  const [isActive, setIsActive] = useState<boolean>(
-    data.academic_term_is_active
-  );
-
-  useEffect(() => {
-    setAcademicYear(data.academic_term_academic_year);
-    setName(data.academic_term_name);
-    setStartDate(data.academic_term_start_date.slice(0, 10));
-    setEndDate(data.academic_term_end_date.slice(0, 10));
-    setAngkatan(data.academic_term_angkatan);
-    setIsActive(data.academic_term_is_active);
-  }, [data]);
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Edit Periode Akademik</DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="academic_year">Tahun Ajaran</Label>
-            <Input
-              id="academic_year"
-              className="mt-1"
-              value={academicYear}
-              onChange={(e) => setAcademicYear(e.target.value)}
-              placeholder="2025/2026"
-            />
-          </div>
-          <div>
-            <Label htmlFor="name">Nama Periode</Label>
-            <Input
-              id="name"
-              className="mt-1"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Ganjil / Genap / Angkatan ke-1"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label htmlFor="start">Tanggal Mulai</Label>
-              <Input
-                id="start"
-                type="date"
-                className="mt-1"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="end">Tanggal Selesai</Label>
-              <Input
-                id="end"
-                type="date"
-                className="mt-1"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
-            </div>
-          </div>
-          <div>
-            <Label htmlFor="angkatan">Angkatan</Label>
-            <Input
-              id="angkatan"
-              type="number"
-              className="mt-1"
-              value={angkatan}
-              onChange={(e) => setAngkatan(Number(e.target.value))}
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="is_active"
-              checked={isActive}
-              onCheckedChange={(v) => setIsActive(Boolean(v))}
-            />
-            <Label htmlFor="is_active" className="text-sm">
-              Aktif
-            </Label>
-          </div>
-        </div>
-
-        <DialogFooter className="gap-2">
-          <DialogClose asChild>
-            <Button variant="ghost" type="button">
-              Batal
-            </Button>
-          </DialogClose>
-          <Button
-            onClick={() =>
-              onSubmit({
-                academic_terms_academic_year: academicYear,
-                academic_terms_name: name,
-                academic_terms_start_date: startDate,
-                academic_terms_end_date: endDate,
-                academic_terms_angkatan: angkatan,
-                academic_terms_is_active: isActive,
-              })
-            }
-            disabled={loading}
-          >
-            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Simpan
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }
