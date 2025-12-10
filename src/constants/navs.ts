@@ -14,6 +14,7 @@ import {
   HeartHandshake,
   ChartSpline,
   Building2,
+  Settings,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -177,6 +178,25 @@ export const NAVS: NavDict = {
           // -> /sekolah/jadwal/rutin
           path: "rutin",
           label: "Rutin",
+        },
+      ],
+    },
+
+    // 5) Pengaturan
+    {
+      path: "pengaturan",
+      label: "Pengaturan",
+      icon: Settings,
+      children: [
+        {
+          // -> /sekolah/jadwal/tugas
+          path: "tugas",
+          label: "Tugas",
+        },
+        {
+          // -> /sekolah/jadwal/rutin
+          path: "kehadiran",
+          label: "Kehadiran",
         },
       ],
     },

@@ -38,9 +38,9 @@ type ApiClassCompact = {
   class_status: "active" | "inactive";
 
   class_total_class_sections_active: number;
+  class_total_class_sections: number;
   class_total_students_active: number;
-  class_total_teachers_active: number;
-  class_total_class_enrollments_active: number;
+  class_total_students: number;
 
   class_created_at: string;
   class_updated_at: string;
@@ -58,9 +58,9 @@ type MiddleClassRow = {
   status: "active" | "inactive";
 
   totalSectionsActive: number;
+  totalSections: number;
   totalStudentsActive: number;
-  totalTeachersActive: number;
-  totalEnrollmentsActive: number;
+  totalStudents: number;
 };
 
 /* Helpers */
@@ -89,7 +89,6 @@ async function fetchClassesCompact(
   };
 
   if (params?.q?.trim()) {
-    // backend list-list lain biasanya pakai q atau search, di sini pakai q
     p.q = params.q.trim();
   }
 
@@ -148,9 +147,9 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
         status: c.class_status,
 
         totalSectionsActive: c.class_total_class_sections_active,
+        totalSections: c.class_total_class_sections,
         totalStudentsActive: c.class_total_students_active,
-        totalTeachersActive: c.class_total_teachers_active,
-        totalEnrollmentsActive: c.class_total_class_enrollments_active,
+        totalStudents: c.class_total_students,
       })),
     [classesQ.data]
   );
@@ -171,10 +170,8 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
         (acc, r) => acc + (r.totalStudentsActive ?? 0),
         0
       );
-      // "total" di sini bisa kamu sesuaikan nanti kalau API kirim total semua siswa.
-      // Untuk sementara aku pakai jumlah terisi (quotaTaken) sebagai total terdaftar.
       const totalStudents = rows.reduce(
-        (acc, r) => acc + (r.quotaTaken ?? 0),
+        (acc, r) => acc + (r.totalStudents ?? 0),
         0
       );
 
@@ -246,24 +243,24 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
       {
         id: "students",
         header: "Siswa Aktif",
-        minW: "120px",
+        minW: "150px",
         align: "center",
         className: "text-center",
         cell: (r) => (
           <span className="font-medium tabular-nums">
-            {r.totalStudentsActive}
+            {r.totalStudentsActive} / {r.totalStudents}
           </span>
         ),
       },
       {
-        id: "teachers",
-        header: "Guru Aktif",
-        minW: "120px",
+        id: "sections",
+        header: "Rombel Aktif",
+        minW: "140px",
         align: "center",
         className: "text-center",
         cell: (r) => (
           <span className="font-medium tabular-nums">
-            {r.totalTeachersActive}
+            {r.totalSectionsActive} / {r.totalSections}
           </span>
         ),
       },
@@ -428,22 +425,22 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
                   </div>
                 </div>
 
-                {/* Siswa & Guru aktif */}
+                {/* Siswa & rombel */}
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="border rounded p-2">
                     <div className="text-[11px] text-muted-foreground">
-                      Siswa aktif
+                      Siswa (aktif / total)
                     </div>
-                    <div className="font-medium text-sm">
-                      {r.totalStudentsActive}
+                    <div className="font-medium text-sm tabular-nums">
+                      {r.totalStudentsActive} / {r.totalStudents}
                     </div>
                   </div>
                   <div className="border rounded p-2">
                     <div className="text-[11px] text-muted-foreground">
-                      Guru aktif
+                      Rombel aktif / total
                     </div>
-                    <div className="font-medium text-sm">
-                      {r.totalTeachersActive}
+                    <div className="font-medium text-sm tabular-nums">
+                      {r.totalSectionsActive} / {r.totalSections}
                     </div>
                   </div>
                 </div>

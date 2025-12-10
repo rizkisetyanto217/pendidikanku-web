@@ -50,6 +50,10 @@ import SchoolClassStudentList from "@/pages/dashboard/schools/classes/classes/st
 import SchoolRegistrationPaymentDetail from "@/pages/dashboard/schools/registrations/student-list/SchoolRegistrationsStudentDetail";
 import SchoolClassSection from "@/pages/dashboard/schools/classes/class-sections/SchoolClassSections";
 import SchoolStudent from "@/pages/dashboard/schools/profiles/students/SchoolStudent";
+import SchoolSettingAttendanceType from "@/pages/dashboard/schools/settings/attendance/SchoolSettingAttendanceType";
+import SchoolSettingAssesmentType from "@/pages/dashboard/schools/settings/assesments/SchoolSettingAssesmentType";
+import SchoolSettingAssesmentDetail from "@/pages/dashboard/schools/settings/assesments/details/SchoolSettingAssesmentDetail";
+import SchoolSettingAttendanceDetail from "@/pages/dashboard/schools/settings/attendance/details/SchoolSettingAttendanceDetail";
 
 export const SchoolRoutes = (
   <Route path="sekolah" element={<DashboardLayout />}>
@@ -80,7 +84,10 @@ export const SchoolRoutes = (
       <Route index path="tahun-akademik" element={<SchoolAcademic />} />
       <Route path="tahun-akademik/:id" element={<SchoolDetailAcademic />} />
       <Route path="tahun-akademik/new" element={<SchoolAcademicTermForm />} />
-      <Route path="tahun-akademik/edit/:id" element={<SchoolAcademicTermForm />} />
+      <Route
+        path="tahun-akademik/edit/:id"
+        element={<SchoolAcademicTermForm />}
+      />
 
       {/* === Ruangan === */}
       <Route path="ruangan" element={<SchoolRoom />} />
@@ -99,6 +106,18 @@ export const SchoolRoutes = (
       <Route path="mata-pelajaran/:id" element={<SchoolSubjectDetail />} />
       <Route path="mata-pelajaran/new" element={<SchoolSubjectForm />} />
       <Route path="mata-pelajaran/edit/:id" element={<SchoolSubjectForm />} />
+    </Route>
+
+    {/* === Profil Sekolah === */}
+    <Route path="pengaturan">
+      <Route path="tugas">
+        <Route index element={<SchoolSettingAssesmentType />} />
+        <Route path=":id" element={<SchoolSettingAssesmentDetail />} />
+      </Route>
+      <Route path="kehadiran">
+        <Route index element={<SchoolSettingAttendanceType />} />
+        <Route path=":id" element={<SchoolSettingAttendanceDetail />} />
+      </Route>
     </Route>
 
     <Route path="kelas">
@@ -134,8 +153,8 @@ export const SchoolRoutes = (
         <Route
           path="edit/:classSectionId"
           element={<SchoolClassSectionDetail />}
-        // kalau maksudnya form:
-        // element={<SchoolClassSectionForm />}
+          // kalau maksudnya form:
+          // element={<SchoolClassSectionForm />}
         />
 
         {/* /kelas/semua-kelas/:classSectionId */}
