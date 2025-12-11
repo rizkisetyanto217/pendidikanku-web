@@ -22,6 +22,7 @@ import {
 /* Auth */
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import CRowActions from "@/components/costum/table/CRowAction";
+import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
 
 /* ========== Types ========== */
 export type ClassStatus = "active" | "inactive";
@@ -67,10 +68,10 @@ type MiddleClassRow = {
 const fmtDate = (iso?: string | null) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
     : "-";
 
 const USER_PREFIX = "/api/u";
@@ -222,9 +223,7 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
             <div className="font-medium whitespace-normal break-words">
               {r.name}
             </div>
-            <div className="text-[11px] text-muted-foreground">
-              Slug: {r.slug}
-            </div>
+
           </div>
         ),
       },
@@ -282,18 +281,7 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
         header: "Status",
         align: "center",
         minW: "100px",
-        cell: (r) => (
-          <span
-            className={cn(
-              "inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ring-1",
-              r.status === "active"
-                ? "bg-sky-500/15 text-sky-500 ring-sky-500/25"
-                : "bg-zinc-500/10 text-zinc-500 ring-zinc-500/20"
-            )}
-          >
-            {r.status === "active" ? "Aktif" : "Nonaktif"}
-          </span>
-        ),
+        cell: (r) => <CBadgeStatus status={r.status} />,
       },
     ],
     []
@@ -409,19 +397,8 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
                   </div>
 
                   <div className="border rounded p-2">
-                    <div className="text-xs text-muted-foreground mb-1">
-                      Status
-                    </div>
-                    <span
-                      className={cn(
-                        "inline-flex px-2 py-0.5 rounded text-xs ring-1",
-                        r.status === "active"
-                          ? "bg-sky-500/15 text-sky-500 ring-sky-500/25"
-                          : "bg-zinc-500/10 text-zinc-500 ring-zinc-500/20"
-                      )}
-                    >
-                      {r.status === "active" ? "Aktif" : "Nonaktif"}
-                    </span>
+                    <div className="text-xs text-muted-foreground mb-1">Status</div>
+                    <CBadgeStatus status={r.status} />
                   </div>
                 </div>
 

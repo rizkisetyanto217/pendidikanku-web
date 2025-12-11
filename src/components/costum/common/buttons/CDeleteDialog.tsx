@@ -1,15 +1,14 @@
 import {
-    AlertDialog,
-    AlertDialogContent,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogDescription,
-    AlertDialogFooter,
-} from "@/components/ui/alert-dialog";
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
+} from "@/components/ui/dialog";
 
 import CActionsButton from "@/components/costum/common/buttons/CActionsButton";
-import { AlertDialogCancel } from "@/components/ui/alert-dialog";
-
+import { Button } from "@/components/ui/button";
 
 type Props = {
     open: boolean;
@@ -29,37 +28,33 @@ export default function CDeleteDialog({
     description = "Tindakan ini tidak dapat dibatalkan.",
 }: Props) {
     return (
-        <AlertDialog open={open} onOpenChange={(v) => !v && onClose()}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>{title}</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        {description}
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
+        <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+            <DialogContent className="max-w-sm px-8 pt-10">
+                <DialogHeader>
+                    <DialogTitle>{title}</DialogTitle>
+                    <DialogDescription>{description}</DialogDescription>
+                </DialogHeader>
 
-                <AlertDialogFooter>
-                    <AlertDialogCancel
-                        className="
-                            bg-[hsl(var(--neutral-bg)/0.35)]
-                            text-[hsl(var(--neutral-text))]
-                            hover:bg-[hsl(var(--neutral-bg)/0.55)]
-                            shadow-sm
-                        "
+                <DialogFooter className="flex flex-col-reverse gap-2 md:flex-row md:justify-end md:gap-2">
+
+                    {/* Batal */}
+                    <Button
+                        variant="outline"
+                        onClick={onClose}
+                        className="w-full md:w-auto bg-muted/40 hover:bg-muted"
                     >
                         Batal
-                    </AlertDialogCancel>
+                    </Button>
 
-
-
+                    {/* Hapus */}
                     <CActionsButton
                         onDelete={onConfirm}
                         loadingDelete={loading}
-                        noIcon={true}   // icon akan hilang di modal
+                        noIcon={true}
+                        className="w-full md:w-auto"
                     />
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }
-

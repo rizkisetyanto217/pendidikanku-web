@@ -22,7 +22,7 @@ import {
 /* ---------- BreadCrum ---------- */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
-/* 🔐 Context user dari simple-context (JWT) */
+/* Context user dari simple-context (JWT) */
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
 import CRowActions from "@/components/costum/table/CRowAction";
@@ -210,8 +210,7 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
   const deleteTerm = useDeleteTerm(schoolId || undefined);
 
   // tambah state untuk modal
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-
+  const [deleteTermData, setDeleteTermData] = useState<AcademicTerm | null>(null);
 
   const columns: ColumnDef<AcademicTerm>[] = [
     {
@@ -381,7 +380,8 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
                     state: { term: row },
                   })
                 }
-                onDelete={() => setDeleteId(row.id)}
+                onDelete={() => setDeleteTermData(row)}
+
                 /* Hanya TABLE VIEW yang pakai dropdown */
                 forceMenu={view === "table"}
               />
@@ -390,15 +390,15 @@ const SchoolAcademic: React.FC<Props> = ({ showBack = false, backTo }) => {
             pageSize={20}
           />
           <CDeleteDialog
-            open={!!deleteId}
-            onClose={() => setDeleteId(null)}
+            open={!!deleteTermData}
+            onClose={() => setDeleteTermData(null)}
             loading={deleteTerm.isPending}
-            title="Hapus Tahun Akademik?"
+            title={`Yakin Ingin Menghapus "${deleteTermData?.name}"?`}
             description="Tindakan ini tidak dapat dibatalkan."
             onConfirm={() => {
-              if (!deleteId) return;
-              deleteTerm.mutate(deleteId, {
-                onSuccess: () => setDeleteId(null),
+              if (!deleteTermData) return;
+              deleteTerm.mutate(deleteTermData.id, {
+                onSuccess: () => setDeleteTermData(null),
               });
             }}
           />

@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2 } from "lucide-react";
 import { AlertDialogCancel } from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
 
 type Props = {
     onEdit?: () => void;
@@ -15,6 +16,7 @@ type Props = {
     closeModal?: () => void;
 
     noIcon?: boolean; // hide icon (untuk modal)
+    className?: string;
 };
 
 export default function CActionsButton({
@@ -27,6 +29,7 @@ export default function CActionsButton({
     isModal = false,
     closeModal,
     noIcon = false,
+    className,
 }: Props) {
     return (
         <div className="flex items-center gap-2">
@@ -57,12 +60,16 @@ export default function CActionsButton({
                 <Button
                     onClick={onDelete}
                     disabled={loadingDelete}
-                    className="
-                        bg-[hsl(var(--destructive))]
-                        hover:bg-[hsl(var(--destructive)/0.90)]
-                        shadow-sm
-                        text-black dark:text-white
-                    "
+                    className={cn(
+                        `
+                            bg-[hsl(var(--destructive))]
+                            text-[hsl(var(--destructive-foreground))]
+                            hover:bg-[hsl(var(--destructive)/0.90)]
+                            shadow-sm
+                            text-black dark:text-white
+                        `,
+                        className
+                    )}
                 >
                     {!noIcon && (
                         <Trash2
@@ -93,12 +100,17 @@ export default function CActionsButton({
             {onCancel && isModal && (
                 <AlertDialogCancel
                     onClick={closeModal}
-                    className="
-                        bg-[hsl(var(--neutral-bg)/0.20)]
-                        hover:bg-[hsl(var(--neutral-bg)/0.30)]
-                        shadow-sm
-                        text-black dark:text-white
-                    "
+                    className={cn(
+                        `
+                            bg-[hsl(var(--destructive))]
+                            text-[hsl(var(--destructive-foreground))]
+                            hover:bg-[hsl(var(--destructive)/0.90)]
+                            shadow-sm
+                            text-black dark:text-white
+                        `,
+                        noIcon && "min-w-[90px]",
+                        className
+                    )}
                 >
                     Batal
                 </AlertDialogCancel>
@@ -113,8 +125,7 @@ export default function CActionsButton({
                         bg-green-600
                         hover:bg-green-700
                         text-black dark:text-white
-                        shadow-sm
-                    "
+                        shadow-sm"
                 >
                     {loadingSave ? "Menyimpan..." : "Simpan"}
                 </Button>

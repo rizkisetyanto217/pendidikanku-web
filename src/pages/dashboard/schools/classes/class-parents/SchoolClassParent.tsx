@@ -20,11 +20,12 @@ import {
   type ViewMode,
 } from "@/components/costum/table/CDataTable";
 
-/* ✅ Current user context (ambil school_id dari token) */
+/* Current user context (ambil school_id dari token) */
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
 import CRowActions from "@/components/costum/table/CRowAction";
 import { cn } from "@/lib/utils";
+import CDeleteDialog from "@/components/costum/common/buttons/CDeleteDialog";
 
 /* ================= Types ================= */
 
@@ -125,12 +126,31 @@ const SchoolClassParent: React.FC = () => {
     () => Number(sp.get("per") ?? 20) || 20
   );
 
-  /* ✅ Ambil school_id dari token (simple-context) + fallback cookie */
+  /* Ambil school_id dari token (simple-context) + fallback cookie */
   const currentUserQ = useCurrentUser();
   const activeMembership = currentUserQ.data?.membership ?? null;
   const schoolIdFromMembership = activeMembership?.school_id ?? null;
   const schoolId = schoolIdFromMembership || getActiveschoolId() || null;
   const hasSchool = Boolean(schoolId);
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState<Level | null>(null);
+
+  const openDeleteDialog = (row: Level) => {
+    setSelectedRow(row);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (!selectedRow) return;
+
+    console.log("Delete level:", selectedRow.id);
+
+    // TODO: nanti ganti dengan axios.delete(...)
+    setDeleteDialogOpen(false);
+  };
+
+
 
   // sync page/perPage ke URL
   useEffect(() => {
@@ -295,8 +315,8 @@ const SchoolClassParent: React.FC = () => {
             r.is_deleted === true
               ? "inactive"
               : r.is_active === true
-              ? "active"
-              : "inactive";
+                ? "active"
+                : "inactive";
 
           return <CBadgeStatus status={status} />;
         },
@@ -382,7 +402,7 @@ const SchoolClassParent: React.FC = () => {
                 size="sm"
                 onView={() => navigate(`${row.id}`)}
                 onEdit={() => navigate(`edit/${row.id}`)}
-                onDelete={() => console.log("delete", row.id)}
+                onDelete={() => openDeleteDialog(row)}
                 forceMenu={view === "table"} // TABLE = menu, CARD = inline
               />
             )}
@@ -410,6 +430,7 @@ const SchoolClassParent: React.FC = () => {
                     Tidak ada gambar
                   </div>
                 )}
+
 
                 <div className="space-y-0.5">
                   <div className="font-semibold">{r.name}</div>
@@ -451,8 +472,8 @@ const SchoolClassParent: React.FC = () => {
                         r.is_deleted
                           ? "inactive"
                           : r.is_active
-                          ? "active"
-                          : "inactive"
+                            ? "active"
+                            : "inactive"
                       }
                     />
                   </div>
@@ -479,13 +500,22 @@ const SchoolClassParent: React.FC = () => {
                     size="sm"
                     onView={() => navigate(`${r.id}`)}
                     onEdit={() => navigate(`edit/${r.id}`)}
-                    onDelete={() => console.log("delete", r.id)}
+                    onDelete={() => openDeleteDialog(r)}
                     forceMenu={false}
                   />
                 </div>
               </div>
             )}
           />
+          <CDeleteDialog
+            open={deleteDialogOpen}
+            onClose={() => setDeleteDialogOpen(false)}
+            onConfirm={confirmDelete}
+            loading={false} // nanti bisa ubah jika sudah pakai mutation
+            title={`Hapus Level "${selectedRow?.name}"?`}
+            description="Tindakan ini tidak dapat dibatalkan."
+          />
+
 
           {/* Footer pagination (opsi perPage) */}
           <div className="mt-2 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">

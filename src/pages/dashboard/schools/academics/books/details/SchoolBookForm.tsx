@@ -22,8 +22,9 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 
-/* 👉 Import komponen upload */
+/* Import komponen upload */
 import CPicturePreview from "@/components/costum/common/CPicturePreview";
+import CActionsButton from "@/components/costum/common/buttons/CActionsButton";
 
 /* Types */
 export type BookAPI = {
@@ -252,7 +253,7 @@ const SchoolBookForm: React.FC = () => {
 
           {/* FORM */}
           <Card className="border">
-            <form onSubmit={handleSubmit}>
+            <form id="bookForm" onSubmit={handleSubmit}>
               <CardHeader>
                 <CardTitle className="text-base md:text-lg">
                   {isEditMode ? "Form Edit Buku" : "Form Tambah Buku"}
@@ -264,13 +265,11 @@ const SchoolBookForm: React.FC = () => {
                   {/* ================= COVER UPLOAD ================= */}
                   <div className="md:col-span-4 space-y-3">
                     <Label>Cover Buku</Label>
-
                     <CPicturePreview
                       file={file}
                       preview={preview}
                       onFileChange={handleFileChange}
                     />
-
                     <p className="text-xs text-muted-foreground">
                       Kosongkan bila tidak ingin mengubah cover.
                     </p>
@@ -334,27 +333,16 @@ const SchoolBookForm: React.FC = () => {
                 )}
               </CardContent>
 
-              <CardFooter className="flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={handleBack}
-                  disabled={isSubmitting}
-                >
-                  Batal
-                </Button>
-
-                <Button type="submit" disabled={!canSubmit || isSubmitting}>
-                  {isSubmitting ? (
-                    <span className="inline-flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" /> Menyimpan…
-                    </span>
-                  ) : isEditMode ? (
-                    "Simpan Perubahan"
-                  ) : (
-                    "Simpan"
-                  )}
-                </Button>
+              <CardFooter className="flex justify-end">
+                <CActionsButton
+                  onCancel={handleBack}
+                  onSave={() =>
+                    document.getElementById("bookForm")?.dispatchEvent(
+                      new Event("submit", { cancelable: true, bubbles: true })
+                    )
+                  }
+                  loadingSave={isSubmitting}
+                />
               </CardFooter>
             </form>
           </Card>

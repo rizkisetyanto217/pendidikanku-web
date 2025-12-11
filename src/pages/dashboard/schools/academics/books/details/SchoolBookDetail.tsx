@@ -13,6 +13,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 /* === header layout hook === */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+import CActionsButton from "@/components/costum/common/buttons/CActionsButton";
+import CDeleteDialog from "@/components/costum/common/buttons/CDeleteDialog";
+import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
+
 
 /* ================= Types ================= */
 
@@ -142,20 +146,10 @@ export default function SchoolBookDetail() {
   const book = q.data ?? null;
   const isLoading = q.isLoading;
 
-  const handleEdit = () => {
-    // Kalau route-mu beda, ganti di sini.
-    // Misal: navigate(`/sekolah/.../books/${id}/edit`)
-    navigate("edit");
-  };
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
 
-  const handleDelete = () => {
-    if (!book || !id || isDeleting) return;
-    const ok = window.confirm(
-      "Yakin ingin menghapus buku ini? Tindakan ini tidak bisa dikembalikan."
-    );
-    if (!ok) return;
-    deleteMutation.mutate();
-  };
+
+
 
   return (
     <div className="bg-background text-foreground">
@@ -225,23 +219,16 @@ export default function SchoolBookDetail() {
                   </div>
 
                   {/* Action buttons */}
-                  <div className="flex gap-2 shrink-0">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleEdit}
-                      disabled={!book || isDeleting}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={handleDelete}
-                      disabled={!book || isDeleting}
-                    >
-                      {isDeleting ? "Menghapus..." : "Hapus"}
-                    </Button>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <CActionsButton
+                      onEdit={() =>
+                        navigate(`edit`, {
+                          state: { book }
+                        })
+                      }
+                      onDelete={() => setDeleteOpen(true)}
+                      loadingDelete={isDeleting}
+                    />
                   </div>
                 </div>
 
@@ -257,20 +244,12 @@ export default function SchoolBookDetail() {
                     label="Tahun Terbit"
                     value={book?.book_publication_year ?? "—"}
                   />
-                  <InfoBlock label="Slug" value={book?.book_slug ?? "—"} />
                   <InfoBlock
                     label="Status"
                     value={
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${book?.book_is_deleted
-                            ? "bg-red-100 text-red-700"
-                            : "bg-emerald-100 text-emerald-700"
-                          }`}
-                      >
-                        {book?.book_is_deleted
-                          ? "Tidak aktif / dihapus"
-                          : "Aktif"}
-                      </span>
+                      <CBadgeStatus
+                        status={book?.book_is_deleted ? "inactive" : "active"}
+                      />
                     }
                   />
                 </div>
@@ -352,7 +331,7 @@ export default function SchoolBookDetail() {
                       className="px-3 py-1.5 rounded-md text-sm bg-muted hover:bg-muted/70 
                        border shadow-sm transition-all"
                     >
-                      📘{" "}
+                      {" "}
                       {cs.class_subject_class_parent_name_cache ??
                         "Tanpa nama kelas"}{" "}
                       •{" "}
@@ -369,6 +348,14 @@ export default function SchoolBookDetail() {
               )}
             </CardContent>
           </Card>
+          <CDeleteDialog
+            open={deleteOpen}
+            onClose={() => setDeleteOpen(false)}
+            loading={isDeleting}
+            title={`Hapus buku "${book?.book_title ?? ""}"?`}
+            description="Tindakan ini tidak dapat dibatalkan."
+            onConfirm={() => deleteMutation.mutate()}
+          />
         </div>
       </main>
     </div>

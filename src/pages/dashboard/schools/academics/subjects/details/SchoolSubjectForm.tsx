@@ -5,22 +5,23 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import axios from "@/lib/axios";
 
 /* icons */
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 /* ---------- BreadCrum ---------- */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
-/* 🔐 Context user dari simple-context (JWT) */
+/* Context user dari simple-context (JWT) */
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 /* shadcn/ui */
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import CPicturePreview from "@/components/costum/common/CPicturePreview";
+import CActionsButton from "@/components/costum/common/buttons/CActionsButton";
 
 /* ================= Types (re-use dari table) ================= */
 type SubjectStatus = "active" | "inactive";
@@ -165,9 +166,9 @@ const SchoolSubjectForm: React.FC = () => {
 
   const handleBack = () => navigate(-1);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg(null);
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+
 
     if (!schoolId) {
       setErrorMsg("Context sekolah tidak ditemukan.");
@@ -228,8 +229,10 @@ const SchoolSubjectForm: React.FC = () => {
           </div>
 
           <Card>
-            <CardContent className="p-6">
-              <form onSubmit={handleSubmit} className="space-y-4">
+            <form id="subjectForm" onSubmit={handleSubmit}>
+              <CardContent className="p-6 space-y-4">
+
+                {/* === FORM FIELD === */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1">
                     <Label htmlFor="subject_code">Kode (opsional)</Label>
@@ -243,6 +246,7 @@ const SchoolSubjectForm: React.FC = () => {
                       Contoh: MTK-7A, B-IND-1, dsb.
                     </p>
                   </div>
+
                   <div className="flex flex-col gap-1">
                     <Label htmlFor="subject_name">Nama *</Label>
                     <Input
@@ -273,13 +277,12 @@ const SchoolSubjectForm: React.FC = () => {
                     rows={3}
                     value={desc}
                     onChange={(e) => setDesc(e.target.value)}
-                    placeholder="Deskripsi singkat mapel, misal fokus materi atau catatan khusus."
+                    placeholder="Deskripsi singkat mapel…"
                   />
                 </div>
 
-                {/* ================= FILE UPLOAD WITH PREVIEW ================= */}
+                {/* Upload Image */}
                 <Label>Gambar (opsional)</Label>
-
                 <CPicturePreview
                   file={file}
                   preview={preview}
@@ -291,23 +294,24 @@ const SchoolSubjectForm: React.FC = () => {
                     {errorMsg}
                   </div>
                 )}
+              </CardContent>
 
-                <div className="flex justify-end gap-2 pt-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={handleBack}
-                    disabled={loading}>
-                    Batal
-                  </Button>
-                  <Button type="submit" className="gap-1" disabled={loading}>
-                    {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-                    {isEdit ? "Simpan Perubahan" : "Simpan"}
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
+              {/* ===== FOOTER BUTTONS ===== */}
+              <CardFooter className="flex justify-end">
+                <CActionsButton
+                  onCancel={handleBack}
+                  onSave={() =>
+                    document.getElementById("subjectForm")?.dispatchEvent(
+                      new Event("submit", { cancelable: true, bubbles: true })
+                    )
+                  }
+                  loadingSave={loading}
+                />
+
+              </CardFooter>
+            </form>
           </Card>
+
         </div>
       </main>
     </div>

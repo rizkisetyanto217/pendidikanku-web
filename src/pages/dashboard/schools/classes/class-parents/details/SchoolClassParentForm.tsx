@@ -18,6 +18,7 @@ import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayou
 
 /* ✅ Current user context (ambil school_id dari token) */
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import CActionsButton from "@/components/costum/common/buttons/CActionsButton";
 
 /* ================= Types ================= */
 type ApiClassParent = {
@@ -210,6 +211,12 @@ const SchoolClassParentForm: React.FC = () => {
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
+  const handleSubmitSave = () => {
+    document
+      .getElementById("classParentForm")
+      ?.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+  };
+
   const handleSubmit: React.FormEventHandler = async (e) => {
     e.preventDefault();
     if (!canSubmit) return;
@@ -366,27 +373,12 @@ const SchoolClassParentForm: React.FC = () => {
                     </div>
                   )}
 
-                  <div className="flex justify-end gap-2 pt-2">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => navigate(-1)}
-                      disabled={isSubmitting}
-                    >
-                      Batal
-                    </Button>
-                    <Button type="submit" disabled={!canSubmit || isSubmitting}>
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Menyimpan…
-                        </>
-                      ) : isEdit ? (
-                        "Simpan"
-                      ) : (
-                        "Simpan"
-                      )}
-                    </Button>
+                  <div className="flex justify-end pt-2">
+                    <CActionsButton
+                      onCancel={() => navigate(-1)}
+                      onSave={handleSubmitSave}
+                      loadingSave={isSubmitting}
+                    />
                   </div>
                 </form>
               </CardContent>

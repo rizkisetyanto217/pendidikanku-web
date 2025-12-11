@@ -10,7 +10,7 @@ import { ArrowLeft, ArrowUpDown, Loader2, AlertCircle } from "lucide-react";
 /* ---------- BreadCrum ---------- */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
-/* 🔐 Context user dari simple-context (JWT) */
+/* Context user dari simple-context (JWT) */
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 /* shadcn/ui */
@@ -34,6 +34,7 @@ import {
 import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
 import CRowActions from "@/components/costum/table/CRowAction";
 import { cn } from "@/lib/utils";
+import CDeleteDialog from "@/components/costum/common/buttons/CDeleteDialog";
 
 /* ================= Types ================= */
 export type SubjectStatus = "active" | "inactive";
@@ -170,7 +171,6 @@ function useDeleteSubjectMutation(school_id: string) {
 }
 
 
-
 /* ================= Page (TABLE) ================= */
 type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
@@ -179,6 +179,22 @@ const SchoolSubject: React.FC<Props> = ({ showBack = false, backTo }) => {
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
   const { setHeader } = useDashboardHeader();
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState<SubjectRow | null>(null);
+
+  const openDeleteDialog = (row: SubjectRow) => {
+    setSelectedRow(row);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (!selectedRow) return;
+    delMut.mutate(selectedRow.id, {
+      onSuccess: () => setDeleteDialogOpen(false),
+    });
+  };
+
   useEffect(() => {
     setHeader({
       title: "Mata Pelajaran",
@@ -191,7 +207,7 @@ const SchoolSubject: React.FC<Props> = ({ showBack = false, backTo }) => {
     });
   }, [setHeader, showBack]);
 
-  // 🔐 Ambil schoolId dari simple-context (JWT), bukan URL params
+  // Ambil schoolId dari simple-context (JWT), bukan URL params
   const { data: currentUser } = useCurrentUser();
   const schoolId = currentUser?.membership?.school_id ?? "";
 
@@ -454,7 +470,7 @@ const SchoolSubject: React.FC<Props> = ({ showBack = false, backTo }) => {
                       state: { subject: row },
                     })
                   }
-                  onDelete={() => delMut.mutate(row.id)}
+                  onDelete={() => openDeleteDialog(row)}
                   forceMenu={view === "table"}
                 />
               )}
@@ -510,16 +526,22 @@ const SchoolSubject: React.FC<Props> = ({ showBack = false, backTo }) => {
                       size="sm"
                       onView={() => navigate(`${r.id}`)}
                       onEdit={() => navigate(`edit/${r.id}`, { state: { subject: r } })}
-                      onDelete={() => delMut.mutate(r.id)}
+                      onDelete={() => openDeleteDialog(r)}
                       forceMenu={false}
                     />
                   </div>
-
                 </div>
               )}
-
             />
           )}
+          <CDeleteDialog
+            open={deleteDialogOpen}
+            onClose={() => setDeleteDialogOpen(false)}
+            onConfirm={confirmDelete}
+            loading={delMut.isPending}
+            title={`Hapus Mata Pelajaran "${selectedRow?.name}"?`}
+            description="Tindakan ini tidak dapat dibatalkan."
+          />
         </div>
       </main>
     </div>

@@ -1,5 +1,5 @@
 // src/pages/dashboard/schools/academics/books/SchoolBooks.tsx
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "@/lib/axios";
@@ -25,6 +25,8 @@ import {
 
 /* CRowActions */
 import CRowActions from "@/components/costum/table/CRowAction";
+import CDeleteDialog from "@/components/costum/common/buttons/CDeleteDialog";
+
 
 /* =========================================================
    Types (disesuaikan dengan /api/u/books/list?mode=compact)
@@ -202,6 +204,22 @@ export default function SchoolBooks({ showBack = false, backTo }: Props) {
     ];
   }, []);
 
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedBook, setSelectedBook] = useState<BookAPI | null>(null);
+
+  const openDeleteDialog = (book: BookAPI) => {
+    setSelectedBook(book);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (!selectedBook) return;
+    deleteBook.mutate(selectedBook.book_id, {
+      onSuccess: () => setDeleteDialogOpen(false),
+    });
+  };
+
+
   /* ================== STATS SLOT ================== */
   const statsSlot = booksQuery.isLoading ? (
     <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -270,10 +288,18 @@ export default function SchoolBooks({ showBack = false, backTo }: Props) {
                 onEdit={() =>
                   navigate(`edit/${r.book_id}`, { state: { book: r } })
                 }
-                onDelete={() => deleteBook.mutate(r.book_id)}
+                onDelete={() => openDeleteDialog(r)}
                 forceMenu={view === "table"}
               />
             )}
+          />
+          <CDeleteDialog
+            open={deleteDialogOpen}
+            onClose={() => setDeleteDialogOpen(false)}
+            onConfirm={confirmDelete}
+            loading={deleteBook.isPending}
+            title={`Hapus Buku "${selectedBook?.book_title}"?`}
+            description="Tindakan ini tidak dapat dibatalkan."
           />
         </div>
       </main>
