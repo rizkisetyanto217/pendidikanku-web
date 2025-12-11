@@ -1,4 +1,4 @@
-// src/pages/sekolahislamku/dashboard-school/books/SchoolBookDetail.tsx
+// src/pages/dashboard/schools/academics/books/details/SchoolBookDetail.tsx
 import React, { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";

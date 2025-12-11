@@ -1,5 +1,5 @@
 // src/pages/sekolahislamku/teacher/TeacherCSStDetail.tsx
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "@/lib/axios";
@@ -9,6 +9,22 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
 /* icons */
 import {
@@ -29,71 +45,95 @@ import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
 import { cardHover } from "@/components/costum/table/CDataTable";
 import { cn } from "@/lib/utils";
 
-/* ========= Types dari API /u/class-section-subject-teachers/list ========= */
+/* ========= Types dari API /api/u/class-section-subject-teachers/list ========= */
 
 type DeliveryMode = "offline" | "online" | "hybrid" | string;
 
-type ApiTeacherSnapshot = {
+type ApiTeacherCache = {
   id?: string | null;
   name?: string | null;
   avatar_url?: string | null;
   title_prefix?: string | null;
   title_suffix?: string | null;
   whatsapp_url?: string | null;
+  gender?: string | null;
+  teacher_code?: string | null;
 };
 
-type ApiRoomSnapshot = {
+type ApiRoomCache = {
+  // varian offline (ruang fisik)
+  code?: string | null;
   name?: string | null;
   slug?: string | null;
-  join_url?: string | null;
-  platform?: string | null;
+  capacity?: number | null;
+  location?: string | null;
   is_virtual?: boolean | null;
+
+  // varian zoom / kelas virtual (class_room_*)
+  class_room_id?: string | null;
+  class_room_name?: string | null;
+  class_room_slug?: string | null;
+  class_room_join_url?: string | null;
+  class_room_passcode?: string | null;
+  class_room_platform?: string | null;
+  class_room_is_virtual?: boolean | null;
+  class_room_meeting_id?: string | null;
 };
 
 type ApiCSSTItem = {
   class_section_subject_teacher_id: string;
   class_section_subject_teacher_school_id: string;
+  class_section_subject_teacher_class_section_id: string;
+  class_section_subject_teacher_class_subject_id: string;
+  class_section_subject_teacher_school_teacher_id: string;
+  class_section_subject_teacher_class_room_id: string | null;
   class_section_subject_teacher_slug: string;
 
   class_section_subject_teacher_total_attendance: number;
-  class_section_subject_teacher_enrolled_count: number;
+  class_section_subject_teacher_quota_taken: number;
 
+  // total semua assessment
   class_section_subject_teacher_total_assessments: number;
-  class_section_subject_teacher_total_assessments_graded: number;
-  class_section_subject_teacher_total_assessments_ungraded: number;
+
+  // ⬇️ PAKAI INI AJA (3 baru)
+  class_section_subject_teacher_total_assessments_training: number;
+  class_section_subject_teacher_total_assessments_daily_exam: number;
+  class_section_subject_teacher_total_assessments_exam: number;
+
+  // boleh tetap kalau mau dipakai nanti
   class_section_subject_teacher_total_students_passed: number;
 
   class_section_subject_teacher_delivery_mode: DeliveryMode;
-
-  class_section_subject_teacher_class_section_id: string;
-  class_section_subject_teacher_class_section_slug_snapshot: string;
-  class_section_subject_teacher_class_section_name_snapshot: string;
-  class_section_subject_teacher_class_section_code_snapshot: string;
-
-  class_section_subject_teacher_class_room_id: string | null;
-  class_section_subject_teacher_class_room_slug_snapshot: string | null;
-  class_section_subject_teacher_class_room_snapshot?: ApiRoomSnapshot | null;
-  class_section_subject_teacher_class_room_name_snapshot?: string | null;
-  class_section_subject_teacher_class_room_slug_snapshot_gen?: string | null;
-
-  class_section_subject_teacher_school_teacher_id: string;
-  class_section_subject_teacher_school_teacher_snapshot?: ApiTeacherSnapshot | null;
-  class_section_subject_teacher_school_teacher_name_snapshot?: string | null;
-
   class_section_subject_teacher_total_books: number;
 
-  class_section_subject_teacher_class_subject_id: string | null;
-  class_section_subject_teacher_subject_id_snapshot?: string | null;
-  class_section_subject_teacher_subject_name_snapshot?: string | null;
-  class_section_subject_teacher_subject_code_snapshot?: string | null;
-  class_section_subject_teacher_subject_slug_snapshot?: string | null;
+  // section cache
+  class_section_subject_teacher_class_section_slug_cache: string;
+  class_section_subject_teacher_class_section_name_cache: string;
+  class_section_subject_teacher_class_section_code_cache: string;
 
-  class_section_subject_teacher_min_passing_score?: number | null;
+  // room cache
+  class_section_subject_teacher_class_room_slug_cache?: string | null;
+  class_section_subject_teacher_class_room_cache?: ApiRoomCache | null;
+  class_section_subject_teacher_class_room_name_cache?: string | null;
+  class_section_subject_teacher_class_room_slug_cache_gen?: string | null;
+  class_section_subject_teacher_class_room_location_cache?: string | null;
 
+  // teacher cache
+  class_section_subject_teacher_school_teacher_slug_cache?: string | null;
+  class_section_subject_teacher_school_teacher_cache?: ApiTeacherCache | null;
+  class_section_subject_teacher_school_teacher_name_cache?: string | null;
+
+  // subject cache
+  class_section_subject_teacher_subject_id: string;
+  class_section_subject_teacher_subject_name_cache?: string | null;
+  class_section_subject_teacher_subject_code_cache?: string | null;
+  class_section_subject_teacher_subject_slug_cache?: string | null;
+
+  // status
+  class_section_subject_teacher_status: string;
   class_section_subject_teacher_is_active: boolean;
   class_section_subject_teacher_created_at: string;
   class_section_subject_teacher_updated_at: string;
-  class_section_subject_teacher_deleted_at?: string | null;
 };
 
 type ApiCSSTDetailResponse = {
@@ -112,6 +152,16 @@ type ApiCSSTDetailResponse = {
   };
 };
 
+/* List ruangan (dropdown) */
+type ApiClassRoomOption = {
+  class_room_id: string;
+  class_room_name: string;
+  class_room_slug: string;
+  class_room_is_virtual?: boolean | null;
+  class_room_platform?: string | null;
+  class_room_location?: string | null;
+};
+
 /* View model kecil untuk header */
 type SectionView = {
   sectionId: string;
@@ -127,6 +177,11 @@ type RoomView = {
   joinUrl?: string | null;
   platform?: string | null;
   isVirtual?: boolean | null;
+  location?: string | null;
+
+  // ⬇️ new
+  meetingId?: string | null;
+  passcode?: string | null;
 };
 
 type CsstView = {
@@ -145,13 +200,25 @@ type CsstView = {
   enrolledCount: number;
   totalAttendance: number;
 
+  // masih boleh simpan total semua assessment
   totalAssessments: number;
-  totalAssessmentsGraded: number;
-  totalAssessmentsUngraded: number;
+
+  // ⬇️ graded/ungraded DIHAPUS
+  // totalAssessmentsGraded: number;
+  // totalAssessmentsUngraded: number;
+
   totalStudentsPassed: number;
   minPassingScore?: number | null;
 
   totalBooks: number;
+
+  // ✅ breakdown baru
+  totalAssessmentsTraining: number;
+  totalAssessmentsDailyExam: number;
+  totalAssessmentsExam: number;
+
+  // ✅ subject_id dari API
+  subjectId: string;
 };
 
 /* ========== Utils kecil ========== */
@@ -171,18 +238,17 @@ const formatDeliveryMode = (m: DeliveryMode | undefined) => {
   if (!m) return "-";
   switch (m) {
     case "offline":
-      return "Offline";
+      return "Tatap muka";
     case "online":
-      return "Online";
+      return "Daring";
     case "hybrid":
-      return "Hybrid";
+      return "Campuran";
     default:
       return String(m).replace(/_/g, " ");
   }
 };
 
 /* ========== Page ========== */
-
 
 const TeacherCSSTDetail: React.FC = () => {
   const navigate = useNavigate();
@@ -205,13 +271,13 @@ const TeacherCSSTDetail: React.FC = () => {
     });
   }, [setHeader]);
 
-  /* ===== Query detail CSST (pakai API terbaru) ===== */
+  /* ===== Query detail CSST ===== */
   const csstQ = useQuery<ApiCSSTItem | null, AxiosError>({
     queryKey: ["teacher-csst-detail", csstId, teacherId ?? null],
     enabled: !!csstId,
     queryFn: async () => {
       const res = await axios.get<ApiCSSTDetailResponse>(
-        "/u/class-section-subject-teachers/list",
+        "/api/u/class-section-subject-teachers/list",
         {
           params: {
             id: csstId,
@@ -220,10 +286,7 @@ const TeacherCSSTDetail: React.FC = () => {
         }
       );
       const items = res.data?.data ?? [];
-      console.log(
-        "[TeacherCSSTDetail] API /u/class-section-subject-teachers/list response:"
-      );
-      return items.length ? items[0] : null; // ✅ nggak pernah undefined
+      return items.length ? items[0] : null;
     },
     staleTime: 60_000,
   });
@@ -232,15 +295,53 @@ const TeacherCSSTDetail: React.FC = () => {
     ? extractErrorMessage(csstQ.error)
     : null;
 
-  /* ===== Derive view models dari API ===== */
+  /* ===== Query daftar ruangan (untuk dropdown modal) ===== */
+  const roomsQ = useQuery<ApiClassRoomOption[], AxiosError>({
+    queryKey: [
+      "teacher-csst-rooms",
+      csstQ.data?.class_section_subject_teacher_school_id ?? null,
+    ],
+    enabled: !!csstQ.data?.class_section_subject_teacher_school_id,
+    queryFn: async () => {
+      const res = await axios.get<{ data: ApiClassRoomOption[] }>(
+        "/api/u/class-rooms/list",
+        {
+          params: {
+            mode: "compact",
+          },
+        }
+      );
+      return res.data?.data ?? [];
+    },
+    staleTime: 60_000,
+  });
+
+  /* ===== State modal ===== */
+  const [roomDialogOpen, setRoomDialogOpen] = useState(false);
+  const [waDialogOpen, setWaDialogOpen] = useState(false);
+  const [selectedRoomId, setSelectedRoomId] = useState<string | undefined>(
+    undefined
+  );
+  const [waGroupLink, setWaGroupLink] = useState<string>(
+    "https://chat.whatsapp.com/xxxxInviteCodexxxx"
+  );
+
+  /* Sinkron selectedRoomId dengan data awal */
+  useEffect(() => {
+    if (csstQ.data?.class_section_subject_teacher_class_room_id) {
+      setSelectedRoomId(csstQ.data.class_section_subject_teacher_class_room_id);
+    }
+  }, [csstQ.data]);
+
+  /* ===== View models ===== */
   const sectionView: SectionView | null = useMemo(() => {
     const it = csstQ.data;
     if (!it) return null;
     return {
       sectionId: it.class_section_subject_teacher_class_section_id,
-      sectionName: it.class_section_subject_teacher_class_section_name_snapshot,
-      sectionSlug: it.class_section_subject_teacher_class_section_slug_snapshot,
-      sectionCode: it.class_section_subject_teacher_class_section_code_snapshot,
+      sectionName: it.class_section_subject_teacher_class_section_name_cache,
+      sectionSlug: it.class_section_subject_teacher_class_section_slug_cache,
+      sectionCode: it.class_section_subject_teacher_class_section_code_cache,
     };
   }, [csstQ.data]);
 
@@ -248,22 +349,47 @@ const TeacherCSSTDetail: React.FC = () => {
     const it = csstQ.data;
     if (!it) return null;
 
-    const room = it.class_section_subject_teacher_class_room_snapshot;
+    const room = it.class_section_subject_teacher_class_room_cache;
+
+    const roomName =
+      it.class_section_subject_teacher_class_room_name_cache ??
+      room?.name ??
+      room?.class_room_name ??
+      null;
+
+    const roomSlug =
+      it.class_section_subject_teacher_class_room_slug_cache_gen ??
+      it.class_section_subject_teacher_class_room_slug_cache ??
+      room?.slug ??
+      room?.class_room_slug ??
+      null;
+
+    const joinUrl =
+      (room as any)?.join_url ?? room?.class_room_join_url ?? null;
+
+    const platform =
+      room?.class_room_platform ??
+      (room as any)?.platform ??
+      (room?.class_room_is_virtual ? "zoom" : null);
+
+    const isVirtual = room?.class_room_is_virtual ?? room?.is_virtual ?? null;
+
+    const location =
+      it.class_section_subject_teacher_class_room_location_cache ??
+      (room as any)?.location ??
+      null;
 
     return {
       roomId: it.class_section_subject_teacher_class_room_id,
-      roomName:
-        it.class_section_subject_teacher_class_room_name_snapshot ||
-        room?.name ||
-        null,
-      roomSlug:
-        it.class_section_subject_teacher_class_room_slug_snapshot_gen ||
-        it.class_section_subject_teacher_class_room_slug_snapshot ||
-        room?.slug ||
-        null,
-      joinUrl: room?.join_url || null,
-      platform: room?.platform || null,
-      isVirtual: room?.is_virtual ?? null,
+      roomName,
+      roomSlug,
+      joinUrl,
+      platform,
+      isVirtual,
+      location,
+      // ⬇️ ambil dari cache zoom
+      meetingId: room?.class_room_meeting_id ?? null,
+      passcode: room?.class_room_passcode ?? null,
     };
   }, [csstQ.data]);
 
@@ -271,9 +397,9 @@ const TeacherCSSTDetail: React.FC = () => {
     const it = csstQ.data;
     if (!it) return null;
 
-    const teacher = it.class_section_subject_teacher_school_teacher_snapshot;
+    const teacher = it.class_section_subject_teacher_school_teacher_cache;
     const teacherName =
-      it.class_section_subject_teacher_school_teacher_name_snapshot ||
+      it.class_section_subject_teacher_school_teacher_name_cache ||
       teacher?.name ||
       "-";
 
@@ -283,18 +409,19 @@ const TeacherCSSTDetail: React.FC = () => {
     ]
       .map((x) => x?.trim())
       .filter(Boolean);
+
     const teacherTitle =
       teacherTitleParts.length > 0 ? teacherTitleParts.join(" ") : undefined;
 
     const subjectName =
-      it.class_section_subject_teacher_subject_name_snapshot ||
+      it.class_section_subject_teacher_subject_name_cache ||
       "Mata pelajaran tanpa nama";
 
     const subjectCode =
-      it.class_section_subject_teacher_subject_code_snapshot || null;
+      it.class_section_subject_teacher_subject_code_cache || null;
 
     const subjectSlug =
-      it.class_section_subject_teacher_subject_slug_snapshot || null;
+      it.class_section_subject_teacher_subject_slug_cache || null;
 
     return {
       id: it.class_section_subject_teacher_id,
@@ -306,16 +433,25 @@ const TeacherCSSTDetail: React.FC = () => {
       teacherTitle,
       deliveryMode: it.class_section_subject_teacher_delivery_mode,
       isActive: it.class_section_subject_teacher_is_active,
-      enrolledCount: it.class_section_subject_teacher_enrolled_count,
+      enrolledCount: it.class_section_subject_teacher_quota_taken,
       totalAttendance: it.class_section_subject_teacher_total_attendance,
+
+      // total semua assessment (kalau masih mau dipakai)
       totalAssessments: it.class_section_subject_teacher_total_assessments,
-      totalAssessmentsGraded:
-        it.class_section_subject_teacher_total_assessments_graded,
-      totalAssessmentsUngraded:
-        it.class_section_subject_teacher_total_assessments_ungraded,
+
+      // ⬇️ 3 jenis baru
+      totalAssessmentsTraining:
+        it.class_section_subject_teacher_total_assessments_training,
+      totalAssessmentsDailyExam:
+        it.class_section_subject_teacher_total_assessments_daily_exam,
+      totalAssessmentsExam:
+        it.class_section_subject_teacher_total_assessments_exam,
+
       totalStudentsPassed:
         it.class_section_subject_teacher_total_students_passed,
-      minPassingScore: it.class_section_subject_teacher_min_passing_score,
+      minPassingScore: undefined,
+
+      subjectId: it.class_section_subject_teacher_subject_id,
       totalBooks: it.class_section_subject_teacher_total_books,
     };
   }, [csstQ.data]);
@@ -345,28 +481,46 @@ const TeacherCSSTDetail: React.FC = () => {
     );
   }
 
-  /* ===== Render utama ===== */
+  /* ===== Hitungan & label ===== */
 
   const totalStudents = csstView.enrolledCount ?? 0;
   const totalAttendance = csstView.totalAttendance ?? 0;
   const totalBooks = csstView.totalBooks ?? 0;
 
-  const totalAssessmentsGraded = csstView.totalAssessmentsGraded ?? 0;
-  const totalAssessmentsUngraded = csstView.totalAssessmentsUngraded ?? 0;
+  const totalAssessmentsTraining = csstView.totalAssessmentsTraining ?? 0;
+  const totalAssessmentsDailyExam = csstView.totalAssessmentsDailyExam ?? 0;
+  const totalAssessmentsExam = csstView.totalAssessmentsExam ?? 0;
 
-  const whatsappGroupLink = "https://chat.whatsapp.com/xxxxInviteCodexxxx";
-
-  // ⬅️ NEW: label untuk card lebar
   const attendanceTodayLabel =
     totalAttendance > 0
       ? `${totalAttendance} kehadiran tercatat`
       : "Belum ada data";
 
-  const roomLabel =
-    roomView?.roomName ||
-    (roomView?.isVirtual
-      ? roomView.platform || "Kelas virtual"
-      : "Belum diatur");
+  const roomLabel = (() => {
+    if (!roomView) return "Belum diatur";
+    if (roomView.roomName && roomView.location && !roomView.isVirtual) {
+      return `${roomView.roomName} • ${roomView.location}`;
+    }
+    if (roomView.roomName && roomView.isVirtual) {
+      return `${roomView.roomName} • ${roomView.platform ?? "virtual"}`;
+    }
+    if (roomView.roomName) return roomView.roomName;
+    if (roomView.isVirtual) return roomView.platform ?? "Kelas virtual";
+    return "Belum diatur";
+  })();
+
+  /* ===== Handler save (nanti sambung API) ===== */
+  const handleSaveRoom = () => {
+    // TODO: panggil API update ruangan CSST
+    console.log("Save room to:", selectedRoomId);
+    setRoomDialogOpen(false);
+  };
+
+  const handleSaveWa = () => {
+    // TODO: panggil API simpan link WA
+    console.log("Save WA group link:", waGroupLink);
+    setWaDialogOpen(false);
+  };
 
   return (
     <div className="w-full bg-background text-foreground">
@@ -375,18 +529,13 @@ const TeacherCSSTDetail: React.FC = () => {
           {/* Header minimal (back + title) */}
           <div className="flex items-center justify-between">
             <div className="md:flex hidden items-center gap-3">
-              <Button
-                onClick={() => navigate(-1)}
-                variant="ghost"
-                size="icon"
-              >
+              <Button onClick={() => navigate(-1)} variant="ghost" size="icon">
                 <ArrowLeft size={20} />
               </Button>
-              <h1 className="font-semibold text-lg md:text-xl">
-                Detail Kelas
-              </h1>
+              <h1 className="font-semibold text-lg md:text-xl">Detail Kelas</h1>
             </div>
           </div>
+
           {/* Header mapel */}
           <Card>
             <CardContent className="p-4 md:p-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -413,6 +562,14 @@ const TeacherCSSTDetail: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-2 flex-wrap justify-end">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => navigate("kelola-kelas")}
+                >
+                  Edit
+                </Button>
+
                 <CBadgeStatus
                   status={csstView.isActive ? "active" : "inactive"}
                   className="text-[11px]"
@@ -426,12 +583,12 @@ const TeacherCSSTDetail: React.FC = () => {
           </Card>
 
           {/* =========================
-              Quick links (guru)
+              Quick links
              ========================= */}
 
-          {/* Row khusus: Absensi & Ruangan (card memanjang) */}
+          {/* Absensi & Ruangan */}
           <div className="grid gap-3 md:grid-cols-2">
-            {/* Absensi hari ini - wide card */}
+            {/* Absensi hari ini */}
             <Card
               className={cn("cursor-pointer bg-card", cardHover)}
               onClick={() => navigate("")}
@@ -457,10 +614,10 @@ const TeacherCSSTDetail: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Ruangan - wide card */}
+            {/* Ruangan – klik card => modal */}
             <Card
               className={cn("cursor-pointer bg-card", cardHover)}
-              onClick={() => navigate("")}
+              onClick={() => setRoomDialogOpen(true)}
             >
               <CardContent className="p-4 md:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <div className="space-y-1">
@@ -549,7 +706,26 @@ const TeacherCSSTDetail: React.FC = () => {
                     <span>Latihan</span>
                   </div>
                   <div className="text-xl font-semibold">
-                    {totalAssessmentsUngraded}
+                    {totalAssessmentsTraining}
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </CardContent>
+            </Card>
+
+            {/* Ulangan Harian */}
+            <Card
+              className={cn("cursor-pointer bg-card", cardHover)}
+              onClick={() => navigate("ulangan-harian")}
+            >
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <ClipboardList className="h-4 w-4" />
+                    <span>Ulangan Harian</span>
+                  </div>
+                  <div className="text-xl font-semibold">
+                    {totalAssessmentsDailyExam}
                   </div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
@@ -568,7 +744,7 @@ const TeacherCSSTDetail: React.FC = () => {
                     <span>Ujian</span>
                   </div>
                   <div className="text-xl font-semibold">
-                    {totalAssessmentsGraded}
+                    {totalAssessmentsExam}
                   </div>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
@@ -578,7 +754,11 @@ const TeacherCSSTDetail: React.FC = () => {
             {/* Buku */}
             <Card
               className={cn("cursor-pointer bg-card", cardHover)}
-              onClick={() => navigate("buku")}
+              onClick={() =>
+                navigate("buku", {
+                  state: { subjectId: csstView.subjectId },
+                })
+              }
             >
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="space-y-1">
@@ -612,7 +792,7 @@ const TeacherCSSTDetail: React.FC = () => {
             {/* Grup WhatsApp */}
             <Card
               className={cn("cursor-pointer bg-card", cardHover)}
-              onClick={() => window.open(whatsappGroupLink, "_blank")}
+              onClick={() => setWaDialogOpen(true)}
             >
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="space-y-1">
@@ -629,7 +809,7 @@ const TeacherCSSTDetail: React.FC = () => {
             </Card>
           </div>
 
-          {/* Ruang / Platform Kelas (detail, biarin tetap ada) */}
+          {/* Ruang / Platform Kelas (detail) */}
           {roomView && (roomView.roomName || roomView.joinUrl) && (
             <Card>
               <CardHeader className="pb-2">
@@ -644,12 +824,30 @@ const TeacherCSSTDetail: React.FC = () => {
                   <div className="font-medium">
                     {roomView.roomName ?? "Ruang tanpa nama"}
                   </div>
+                  {roomView.location && !roomView.isVirtual && (
+                    <div className="text-xs text-muted-foreground">
+                      Lokasi: {roomView.location}
+                    </div>
+                  )}
                   {roomView.platform && (
                     <div className="text-xs text-muted-foreground">
                       Platform: {roomView.platform}
                       {roomView.isVirtual ? " (virtual)" : ""}
                     </div>
                   )}
+                  {roomView.isVirtual && roomView.meetingId && (
+                    <div className="text-xs text-muted-foreground">
+                      Meeting ID:{" "}
+                      <span className="font-mono">{roomView.meetingId}</span>
+                    </div>
+                  )}
+                  {roomView.isVirtual && roomView.passcode && (
+                    <div className="text-xs text-muted-foreground">
+                      Passcode:{" "}
+                      <span className="font-mono">{roomView.passcode}</span>
+                    </div>
+                  )}
+
                   {roomView.joinUrl && (
                     <div className="mt-1">
                       <a
@@ -672,6 +870,206 @@ const TeacherCSSTDetail: React.FC = () => {
               </CardContent>
             </Card>
           )}
+
+          {/* ============ MODAL: Edit Ruangan ============ */}
+          <Dialog open={roomDialogOpen} onOpenChange={setRoomDialogOpen}>
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader className="space-y-1">
+                <DialogTitle>Atur Ruangan</DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  Pilih ruangan yang akan digunakan sebagai tempat pertemuan
+                  mapel ini.
+                </p>
+              </DialogHeader>
+
+              <div className="space-y-5">
+                {/* Info ruangan saat ini */}
+                {roomView && (
+                  <div className="rounded-lg border bg-muted/40 p-3 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground uppercase">
+                          Ruangan saat ini
+                        </p>
+                        <p className="text-sm font-semibold">{roomLabel}</p>
+                      </div>
+                      <Badge variant="outline" className="text-[10px]">
+                        Aktif
+                      </Badge>
+                    </div>
+
+                    {/* Offline: lokasi */}
+                    {roomView.location && !roomView.isVirtual && (
+                      <p className="text-xs text-muted-foreground">
+                        Lokasi: {roomView.location}
+                      </p>
+                    )}
+
+                    {/* Virtual / Zoom: detail lengkap */}
+                    {roomView.isVirtual && (
+                      <div className="space-y-1 text-xs text-muted-foreground">
+                        {roomView.platform && (
+                          <p>
+                            Platform:{" "}
+                            <span className="font-medium">
+                              {roomView.platform}
+                            </span>{" "}
+                            (virtual)
+                          </p>
+                        )}
+                        {roomView.meetingId && (
+                          <p>
+                            Meeting ID:{" "}
+                            <span className="font-mono font-medium">
+                              {roomView.meetingId}
+                            </span>
+                          </p>
+                        )}
+                        {roomView.passcode && (
+                          <p>
+                            Passcode:{" "}
+                            <span className="font-mono font-medium">
+                              {roomView.passcode}
+                            </span>
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {roomView.joinUrl && (
+                      <p className="pt-1 text-xs text-muted-foreground">
+                        Link pertemuan saat ini:{" "}
+                        <a
+                          href={roomView.joinUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-medium underline underline-offset-2"
+                        >
+                          Buka
+                        </a>
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Dropdown ruangan */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <Label className="text-sm">Ruangan</Label>
+                    {selectedRoomId && (
+                      <span className="text-[11px] text-muted-foreground">
+                        Ruangan baru akan aktif setelah disimpan
+                      </span>
+                    )}
+                  </div>
+                  <Select
+                    value={selectedRoomId ?? ""}
+                    onValueChange={(v) => setSelectedRoomId(v || undefined)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih ruangan" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(roomsQ.data ?? []).map((r) => (
+                        <SelectItem
+                          key={r.class_room_id}
+                          value={r.class_room_id}
+                        >
+                          {r.class_room_name}
+                          {r.class_room_location
+                            ? ` • ${r.class_room_location}`
+                            : r.class_room_platform
+                              ? ` • ${r.class_room_platform}`
+                              : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {roomsQ.isLoading && (
+                    <p className="text-xs text-muted-foreground">
+                      Memuat daftar ruangan…
+                    </p>
+                  )}
+                  {roomsQ.isError && (
+                    <p className="text-xs text-destructive">
+                      Gagal memuat ruangan. Coba lagi beberapa saat.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <DialogFooter className="mt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setRoomDialogOpen(false)}
+                >
+                  Batal
+                </Button>
+                <Button
+                  onClick={handleSaveRoom}
+                  disabled={!selectedRoomId || roomsQ.isLoading}
+                >
+                  Simpan
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* ============ MODAL: Edit Grup WhatsApp ============ */}
+          <Dialog open={waDialogOpen} onOpenChange={setWaDialogOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader className="space-y-1">
+                <DialogTitle>Atur Grup WhatsApp Mapel</DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  Simpan link grup WhatsApp yang digunakan untuk koordinasi
+                  murid dan orang tua.
+                </p>
+              </DialogHeader>
+
+              <div className="space-y-4">
+                {/* ringkasan link sekarang */}
+                {waGroupLink && (
+                  <div className="rounded-lg border bg-muted/40 p-3">
+                    <p className="text-xs font-medium text-muted-foreground uppercase">
+                      Link saat ini
+                    </p>
+                    <a
+                      href={waGroupLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs font-medium underline underline-offset-2 break-all"
+                    >
+                      {waGroupLink}
+                    </a>
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  <Label htmlFor="wa-link">Link Grup WhatsApp</Label>
+                  <Input
+                    id="wa-link"
+                    value={waGroupLink}
+                    onChange={(e) => setWaGroupLink(e.target.value)}
+                    placeholder="https://chat.whatsapp.com/..."
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Tempel link undangan grup WhatsApp (format resmi dari
+                    aplikasi WhatsApp).
+                  </p>
+                </div>
+              </div>
+
+              <DialogFooter className="mt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setWaDialogOpen(false)}
+                >
+                  Batal
+                </Button>
+                <Button onClick={handleSaveWa}>Simpan</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </main>
     </div>

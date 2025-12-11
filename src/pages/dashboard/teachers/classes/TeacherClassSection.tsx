@@ -9,80 +9,57 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import {
   Users,
   CalendarDays,
-  MapPin,
   UserSquare2,
   ArrowLeft,
   ChevronRight,
   AlertTriangle,
 } from "lucide-react";
 
-/* axios + token helper */
-import axios, { getAccessToken } from "@/lib/axios";
+/* axios */
+import axios from "@/lib/axios";
 
 /* Tambahan untuk breadcrumb sistem dashboard */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
 import CMenuSearch from "@/components/costum/common/CMenuSearch";
 import { cardHover } from "@/components/costum/table/CDataTable";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 /* ==========================================================
-   Types API
+   Types API (disesuaikan dengan response terbaru)
 ========================================================== */
 
-type ApiClassRoomSnapshot = {
-  name?: string | null;
-  slug?: string | null;
-  join_url?: string | null;
-  platform?: string | null;
-  is_virtual?: boolean | null;
-};
-
-type ApiTeacherSnapshot = {
-  name?: string | null;
+type ApiClassSectionTeacherSnapshot = {
+  id: string;
+  name: string;
+  avatar_url?: string | null;
   title_prefix?: string | null;
   title_suffix?: string | null;
   whatsapp_url?: string | null;
+  gender?: string | null;
+  teacher_code?: string | null;
 };
 
 type ApiClassSectionItem = {
   class_section_id: string;
-  class_section_school_id: string;
-  class_section_class_id: string;
+  class_section_academic_term_id?: string | null;
   class_section_slug: string;
   class_section_name: string;
   class_section_code: string;
-  class_section_schedule: string | null;
-  class_section_capacity: number | null;
-  class_section_total_students: number;
-  class_section_group_url: string | null;
-  class_section_image_url: string | null;
-  class_section_image_object_key: string | null;
-  class_section_image_url_old: string | null;
-  class_section_image_object_key_old: string | null;
-  class_section_image_delete_pending_until: string | null;
-  class_section_is_active: boolean;
-  class_section_created_at: string;
-  class_section_updated_at: string;
-  class_section_class_name_snapshot: string;
-  class_section_class_slug_snapshot: string;
-  class_section_class_parent_id: string;
-  class_section_class_parent_name_snapshot: string;
-  class_section_class_parent_slug_snapshot: string;
-  class_section_class_parent_level_snapshot: number;
+  class_section_image_url?: string | null;
+  class_section_quota_total?: number | null;
+  class_section_quota_taken?: number | null;
+  class_section_status: string; // "active" | "inactive" | dll
+  class_section_academic_term_name_cache?: string | null;
+  class_section_academic_term_slug_cache?: string | null;
   class_section_school_teacher_id: string;
-  class_section_school_teacher_snapshot?: ApiTeacherSnapshot | null;
-  class_section_class_room_id: string | null;
-  class_section_class_room_slug_snapshot: string | null;
-  class_section_class_room_name_snapshot: string | null;
-  class_section_class_room_snapshot?: ApiClassRoomSnapshot | null;
-  class_section_academic_term_id: string | null;
-  class_section_snapshot_updated_at: string;
-  class_section_subject_teachers_enrollment_mode: string | null;
-  class_section_subject_teachers_self_select_requires_approval: boolean;
+  class_section_school_teacher?: ApiClassSectionTeacherSnapshot | null;
 };
 
 type ApiClassSectionListResponse = {
@@ -99,6 +76,7 @@ type ApiClassSectionListResponse = {
     count: number;
     per_page_options: number[];
   };
+  include?: Record<string, unknown>;
 };
 
 /* ==========================================================
@@ -106,65 +84,65 @@ type ApiClassSectionListResponse = {
 ========================================================== */
 export type SectionRow = {
   id: string;
-  schoolId: string;
+  schoolId?: string;
   name: string;
   slug?: string;
   code?: string;
+  termName?: string;
+  termYearLabel?: string;
+  totalStudents: number;
+  isActive: boolean;
+  createdAt?: string;
+
+  // info gambar
+  imageUrl?: string | null;
+
+  // info guru
+  teacherId: string;
+  teacherName?: string;
+  teacherAvatarUrl?: string | null;
+  teacherTitlePrefix?: string | null;
+  teacherTitleSuffix?: string | null;
+  teacherWhatsappUrl?: string | null;
+  teacherCode?: string | null;
+
+  // kuota
+  quotaTotal?: number | null;
+  quotaTaken?: number | null;
+
+  // field lama yang masih dipakai di filter/search
   roomName?: string;
   roomLocation?: string;
   homeroomName?: string;
   assistantName?: string;
-  termName?: string;
-  termYearLabel?: string;
   scheduleText?: string;
-  totalStudents: number;
-  isActive: boolean;
-  createdAt?: string;
 };
 
 /* ==========================================================
-   JWT Helper: ambil teacher_id dari token
+   Helper kecil
 ========================================================== */
 
-function parseJwt(token: string): any | null {
-  try {
-    const [, payload] = token.split(".");
-    if (!payload) return null;
-    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const json = atob(base64);
-    return JSON.parse(json);
-  } catch {
-    return null;
-  }
-}
-
-function getTeacherIdFromToken(): string | null {
-  const token = getAccessToken();
-  if (!token) return null;
-  const payload = parseJwt(token);
-  if (!payload) return null;
-
-  // sesuaikan dengan claim yang kamu pakai di backend
-  return (
-    payload.school_teacher_id || payload.teacher_id || payload.teacherID || null
-  );
+function getInitials(name?: string) {
+  if (!name) return "K";
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .map((s) => s[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 }
 
 /* ==========================================================
-   Fetch dari API /u/class-sections/list?teacher_id=
+   Fetch dari API /u/class-sections/list?teacher=me
 ========================================================== */
 
 async function fetchSections(): Promise<SectionRow[]> {
-  const teacherId = getTeacherIdFromToken();
-  if (!teacherId) {
-    throw new Error("Tidak dapat membaca teacher_id dari token.");
-  }
-
   const res = await axios.get<ApiClassSectionListResponse>(
     "/u/class-sections/list",
     {
       params: {
-        teacher_id: teacherId,
+        teacher: "me",
       },
     }
   );
@@ -172,42 +150,49 @@ async function fetchSections(): Promise<SectionRow[]> {
   const items = res.data?.data ?? [];
 
   const mapped: SectionRow[] = items.map((it) => {
-    const teacher = it.class_section_school_teacher_snapshot;
-    const roomSnap = it.class_section_class_room_snapshot;
+    const teacherSnap = it.class_section_school_teacher;
 
-    const homeroomName =
-      teacher?.name ?? it.class_section_school_teacher_id ?? undefined;
-
-    const termName = it.class_section_class_parent_name_snapshot || undefined;
+    const teacherName = teacherSnap?.name ?? it.class_section_school_teacher_id;
+    const termName = it.class_section_academic_term_name_cache || undefined;
 
     const termYearLabel =
       termName && /\d{4}\/\d{4}/.test(termName)
         ? termName.match(/\d{4}\/\d{4}/)?.[0] ?? undefined
         : undefined;
 
-    const scheduleText =
-      it.class_section_schedule ??
-      (roomSnap?.is_virtual ? "Kelas daring (jadwal belum diatur)" : undefined);
-
     return {
       id: it.class_section_id,
-      schoolId: it.class_section_school_id,
+      schoolId: undefined, // belum ada di response
       name: it.class_section_name,
       slug: it.class_section_slug,
       code: it.class_section_code,
-      roomName:
-        it.class_section_class_room_name_snapshot ??
-        roomSnap?.name ??
-        undefined,
-      roomLocation: roomSnap?.platform ?? undefined,
-      homeroomName,
-      assistantName: undefined,
+
       termName,
       termYearLabel,
-      scheduleText: scheduleText ?? undefined,
-      totalStudents: it.class_section_total_students ?? 0,
-      isActive: it.class_section_is_active,
-      createdAt: it.class_section_created_at,
+
+      totalStudents: it.class_section_quota_total ?? 0,
+      isActive: it.class_section_status === "active",
+      createdAt: undefined,
+
+      imageUrl: it.class_section_image_url ?? null,
+
+      teacherId: it.class_section_school_teacher_id,
+      teacherName: teacherName,
+      teacherAvatarUrl: teacherSnap?.avatar_url ?? null,
+      teacherTitlePrefix: teacherSnap?.title_prefix ?? null,
+      teacherTitleSuffix: teacherSnap?.title_suffix ?? null,
+      teacherWhatsappUrl: teacherSnap?.whatsapp_url ?? null,
+      teacherCode: teacherSnap?.teacher_code ?? null,
+
+      quotaTotal: it.class_section_quota_total ?? null,
+      quotaTaken: it.class_section_quota_taken ?? null,
+
+      // belum ada data ruang/jadwal di response terbaru
+      roomName: undefined,
+      roomLocation: undefined,
+      homeroomName: teacherName,
+      assistantName: undefined,
+      scheduleText: undefined,
     };
   });
 
@@ -269,7 +254,7 @@ function useFilters(rows: SectionRow[]) {
       list = list.filter(
         (r) =>
           r.name.toLowerCase().includes(qLower) ||
-          (r.homeroomName ?? "").toLowerCase().includes(qLower) ||
+          (r.teacherName ?? "").toLowerCase().includes(qLower) ||
           (r.roomName ?? "").toLowerCase().includes(qLower)
       );
     }
@@ -309,59 +294,118 @@ function useFilters(rows: SectionRow[]) {
 }
 
 /* ==========================================================
-   Section Card
+   Section Card – lebih padat, tampilkan guru + kuota
 ========================================================== */
 function SectionCard({ s }: { s: SectionRow }) {
+  const teacherFullName = [
+    s.teacherTitlePrefix?.trim() || "",
+    s.teacherName || "",
+    s.teacherTitleSuffix ? `, ${s.teacherTitleSuffix.trim()}` : "",
+  ]
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const quotaText =
+    s.quotaTotal != null && s.quotaTaken != null
+      ? `Terisi ${s.quotaTaken}/${s.quotaTotal} siswa`
+      : s.quotaTotal != null
+        ? `Kuota ${s.quotaTotal} siswa`
+        : `${s.totalStudents} siswa`;
+
   return (
-    <Card
-      className={`p-4 border rounded-xl bg-card ${cardHover}`}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-base truncate">{s.name}</h3>
+    <Card className={`p-4 border rounded-xl bg-card ${cardHover}`}>
+      <div className="flex items-start gap-3">
+        {/* Thumbnail kelas */}
+        <div className="shrink-0">
+          {s.imageUrl ? (
+            <img
+              src={s.imageUrl}
+              alt={s.name}
+              className="h-14 w-14 rounded-lg object-cover border"
+            />
+          ) : (
+            <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center text-xs text-muted-foreground">
+              {s.code ?? "KLS"}
+            </div>
+          )}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          {/* Title + status */}
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-base truncate">{s.name}</h3>
+                {s.code && (
+                  <Badge variant="outline" className="text-[11px] px-1.5 py-0">
+                    {s.code}
+                  </Badge>
+                )}
+              </div>
+              {s.termName && (
+                <div className="text-xs text-muted-foreground mt-0.5 truncate">
+                  {s.termName}
+                </div>
+              )}
+              {s.slug && (
+                <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                  {s.slug}
+                </div>
+              )}
+            </div>
             <CBadgeStatus
               status={s.isActive ? "active" : "inactive"}
-              className="text-xs"
+              className="text-xs shrink-0"
             />
-
           </div>
-          <div className="mt-1 text-sm text-muted-foreground">
-            <UserSquare2 className="inline mr-1 h-4 w-4" />
-            {s.homeroomName ?? "-"}
+
+          {/* Guru */}
+          <div className="mt-3 flex items-center gap-2">
+            <Avatar className="h-7 w-7">
+              <AvatarImage
+                src={s.teacherAvatarUrl || ""}
+                alt={teacherFullName}
+              />
+              <AvatarFallback className="text-[10px]">
+                {getInitials(s.teacherName)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0">
+              <div className="text-xs text-muted-foreground">
+                <UserSquare2 className="inline mr-1 h-3.5 w-3.5" />
+                {teacherFullName || "-"}
+              </div>
+              <div className="text-[11px] text-muted-foreground truncate">
+                {s.teacherCode ? `Kode guru: ${s.teacherCode}` : ""}
+              </div>
+            </div>
+          </div>
+
+          {/* Kuota + term */}
+          <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+            <div>
+              <Users className="inline h-3.5 w-3.5 mr-1" />
+              {quotaText}
+            </div>
+            {s.termYearLabel && (
+              <div className="truncate text-right">
+                <CalendarDays className="inline h-3.5 w-3.5 mr-1" />
+                {s.termYearLabel}
+              </div>
+            )}
+          </div>
+
+          {/* Action */}
+          <div className="pt-4 text-right">
+            <Link to={`${s.id}`}>
+              <Button size="sm" className="inline-flex items-center">
+                Buka Kelas
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            </Link>
           </div>
         </div>
-
-        <Badge variant="outline" className="shrink-0">
-          <MapPin className="h-3.5 w-3.5 mr-1" />
-          {s.roomName ?? "—"}
-        </Badge>
-      </div>
-
-      {s.scheduleText && (
-        <div className="mt-3 text-sm text-muted-foreground">
-          <CalendarDays className="inline h-4 w-4 mr-1" />
-          {s.scheduleText}
-        </div>
-      )}
-
-      <div className="mt-3 flex items-center justify-between text-sm">
-        <div className="text-muted-foreground">
-          <Users className="inline h-4 w-4 mr-1" />
-          {s.totalStudents} siswa
-        </div>
-        <div className="text-muted-foreground truncate max-w-[60%] text-right">
-          {s.termName ?? "-"}
-        </div>
-      </div>
-
-      <div className="pt-4 text-right">
-        <Link to={`${s.id}`}>
-          <Button size="sm" className="inline-flex items-center">
-            Buka Kelas
-            <ChevronRight className="ml-1 h-4 w-4" />
-          </Button>
-        </Link>
       </div>
     </Card>
   );
@@ -374,7 +418,7 @@ type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
 export default function TeacherClassSection({
   showBack = false,
-  backTo
+  backTo,
 }: Props) {
   const navigate = useNavigate();
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
@@ -420,9 +464,7 @@ export default function TeacherClassSection({
             {(error as any)?.message ??
               "Periksa koneksi atau coba beberapa saat lagi."}
           </div>
-          <Button
-            variant="outline"
-            onClick={() => navigate(-1)}>
+          <Button variant="outline" onClick={() => navigate(-1)}>
             <ArrowLeft className="mr-2 h-4 w-4" />
           </Button>
         </main>
@@ -446,20 +488,26 @@ export default function TeacherClassSection({
                 <ArrowLeft size={20} />
               </Button>
             )}
-            <h1 className="text-xl font-semibold md:text-xl">Kelas yang Saya Ajar</h1>
+            <h1 className="text-xl font-semibold md:text-xl">
+              Kelas yang Saya Ajar
+            </h1>
           </div>
 
           {/* Filters */}
           <CMenuSearch
             value={f.q}
             onChange={f.setQ}
-            placeholder="Cari nama kelas / wali / ruang…"
+            placeholder="Cari nama kelas / wali…"
             className="w-full"
           />
 
           <div className="flex flex-wrap gap-3">
             <Select value={f.active} onValueChange={f.setActive}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">Semua status</SelectItem>
                 <SelectItem value="active">Aktif</SelectItem>
                 <SelectItem value="inactive">Nonaktif</SelectItem>
               </SelectContent>

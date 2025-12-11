@@ -1,7 +1,8 @@
 // src/pages/dasboard/teacher/books/TeacherCSSTBookList.tsx
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import axios from "@/lib/axios";
 import { Pencil, Trash2, Eye } from "lucide-react";
 
 /* Tambahan untuk breadcrumb sistem dashboard */
@@ -32,19 +33,17 @@ import {
 import {
   CDataTable,
   type ColumnDef,
-  type Align,
 } from "@/components/costum/table/CDataTable";
 
 /* =========================================================
    CONFIG + TYPES
 ========================================================= */
-const USE_DUMMY = true;
 
 type BookStatus = "available" | "borrowed" | "archived";
 
 export type ClassBook = {
   id: string;
-  class_id: string;
+  class_id: string; // di sini = class_subject_id
   title: string;
   author?: string;
   subject?: string;
@@ -57,107 +56,98 @@ export type ClassBook = {
   created_at?: string;
 };
 
-/* =========================================================
-   DUMMY STORE (persist selama sesi)
-========================================================= */
-const _dummyStore: Record<string, ClassBook[]> = {};
-function _seedIfEmpty(classId: string) {
-  if (_dummyStore[classId]) return;
-  const now = new Date().toISOString();
-  _dummyStore[classId] = [
-    {
-      id: crypto.randomUUID(),
-      class_id: classId,
-      title: "Tahsin Juz Amma Dasar",
-      author: "Ust. Fulan",
-      subject: "Al-Qur'an",
-      isbn: "978-623-000-001",
-      year: 2023,
-      pages: 120,
-      status: "available",
-      cover_url:
-        "https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=600&auto=format&fit=crop",
-      description: "Materi tajwid & makhraj huruf untuk pemula.",
-      created_at: now,
-    },
-    {
-      id: crypto.randomUUID(),
-      class_id: classId,
-      title: "Hafalan Doa Harian Anak",
-      author: "Ustzh. Amina",
-      subject: "Aqidah/Fiqih",
-      isbn: "978-623-000-002",
-      year: 2022,
-      pages: 80,
-      status: "borrowed",
-      cover_url:
-        "https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=600&auto=format&fit=crop",
-      description: "Kumpulan doa sehari-hari dengan terjemah.",
-      created_at: now,
-    },
-  ];
-}
+/* === Bentuk data API /api/u/class-subject-books/list === */
+type ApiClassSubjectBook = {
+  class_subject_book_id: string;
+  class_subject_book_school_id: string;
+  class_subject_book_class_subject_id: string;
+  class_subject_book_book_id: string;
+  class_subject_book_slug: string;
+  class_subject_book_is_primary: boolean;
+  class_subject_book_is_required: boolean;
+  class_subject_book_is_active: boolean;
+  class_subject_book_book_title_cache: string;
+  class_subject_book_book_author_cache?: string | null;
+  class_subject_book_book_slug_cache?: string | null;
+  class_subject_book_book_image_url_cache?: string | null;
+  class_subject_book_subject_id: string;
+  class_subject_book_subject_code_cache?: string | null;
+  class_subject_book_subject_name_cache?: string | null;
+  class_subject_book_subject_slug_cache?: string | null;
+  class_subject_book_created_at: string;
+  class_subject_book_updated_at: string;
+};
+
+type ApiListResponse = {
+  data: ApiClassSubjectBook[];
+  pagination: {
+    page: number;
+    per_page: number;
+    total: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+    count: number;
+  };
+  success: boolean;
+  message: string;
+};
 
 /* =========================================================
-   API (dummy)
+   API REAL: list subject books
 ========================================================= */
-async function fetchClassBooks(classId: string): Promise<ClassBook[]> {
-  if (!classId) return [];
-  if (USE_DUMMY) {
-    _seedIfEmpty(classId);
-    await new Promise((r) => setTimeout(r, 300));
-    return [...(_dummyStore[classId] ?? [])];
-  }
-  return [];
+async function fetchClassBooks(subjectId: string): Promise<ClassBook[]> {
+  if (!subjectId) return [];
+
+  const res = await axios.get<ApiListResponse>(
+    "/api/u/class-subject-books/list",
+    {
+      params: { subject_id: subjectId },
+    }
+  );
+
+  const rows = res.data?.data ?? [];
+  return rows.map((row) => ({
+    id: row.class_subject_book_id,
+    class_id: row.class_subject_book_class_subject_id,
+    title: row.class_subject_book_book_title_cache,
+    author: row.class_subject_book_book_author_cache ?? undefined,
+    subject: row.class_subject_book_subject_name_cache ?? undefined,
+    // sederhana: aktif = available, tidak aktif = archived
+    status: row.class_subject_book_is_active ? "available" : "archived",
+    cover_url: row.class_subject_book_book_image_url_cache ?? null,
+    description: undefined,
+    created_at: row.class_subject_book_created_at,
+  }));
 }
 
-async function createClassBook(input: Omit<ClassBook, "id" | "created_at">) {
-  if (USE_DUMMY) {
-    const item: ClassBook = {
-      ...input,
-      id: crypto.randomUUID(),
-      created_at: new Date().toISOString(),
-    };
-    _seedIfEmpty(input.class_id);
-    _dummyStore[input.class_id].unshift(item);
-    await new Promise((r) => setTimeout(r, 250));
-    return item;
-  }
+/* Untuk sementara: operasi create/update/delete belum disambungkan ke API */
+async function createClassBook(
+  _input: Omit<ClassBook, "id" | "created_at">
+): Promise<null> {
+  console.warn("[createClassBook] belum diimplementasikan");
+  return null;
 }
 
 async function updateClassBook(
-  id: string,
-  classId: string,
-  patch: Partial<ClassBook>
-) {
-  if (USE_DUMMY) {
-    _seedIfEmpty(classId);
-    const arr = _dummyStore[classId] ?? [];
-    const idx = arr.findIndex((b) => b.id === id);
-    if (idx >= 0) {
-      arr[idx] = { ...arr[idx], ...patch } as ClassBook;
-    }
-    await new Promise((r) => setTimeout(r, 250));
-    return arr[idx];
-  }
+  _id: string,
+  _classId: string,
+  _patch: Partial<ClassBook>
+): Promise<null> {
+  console.warn("[updateClassBook] belum diimplementasikan");
+  return null;
 }
 
-async function deleteClassBook(id: string, classId: string) {
-  if (USE_DUMMY) {
-    _seedIfEmpty(classId);
-    _dummyStore[classId] = (_dummyStore[classId] ?? []).filter(
-      (b) => b.id !== id
-    );
-    await new Promise((r) => setTimeout(r, 200));
-    return { ok: true };
-  }
+async function deleteClassBook(_id: string): Promise<{ ok: boolean }> {
+  console.warn("[deleteClassBook] belum diimplementasikan");
+  return { ok: true };
 }
 
 /* =========================================================
    QUERY KEYS
 ========================================================= */
 const QK = {
-  BOOKS: (classId: string) => ["class-books", classId] as const,
+  BOOKS: (subjectId: string) => ["class-subject-books", subjectId] as const,
 };
 
 /* ===================== Actions Menu ===================== */
@@ -198,8 +188,13 @@ function ActionsMenu({
 
 /* ===================== Page (pakai CDataTable) ===================== */
 export default function TeacherCSSTBookList() {
-  const { id: classId = "" } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // subjectId dikirim lewat navigate(..., { state: { subjectId } })
+  const subjectId =
+    (location.state as { subjectId?: string } | null)?.subjectId ?? "";
+
   const qc = useQueryClient();
 
   /* Atur breadcrumb dan title seperti SchoolAcademic */
@@ -219,21 +214,25 @@ export default function TeacherCSSTBookList() {
   }, [setHeader]);
 
   useEffect(() => {
-    if (!classId)
-      console.warn("[ClassBooksPage] Missing :id (classId) in route");
-  }, [classId]);
+    if (!subjectId) {
+      console.warn(
+        "[TeacherCSSTBookList] subjectId tidak ditemukan di location.state"
+      );
+    }
+  }, [subjectId]);
 
   const booksQ = useQuery({
-    queryKey: QK.BOOKS(classId),
-    queryFn: () => fetchClassBooks(classId),
-    enabled: !!classId,
+    queryKey: QK.BOOKS(subjectId || "unknown"),
+    queryFn: () => fetchClassBooks(subjectId),
+    enabled: !!subjectId,
     staleTime: 2 * 60_000,
     placeholderData: (prev) => prev ?? [],
   });
 
   const deleteBook = useMutation({
-    mutationFn: (id: string) => deleteClassBook(id, classId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: QK.BOOKS(classId) }),
+    mutationFn: (id: string) => deleteClassBook(id),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: QK.BOOKS(subjectId || "unknown") }),
   });
 
   const books = booksQ.data ?? [];
@@ -256,7 +255,7 @@ export default function TeacherCSSTBookList() {
       cell: (b) => (
         <div className="flex items-start gap-3">
           {b.cover_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
+            // eslint-disable-next-line jsx-a11y/alt-text
             <img
               src={b.cover_url}
               alt={b.title}
@@ -268,41 +267,31 @@ export default function TeacherCSSTBookList() {
           )}
           <div className="min-w-0">
             <div className="font-medium line-clamp-2">{b.title}</div>
-            {b.description ? (
+            {b.author && (
               <div className="text-xs text-muted-foreground line-clamp-1">
-                {b.description}
+                {b.author}
               </div>
-            ) : null}
+            )}
           </div>
         </div>
       ),
     },
     {
-      id: "author",
-      header: "Penulis",
-      minW: "140px",
-      cell: (b) => b.author ?? "-",
-    },
-    {
       id: "subject",
       header: "Mapel",
-      minW: "120px",
+      minW: "140px",
       cell: (b) => b.subject ?? "-",
     },
-    { id: "isbn", header: "ISBN", minW: "140px", cell: (b) => b.isbn ?? "-" },
     {
-      id: "year",
-      header: "Tahun",
-      minW: "100px",
-      align: "center" as Align,
-      cell: (b) => b.year ?? "-",
-    },
-    {
-      id: "pages",
-      header: "Hal.",
-      minW: "90px",
-      align: "center" as Align,
-      cell: (b) => b.pages ?? "-",
+      id: "status",
+      header: "Status",
+      minW: "120px",
+      cell: (b) =>
+        b.status === "available"
+          ? "Aktif"
+          : b.status === "archived"
+            ? "Nonaktif"
+            : "—",
     },
   ];
 
@@ -312,23 +301,23 @@ export default function TeacherCSSTBookList() {
         <div className="mx-auto flex flex-col gap-4 lg:gap-6">
           <CDataTable<ClassBook>
             /* ===== Toolbar ===== */
-            title="Buku Kelas"
+            title="Buku Mapel"
             onBack={() => navigate(-1)}
             onAdd={() => navigate("new")}
             addLabel="Tambah"
             controlsPlacement="above"
             /* Search (client-side) */
             defaultQuery=""
-            searchByKeys={["title", "author", "subject", "isbn"]}
+            searchByKeys={["title", "author", "subject"]}
             /* ===== Data ===== */
             loading={booksQ.isLoading}
-            error={booksQ.isError ? "Gagal memuat buku." : null}
+            error={booksQ.isError || !subjectId ? "Gagal memuat buku." : null}
             columns={columns}
             rows={books}
             getRowId={(b) => b.id}
             /* Klik baris = misalnya ke detail buku (nanti bisa diisi) */
             onRowClick={(row) => navigate(`${row.id}`)}
-            /* Actions menu ala Academic */
+            /* Actions menu */
             renderActions={(b) => (
               <ActionsMenu
                 onView={() => navigate(`${b.id}`)}
@@ -381,6 +370,6 @@ export default function TeacherCSSTBookList() {
 }
 
 /* =========================================================
-   Export helper untuk halaman form
+   Export helper untuk halaman form (sementara TODO)
 ========================================================= */
 export { fetchClassBooks, createClassBook, updateClassBook };

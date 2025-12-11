@@ -1,4 +1,4 @@
-// src/pages/school/SchoolDetailTeacher.tsx
+// src/pages/dashboard/schools/profiles/teachers/details/SchoolDetailTeacher.tsx
 /* ================= Imports ================= */
 import { useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";

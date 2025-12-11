@@ -1,4 +1,4 @@
-// src/pages/sekolahislamku/dashboard-school/books/SchoolBooks.tsx
+// src/pages/dashboard/schools/academics/books/SchoolBooks.tsx
 import { useMemo, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
