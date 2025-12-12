@@ -26,7 +26,9 @@ import {
   type SegmentedTabItem,
 } from "@/components/costum/common/CSegmentedTabs";
 import { cardHover } from "@/components/costum/table/CDataTable";
-import CBadgeBillStatus, { type BillStatus } from "@/components/costum/common/badges/CBadgeBillStatus";
+import CBadgeBillStatus, {
+  type BillStatus,
+} from "@/components/costum/common/badges/CBadgeBillStatus";
 
 /* ===================== Types & Dummy Data ===================== */
 type InvoiceStatus = BillStatus;
@@ -307,7 +309,6 @@ const SchoolFinance: React.FC<Props> = ({ showBack = false, backTo }) => {
                           <div className="flex justify-between items-start">
                             <div className="font-semibold">{inv.title}</div>
                             <CBadgeBillStatus status={inv.status} />
-
                           </div>
                           <div className="text-sm text-muted-foreground">
                             {inv.student_name} · Kelas {inv.class_name}
@@ -392,17 +393,30 @@ const SchoolFinance: React.FC<Props> = ({ showBack = false, backTo }) => {
                     {/* ===== Mobile ===== */}
                     <div className="md:hidden p-4 grid gap-3">
                       {pagePayments.map((p) => (
-                       <div key={p.id} className={`rounded-xl border p-4 ${cardHover}`}>
+                        <div
+                          key={p.id}
+                          className={`relative rounded-xl border p-4 ${cardHover}`}>
+                          {/* Badge metode pembayaran – kanan atas */}
+                          <span
+                            className="
+      absolute top-3 right-3
+      inline-flex items-center rounded-full
+      px-2 py-0.5 text-[12px] font-medium
+      bg-emerald-600/10 text-emerald-600
+      ring-1 ring-emerald-600/30
+    ">
+                            {p.method}
+                          </span>
+
                           <div className="font-semibold text-base">
                             {idr(p.amount)}
                           </div>
+
                           <div className="text-sm text-muted-foreground">
                             {p.payer_name} · {dateFmt(p.date)}
                           </div>
+
                           <div className="text-sm">{p.invoice_title}</div>
-                          <div className="inline-block text-xs px-2 py-1 rounded-lg bg-primary/10 text-primary mt-1">
-                            {p.method}
-                          </div>
                         </div>
                       ))}
                     </div>
