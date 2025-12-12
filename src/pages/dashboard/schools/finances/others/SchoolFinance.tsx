@@ -3,20 +3,12 @@ import React, { useMemo, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 
-import {
-  Wallet,
-  Download,
-  CheckCircle2,
-  Info,
-  ArrowLeft,
-} from "lucide-react";
+import { Download, Info, ArrowLeft } from "lucide-react";
 
 /* ==== shadcn/ui ==== */
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+
 import {
   Table,
   TableBody,
@@ -25,20 +17,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
 
-/* ✅ Import untuk breadcrumb header */
+/* Import untuk breadcrumb header */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+import CMenuSearch from "@/components/costum/common/CMenuSearch";
+import {
+  CSegmentedTabs,
+  type SegmentedTabItem,
+} from "@/components/costum/common/CSegmentedTabs";
+import { cardHover } from "@/components/costum/table/CDataTable";
+import CBadgeBillStatus, { type BillStatus } from "@/components/costum/common/badges/CBadgeBillStatus";
 
 /* ===================== Types & Dummy Data ===================== */
-type InvoiceStatus = "unpaid" | "paid" | "overdue";
-
+type InvoiceStatus = BillStatus;
 type Invoice = {
   id: string;
   title: string;
@@ -125,15 +116,12 @@ const dateFmt = (iso: string) =>
 /* ===================== Main Page ===================== */
 type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
-const SchoolFinance: React.FC<Props> = ({
-  showBack = false,
-  backTo,
-}) => {
+const SchoolFinance: React.FC<Props> = ({ showBack = false, backTo }) => {
   const { schoolId } = useParams<{ schoolId: string }>();
   const navigate = useNavigate();
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
-  /* ✅ Tambah breadcrumb seperti SchoolAcademic */
+  /* Tambah breadcrumb seperti SchoolAcademic */
   const { setHeader } = useDashboardHeader();
   useEffect(() => {
     setHeader({
@@ -163,6 +151,17 @@ const SchoolFinance: React.FC<Props> = ({
   const invoices = invoicesQ.data ?? [];
   const payments = paymentsQ.data ?? [];
 
+  const FINANCE_TABS: SegmentedTabItem[] = [
+    {
+      value: "invoices",
+      label: "Tagihan",
+    },
+    {
+      value: "payments",
+      label: "Pembayaran",
+    },
+  ];
+
   /* ==== Search ==== */
   const [q, setQ] = useState("");
   const filteredInvoices = useMemo(() => {
@@ -184,7 +183,7 @@ const SchoolFinance: React.FC<Props> = ({
   }, [q, payments]);
 
   /* ==== Pagination ==== */
-  const [limit, setLimit] = useState(10);
+  const [limit] = useState(10);
   const [page, setPage] = useState(1);
 
   const list = tab === "invoices" ? filteredInvoices : filteredPayments;
@@ -205,76 +204,40 @@ const SchoolFinance: React.FC<Props> = ({
     outstanding: idr(500000),
   };
 
-  const StatusBadge = ({ s }: { s: InvoiceStatus }) => {
-    if (s === "paid")
-      return <Badge className="bg-green-600 text-white">Lunas</Badge>;
-    if (s === "overdue") return <Badge variant="destructive">Terlambat</Badge>;
-    return <Badge variant="outline">Belum Bayar</Badge>;
-  };
-
   return (
     <div className="w-full overflow-x-hidden bg-background text-foreground">
       {/* ===== Header ===== */}
       <div className="w-full">
         <div className="mx-auto flex flex-col gap-4 lg:gap-6">
           {/* ===== Navbar row: back + title ===== */}
-          <div className="md:flex hidden gap-3 items-center">
+          <div className="md:flex hidden gap-3 items-center mb-4">
             {showBack && (
               <Button
                 onClick={handleBack}
                 variant="ghost"
                 size="icon"
-                className="cursor-pointer self-start"
-              >
+                className="cursor-pointer self-start">
                 <ArrowLeft size={20} />
               </Button>
             )}
-            <h1 className="font-semibold text-lg md:text-xl">Keuangan Sekolah</h1>
+            <h1 className="font-semibold text-lg md:text-xl">
+              Keuangan Sekolah
+            </h1>
           </div>
         </div>
 
-        <div className="w-full sm:w-auto flex-1 min-w-0 order-3 sm:order-2">
-          <div className="flex py-4 items-center gap-2">
-            <Input
-              value={q}
-              onChange={(e) => {
-                setQ(e.target.value);
-                setPage(1);
-              }}
-              placeholder={
-                tab === "invoices"
-                  ? "Cari tagihan atau siswa…"
-                  : "Cari pembayaran…"
-              }
-              className="w-full"
-            />
-            <div className="hidden sm:flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                Per halaman
-              </span>
-              <Select
-                value={String(limit)}
-                onValueChange={(v) => {
-                  setLimit(Number(v));
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="w-[96px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {[10, 20, 50, 100].map((n) => (
-                    <SelectItem key={n} value={String(n)}>
-                      {n}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
+        <CMenuSearch
+          value={q}
+          onChange={(val: string) => {
+            setQ(val);
+            setPage(1);
+          }}
+          placeholder={
+            tab === "invoices" ? "Cari tagihan atau siswa…" : "Cari pembayaran…"
+          }
+        />
 
-        <div className="ml-auto order-2 mt-4 mb-4 sm:order-3">
+        <div className="mt-4 mb-4 flex justify-end">
           <Button size="sm" className="gap-1">
             <Download size={14} /> Export
           </Button>
@@ -309,26 +272,19 @@ const SchoolFinance: React.FC<Props> = ({
             </CardContent>
           </Card>
 
-          {/* ===== Tabs ===== */}
-          <Tabs
+          {/* ===== Segmented Tabs (Custom) ===== */}
+          <CSegmentedTabs
             value={tab}
             onValueChange={(v) => {
-              setTab(v as any);
+              setTab(v as "invoices" | "payments");
               setPage(1);
             }}
-            className="w-full"
-          >
-            <TabsList>
-              <TabsTrigger value="invoices" className="gap-2">
-                <Wallet size={16} /> Tagihan
-              </TabsTrigger>
-              <TabsTrigger value="payments" className="gap-2">
-                <CheckCircle2 size={16} /> Pembayaran
-              </TabsTrigger>
-            </TabsList>
-
-            {/* ===== Invoices ===== */}
-            <TabsContent value="invoices" className="mt-4">
+            tabs={FINANCE_TABS}
+          />
+          {/* ===== Content ===== */}
+          <div>
+            {/* ================= TAGIHAN ================= */}
+            {tab === "invoices" && (
               <Card>
                 {pageInvoices.length === 0 ? (
                   <CardContent className="p-6 flex items-center gap-2 text-sm text-muted-foreground">
@@ -336,21 +292,22 @@ const SchoolFinance: React.FC<Props> = ({
                   </CardContent>
                 ) : (
                   <>
-                    {/* Mobile cards */}
+                    {/* ===== Mobile ===== */}
                     <div className="md:hidden p-4 grid gap-3">
                       {pageInvoices.map((inv) => (
                         <div
                           key={inv.id}
-                          className="rounded-xl border p-4 cursor-pointer hover:bg-muted/50 transition"
+                          className={`rounded-xl border p-4 ${cardHover}`}
                           onClick={() =>
-                          navigate(`/${schoolId}/sekolah/keuangan/non-spp/${inv.id}`, {
-                            state: { invoice: inv },
-                          })
-                        }
-                        >
+                            navigate(
+                              `/${schoolId}/sekolah/keuangan/non-spp/${inv.id}`,
+                              { state: { invoice: inv } }
+                            )
+                          }>
                           <div className="flex justify-between items-start">
                             <div className="font-semibold">{inv.title}</div>
-                            <StatusBadge s={inv.status} />
+                            <CBadgeBillStatus status={inv.status} />
+
                           </div>
                           <div className="text-sm text-muted-foreground">
                             {inv.student_name} · Kelas {inv.class_name}
@@ -365,7 +322,7 @@ const SchoolFinance: React.FC<Props> = ({
                       ))}
                     </div>
 
-                    {/* Desktop table */}
+                    {/* ===== Desktop ===== */}
                     <div className="hidden md:block">
                       <Table className="w-full text-center [&_th]:text-center [&_td]:text-center">
                         <TableHeader>
@@ -386,11 +343,11 @@ const SchoolFinance: React.FC<Props> = ({
                               key={x.id}
                               className="cursor-pointer hover:bg-muted/50 transition"
                               onClick={() =>
-                              navigate(`/${schoolId}/sekolah/keuangan/non-spp/${x.id}`, {
-                                state: { invoice: x },
-                              })
-                            }
-                            >
+                                navigate(
+                                  `/${schoolId}/sekolah/keuangan/non-spp/${x.id}`,
+                                  { state: { invoice: x } }
+                                )
+                              }>
                               <TableCell className="font-medium">
                                 {x.title}
                               </TableCell>
@@ -401,7 +358,7 @@ const SchoolFinance: React.FC<Props> = ({
                                 {idr(x.amount)}
                               </TableCell>
                               <TableCell>
-                                <StatusBadge s={x.status} />
+                                <CBadgeBillStatus status={x.status} />
                               </TableCell>
                             </TableRow>
                           ))}
@@ -421,10 +378,10 @@ const SchoolFinance: React.FC<Props> = ({
                   </>
                 )}
               </Card>
-            </TabsContent>
+            )}
 
-            {/* ===== Payments ===== */}
-            <TabsContent value="payments" className="mt-4">
+            {/* ================= PEMBAYARAN ================= */}
+            {tab === "payments" && (
               <Card>
                 {pagePayments.length === 0 ? (
                   <CardContent className="p-6 flex items-center gap-2 text-sm text-muted-foreground">
@@ -432,10 +389,10 @@ const SchoolFinance: React.FC<Props> = ({
                   </CardContent>
                 ) : (
                   <>
-                    {/* Mobile cards */}
+                    {/* ===== Mobile ===== */}
                     <div className="md:hidden p-4 grid gap-3">
                       {pagePayments.map((p) => (
-                        <div key={p.id} className="rounded-xl border p-4">
+                       <div key={p.id} className={`rounded-xl border p-4 ${cardHover}`}>
                           <div className="font-semibold text-base">
                             {idr(p.amount)}
                           </div>
@@ -450,7 +407,7 @@ const SchoolFinance: React.FC<Props> = ({
                       ))}
                     </div>
 
-                    {/* Desktop table */}
+                    {/* ===== Desktop ===== */}
                     <div className="hidden md:block">
                       <Table className="w-full text-center [&_th]:text-center [&_td]:text-center">
                         <TableHeader>
@@ -490,8 +447,8 @@ const SchoolFinance: React.FC<Props> = ({
                   </>
                 )}
               </Card>
-            </TabsContent>
-          </Tabs>
+            )}
+          </div>
         </div>
       </main>
     </div>
@@ -530,8 +487,7 @@ function CardFooterPagination({
           variant="outline"
           size="sm"
           onClick={onPrev}
-          disabled={page <= 1}
-        >
+          disabled={page <= 1}>
           Sebelumnya
         </Button>
         <div className="text-sm tabular-nums">
@@ -541,8 +497,7 @@ function CardFooterPagination({
           variant="outline"
           size="sm"
           onClick={onNext}
-          disabled={page >= lastPage}
-        >
+          disabled={page >= lastPage}>
           Berikutnya
         </Button>
       </div>

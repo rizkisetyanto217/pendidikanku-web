@@ -1,34 +1,47 @@
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
-export type BillStatus = "paid" | "overdue" | "pending";
+export type BillStatus = "paid" | "unpaid" | "overdue";
 
-interface Props {
-    status: BillStatus;
-    className?: string;
-}
+type Props = {
+  status: BillStatus;
+  className?: string;
+};
 
 export default function CBadgeBillStatus({ status, className }: Props) {
-    const base = "text-[12px] leading-none"; // font-size default
-
-    if (status === "paid") {
-        return (
-            <Badge className={`badge-paid ${base} ${className || ""}`}>
-                Lunas
-            </Badge>
-        );
-    }
-
-    if (status === "overdue") {
-        return (
-            <Badge className={`badge-overdue ${base} ${className || ""}`}>
-                Terlambat
-            </Badge>
-        );
-    }
-
-    return (
-        <Badge className={`badge-pending ${base} ${className || ""}`}>
-            Belum Dibayar
+  switch (status) {
+    case "paid":
+      return (
+        <Badge
+          className={cn(
+            "!text-[12px] bg-emerald-600/10 text-emerald-600 ring-1 ring-emerald-600/30",
+            className
+          )}>
+          Lunas
         </Badge>
-    );
+      );
+
+    case "overdue":
+      return (
+        <Badge
+          className={cn(
+            "!text-[12px] bg-red-600/10 text-red-600 ring-1 ring-red-600/30",
+            className
+          )}>
+          Terlambat
+        </Badge>
+      );
+
+    case "unpaid":
+    default:
+      return (
+        <Badge
+          className={cn(
+            "!text-[12px] bg-yellow-500/10 text-yellow-600 ring-1 ring-yellow-500/30",
+            className
+          )}>
+          Belum Bayar
+        </Badge>
+      )
+  }
 }

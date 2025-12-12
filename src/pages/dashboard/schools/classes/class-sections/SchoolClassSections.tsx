@@ -1,5 +1,5 @@
 // src/pages/dashboard/school/classes/class-list/section/SchoolSection.tsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "@/lib/axios";
@@ -12,18 +12,18 @@ import {
   Hash,
   User,
   ClipboardList,
+  Plus,
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
-/* ✅ Breadcrumb header */
+/* Breadcrumb header */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
 
 /* ========= Types dari API /api/u/class-sections/list?mode=compact&nested=csst ========= */
-
 type CompactTeacher = {
   id: string;
   name: string;
@@ -116,19 +116,9 @@ type ApiSectionList = {
 };
 
 /* ========= Filter Types ========= */
-
 type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
-type StatusFilter = "all" | "active" | "inactive";
-
-const STATUS_FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
-  { value: "all", label: "Semua" },
-  { value: "active", label: "Aktif" },
-  { value: "inactive", label: "Nonaktif" },
-];
-
 /* ========= Query: ambil semua sections (API user-scope, compact+csst) ========= */
-
 function useSections(classId?: string | undefined | null) {
   return useQuery<ApiClassSectionCompact[]>({
     queryKey: ["sections-user-compact-csst", classId ?? null],
@@ -155,7 +145,6 @@ function useSections(classId?: string | undefined | null) {
 }
 
 /* ========= Small UI ========= */
-
 function EmptyState({ isFiltered }: { isFiltered: boolean }) {
   return (
     <Card className="border-dashed">
@@ -174,8 +163,7 @@ function LoadingGrid() {
       {Array.from({ length: 2 }).map((_, i) => (
         <Card
           key={i}
-          className="overflow-hidden animate-pulse border-muted/40 bg-muted/10"
-        >
+          className="overflow-hidden animate-pulse border-muted/40 bg-muted/10">
           <div className="h-24 w-full bg-muted/60" />
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
@@ -349,8 +337,7 @@ function SectionCard({
                           onClick={(e) => e.stopPropagation()}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center text-[11px] text-emerald-600 hover:underline"
-                        >
+                          className="inline-flex items-center text-[11px] text-emerald-600 hover:underline">
                           WhatsApp
                         </a>
                       )}
@@ -441,8 +428,7 @@ function SectionCard({
                       return (
                         <div
                           key={csst.class_section_subject_teacher_id}
-                          className="flex h-full flex-col justify-between rounded-2xl border bg-background/70 px-4 py-3 text-[11px]"
-                        >
+                          className="flex h-full flex-col justify-between rounded-2xl border bg-background/70 px-4 py-3 text-[11px]">
                           <div className="flex items-start justify-between gap-2">
                             <div className="space-y-1">
                               <div className="text-sm font-semibold">
@@ -541,7 +527,7 @@ export default function SchoolClassSection({
   const navigate = useNavigate();
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
-  /* ✅ Breadcrumb */
+  /* Breadcrumb */
   const { setHeader } = useDashboardHeader();
   useEffect(() => {
     setHeader({
@@ -556,8 +542,6 @@ export default function SchoolClassSection({
   }, [setHeader]);
 
   const { data: sections = [], isLoading } = useSections(classId);
-
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
   const activeCount = sections.filter((s) => s.class_section_is_active).length;
   const totalQuota = sections.reduce(
@@ -577,17 +561,6 @@ export default function SchoolClassSection({
     0
   );
 
-  const filteredSections = useMemo(() => {
-    return sections.filter((s) => {
-      if (statusFilter === "active" && !s.class_section_is_active) return false;
-      if (statusFilter === "inactive" && s.class_section_is_active)
-        return false;
-      return true;
-    });
-  }, [sections, statusFilter]);
-
-  const isFiltered = statusFilter !== "all";
-
   const programName = sections[0]?.class_section_name ?? "yang dipilih";
 
   return (
@@ -601,8 +574,7 @@ export default function SchoolClassSection({
                 onClick={handleBack}
                 variant="ghost"
                 size="icon"
-                className="hidden md:inline-flex"
-              >
+                className="hidden md:inline-flex">
                 <ArrowLeft size={20} />
               </Button>
             )}
@@ -616,9 +588,14 @@ export default function SchoolClassSection({
           </div>
 
           <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm">
-            <Button size="sm" onClick={() => navigate("new")} className="mr-1">
-              + Tambah Rombel
+            <Button
+              size="sm"
+              onClick={() => navigate("new")}
+              className="mr-1 gap-1">
+              <Plus className="h-4 w-4" />
+              Tambah
             </Button>
+
             <Badge variant="outline" className="font-normal">
               Total:{" "}
               <span className="ml-1 font-semibold">{sections.length}</span>
@@ -641,65 +618,21 @@ export default function SchoolClassSection({
           </div>
         </div>
 
-        {/* Filter bar */}
-        <Card className="border-muted/60 bg-muted/5">
-          <CardContent className="flex flex-col gap-3 py-3 md:flex-row md:items-center md:justify-between">
-            <div className="text-xs text-muted-foreground md:text-sm">
-              Menampilkan{" "}
-              <span className="font-semibold">{filteredSections.length}</span>{" "}
-              dari <span className="font-semibold">{sections.length}</span>{" "}
-              rombel.
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              {/* Status filter */}
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-muted-foreground">Status:</span>
-                <div className="flex rounded-md border bg-background">
-                  {STATUS_FILTER_OPTIONS.map(({ value, label }) => {
-                    const active = statusFilter === value;
-                    const extraClass =
-                      value === "all"
-                        ? "rounded-l-md"
-                        : value === "inactive"
-                        ? "rounded-r-md"
-                        : "";
-
-                    return (
-                      <Button
-                        key={value}
-                        type="button"
-                        variant={active ? "default" : "ghost"}
-                        size="sm"
-                        className={`h-8 rounded-none px-3 text-xs ${extraClass}`}
-                        onClick={() => setStatusFilter(value)}
-                      >
-                        {label}
-                      </Button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Loading */}
         {isLoading && <LoadingGrid />}
 
         {/* Empty state */}
-        {!isLoading && filteredSections.length === 0 && (
-          <EmptyState isFiltered={isFiltered} />
+        {!isLoading && sections.length === 0 && (
+          <EmptyState isFiltered={false} />
         )}
 
         {/* List sections */}
-        {!isLoading && filteredSections.length > 0 && (
+        {!isLoading && sections.length > 0 && (
           <div className="flex flex-col gap-4">
-            {filteredSections.map((section) => (
+            {sections.map((section) => (
               <SectionCard
                 key={section.class_section_id}
                 section={section}
-                // detail rombel = pakai class_section_id
                 onOpenDetail={() =>
                   navigate(`${section.class_section_id}`, {
                     state: {

@@ -10,7 +10,6 @@ import {
   Users,
   Link as LinkIcon,
   ShieldCheck,
-  Loader2,
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,8 +19,9 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 
-/* ✅ Breadcrumb header */
+/* Breadcrumb header */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
+import CActionsButton from "@/components/costum/common/buttons/CActionsButton";
 
 /* ========= Types ========= */
 
@@ -231,7 +231,7 @@ export default function SchoolSectionFormPage() {
 
   const isBusy = mutation.isPending || (isEdit && isLoadingDetail);
 
-   const handleBack = () => navigate(-1);
+  const handleBack = () => navigate(-1);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -466,34 +466,17 @@ export default function SchoolSectionFormPage() {
           )}
 
           {/* Actions */}
-          {/* Actions — sama seperti SchoolClassParentForm */}
-          <div className="flex justify-end gap-2 pt-2">
-            <Button
-              onClick={handleBack}
-              variant="ghost"
-              size="icon">
-              Batal
-            </Button>
-
-            <Button type="submit" disabled={isBusy} className="min-w-[140px]">
-              {isBusy ? (
-                isEdit ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Menyimpan...
-                  </>
-                ) : (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Membuat...
-                  </>
-                )
-              ) : isEdit ? (
-                "Simpan Perubahan"
-              ) : (
-                "Simpan"
-              )}
-            </Button>
+          <div className="flex justify-end pt-2">
+            <CActionsButton
+              onCancel={handleBack}
+              onSave={() => {
+                const formEl = document.querySelector("form");
+                formEl?.dispatchEvent(
+                  new Event("submit", { cancelable: true, bubbles: true })
+                );
+              }}
+              loadingSave={isBusy}
+            />
           </div>
         </form>
       </main>

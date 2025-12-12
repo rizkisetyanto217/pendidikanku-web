@@ -4,7 +4,7 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios, { getActiveschoolId } from "@/lib/axios";
 
-/* 🔐 current user */
+/* current user */
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 /* layout header */
@@ -23,7 +23,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AlertCircle, Loader2, ArrowLeft } from "lucide-react";
+import { AlertCircle, ArrowLeft } from "lucide-react";
+import CActionsButton from "@/components/costum/common/buttons/CActionsButton";
 
 /* ================= Types ================= */
 type ClassStatus = "active" | "inactive";
@@ -353,8 +354,7 @@ const SchoolClassForm: React.FC = () => {
               variant="ghost"
               size="icon"
               className="cursor-pointer"
-              onClick={handleBack}
-            >
+              onClick={handleBack}>
               <ArrowLeft size={20} />
             </Button>
             <div>
@@ -427,8 +427,7 @@ const SchoolClassForm: React.FC = () => {
                       value={form.parentId}
                       onValueChange={(v) =>
                         setForm((f) => ({ ...f, parentId: v }))
-                      }
-                    >
+                      }>
                       <SelectTrigger>
                         <SelectValue placeholder="Pilih tingkat" />
                       </SelectTrigger>
@@ -436,8 +435,7 @@ const SchoolClassForm: React.FC = () => {
                         {(parentsQ.data ?? []).map((p) => (
                           <SelectItem
                             key={p.class_parent_id}
-                            value={p.class_parent_id}
-                          >
+                            value={p.class_parent_id}>
                             {p.class_parent_name}
                             {p.class_parent_level != null
                               ? ` (Level ${p.class_parent_level})`
@@ -453,8 +451,7 @@ const SchoolClassForm: React.FC = () => {
                       value={form.termId}
                       onValueChange={(v) =>
                         setForm((f) => ({ ...f, termId: v }))
-                      }
-                    >
+                      }>
                       <SelectTrigger>
                         <SelectValue placeholder="Opsional" />
                       </SelectTrigger>
@@ -462,8 +459,7 @@ const SchoolClassForm: React.FC = () => {
                         {(termsQ.data ?? []).map((t) => (
                           <SelectItem
                             key={t.academic_term_id}
-                            value={t.academic_term_id}
-                          >
+                            value={t.academic_term_id}>
                             {t.academic_term_academic_year} —{" "}
                             {t.academic_term_name}
                             {!t.academic_term_is_active ? " (nonaktif)" : ""}
@@ -550,18 +546,12 @@ const SchoolClassForm: React.FC = () => {
                 </div>
 
                 {/* Actions */}
-                <div className="flex justify-end gap-2 pt-2">
-                  <Button type="button" variant="ghost" onClick={handleBack}>
-                    Batal
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={!canSubmit || loading}
-                    className="gap-1"
-                  >
-                    {loading && <Loader2 className="animate-spin" size={16} />}
-                    {isEdit ? "Simpan Perubahan" : "Simpan"}
-                  </Button>
+                <div className="flex justify-end pt-2">
+                  <CActionsButton
+                    onCancel={handleBack}
+                    onSave={() => {}}
+                    loadingSave={loading}
+                  />
                 </div>
               </form>
             </CardContent>

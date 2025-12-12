@@ -1,6 +1,6 @@
 // src/pages/dashboard/school/class/SchoolClass.tsx
 import { useMemo, useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import axios, { getActiveschoolId } from "@/lib/axios";
@@ -23,6 +23,7 @@ import {
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import CRowActions from "@/components/costum/table/CRowAction";
 import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
+import CDeleteDialog from "@/components/costum/common/buttons/CDeleteDialog";
 
 /* ========== Types ========== */
 export type ClassStatus = "active" | "inactive";
@@ -68,10 +69,10 @@ type MiddleClassRow = {
 const fmtDate = (iso?: string | null) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    })
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
     : "-";
 
 const USER_PREFIX = "/api/u";
@@ -125,6 +126,20 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
 
   /* Query text (search) */
   const [query, setQuery] = useState("");
+
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState<MiddleClassRow | null>(null);
+
+  const qc = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: async (classId: string) => {
+      await axios.delete(`/api/a/classes/${classId}`);
+    },
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["classes-compact", schoolId] });
+    },
+  });
 
   /* Fetch Query (API baru) */
   const classesQ = useQuery({
@@ -223,7 +238,6 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
             <div className="font-medium whitespace-normal break-words">
               {r.name}
             </div>
-
           </div>
         ),
       },
@@ -299,16 +313,14 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
                 onClick={handleBack}
                 variant="ghost"
                 size="icon"
-                className="cursor-pointer self-start"
-              >
+                className="cursor-pointer self-start">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-5 w-5"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
-                  strokeWidth={2}
-                >
+                  strokeWidth={2}>
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -361,7 +373,10 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
                   })
                 }
                 onEdit={() => navigate(`edit/${row.id}`)}
-                onDelete={() => console.log("hapus kelas", row.id)}
+                onDelete={() => {
+                  setSelectedRow(row);
+                  setDeleteOpen(true);
+                }}
               />
             )}
             /* CARD RENDERING */
@@ -371,8 +386,7 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
                   "p-4 border rounded-xl space-y-3 bg-card",
                   cardHover
                 )}
-                onClick={() => navigate(`${r.id}`)}
-              >
+                onClick={() => navigate(`${r.id}`)}>
                 <div className="font-semibold">{r.name}</div>
 
                 <div className="text-xs text-muted-foreground">
@@ -397,7 +411,9 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
                   </div>
 
                   <div className="border rounded p-2">
-                    <div className="text-xs text-muted-foreground mb-1">Status</div>
+                    <div className="text-xs text-muted-foreground mb-1">
+                      Status
+                    </div>
                     <CBadgeStatus status={r.status} />
                   </div>
                 </div>
@@ -425,19 +441,38 @@ const SchoolClass: React.FC<Props> = ({ showBack = false, backTo }) => {
                 {/* Actions */}
                 <div
                   className="flex justify-end"
-                  onClick={(e) => e.stopPropagation()}
-                >
+                  onClick={(e) => e.stopPropagation()}>
                   <CRowActions
                     row={r}
                     mode="inline"
                     size="sm"
                     onView={() => navigate(`${r.id}`)}
                     onEdit={() => navigate(`edit/${r.id}`)}
-                    onDelete={() => console.log("hapus kelas", r.id)}
+                    onDelete={() => {
+                      setSelectedRow(r);
+                      setDeleteOpen(true);
+                    }}
                   />
                 </div>
               </div>
             )}
+          />
+
+          <CDeleteDialog
+            open={deleteOpen}
+            onClose={() => {
+              setDeleteOpen(false);
+              setSelectedRow(null);
+            }}
+            onConfirm={() => {
+              if (!selectedRow) return;
+              deleteMutation.mutate(selectedRow.id);
+              setDeleteOpen(false);
+              setSelectedRow(null);
+            }}
+            loading={deleteMutation.isPending}
+            title={`Hapus kelas "${selectedRow?.name}"?`}
+            description="Kelas yang dihapus tidak dapat dikembalikan."
           />
         </div>
       </main>
