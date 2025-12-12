@@ -25,7 +25,11 @@ import {
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 import type { AxiosError } from "axios";
 
-/* ========== Types dari API /api/u/class-sections/list?nested=csst ========== */
+/* =========================================================
+   Types (API terbaru /api/u/class-sections/list?nested=csst&id=...)
+========================================================= */
+
+type StatusStr = "active" | "inactive" | string;
 
 type TeacherCache = {
   id: string;
@@ -39,23 +43,41 @@ type TeacherCache = {
 };
 
 type ApiCsst = {
-  class_section_subject_teacher_id: string;
-  class_section_subject_teacher_school_teacher_id?: string | null;
-  class_section_subject_teacher_school_teacher_name_cache?: string | null;
-  class_section_subject_teacher_subject_name_cache?: string | null;
-  class_section_subject_teacher_subject_code_cache?: string | null;
-  class_section_subject_teacher_subject_slug_cache?: string | null;
-  class_section_subject_teacher_total_attendance?: number | null;
-  class_section_subject_teacher_is_active: boolean;
+  csst_id: string;
+  csst_class_subject_id?: string | null;
+  csst_school_teacher_id?: string | null;
+
+  csst_delivery_mode?: string | null;
+
+  csst_class_section_slug_cache?: string | null;
+  csst_class_section_name_cache?: string | null;
+  csst_class_section_code_cache?: string | null;
+
+  csst_school_teacher_slug_cache?: string | null;
+  csst_school_teacher_cache?: TeacherCache | null;
+
+  csst_subject_id?: string | null;
+  csst_subject_name_cache?: string | null;
+  csst_subject_code_cache?: string | null;
+  csst_subject_slug_cache?: string | null;
+
+  csst_status?: StatusStr;
+  csst_created_at?: string | null;
+  csst_updated_at?: string | null;
+
+  // kalau backend kadang ngasih fallback string (optional)
+  csst_school_teacher_name_cache?: string | null;
 };
 
 type ApiClassSection = {
   class_section_id: string;
   class_section_school_id: string;
   class_section_class_id: string;
+
   class_section_slug: string;
   class_section_name: string;
   class_section_code?: string | null;
+
   class_section_schedule?: any | null;
 
   class_section_quota_total: number;
@@ -74,7 +96,9 @@ type ApiClassSection = {
   class_section_image_object_key_old?: string | null;
   class_section_image_delete_pending_until?: string | null;
 
-  class_section_is_active: boolean;
+  // ✅ NEW
+  class_section_status?: StatusStr;
+
   class_section_created_at: string;
   class_section_updated_at: string;
 
@@ -85,18 +109,24 @@ type ApiClassSection = {
   class_section_class_parent_slug_cache?: string | null;
   class_section_class_parent_level_cache?: number | null;
 
+  class_section_academic_term_id?: string | null;
+  class_section_academic_term_name_cache?: string | null;
+  class_section_academic_term_slug_cache?: string | null;
+  class_section_academic_term_academic_year_cache?: string | null;
+  class_section_academic_term_angkatan_cache?: number | null;
+
   class_section_school_teacher_id?: string | null;
   class_section_school_teacher_cache?: TeacherCache | null;
 
   class_section_subject_teachers_enrollment_mode?: string | null;
   class_section_subject_teachers_self_select_requires_approval?: boolean | null;
 
-  // aggregate CSST
+  // aggregate CSST (baru)
   class_section_subject_teacher?: ApiCsst[];
   class_section_subject_teacher_count?: number | null;
   class_section_subject_teacher_active_count?: number | null;
 
-  // (lama, boleh ada / boleh tidak)
+  // (lama masih bisa muncul, biar aman)
   class_section_total_class_class_section_subject_teachers?: number | null;
   class_section_total_class_class_section_subject_teachers_active?:
     | number
@@ -107,20 +137,10 @@ type ClassSectionListResp = {
   success: boolean;
   message: string;
   data: ApiClassSection[];
-  pagination: {
-    page: number;
-    per_page: number;
-    total: number;
-    total_pages: number;
-    has_next: boolean;
-    has_prev: boolean;
-    count: number;
-    per_page_options: number[];
-  };
+  pagination?: any;
   include?: Record<string, unknown>;
 };
 
-/* View model kelas (dari cache) */
 type ClassView = {
   classId: string;
   className: string;
@@ -130,18 +150,30 @@ type ClassView = {
   parentLevel: number | null;
 };
 
-/* CSST row untuk table */
 type CsstRow = {
   id: string;
+
   subjectName: string;
   subjectCode?: string | null;
+  subjectSlug?: string | null;
+
   teacherId?: string | null;
   teacherName?: string | null;
+  teacherAvatarUrl?: string | null;
+  teacherCode?: string | null;
+  teacherWhatsappUrl?: string | null;
+  teacherTitlePrefix?: string | null;
+  teacherTitleSuffix?: string | null;
+
+  deliveryMode?: string | null;
+
   isActive: boolean;
-  totalAttendance: number;
+  createdAt?: string | null;
 };
 
-/* ========== Utils kecil ========== */
+/* =========================================================
+   Utils
+========================================================= */
 
 const extractErrorMessage = (err: unknown): string => {
   const ax = err as AxiosError<any>;
@@ -167,20 +199,34 @@ const formatDateTime = (iso?: string | null) => {
   });
 };
 
+function isActiveFromStatus(status?: StatusStr): boolean {
+  if (!status) return true;
+  return String(status).toLowerCase() === "active";
+}
+
+function formatTeacherName(
+  t?: {
+    name?: string | null;
+    title_prefix?: string | null;
+    title_suffix?: string | null;
+  } | null
+) {
+  if (!t?.name) return "—";
+  const prefix = t.title_prefix ? `${t.title_prefix} ` : "";
+  const suffix = t.title_suffix ? `, ${t.title_suffix}` : "";
+  return `${prefix}${t.name}${suffix}`;
+}
+
 type LocationState = {
   sections?: ApiClassSection[];
   selectedSectionId?: string;
 };
 
-/* ========================================================================
-   Page utama (detail per class_section)
-   ======================================================================== */
-
 const SchoolClassSectionDetail: React.FC = () => {
   const navigate = useNavigate();
   const { schoolId, classSectionId } = useParams<{
     schoolId: string;
-    classSectionId: string; // class_section_id
+    classSectionId: string;
   }>();
 
   const safeSectionId = classSectionId ?? "";
@@ -190,10 +236,6 @@ const SchoolClassSectionDetail: React.FC = () => {
   const state = (location.state || {}) as LocationState;
   const sectionsFromState = state.sections;
 
-  console.log("[CLASS DETAIL] useParams:", { schoolId, classSectionId });
-  console.log("[CLASS DETAIL] location.state:", state);
-
-  /* ===== Fetch class section detail (API baru /api/u/class-sections/list?nested=csst&id=...) ===== */
   const sectionsQ = useQuery<ClassSectionListResp, AxiosError>({
     queryKey: ["class-sections-detail", safeSectionId, "nested=csst"],
     enabled: !!safeSectionId,
@@ -209,57 +251,33 @@ const SchoolClassSectionDetail: React.FC = () => {
           },
         }
       );
-      console.log(
-        "[CLASS DETAIL] /api/u/class-sections/list?nested=csst response.raw:",
-        res.data
-      );
       return res.data;
     },
     staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const allSections: ApiClassSection[] = useMemo(() => {
     const fromApi = sectionsQ.data?.data ?? [];
     const fromState = sectionsFromState ?? [];
-
-    console.log("[CLASS DETAIL] allSections computed:", {
-      fromApiLength: fromApi.length,
-      fromStateLength: fromState.length,
-      source:
-        fromApi.length > 0 ? "api" : fromState.length > 0 ? "state" : "none",
-    });
-
     if (fromApi.length > 0) return fromApi;
     if (fromState.length > 0) return fromState;
     return [];
   }, [sectionsQ.data, sectionsFromState]);
 
   const currentSection: ApiClassSection | null = useMemo(() => {
-    if (allSections.length === 0) {
-      console.log("[CLASS DETAIL] currentSection: allSections empty");
-      return null;
-    }
-    if (!safeSectionId) {
-      console.log(
-        "[CLASS DETAIL] currentSection: no safeSectionId, use first element"
-      );
-      return allSections[0];
-    }
-
-    const found = allSections.find((s) => s.class_section_id === safeSectionId);
-    console.log("[CLASS DETAIL] currentSection resolved:", {
-      safeSectionId,
-      found,
-    });
-    return found ?? allSections[0];
+    if (allSections.length === 0) return null;
+    if (!safeSectionId) return allSections[0];
+    return (
+      allSections.find((s) => s.class_section_id === safeSectionId) ??
+      allSections[0]
+    );
   }, [allSections, safeSectionId]);
 
-  /* ===== Ambil info kelas dari cache ===== */
   const classView: ClassView = useMemo(() => {
     const first = currentSection ?? allSections[0];
-
     if (first) {
-      const view: ClassView = {
+      return {
         classId: first.class_section_class_id,
         className: first.class_section_class_name_cache || "Tanpa Nama",
         classSlug: first.class_section_class_slug_cache || "-",
@@ -267,11 +285,8 @@ const SchoolClassSectionDetail: React.FC = () => {
         parentSlug: first.class_section_class_parent_slug_cache || "-",
         parentLevel: first.class_section_class_parent_level_cache ?? null,
       };
-      console.log("[CLASS DETAIL] classView:", view);
-      return view;
     }
-
-    const fallback: ClassView = {
+    return {
       classId: "",
       className: "Detail Kelas",
       classSlug: safeSectionId || "-",
@@ -279,13 +294,10 @@ const SchoolClassSectionDetail: React.FC = () => {
       parentSlug: "-",
       parentLevel: null,
     };
-    console.log("[CLASS DETAIL] classView fallback:", fallback);
-    return fallback;
   }, [currentSection, allSections, safeSectionId]);
 
   const { className, classSlug, parentName, parentLevel } = classView;
 
-  /* ===== Set header top bar ===== */
   useEffect(() => {
     setHeader({
       title: `Kelas: ${className}`,
@@ -306,10 +318,7 @@ const SchoolClassSectionDetail: React.FC = () => {
     ? extractErrorMessage(sectionsQ.error)
     : null;
 
-  /* ===== State: loading / error ===== */
-
   if (sectionsQ.isLoading && !currentSection) {
-    console.log("[CLASS DETAIL] loading initial state");
     return (
       <div className="flex h-full items-center justify-center gap-2 text-muted-foreground">
         <Loader2 className="animate-spin" /> Memuat detail rombel…
@@ -318,15 +327,14 @@ const SchoolClassSectionDetail: React.FC = () => {
   }
 
   if (sectionsError) {
-    const msg = sectionsError ?? "Data rombel tidak ditemukan.";
-    console.log("[CLASS DETAIL] sectionsError:", msg);
-
     return (
       <div className="flex min-h-screen flex-col items-center justify-center space-y-3 p-6 text-center">
         <div className="text-sm text-destructive">
           Gagal memuat detail rombel.
         </div>
-        <div className="break-all text-xs text-muted-foreground">{msg}</div>
+        <div className="break-all text-xs text-muted-foreground">
+          {sectionsError}
+        </div>
         <Button
           variant="outline"
           onClick={() => navigate(`/${schoolId}/sekolah/kelas/semua-kelas`)}
@@ -339,10 +347,6 @@ const SchoolClassSectionDetail: React.FC = () => {
   }
 
   if (!currentSection) {
-    console.log(
-      "[CLASS DETAIL] no currentSection after fetch, allSections:",
-      allSections
-    );
     return (
       <div className="flex min-h-screen flex-col items-center justify-center space-y-3 p-6 text-center">
         <div className="text-sm text-muted-foreground">
@@ -360,13 +364,11 @@ const SchoolClassSectionDetail: React.FC = () => {
   }
 
   const currentSectionId = currentSection.class_section_id;
-  console.log("[CLASS DETAIL] render final view for section:", {
-    currentSectionId,
-    currentSection,
-  });
+  const sectionIsActive = isActiveFromStatus(
+    currentSection.class_section_status
+  );
 
-  /* ===== Agregat: siswa, kuota ===== */
-
+  /* ===== Students + quota ===== */
   const male = currentSection.class_section_total_students_male ?? 0;
   const female = currentSection.class_section_total_students_female ?? 0;
   const maleActive =
@@ -378,61 +380,20 @@ const SchoolClassSectionDetail: React.FC = () => {
     male + female > 0
       ? male + female
       : currentSection.class_section_quota_taken;
+
   const totalStudentsActive =
     currentSection.class_section_total_students_active ??
     maleActive + femaleActive;
-
-  /* ===== CSST mapping dari nested=csst ===== */
-
-  const csstRows: CsstRow[] = useMemo(() => {
-    const raw = (currentSection.class_section_subject_teacher ??
-      []) as ApiCsst[];
-
-    const mapped = raw.map((item) => ({
-      id: item.class_section_subject_teacher_id,
-      subjectName:
-        item.class_section_subject_teacher_subject_name_cache ??
-        item.class_section_subject_teacher_subject_code_cache ??
-        "Tanpa nama mapel",
-      subjectCode: item.class_section_subject_teacher_subject_code_cache,
-      teacherId: item.class_section_subject_teacher_school_teacher_id ?? null,
-      teacherName:
-        item.class_section_subject_teacher_school_teacher_name_cache ?? null,
-      isActive: Boolean(item.class_section_subject_teacher_is_active),
-      totalAttendance: item.class_section_subject_teacher_total_attendance ?? 0,
-    }));
-
-    console.log("[CLASS DETAIL] csstRows:", {
-      rawLength: raw.length,
-      mappedLength: mapped.length,
-      rows: mapped,
-    });
-
-    return mapped;
-  }, [currentSection]);
-
-  const totalCsst =
-    currentSection.class_section_subject_teacher_count ??
-    currentSection.class_section_total_class_class_section_subject_teachers ??
-    csstRows.length;
-
-  const activeCsst =
-    currentSection.class_section_subject_teacher_active_count ??
-    currentSection.class_section_total_class_class_section_subject_teachers_active ??
-    csstRows.filter((c) => c.isActive).length;
-
-  const totalAttendanceSum = csstRows.reduce(
-    (acc, row) => acc + (row.totalAttendance || 0),
-    0
-  );
 
   const quotaTotal = currentSection.class_section_quota_total ?? 0;
   const quotaTaken = currentSection.class_section_quota_taken ?? 0;
   const quotaRemaining =
     quotaTotal > 0 ? Math.max(quotaTotal - quotaTaken, 0) : 0;
 
+  /* ===== homeroom ===== */
   const homeroom = currentSection.class_section_school_teacher_cache ?? null;
 
+  /* ===== enrollment ===== */
   const enrollmentMode =
     currentSection.class_section_subject_teachers_enrollment_mode;
   const enrollmentLabel =
@@ -448,20 +409,70 @@ const SchoolClassSectionDetail: React.FC = () => {
     currentSection.class_section_subject_teachers_self_select_requires_approval ??
     false;
 
-  /* ===== Columns DataTable CSST ===== */
+  /* ===== CSST mapping (✅ teacher from csst_school_teacher_cache) ===== */
+  const csstRows: CsstRow[] = useMemo(() => {
+    const raw = currentSection.class_section_subject_teacher ?? [];
+    return raw.map((item) => {
+      const t = item.csst_school_teacher_cache ?? null;
+      const teacherId = item.csst_school_teacher_id ?? t?.id ?? null;
 
+      return {
+        id: item.csst_id,
+        subjectName:
+          item.csst_subject_name_cache ??
+          item.csst_subject_code_cache ??
+          "Tanpa nama mapel",
+        subjectCode: item.csst_subject_code_cache ?? null,
+        subjectSlug: item.csst_subject_slug_cache ?? null,
+
+        teacherId,
+        teacherName:
+          t?.name ??
+          item.csst_school_teacher_name_cache ??
+          (teacherId ? `Guru (${teacherId.slice(0, 8)}…)` : null),
+        teacherAvatarUrl: t?.avatar_url ?? null,
+        teacherCode: t?.teacher_code ?? null,
+        teacherWhatsappUrl: t?.whatsapp_url ?? null,
+        teacherTitlePrefix: t?.title_prefix ?? null,
+        teacherTitleSuffix: t?.title_suffix ?? null,
+
+        deliveryMode: item.csst_delivery_mode ?? null,
+
+        isActive: isActiveFromStatus(item.csst_status),
+        createdAt: item.csst_created_at ?? null,
+      };
+    });
+  }, [currentSection]);
+
+  const totalCsst =
+    currentSection.class_section_subject_teacher_count ??
+    currentSection.class_section_total_class_class_section_subject_teachers ??
+    csstRows.length;
+
+  const activeCsst =
+    currentSection.class_section_subject_teacher_active_count ??
+    currentSection.class_section_total_class_class_section_subject_teachers_active ??
+    csstRows.filter((c) => c.isActive).length;
+
+  /* ===== Columns DataTable CSST ===== */
   const csstColumns: ColumnDef<CsstRow>[] = useMemo(
     () => [
       {
         id: "subjectName",
         header: "Mata Pelajaran",
-        minW: "240px",
+        minW: "280px",
         align: "left",
         cell: (r) => (
           <div className="text-left">
             <div className="font-medium">{r.subjectName}</div>
             <div className="text-[11px] text-muted-foreground">
               Kode: <span className="font-mono">{r.subjectCode ?? "—"}</span>
+              {r.deliveryMode ? (
+                <>
+                  {" "}
+                  • Mode: <span className="font-mono">{r.deliveryMode}</span>
+                </>
+              ) : null}
             </div>
           </div>
         ),
@@ -469,26 +480,65 @@ const SchoolClassSectionDetail: React.FC = () => {
       {
         id: "teacherName",
         header: "Guru",
-        minW: "200px",
+        minW: "280px",
         align: "left",
         cell: (r) => (
-          <div className="text-left text-xs">
-            <div className="font-medium">{r.teacherName ?? "—"}</div>
-            {r.teacherId && (
-              <div className="text-[11px] text-muted-foreground">
-                school_teacher_id:{" "}
-                <span className="font-mono">{r.teacherId}</span>
+          <div className="flex items-start gap-3">
+            {r.teacherAvatarUrl ? (
+              <img
+                src={r.teacherAvatarUrl}
+                alt={r.teacherName ?? "Guru"}
+                className="h-9 w-9 rounded-full object-cover"
+                loading="lazy"
+              />
+            ) : (
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted">
+                <User className="h-5 w-5 text-muted-foreground" />
               </div>
             )}
+
+            <div className="min-w-0">
+              <div className="font-medium text-sm">
+                {formatTeacherName(
+                  r.teacherName
+                    ? {
+                        name: r.teacherName,
+                        title_prefix: r.teacherTitlePrefix,
+                        title_suffix: r.teacherTitleSuffix,
+                      }
+                    : null
+                )}
+              </div>
+
+              <div className="mt-0.5 text-[11px] text-muted-foreground">
+                Kode guru:{" "}
+                <span className="font-mono">{r.teacherCode ?? "—"}</span>
+              </div>
+
+              {r.teacherWhatsappUrl && (
+                <a
+                  href={r.teacherWhatsappUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-1 inline-flex items-center gap-1 text-[11px] text-emerald-600 hover:underline"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Phone className="h-3 w-3" />
+                  WhatsApp
+                </a>
+              )}
+            </div>
           </div>
         ),
       },
       {
-        id: "totalAttendance",
-        header: "Total Pertemuan",
-        minW: "140px",
+        id: "createdAt",
+        header: "Dibuat",
+        minW: "170px",
         align: "center",
-        cell: (r) => <span className="tabular-nums">{r.totalAttendance}</span>,
+        cell: (r) => (
+          <span className="text-xs">{formatDateTime(r.createdAt)}</span>
+        ),
       },
       {
         id: "isActive",
@@ -507,8 +557,6 @@ const SchoolClassSectionDetail: React.FC = () => {
     ],
     []
   );
-
-  /* ===== Render utama ===== */
 
   return (
     <div className="space-y-4">
@@ -550,10 +598,6 @@ const SchoolClassSectionDetail: React.FC = () => {
             </div>
             <p className="mt-1 text-[11px] text-muted-foreground">
               Aktif: <span className="font-semibold">{activeCsst}</span>
-            </p>
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              Total pertemuan (semua mapel):{" "}
-              <span className="font-semibold">{totalAttendanceSum}</span>
             </p>
           </CardContent>
         </Card>
@@ -618,7 +662,7 @@ const SchoolClassSectionDetail: React.FC = () => {
         </Card>
       </div>
 
-      {/* Info rombel (gambar, slug, kode, status) + wali kelas */}
+      {/* Info rombel + wali kelas */}
       <div className="grid gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1.4fr)]">
         <Card className="overflow-hidden">
           <div className="flex flex-col md:flex-row">
@@ -650,15 +694,9 @@ const SchoolClassSectionDetail: React.FC = () => {
                 </div>
                 <Badge
                   className="border px-2 py-0.5 text-[10px] font-semibold"
-                  variant={
-                    currentSection.class_section_is_active
-                      ? "default"
-                      : "outline"
-                  }
+                  variant={sectionIsActive ? "default" : "outline"}
                 >
-                  {currentSection.class_section_is_active
-                    ? "Aktif"
-                    : "Nonaktif"}
+                  {sectionIsActive ? "Aktif" : "Nonaktif"}
                 </Badge>
               </div>
             </div>
@@ -709,8 +747,7 @@ const SchoolClassSectionDetail: React.FC = () => {
                 <div className="flex items-start gap-2">
                   <Info className="mt-0.5 h-3 w-3" />
                   <p>
-                    Detail rombel ini menggunakan data snapshot &amp; CSST dari
-                    endpoint{" "}
+                    Detail rombel ini memakai endpoint{" "}
                     <span className="font-mono text-[10px]">
                       /api/u/class-sections/list?nested=csst&id=
                       {currentSectionId}
@@ -746,13 +783,7 @@ const SchoolClassSectionDetail: React.FC = () => {
                   )}
                   <div className="space-y-0.5">
                     <div className="text-sm font-semibold">
-                      {homeroom.title_prefix
-                        ? `${homeroom.title_prefix} ${homeroom.name}${
-                            homeroom.title_suffix
-                              ? `, ${homeroom.title_suffix}`
-                              : ""
-                          }`
-                        : homeroom.name}
+                      {formatTeacherName(homeroom)}
                     </div>
                     <div className="text-[11px] text-muted-foreground">
                       Kode guru: {homeroom.teacher_code ?? "-"}
@@ -800,7 +831,12 @@ const SchoolClassSectionDetail: React.FC = () => {
             columns={csstColumns}
             loading={sectionsQ.isLoading && csstRows.length === 0}
             getRowId={(r) => r.id}
-            searchByKeys={["subjectName", "subjectCode", "teacherName"]}
+            searchByKeys={[
+              "subjectName",
+              "subjectCode",
+              "teacherName",
+              "deliveryMode",
+            ]}
             searchPlaceholder="Cari mapel atau nama guru…"
             pageSize={10}
             pageSizeOptions={[10, 20, 50]}

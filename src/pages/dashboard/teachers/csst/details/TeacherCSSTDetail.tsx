@@ -45,7 +45,9 @@ import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
 import { cardHover } from "@/components/costum/table/CDataTable";
 import { cn } from "@/lib/utils";
 
-/* ========= Types dari API /api/u/class-section-subject-teachers/list ========= */
+/* =========================================================
+   Types API (TERBARU – csst_* semua)
+========================================================= */
 
 type DeliveryMode = "offline" | "online" | "hybrid" | string;
 
@@ -61,15 +63,6 @@ type ApiTeacherCache = {
 };
 
 type ApiRoomCache = {
-  // varian offline (ruang fisik)
-  code?: string | null;
-  name?: string | null;
-  slug?: string | null;
-  capacity?: number | null;
-  location?: string | null;
-  is_virtual?: boolean | null;
-
-  // varian zoom / kelas virtual (class_room_*)
   class_room_id?: string | null;
   class_room_name?: string | null;
   class_room_slug?: string | null;
@@ -78,78 +71,60 @@ type ApiRoomCache = {
   class_room_platform?: string | null;
   class_room_is_virtual?: boolean | null;
   class_room_meeting_id?: string | null;
+
+  // optional tambahan kalau suatu saat ada
+  class_room_location?: string | null;
 };
 
 type ApiCSSTItem = {
-  class_section_subject_teacher_id: string;
-  class_section_subject_teacher_school_id: string;
-  class_section_subject_teacher_class_section_id: string;
-  class_section_subject_teacher_class_subject_id: string;
-  class_section_subject_teacher_school_teacher_id: string;
-  class_section_subject_teacher_class_room_id: string | null;
-  class_section_subject_teacher_slug: string;
+  csst_id: string;
+  csst_school_id: string;
+  csst_class_section_id: string;
+  csst_class_subject_id: string;
+  csst_school_teacher_id: string;
+  csst_class_room_id: string | null;
+  csst_slug: string;
 
-  class_section_subject_teacher_total_attendance: number;
-  class_section_subject_teacher_quota_taken: number;
+  csst_total_attendance: number;
+  csst_quota_taken: number;
 
-  // total semua assessment
-  class_section_subject_teacher_total_assessments: number;
+  csst_total_assessments: number;
+  csst_total_assessments_training: number;
+  csst_total_assessments_daily_exam: number;
+  csst_total_assessments_exam: number;
 
-  // ⬇️ PAKAI INI AJA (3 baru)
-  class_section_subject_teacher_total_assessments_training: number;
-  class_section_subject_teacher_total_assessments_daily_exam: number;
-  class_section_subject_teacher_total_assessments_exam: number;
+  csst_total_students_passed: number;
+  csst_delivery_mode: DeliveryMode;
 
-  // boleh tetap kalau mau dipakai nanti
-  class_section_subject_teacher_total_students_passed: number;
+  // caches
+  csst_class_section_slug_cache: string;
+  csst_class_section_name_cache: string;
+  csst_class_section_code_cache: string;
 
-  class_section_subject_teacher_delivery_mode: DeliveryMode;
-  class_section_subject_teacher_total_books: number;
+  csst_class_room_slug_cache?: string | null;
+  csst_class_room_cache?: ApiRoomCache | null;
 
-  // section cache
-  class_section_subject_teacher_class_section_slug_cache: string;
-  class_section_subject_teacher_class_section_name_cache: string;
-  class_section_subject_teacher_class_section_code_cache: string;
+  csst_school_teacher_slug_cache?: string | null;
+  csst_school_teacher_cache?: ApiTeacherCache | null;
+  csst_school_teacher_name_cache?: string | null;
 
-  // room cache
-  class_section_subject_teacher_class_room_slug_cache?: string | null;
-  class_section_subject_teacher_class_room_cache?: ApiRoomCache | null;
-  class_section_subject_teacher_class_room_name_cache?: string | null;
-  class_section_subject_teacher_class_room_slug_cache_gen?: string | null;
-  class_section_subject_teacher_class_room_location_cache?: string | null;
+  csst_total_books: number;
 
-  // teacher cache
-  class_section_subject_teacher_school_teacher_slug_cache?: string | null;
-  class_section_subject_teacher_school_teacher_cache?: ApiTeacherCache | null;
-  class_section_subject_teacher_school_teacher_name_cache?: string | null;
+  csst_subject_id: string;
+  csst_subject_name_cache?: string | null;
+  csst_subject_code_cache?: string | null;
+  csst_subject_slug_cache?: string | null;
 
-  // subject cache
-  class_section_subject_teacher_subject_id: string;
-  class_section_subject_teacher_subject_name_cache?: string | null;
-  class_section_subject_teacher_subject_code_cache?: string | null;
-  class_section_subject_teacher_subject_slug_cache?: string | null;
-
-  // status
-  class_section_subject_teacher_status: string;
-  class_section_subject_teacher_is_active: boolean;
-  class_section_subject_teacher_created_at: string;
-  class_section_subject_teacher_updated_at: string;
+  csst_status: string;
+  csst_created_at: string;
+  csst_updated_at: string;
 };
 
 type ApiCSSTDetailResponse = {
   success: boolean;
   message: string;
   data: ApiCSSTItem[];
-  pagination: {
-    page: number;
-    per_page: number;
-    total: number;
-    total_pages: number;
-    has_next: boolean;
-    has_prev: boolean;
-    count: number;
-    per_page_options: number[];
-  };
+  pagination?: any;
 };
 
 /* List ruangan (dropdown) */
@@ -179,7 +154,6 @@ type RoomView = {
   isVirtual?: boolean | null;
   location?: string | null;
 
-  // ⬇️ new
   meetingId?: string | null;
   passcode?: string | null;
 };
@@ -200,28 +174,22 @@ type CsstView = {
   enrolledCount: number;
   totalAttendance: number;
 
-  // masih boleh simpan total semua assessment
   totalAssessments: number;
-
-  // ⬇️ graded/ungraded DIHAPUS
-  // totalAssessmentsGraded: number;
-  // totalAssessmentsUngraded: number;
+  totalAssessmentsTraining: number;
+  totalAssessmentsDailyExam: number;
+  totalAssessmentsExam: number;
 
   totalStudentsPassed: number;
   minPassingScore?: number | null;
 
   totalBooks: number;
 
-  // ✅ breakdown baru
-  totalAssessmentsTraining: number;
-  totalAssessmentsDailyExam: number;
-  totalAssessmentsExam: number;
-
-  // ✅ subject_id dari API
   subjectId: string;
 };
 
-/* ========== Utils kecil ========== */
+/* =========================================================
+   Utils kecil
+========================================================= */
 
 const extractErrorMessage = (err: unknown): string => {
   const ax = err as AxiosError<any>;
@@ -253,10 +221,7 @@ const formatDeliveryMode = (m: DeliveryMode | undefined) => {
 const TeacherCSSTDetail: React.FC = () => {
   const navigate = useNavigate();
 
-  const { csstId, teacherId } = useParams<{
-    csstId: string;
-    teacherId?: string;
-  }>();
+  const { csstId } = useParams<{ csstId: string }>();
 
   const { setHeader } = useDashboardHeader();
   useEffect(() => {
@@ -271,49 +236,39 @@ const TeacherCSSTDetail: React.FC = () => {
     });
   }, [setHeader]);
 
-  /* ===== Query detail CSST ===== */
+  /* ===== Query detail CSST (API baru: id=csstId) ===== */
   const csstQ = useQuery<ApiCSSTItem | null, AxiosError>({
-    queryKey: ["teacher-csst-detail", csstId, teacherId ?? null],
+    queryKey: ["teacher-csst-detail", csstId ?? null],
     enabled: !!csstId,
     queryFn: async () => {
       const res = await axios.get<ApiCSSTDetailResponse>(
         "/api/u/class-section-subject-teachers/list",
-        {
-          params: {
-            id: csstId,
-            ...(teacherId ? { teacher_id: teacherId } : {}),
-          },
-        }
+        { params: { id: csstId } }
       );
       const items = res.data?.data ?? [];
       return items.length ? items[0] : null;
     },
     staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const csstError: string | null = csstQ.isError
     ? extractErrorMessage(csstQ.error)
     : null;
 
-  /* ===== Query daftar ruangan (untuk dropdown modal) ===== */
+  /* ===== Query daftar ruangan (dropdown) ===== */
   const roomsQ = useQuery<ApiClassRoomOption[], AxiosError>({
-    queryKey: [
-      "teacher-csst-rooms",
-      csstQ.data?.class_section_subject_teacher_school_id ?? null,
-    ],
-    enabled: !!csstQ.data?.class_section_subject_teacher_school_id,
+    queryKey: ["teacher-csst-rooms", csstQ.data?.csst_school_id ?? null],
+    enabled: !!csstQ.data?.csst_school_id,
     queryFn: async () => {
       const res = await axios.get<{ data: ApiClassRoomOption[] }>(
         "/api/u/class-rooms/list",
-        {
-          params: {
-            mode: "compact",
-          },
-        }
+        { params: { mode: "compact" } }
       );
       return res.data?.data ?? [];
     },
     staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
 
   /* ===== State modal ===== */
@@ -328,8 +283,8 @@ const TeacherCSSTDetail: React.FC = () => {
 
   /* Sinkron selectedRoomId dengan data awal */
   useEffect(() => {
-    if (csstQ.data?.class_section_subject_teacher_class_room_id) {
-      setSelectedRoomId(csstQ.data.class_section_subject_teacher_class_room_id);
+    if (csstQ.data?.csst_class_room_id) {
+      setSelectedRoomId(csstQ.data.csst_class_room_id);
     }
   }, [csstQ.data]);
 
@@ -338,10 +293,10 @@ const TeacherCSSTDetail: React.FC = () => {
     const it = csstQ.data;
     if (!it) return null;
     return {
-      sectionId: it.class_section_subject_teacher_class_section_id,
-      sectionName: it.class_section_subject_teacher_class_section_name_cache,
-      sectionSlug: it.class_section_subject_teacher_class_section_slug_cache,
-      sectionCode: it.class_section_subject_teacher_class_section_code_cache,
+      sectionId: it.csst_class_section_id,
+      sectionName: it.csst_class_section_name_cache,
+      sectionSlug: it.csst_class_section_slug_cache,
+      sectionCode: it.csst_class_section_code_cache,
     };
   }, [csstQ.data]);
 
@@ -349,45 +304,16 @@ const TeacherCSSTDetail: React.FC = () => {
     const it = csstQ.data;
     if (!it) return null;
 
-    const room = it.class_section_subject_teacher_class_room_cache;
-
-    const roomName =
-      it.class_section_subject_teacher_class_room_name_cache ??
-      room?.name ??
-      room?.class_room_name ??
-      null;
-
-    const roomSlug =
-      it.class_section_subject_teacher_class_room_slug_cache_gen ??
-      it.class_section_subject_teacher_class_room_slug_cache ??
-      room?.slug ??
-      room?.class_room_slug ??
-      null;
-
-    const joinUrl =
-      (room as any)?.join_url ?? room?.class_room_join_url ?? null;
-
-    const platform =
-      room?.class_room_platform ??
-      (room as any)?.platform ??
-      (room?.class_room_is_virtual ? "zoom" : null);
-
-    const isVirtual = room?.class_room_is_virtual ?? room?.is_virtual ?? null;
-
-    const location =
-      it.class_section_subject_teacher_class_room_location_cache ??
-      (room as any)?.location ??
-      null;
+    const room = it.csst_class_room_cache ?? null;
 
     return {
-      roomId: it.class_section_subject_teacher_class_room_id,
-      roomName,
-      roomSlug,
-      joinUrl,
-      platform,
-      isVirtual,
-      location,
-      // ⬇️ ambil dari cache zoom
+      roomId: it.csst_class_room_id,
+      roomName: room?.class_room_name ?? null,
+      roomSlug: room?.class_room_slug ?? it.csst_class_room_slug_cache ?? null,
+      joinUrl: room?.class_room_join_url ?? null,
+      platform: room?.class_room_platform ?? null,
+      isVirtual: room?.class_room_is_virtual ?? null,
+      location: (room as any)?.class_room_location ?? null,
       meetingId: room?.class_room_meeting_id ?? null,
       passcode: room?.class_room_passcode ?? null,
     };
@@ -397,62 +323,47 @@ const TeacherCSSTDetail: React.FC = () => {
     const it = csstQ.data;
     if (!it) return null;
 
-    const teacher = it.class_section_subject_teacher_school_teacher_cache;
+    const teacher = it.csst_school_teacher_cache ?? null;
     const teacherName =
-      it.class_section_subject_teacher_school_teacher_name_cache ||
-      teacher?.name ||
-      "-";
+      it.csst_school_teacher_name_cache || teacher?.name || "-";
 
-    const teacherTitleParts = [
-      teacher?.title_prefix ?? "",
-      teacher?.title_suffix ?? "",
-    ]
-      .map((x) => x?.trim())
-      .filter(Boolean);
-
+    // prefix di depan, suffix pakai koma di belakang
+    const prefix = (teacher?.title_prefix ?? "").trim();
+    const suffix = (teacher?.title_suffix ?? "").trim();
     const teacherTitle =
-      teacherTitleParts.length > 0 ? teacherTitleParts.join(" ") : undefined;
+      prefix || suffix ? [prefix, suffix].filter(Boolean).join(" ") : undefined;
 
     const subjectName =
-      it.class_section_subject_teacher_subject_name_cache ||
-      "Mata pelajaran tanpa nama";
-
-    const subjectCode =
-      it.class_section_subject_teacher_subject_code_cache || null;
-
-    const subjectSlug =
-      it.class_section_subject_teacher_subject_slug_cache || null;
+      it.csst_subject_name_cache || "Mata pelajaran tanpa nama";
 
     return {
-      id: it.class_section_subject_teacher_id,
-      slug: it.class_section_subject_teacher_slug,
+      id: it.csst_id,
+      slug: it.csst_slug,
+
       subjectName,
-      subjectCode,
-      subjectSlug,
+      subjectCode: it.csst_subject_code_cache ?? null,
+      subjectSlug: it.csst_subject_slug_cache ?? null,
+
       teacherName,
       teacherTitle,
-      deliveryMode: it.class_section_subject_teacher_delivery_mode,
-      isActive: it.class_section_subject_teacher_is_active,
-      enrolledCount: it.class_section_subject_teacher_quota_taken,
-      totalAttendance: it.class_section_subject_teacher_total_attendance,
 
-      // total semua assessment (kalau masih mau dipakai)
-      totalAssessments: it.class_section_subject_teacher_total_assessments,
+      deliveryMode: it.csst_delivery_mode,
+      isActive: String(it.csst_status).toLowerCase() === "active",
 
-      // ⬇️ 3 jenis baru
-      totalAssessmentsTraining:
-        it.class_section_subject_teacher_total_assessments_training,
-      totalAssessmentsDailyExam:
-        it.class_section_subject_teacher_total_assessments_daily_exam,
-      totalAssessmentsExam:
-        it.class_section_subject_teacher_total_assessments_exam,
+      enrolledCount: it.csst_quota_taken ?? 0,
+      totalAttendance: it.csst_total_attendance ?? 0,
 
-      totalStudentsPassed:
-        it.class_section_subject_teacher_total_students_passed,
+      totalAssessments: it.csst_total_assessments ?? 0,
+      totalAssessmentsTraining: it.csst_total_assessments_training ?? 0,
+      totalAssessmentsDailyExam: it.csst_total_assessments_daily_exam ?? 0,
+      totalAssessmentsExam: it.csst_total_assessments_exam ?? 0,
+
+      totalStudentsPassed: it.csst_total_students_passed ?? 0,
       minPassingScore: undefined,
 
-      subjectId: it.class_section_subject_teacher_subject_id,
-      totalBooks: it.class_section_subject_teacher_total_books,
+      totalBooks: it.csst_total_books ?? 0,
+
+      subjectId: it.csst_subject_id,
     };
   }, [csstQ.data]);
 
@@ -482,7 +393,6 @@ const TeacherCSSTDetail: React.FC = () => {
   }
 
   /* ===== Hitungan & label ===== */
-
   const totalStudents = csstView.enrolledCount ?? 0;
   const totalAttendance = csstView.totalAttendance ?? 0;
   const totalBooks = csstView.totalBooks ?? 0;
@@ -511,13 +421,11 @@ const TeacherCSSTDetail: React.FC = () => {
 
   /* ===== Handler save (nanti sambung API) ===== */
   const handleSaveRoom = () => {
-    // TODO: panggil API update ruangan CSST
     console.log("Save room to:", selectedRoomId);
     setRoomDialogOpen(false);
   };
 
   const handleSaveWa = () => {
-    // TODO: panggil API simpan link WA
     console.log("Save WA group link:", waGroupLink);
     setWaDialogOpen(false);
   };
@@ -582,13 +490,8 @@ const TeacherCSSTDetail: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* =========================
-              Quick links
-             ========================= */}
-
           {/* Absensi & Ruangan */}
           <div className="grid gap-3 md:grid-cols-2">
-            {/* Absensi hari ini */}
             <Card
               className={cn("cursor-pointer bg-card", cardHover)}
               onClick={() => navigate("")}
@@ -614,7 +517,6 @@ const TeacherCSSTDetail: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Ruangan – klik card => modal */}
             <Card
               className={cn("cursor-pointer bg-card", cardHover)}
               onClick={() => setRoomDialogOpen(true)}
@@ -643,7 +545,6 @@ const TeacherCSSTDetail: React.FC = () => {
 
           {/* Grid lainnya */}
           <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {/* Profil Murid */}
             <Card
               className={cn("cursor-pointer bg-card", cardHover)}
               onClick={() => navigate("absensi")}
@@ -660,7 +561,6 @@ const TeacherCSSTDetail: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Laporan Kehadiran / Harian */}
             <Card
               className={cn("cursor-pointer bg-card", cardHover)}
               onClick={() => navigate("laporan-harian")}
@@ -677,7 +577,6 @@ const TeacherCSSTDetail: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Materi */}
             <Card
               className={cn("cursor-pointer bg-card", cardHover)}
               onClick={() => navigate("materi")}
@@ -694,7 +593,6 @@ const TeacherCSSTDetail: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Latihan */}
             <Card
               className={cn("cursor-pointer bg-card", cardHover)}
               onClick={() => navigate("tugas")}
@@ -713,7 +611,6 @@ const TeacherCSSTDetail: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Ulangan Harian */}
             <Card
               className={cn("cursor-pointer bg-card", cardHover)}
               onClick={() => navigate("ulangan-harian")}
@@ -732,7 +629,6 @@ const TeacherCSSTDetail: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Ujian */}
             <Card
               className={cn("cursor-pointer bg-card", cardHover)}
               onClick={() => navigate("ujian")}
@@ -751,13 +647,10 @@ const TeacherCSSTDetail: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Buku */}
             <Card
               className={cn("cursor-pointer bg-card", cardHover)}
               onClick={() =>
-                navigate("buku", {
-                  state: { subjectId: csstView.subjectId },
-                })
+                navigate("buku", { state: { subjectId: csstView.subjectId } })
               }
             >
               <CardContent className="p-4 flex items-center justify-between">
@@ -772,7 +665,6 @@ const TeacherCSSTDetail: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Profil Mapel */}
             <Card
               className={cn("cursor-pointer bg-card", cardHover)}
               onClick={() => navigate("kelola-kelas")}
@@ -789,7 +681,6 @@ const TeacherCSSTDetail: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Grup WhatsApp */}
             <Card
               className={cn("cursor-pointer bg-card", cardHover)}
               onClick={() => setWaDialogOpen(true)}
@@ -824,23 +715,21 @@ const TeacherCSSTDetail: React.FC = () => {
                   <div className="font-medium">
                     {roomView.roomName ?? "Ruang tanpa nama"}
                   </div>
-                  {roomView.location && !roomView.isVirtual && (
-                    <div className="text-xs text-muted-foreground">
-                      Lokasi: {roomView.location}
-                    </div>
-                  )}
+
                   {roomView.platform && (
                     <div className="text-xs text-muted-foreground">
                       Platform: {roomView.platform}
                       {roomView.isVirtual ? " (virtual)" : ""}
                     </div>
                   )}
+
                   {roomView.isVirtual && roomView.meetingId && (
                     <div className="text-xs text-muted-foreground">
                       Meeting ID:{" "}
                       <span className="font-mono">{roomView.meetingId}</span>
                     </div>
                   )}
+
                   {roomView.isVirtual && roomView.passcode && (
                     <div className="text-xs text-muted-foreground">
                       Passcode:{" "}
@@ -860,6 +749,7 @@ const TeacherCSSTDetail: React.FC = () => {
                       </a>
                     </div>
                   )}
+
                   {roomView.roomSlug && (
                     <div className="text-xs text-muted-foreground">
                       Slug ruang:{" "}
@@ -883,7 +773,6 @@ const TeacherCSSTDetail: React.FC = () => {
               </DialogHeader>
 
               <div className="space-y-5">
-                {/* Info ruangan saat ini */}
                 {roomView && (
                   <div className="rounded-lg border bg-muted/40 p-3 space-y-2">
                     <div className="flex items-start justify-between gap-2">
@@ -898,14 +787,6 @@ const TeacherCSSTDetail: React.FC = () => {
                       </Badge>
                     </div>
 
-                    {/* Offline: lokasi */}
-                    {roomView.location && !roomView.isVirtual && (
-                      <p className="text-xs text-muted-foreground">
-                        Lokasi: {roomView.location}
-                      </p>
-                    )}
-
-                    {/* Virtual / Zoom: detail lengkap */}
                     {roomView.isVirtual && (
                       <div className="space-y-1 text-xs text-muted-foreground">
                         {roomView.platform && (
@@ -952,7 +833,6 @@ const TeacherCSSTDetail: React.FC = () => {
                   </div>
                 )}
 
-                {/* Dropdown ruangan */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <Label className="text-sm">Ruangan</Label>
@@ -962,6 +842,7 @@ const TeacherCSSTDetail: React.FC = () => {
                       </span>
                     )}
                   </div>
+
                   <Select
                     value={selectedRoomId ?? ""}
                     onValueChange={(v) => setSelectedRoomId(v || undefined)}
@@ -979,12 +860,13 @@ const TeacherCSSTDetail: React.FC = () => {
                           {r.class_room_location
                             ? ` • ${r.class_room_location}`
                             : r.class_room_platform
-                              ? ` • ${r.class_room_platform}`
-                              : ""}
+                            ? ` • ${r.class_room_platform}`
+                            : ""}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+
                   {roomsQ.isLoading && (
                     <p className="text-xs text-muted-foreground">
                       Memuat daftar ruangan…
@@ -1027,7 +909,6 @@ const TeacherCSSTDetail: React.FC = () => {
               </DialogHeader>
 
               <div className="space-y-4">
-                {/* ringkasan link sekarang */}
                 {waGroupLink && (
                   <div className="rounded-lg border bg-muted/40 p-3">
                     <p className="text-xs font-medium text-muted-foreground uppercase">

@@ -1,5 +1,5 @@
 // src/pages/dashboard/school/classes/class-list/section/SchoolSection.tsx
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "@/lib/axios";
@@ -12,18 +12,35 @@ import {
   Hash,
   User,
   ClipboardList,
-  Plus,
+  Table as TableIcon,
+  LayoutGrid,
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
-/* Breadcrumb header */
+/* ✅ Breadcrumb header */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 import CBadgeStatus from "@/components/costum/common/badges/CBadgeStatus";
 
-/* ========= Types dari API /api/u/class-sections/list?mode=compact&nested=csst ========= */
+/* =========================================================
+   Types (RAW API)
+   - Support API terbaru (class_section_status, csst_*)
+   - Masih aman kalau ada sisa field lama
+========================================================= */
+
+type StatusStr = "active" | "inactive" | string;
+type ViewMode = "card" | "table";
+
 type CompactTeacher = {
   id: string;
   name: string;
@@ -35,72 +52,68 @@ type CompactTeacher = {
   gender?: string | null;
 };
 
-type CompactTeacherCache = {
-  id: string;
-  name: string;
-  avatar_url?: string | null;
-  teacher_code?: string | null;
-  title_prefix?: string | null;
-  title_suffix?: string | null;
-  whatsapp_url?: string | null;
-  gender?: string | null;
+type ApiCsstRaw = {
+  // NEW
+  csst_id?: string;
+  csst_delivery_mode?: string;
+  csst_status?: StatusStr;
+
+  csst_subject_id?: string;
+  csst_subject_name_cache?: string;
+  csst_subject_code_cache?: string;
+
+  csst_school_teacher_cache?: CompactTeacher;
+
+  // LEGACY fallback (yang panjang)
+  class_section_subject_teacher_id?: string;
+  class_section_subject_teacher_delivery_mode?: string;
+  class_section_subject_teacher_is_active?: boolean;
+
+  class_section_subject_teacher_subject_id?: string;
+  class_section_subject_teacher_subject_name_cache?: string;
+  class_section_subject_teacher_subject_code_cache?: string;
+
+  class_section_subject_teacher_school_teacher_cache?: CompactTeacher;
+  class_section_subject_teacher_school_teacher_name_cache?: string;
+
+  class_section_subject_teacher_total_attendance?: number;
+  class_section_subject_teacher_total_assessments?: number;
+  class_section_subject_teacher_total_assessments_graded?: number;
+  class_section_subject_teacher_total_assessments_ungraded?: number;
 };
 
-type ApiCsstCompact = {
-  class_section_subject_teacher_id: string;
-  class_section_subject_teacher_school_id: string;
-  class_section_subject_teacher_class_section_id: string;
-  class_section_subject_teacher_class_subject_id: string;
-  class_section_subject_teacher_school_teacher_id: string;
-  class_section_subject_teacher_slug: string;
-  class_section_subject_teacher_delivery_mode: string;
-  class_section_subject_teacher_total_attendance: number;
-  class_section_subject_teacher_total_assessments: number;
-  class_section_subject_teacher_total_assessments_graded: number;
-  class_section_subject_teacher_total_assessments_ungraded: number;
-  class_section_subject_teacher_total_students_passed: number;
-
-  class_section_subject_teacher_class_section_slug_cache: string;
-  class_section_subject_teacher_class_section_name_cache: string;
-  class_section_subject_teacher_class_section_code_cache: string;
-
-  class_section_subject_teacher_school_teacher_slug_cache: string;
-  class_section_subject_teacher_school_teacher_cache: CompactTeacherCache;
-  class_section_subject_teacher_school_teacher_name_cache: string;
-
-  class_section_subject_teacher_subject_id: string;
-  class_section_subject_teacher_subject_name_cache: string;
-  class_section_subject_teacher_subject_code_cache: string;
-  class_section_subject_teacher_subject_slug_cache: string;
-
-  class_section_subject_teacher_is_active: boolean;
-  class_section_subject_teacher_created_at: string;
-  class_section_subject_teacher_updated_at: string;
-};
-
-export type ApiClassSectionCompact = {
+export type ApiClassSectionRaw = {
   class_section_id: string;
   class_section_slug: string;
   class_section_name: string;
   class_section_code?: string | null;
 
   class_section_image_url?: string | null;
-  class_section_is_active: boolean;
 
-  class_section_quota_total: number;
-  class_section_quota_taken: number;
+  // NEW status string
+  class_section_status?: StatusStr;
 
-  class_section_school_teacher_id?: string | null;
+  // LEGACY boolean
+  class_section_is_active?: boolean;
+
+  class_section_quota_total?: number;
+  class_section_quota_taken?: number;
+
+  // NEW cache
+  class_section_school_teacher_cache?: CompactTeacher;
+
+  // LEGACY
   class_section_school_teacher?: CompactTeacher | null;
+  class_section_school_teacher_id?: string | null;
 
-  class_section_subject_teacher_count: number;
-  class_section_subject_teacher_active_count: number;
+  class_section_subject_teacher?: ApiCsstRaw[];
 
-  class_section_subject_teacher: ApiCsstCompact[];
+  class_section_subject_teacher_count?: number;
+  class_section_subject_teacher_active_count?: number;
 };
 
 type ApiSectionList = {
-  data: ApiClassSectionCompact[];
+  data: ApiClassSectionRaw[];
   pagination?: {
     page: number;
     per_page: number;
@@ -115,12 +128,99 @@ type ApiSectionList = {
   message: string;
 };
 
-/* ========= Filter Types ========= */
+/* =========================================================
+   Helpers normalize (RAW → consistent usage)
+========================================================= */
+function formatTeacherFullName(t?: CompactTeacher | null) {
+  if (!t) return "-";
+  const name = (t.name ?? "").trim();
+  const prefix = (t.title_prefix ?? "").trim();
+  const suffix = (t.title_suffix ?? "").trim();
+
+  const core = [prefix, name].filter(Boolean).join(" ").trim();
+  if (!core) return "-";
+  return suffix ? `${core}, ${suffix}` : core;
+}
+
+function toBoolActive(status?: StatusStr, legacyBool?: boolean) {
+  if (typeof legacyBool === "boolean") return legacyBool;
+  if (!status) return true;
+  return String(status).toLowerCase() === "active";
+}
+
+function getSectionIsActive(s: ApiClassSectionRaw) {
+  return toBoolActive(s.class_section_status, s.class_section_is_active);
+}
+
+function getHomeroom(s: ApiClassSectionRaw): CompactTeacher | null {
+  return (
+    s.class_section_school_teacher ??
+    s.class_section_school_teacher_cache ??
+    null
+  );
+}
+
+function getCsstId(c: ApiCsstRaw) {
+  return c.class_section_subject_teacher_id || c.csst_id || crypto.randomUUID();
+}
+
+function getCsstIsActive(c: ApiCsstRaw) {
+  return toBoolActive(c.csst_status, c.class_section_subject_teacher_is_active);
+}
+
+function getCsstSubjectName(c: ApiCsstRaw) {
+  return (
+    c.class_section_subject_teacher_subject_name_cache ||
+    c.csst_subject_name_cache ||
+    c.class_section_subject_teacher_subject_code_cache ||
+    c.csst_subject_code_cache ||
+    c.class_section_subject_teacher_subject_id ||
+    c.csst_subject_id ||
+    "-"
+  );
+}
+
+function getCsstTeacher(c: ApiCsstRaw) {
+  return (
+    c.class_section_subject_teacher_school_teacher_cache ||
+    c.csst_school_teacher_cache ||
+    null
+  );
+}
+
+function getCsstTeacherName(c: ApiCsstRaw) {
+  const t = getCsstTeacher(c);
+  return (
+    t?.name || c.class_section_subject_teacher_school_teacher_name_cache || "-"
+  );
+}
+
+function getCsstDeliveryMode(c: ApiCsstRaw) {
+  return (
+    c.class_section_subject_teacher_delivery_mode || c.csst_delivery_mode || "-"
+  );
+}
+
+/* =========================================================
+   Filter Types
+========================================================= */
+
 type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
 
-/* ========= Query: ambil semua sections (API user-scope, compact+csst) ========= */
+type StatusFilter = "all" | "active" | "inactive";
+
+const STATUS_FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
+  { value: "all", label: "Semua" },
+  { value: "active", label: "Aktif" },
+  { value: "inactive", label: "Nonaktif" },
+];
+
+/* =========================================================
+   Query
+========================================================= */
+
 function useSections(classId?: string | undefined | null) {
-  return useQuery<ApiClassSectionCompact[]>({
+  return useQuery<ApiClassSectionRaw[]>({
     queryKey: ["sections-user-compact-csst", classId ?? null],
     queryFn: async () => {
       const params: Record<string, any> = {
@@ -144,7 +244,10 @@ function useSections(classId?: string | undefined | null) {
   });
 }
 
-/* ========= Small UI ========= */
+/* =========================================================
+   Small UI
+========================================================= */
+
 function EmptyState({ isFiltered }: { isFiltered: boolean }) {
   return (
     <Card className="border-dashed">
@@ -163,7 +266,8 @@ function LoadingGrid() {
       {Array.from({ length: 2 }).map((_, i) => (
         <Card
           key={i}
-          className="overflow-hidden animate-pulse border-muted/40 bg-muted/10">
+          className="overflow-hidden animate-pulse border-muted/40 bg-muted/10"
+        >
           <div className="h-24 w-full bg-muted/60" />
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
@@ -187,30 +291,32 @@ function LoadingGrid() {
   );
 }
 
-/* ========= Section Card (pakai compact + csst) ========= */
+/* =========================================================
+   Section Card (Tampilan card tetap sama, cuma mapping fieldnya)
+========================================================= */
 
 function SectionCard({
   section,
   onOpenDetail,
 }: {
-  section: ApiClassSectionCompact;
+  section: ApiClassSectionRaw;
   onOpenDetail: () => void;
 }) {
-  const isActive = section.class_section_is_active;
+  const isActive = getSectionIsActive(section);
 
   const quotaTotal = section.class_section_quota_total ?? 0;
   const quotaTaken = section.class_section_quota_taken ?? 0;
   const quotaRemaining =
     quotaTotal > 0 ? Math.max(quotaTotal - quotaTaken, 0) : 0;
 
-  const homeroom = section.class_section_school_teacher ?? null;
+  const homeroom = getHomeroom(section);
 
   const csstList = section.class_section_subject_teacher ?? [];
   const csstCount =
     section.class_section_subject_teacher_count ?? csstList.length;
   const csstActiveCount =
     section.class_section_subject_teacher_active_count ??
-    csstList.filter((x) => x.class_section_subject_teacher_is_active).length;
+    csstList.filter((x) => getCsstIsActive(x)).length;
 
   const cardClassName = `
     group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border
@@ -320,14 +426,9 @@ function SectionCard({
                     )}
                     <div className="space-y-0.5">
                       <div className="text-sm font-semibold">
-                        {homeroom.title_prefix
-                          ? `${homeroom.title_prefix} ${homeroom.name}${
-                              homeroom.title_suffix
-                                ? `, ${homeroom.title_suffix}`
-                                : ""
-                            }`
-                          : homeroom.name}
+                        {formatTeacherFullName(homeroom)}
                       </div>
+
                       <div className="text-[11px] text-muted-foreground">
                         Kode: {homeroom.teacher_code ?? "-"}
                       </div>
@@ -337,7 +438,8 @@ function SectionCard({
                           onClick={(e) => e.stopPropagation()}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center text-[11px] text-emerald-600 hover:underline">
+                          className="inline-flex items-center text-[11px] text-emerald-600 hover:underline"
+                        >
                           WhatsApp
                         </a>
                       )}
@@ -383,7 +485,7 @@ function SectionCard({
               </div>
             </div>
 
-            {/* Mapel & pengajar – grid card 2 kolom (dari class_section_subject_teacher) */}
+            {/* Mapel & pengajar */}
             <Card className="rounded-2xl border bg-background/40">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 py-3 pb-2">
                 <CardTitle className="text-sm">Mapel &amp; pengajar</CardTitle>
@@ -402,16 +504,12 @@ function SectionCard({
                 ) : (
                   <div className="grid gap-3 md:grid-cols-2">
                     {csstList.map((csst) => {
-                      const subjectName =
-                        csst.class_section_subject_teacher_subject_name_cache ||
-                        csst.class_section_subject_teacher_subject_code_cache ||
-                        csst.class_section_subject_teacher_subject_id;
+                      const subjectName = getCsstSubjectName(csst);
+                      const teacher = getCsstTeacher(csst);
+                      const teacherName = getCsstTeacherName(csst);
 
-                      const teacher =
-                        csst.class_section_subject_teacher_school_teacher_cache;
+                      const isCsstActive = getCsstIsActive(csst);
 
-                      const isCsstActive =
-                        csst.class_section_subject_teacher_is_active;
                       const attendance =
                         csst.class_section_subject_teacher_total_attendance ??
                         0;
@@ -427,8 +525,9 @@ function SectionCard({
 
                       return (
                         <div
-                          key={csst.class_section_subject_teacher_id}
-                          className="flex h-full flex-col justify-between rounded-2xl border bg-background/70 px-4 py-3 text-[11px]">
+                          key={getCsstId(csst)}
+                          className="flex h-full flex-col justify-between rounded-2xl border bg-background/70 px-4 py-3 text-[11px]"
+                        >
                           <div className="flex items-start justify-between gap-2">
                             <div className="space-y-1">
                               <div className="text-sm font-semibold">
@@ -438,7 +537,7 @@ function SectionCard({
                                 {teacher?.avatar_url ? (
                                   <img
                                     src={teacher.avatar_url}
-                                    alt={teacher.name}
+                                    alt={formatTeacherFullName(teacher)}
                                     className="h-5 w-5 rounded-full object-cover"
                                     loading="lazy"
                                   />
@@ -448,15 +547,11 @@ function SectionCard({
                                   </div>
                                 )}
                                 <span className="font-medium">
-                                  {teacher?.name ??
-                                    csst.class_section_subject_teacher_school_teacher_name_cache}
+                                  {teacherName}
                                 </span>
                               </div>
                               <div className="text-[10px] text-muted-foreground">
-                                Mode:{" "}
-                                {
-                                  csst.class_section_subject_teacher_delivery_mode
-                                }
+                                Mode: {getCsstDeliveryMode(csst)}
                               </div>
                             </div>
                             <CBadgeStatus
@@ -516,7 +611,131 @@ function quotasBadge(
 }
 
 /* =========================================================
-   PAGE: Daftar Class Sections (rombongan belajar)
+   Table View (simple, sesuai data yg sama)
+========================================================= */
+
+function SectionTable({
+  rows,
+  onOpenDetail,
+}: {
+  rows: ApiClassSectionRaw[];
+  onOpenDetail: (s: ApiClassSectionRaw) => void;
+}) {
+  return (
+    <Card className="overflow-hidden">
+      <div className="w-full overflow-x-auto [-webkit-overflow-scrolling:touch]">
+        <Table className="min-w-[960px]">
+          <TableHeader>
+            <TableRow className="bg-primary/10">
+              <TableHead className="px-4 text-primary font-semibold">
+                Rombel
+              </TableHead>
+              <TableHead className="px-4 text-primary font-semibold">
+                Kode
+              </TableHead>
+              <TableHead className="px-4 text-primary font-semibold">
+                Status
+              </TableHead>
+              <TableHead className="px-4 text-primary font-semibold">
+                Kuota
+              </TableHead>
+              <TableHead className="px-4 text-primary font-semibold">
+                Wali Kelas
+              </TableHead>
+              <TableHead className="px-4 text-primary font-semibold">
+                Mapel/Pengajar
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((s) => {
+              const isActive = getSectionIsActive(s);
+              const quotaTotal = s.class_section_quota_total ?? 0;
+              const quotaTaken = s.class_section_quota_taken ?? 0;
+              const homeroom = getHomeroom(s);
+              const csstList = s.class_section_subject_teacher ?? [];
+              const csstCount =
+                s.class_section_subject_teacher_count ?? csstList.length;
+              const csstActiveCount =
+                s.class_section_subject_teacher_active_count ??
+                csstList.filter((x) => getCsstIsActive(x)).length;
+
+              return (
+                <TableRow
+                  key={s.class_section_id}
+                  className="cursor-pointer hover:bg-accent/20"
+                  onClick={() => onOpenDetail(s)}
+                >
+                  <TableCell className="px-4">
+                    <div className="font-semibold">{s.class_section_name}</div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {s.class_section_slug}
+                    </div>
+                  </TableCell>
+
+                  <TableCell className="px-4">
+                    {s.class_section_code ?? "-"}
+                  </TableCell>
+
+                  <TableCell className="px-4">
+                    <CBadgeStatus status={isActive ? "active" : "inactive"} />
+                  </TableCell>
+
+                  <TableCell className="px-4">
+                    <div className="font-mono text-xs">
+                      {quotaTaken}/{quotaTotal}
+                    </div>
+                  </TableCell>
+
+                  <TableCell className="px-4">
+                    {homeroom ? (
+                      <div className="flex items-center gap-2">
+                        {homeroom.avatar_url ? (
+                          <img
+                            src={homeroom.avatar_url}
+                            alt={homeroom.name}
+                            className="h-6 w-6 rounded-full object-cover"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
+                            <User className="h-3 w-3 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="text-xs">
+                          <div className="font-semibold">
+                            {formatTeacherFullName(homeroom)}
+                          </div>
+                          <div className="text-[11px] text-muted-foreground">
+                            {homeroom.teacher_code ?? "-"}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">-</span>
+                    )}
+                  </TableCell>
+
+                  <TableCell className="px-4">
+                    <div className="text-xs">
+                      <span className="font-semibold">{csstCount}</span>{" "}
+                      <span className="text-muted-foreground">
+                        (aktif {csstActiveCount})
+                      </span>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+    </Card>
+  );
+}
+
+/* =========================================================
+   PAGE
 ========================================================= */
 
 export default function SchoolClassSection({
@@ -527,7 +746,7 @@ export default function SchoolClassSection({
   const navigate = useNavigate();
   const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
 
-  /* Breadcrumb */
+  /* ✅ Breadcrumb */
   const { setHeader } = useDashboardHeader();
   useEffect(() => {
     setHeader({
@@ -543,7 +762,27 @@ export default function SchoolClassSection({
 
   const { data: sections = [], isLoading } = useSections(classId);
 
-  const activeCount = sections.filter((s) => s.class_section_is_active).length;
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+
+  // ✅ toggle view (persist)
+  const STORAGE_KEY = "SchoolSection:viewMode";
+  const [view, setView] = useState<ViewMode>(() => {
+    try {
+      const v = window.localStorage.getItem(STORAGE_KEY) as ViewMode | null;
+      return v === "table" || v === "card" ? v : "card";
+    } catch {
+      return "card";
+    }
+  });
+
+  const changeView = (m: ViewMode) => {
+    setView(m);
+    try {
+      window.localStorage.setItem(STORAGE_KEY, m);
+    } catch {}
+  };
+
+  const activeCount = sections.filter((s) => getSectionIsActive(s)).length;
   const totalQuota = sections.reduce(
     (acc, s) => acc + (s.class_section_quota_total ?? 0),
     0
@@ -553,14 +792,31 @@ export default function SchoolClassSection({
     0
   );
   const totalCsstAll = sections.reduce(
-    (acc, s) => acc + (s.class_section_subject_teacher_count ?? 0),
+    (acc, s) =>
+      acc +
+      (s.class_section_subject_teacher_count ??
+        s.class_section_subject_teacher?.length ??
+        0),
     0
   );
-  const totalCsstActiveAll = sections.reduce(
-    (acc, s) => acc + (s.class_section_subject_teacher_active_count ?? 0),
-    0
-  );
+  const totalCsstActiveAll = sections.reduce((acc, s) => {
+    const list = s.class_section_subject_teacher ?? [];
+    const v =
+      s.class_section_subject_teacher_active_count ??
+      list.filter((x) => getCsstIsActive(x)).length;
+    return acc + v;
+  }, 0);
 
+  const filteredSections = useMemo(() => {
+    return sections.filter((s) => {
+      const isActive = getSectionIsActive(s);
+      if (statusFilter === "active" && !isActive) return false;
+      if (statusFilter === "inactive" && isActive) return false;
+      return true;
+    });
+  }, [sections, statusFilter]);
+
+  const isFiltered = statusFilter !== "all";
   const programName = sections[0]?.class_section_name ?? "yang dipilih";
 
   return (
@@ -574,7 +830,8 @@ export default function SchoolClassSection({
                 onClick={handleBack}
                 variant="ghost"
                 size="icon"
-                className="hidden md:inline-flex">
+                className="hidden md:inline-flex"
+              >
                 <ArrowLeft size={20} />
               </Button>
             )}
@@ -588,13 +845,35 @@ export default function SchoolClassSection({
           </div>
 
           <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm">
-            <Button
-              size="sm"
-              onClick={() => navigate("new")}
-              className="mr-1 gap-1">
-              <Plus className="h-4 w-4" />
-              Tambah
+            <Button size="sm" onClick={() => navigate("new")} className="mr-1">
+              + Tambah Rombel
             </Button>
+
+            {/* ✅ Toggle view (table/card) */}
+            <div className="flex rounded-md border bg-background">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="Tabel"
+                aria-pressed={view === "table"}
+                className={`rounded-none ${view === "table" ? "bg-muted" : ""}`}
+                onClick={() => changeView("table")}
+              >
+                <TableIcon className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="Kartu"
+                aria-pressed={view === "card"}
+                className={`rounded-none ${view === "card" ? "bg-muted" : ""}`}
+                onClick={() => changeView("card")}
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
+            </div>
 
             <Badge variant="outline" className="font-normal">
               Total:{" "}
@@ -618,32 +897,91 @@ export default function SchoolClassSection({
           </div>
         </div>
 
+        {/* Filter bar */}
+        <Card className="border-muted/60 bg-muted/5">
+          <CardContent className="flex flex-col gap-3 py-3 md:flex-row md:items-center md:justify-between">
+            <div className="text-xs text-muted-foreground md:text-sm">
+              Menampilkan{" "}
+              <span className="font-semibold">{filteredSections.length}</span>{" "}
+              dari <span className="font-semibold">{sections.length}</span>{" "}
+              rombel.
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Status filter */}
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-muted-foreground">Status:</span>
+                <div className="flex rounded-md border bg-background">
+                  {STATUS_FILTER_OPTIONS.map(({ value, label }) => {
+                    const active = statusFilter === value;
+                    const extraClass =
+                      value === "all"
+                        ? "rounded-l-md"
+                        : value === "inactive"
+                        ? "rounded-r-md"
+                        : "";
+
+                    return (
+                      <Button
+                        key={value}
+                        type="button"
+                        variant={active ? "default" : "ghost"}
+                        size="sm"
+                        className={`h-8 rounded-none px-3 text-xs ${extraClass}`}
+                        onClick={() => setStatusFilter(value)}
+                      >
+                        {label}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Loading */}
         {isLoading && <LoadingGrid />}
 
         {/* Empty state */}
-        {!isLoading && sections.length === 0 && (
-          <EmptyState isFiltered={false} />
+        {!isLoading && filteredSections.length === 0 && (
+          <EmptyState isFiltered={isFiltered} />
         )}
 
-        {/* List sections */}
-        {!isLoading && sections.length > 0 && (
-          <div className="flex flex-col gap-4">
-            {sections.map((section) => (
-              <SectionCard
-                key={section.class_section_id}
-                section={section}
-                onOpenDetail={() =>
-                  navigate(`${section.class_section_id}`, {
+        {/* ✅ Render table/card */}
+        {!isLoading && filteredSections.length > 0 && (
+          <>
+            {view === "table" ? (
+              <SectionTable
+                rows={filteredSections}
+                onOpenDetail={(s) =>
+                  navigate(`${s.class_section_id}`, {
                     state: {
                       sections,
-                      selectedSectionId: section.class_section_id,
+                      selectedSectionId: s.class_section_id,
                     },
                   })
                 }
               />
-            ))}
-          </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {filteredSections.map((section) => (
+                  <SectionCard
+                    key={section.class_section_id}
+                    section={section}
+                    onOpenDetail={() =>
+                      navigate(`${section.class_section_id}`, {
+                        state: {
+                          sections,
+                          selectedSectionId: section.class_section_id,
+                        },
+                      })
+                    }
+                  />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>

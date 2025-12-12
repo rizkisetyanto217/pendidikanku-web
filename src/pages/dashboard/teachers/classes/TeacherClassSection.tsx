@@ -310,8 +310,8 @@ function SectionCard({ s }: { s: SectionRow }) {
     s.quotaTotal != null && s.quotaTaken != null
       ? `Terisi ${s.quotaTaken}/${s.quotaTotal} siswa`
       : s.quotaTotal != null
-        ? `Kuota ${s.quotaTotal} siswa`
-        : `${s.totalStudents} siswa`;
+      ? `Kuota ${s.quotaTotal} siswa`
+      : `${s.totalStudents} siswa`;
 
   return (
     <Card className={`p-4 border rounded-xl bg-card ${cardHover}`}>

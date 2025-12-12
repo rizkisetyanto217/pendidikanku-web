@@ -1,34 +1,30 @@
 // src/pages/sekolahislamku/teachers/csst/TeacherCSST.tsx
 import { useState, useMemo, useDeferredValue, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   Clock,
-  MapPin,
   Search,
   ChevronRight,
   LayoutGrid,
   LayoutList,
   AlertTriangle,
-  ArrowLeft,
   IdCard,
   Hash,
 } from "lucide-react";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-/* axios (token dipakai otomatis via interceptor) */
 import axios from "@/lib/axios";
-
-/* Tambahan untuk breadcrumb sistem dashboard */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 import CMenuSearch from "@/components/costum/common/CMenuSearch";
 import { cardHover } from "@/components/costum/table/CDataTable";
 
-/* =====================
-   Types API CSST (mode=compact)
-   ===================== */
+/* =========================================================
+   Types API (TERBARU – csst_* semua)
+========================================================= */
 
 type DeliveryMode = "offline" | "online" | "hybrid" | string;
 
@@ -44,64 +40,54 @@ type ApiTeacherCache = {
 };
 
 type ApiCSSTItem = {
-  class_section_subject_teacher_id: string;
-  class_section_subject_teacher_class_subject_id: string;
-  class_section_subject_teacher_school_teacher_id: string;
-  class_section_subject_teacher_delivery_mode: DeliveryMode;
+  csst_id: string;
+  csst_class_subject_id: string;
+  csst_school_teacher_id: string;
+  csst_delivery_mode: DeliveryMode;
 
-  class_section_subject_teacher_class_section_slug_cache: string;
-  class_section_subject_teacher_class_section_name_cache: string;
-  class_section_subject_teacher_class_section_code_cache: string;
+  csst_class_section_slug_cache: string;
+  csst_class_section_name_cache: string;
+  csst_class_section_code_cache: string;
 
-  class_section_subject_teacher_school_teacher_slug_cache: string;
-  class_section_subject_teacher_school_teacher_cache: ApiTeacherCache;
+  csst_school_teacher_slug_cache?: string | null;
+  csst_school_teacher_cache?: ApiTeacherCache | null;
 
-  class_section_subject_teacher_subject_id: string;
-  class_section_subject_teacher_subject_name_cache: string;
-  class_section_subject_teacher_subject_code_cache: string;
-  class_section_subject_teacher_subject_slug_cache: string;
+  csst_subject_id: string;
+  csst_subject_name_cache: string;
+  csst_subject_code_cache: string;
+  csst_subject_slug_cache: string;
 
-  class_section_subject_teacher_status: string;
-  class_section_subject_teacher_created_at: string;
-  class_section_subject_teacher_updated_at: string;
+  csst_status: string;
+  csst_created_at: string;
+  csst_updated_at: string;
 };
 
 type ApiCSSTListResponse = {
   success: boolean;
   message: string;
   data: ApiCSSTItem[];
-  pagination: {
-    page: number;
-    per_page: number;
-    total: number;
-    total_pages: number;
-    has_next: boolean;
-    has_prev: boolean;
-    count: number;
-    per_page_options: number[];
-  };
+  pagination: any;
 };
 
-/* =====================
-   View model untuk UI
-   ===================== */
+/* =========================================================
+   View Model UI
+========================================================= */
 
 type TeacherSubject = {
-  id: string; // CSST id
+  id: string;
+
   classSubjectId: string;
   schoolTeacherId: string;
 
-  // kelas
   classSectionName: string;
   classSectionCode: string;
 
-  // guru
   teacherName: string;
   teacherTitlePrefix: string;
   teacherTitleSuffix: string;
   teacherCode: string;
+  teacherWhatsappUrl?: string;
 
-  // mapel
   subjectId: string;
   subjectName: string;
   subjectCode: string;
@@ -112,9 +98,9 @@ type TeacherSubject = {
   updatedAt: string;
 };
 
-/* =====================
-   Helper format tanggal
-   ===================== */
+/* =========================================================
+   Helpers
+========================================================= */
 
 function formatDateTime(value: string): string {
   if (!value) return "";
@@ -129,13 +115,13 @@ function formatDateTime(value: string): string {
   });
 }
 
-/* =====================
-   Fetch dari API (teacher=me & mode=compact)
-   ===================== */
+/* =========================================================
+   Fetch API (teacher=me, mode=compact)
+========================================================= */
 
 async function fetchTeacherSubjectsFromApi(): Promise<TeacherSubject[]> {
   const res = await axios.get<ApiCSSTListResponse>(
-    "/u/class-section-subject-teachers/list",
+    "/api/u/class-section-subject-teachers/list",
     {
       params: {
         teacher: "me",
@@ -146,59 +132,53 @@ async function fetchTeacherSubjectsFromApi(): Promise<TeacherSubject[]> {
 
   const items = res.data?.data ?? [];
 
-  const mapped: TeacherSubject[] = items.map((it) => {
-    const t = it.class_section_subject_teacher_school_teacher_cache || {};
-
-    const teacherName = t.name ?? "";
-    const titlePrefix = t.title_prefix ?? "";
-    const titleSuffix = t.title_suffix ?? "";
+  return items.map((it) => {
+    const t = it.csst_school_teacher_cache ?? {};
 
     return {
-      id: it.class_section_subject_teacher_id,
-      classSubjectId: it.class_section_subject_teacher_class_subject_id,
-      schoolTeacherId: it.class_section_subject_teacher_school_teacher_id,
+      id: it.csst_id,
+      classSubjectId: it.csst_class_subject_id,
+      schoolTeacherId: it.csst_school_teacher_id,
 
-      classSectionName:
-        it.class_section_subject_teacher_class_section_name_cache,
-      classSectionCode:
-        it.class_section_subject_teacher_class_section_code_cache,
+      classSectionName: it.csst_class_section_name_cache,
+      classSectionCode: it.csst_class_section_code_cache,
 
-      teacherName,
-      teacherTitlePrefix: titlePrefix,
-      teacherTitleSuffix: titleSuffix,
-      teacherCode: t.teacher_code ?? "",
+      teacherName: t.name ?? "",
+      teacherTitlePrefix: t.title_prefix ?? "",
+      teacherTitleSuffix: t.title_suffix ?? "",
+      teacherCode: t.teacher_code ?? "-",
+      teacherWhatsappUrl: t.whatsapp_url ?? undefined,
 
-      subjectId: it.class_section_subject_teacher_subject_id,
-      subjectName: it.class_section_subject_teacher_subject_name_cache,
-      subjectCode: it.class_section_subject_teacher_subject_code_cache,
+      subjectId: it.csst_subject_id,
+      subjectName: it.csst_subject_name_cache,
+      subjectCode: it.csst_subject_code_cache,
 
-      deliveryMode: it.class_section_subject_teacher_delivery_mode,
-      status: it.class_section_subject_teacher_status,
-      createdAt: it.class_section_subject_teacher_created_at,
-      updatedAt: it.class_section_subject_teacher_updated_at,
+      deliveryMode: it.csst_delivery_mode,
+      status: it.csst_status,
+      createdAt: it.csst_created_at,
+      updatedAt: it.csst_updated_at,
     };
   });
-
-  return mapped;
 }
 
 function useTeacherSubjects() {
   return useQuery({
-    queryKey: ["teacher-subjects"],
+    queryKey: ["teacher-csst-me-compact"],
     queryFn: fetchTeacherSubjectsFromApi,
     staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
 }
 
-/* =====================
+/* =========================================================
    Main Component
-   ===================== */
+========================================================= */
 
-type Props = { showBack?: boolean; backTo?: string; backLabel?: string };
+type Props = { showBack?: boolean; backTo?: string };
 
-export default function TeacherCSST({ showBack = false, backTo }: Props) {
-  const navigate = useNavigate();
-  const handleBack = () => (backTo ? navigate(backTo) : navigate(-1));
+export default function TeacherCSST({ showBack = false }: Props) {
+  // const navigate = useNavigate();
+  // const handleBack = () => (backTo ? navigate(backTo) : navigate(-1))
 
   const { setHeader } = useDashboardHeader();
   useEffect(() => {
@@ -221,7 +201,6 @@ export default function TeacherCSST({ showBack = false, backTo }: Props) {
 
   const [viewMode, setViewMode] = useState<"detailed" | "simple">("detailed");
   const [search, setSearch] = useState("");
-  const [sortBy] = useState<"name" | "status">("name");
   const deferredSearch = useDeferredValue(search);
 
   const filtered = useMemo(() => {
@@ -236,18 +215,11 @@ export default function TeacherCSST({ showBack = false, backTo }: Props) {
       );
     }
 
-    if (sortBy === "name") {
-      list = [...list].sort((a, b) =>
-        a.subjectName.localeCompare(b.subjectName)
-      );
-    } else if (sortBy === "status") {
-      list = [...list].sort((a, b) => a.status.localeCompare(b.status));
-    }
+    return [...list].sort((a, b) => a.subjectName.localeCompare(b.subjectName));
+  }, [subjects, deferredSearch]);
 
-    return list;
-  }, [subjects, deferredSearch, sortBy]);
+  /* ================= Loading & Error ================= */
 
-  // Loading state
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center text-muted-foreground gap-2">
@@ -257,45 +229,23 @@ export default function TeacherCSST({ showBack = false, backTo }: Props) {
     );
   }
 
-  // Error state
   if (isError) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-3 text-center px-4">
         <AlertTriangle className="h-8 w-8 text-destructive" />
-        <div className="space-y-1">
-          <p className="font-semibold text-foreground">
-            Gagal memuat mata pelajaran.
-          </p>
-          <p className="text-sm text-muted-foreground break-all">
-            {(error as any)?.message ??
-              "Periksa koneksi atau coba beberapa saat lagi."}
-          </p>
-        </div>
+        <p className="font-semibold">Gagal memuat mata pelajaran</p>
+        <p className="text-sm text-muted-foreground break-all">
+          {(error as any)?.message}
+        </p>
       </div>
     );
   }
 
+  /* ================= Render ================= */
+
   return (
     <div className="w-full bg-background text-foreground">
       <main className="w-full">
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="md:flex hidden gap-3 items-center">
-            {showBack && (
-              <Button
-                onClick={handleBack}
-                variant="ghost"
-                size="icon"
-                className="cursor-pointer self-start"
-              >
-                <ArrowLeft size={20} />
-              </Button>
-            )}
-            <h1 className="md:text-xl text-lg font-semibold mb-4">
-              Mata Pelajaran
-            </h1>
-          </div>
-        </div>
-
         <CMenuSearch
           value={search}
           onChange={setSearch}
@@ -303,14 +253,13 @@ export default function TeacherCSST({ showBack = false, backTo }: Props) {
           className="mb-4"
         />
 
-        {/* Toggle View Mode */}
-        <div className="flex justify-end mt-4 mb-4">
-          <div className="flex items-center gap-2 border rounded-xl p-1 bg-background">
+        {/* Toggle view */}
+        <div className="flex justify-end mb-4">
+          <div className="flex items-center gap-2 border rounded-xl p-1">
             <Button
               variant={viewMode === "detailed" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewMode("detailed")}
-              className="flex items-center gap-2"
             >
               <LayoutGrid size={16} /> Detail
             </Button>
@@ -318,19 +267,18 @@ export default function TeacherCSST({ showBack = false, backTo }: Props) {
               variant={viewMode === "simple" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewMode("simple")}
-              className="flex items-center gap-2"
             >
               <LayoutList size={16} /> Simple
             </Button>
           </div>
         </div>
 
-        {/* Cards */}
         <div
-          className={`grid gap-6 ${viewMode === "simple"
+          className={`grid gap-6 ${
+            viewMode === "simple"
               ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
               : "grid-cols-1 lg:grid-cols-2"
-            }`}
+          }`}
         >
           {filtered.map((s) => {
             const teacherLabel = [
@@ -342,104 +290,43 @@ export default function TeacherCSST({ showBack = false, backTo }: Props) {
               .join(" ");
 
             return (
-              <Card
-                key={s.id}
-                className={`border rounded-xl bg-card ${cardHover}`}
-              >
-                <CardHeader className="flex justify-between items-start pb-3 gap-4">
-                  <div>
-                    <CardTitle className="text-lg font-bold">
-                      {s.subjectName}
-                    </CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      {s.classSectionName}
-                    </p>
-                  </div>
-
-                  {/* Pojok kanan atas diisi badge + tanggal dibuat */}
-                  <div className="flex flex-col items-end gap-1 text-xs text-muted-foreground">
-                    <div className="flex gap-2">
-                      <Badge
-                        variant="outline"
-                        className="px-2 py-0.5 flex items-center gap-1"
-                      >
-                        <MapPin size={12} />
-                        {s.classSectionCode}
-                      </Badge>
-                      <Badge variant="outline" className="px-2 py-0.5">
-                        {s.subjectCode}
-                      </Badge>
-                    </div>
-                    <span>Dibuat: {formatDateTime(s.createdAt)}</span>
-                  </div>
+              <Card key={s.id} className={`rounded-xl ${cardHover}`}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg font-bold">
+                    {s.subjectName}
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    {s.classSectionName}
+                  </p>
                 </CardHeader>
 
                 <CardContent className="space-y-2 text-sm pt-0">
-                  {/* Guru */}
                   <div className="flex items-center gap-2">
-                    <IdCard size={14} className="text-primary" />
+                    <IdCard size={14} />
                     <span className="font-medium truncate">
                       {teacherLabel || "Guru tidak diketahui"}
                     </span>
                   </div>
 
-                  {/* Mode + kode guru/mapel */}
                   <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    <Badge
-                      variant="outline"
-                      className="capitalize px-2 py-0.5 text-xs"
-                    >
-                      {s.deliveryMode}
-                    </Badge>
+                    <Badge variant="outline">{s.deliveryMode}</Badge>
                     <span className="flex items-center gap-1">
-                      <Hash size={13} />
-                      <span className="truncate">
-                        Kode guru: {s.teacherCode || "-"}
-                        {"  •  "}
-                        Kode mapel: {s.subjectCode || "-"}
-                      </span>
+                      <Hash size={12} />
+                      Kode guru: {s.teacherCode} • Mapel: {s.subjectCode}
                     </span>
                   </div>
 
-                  {/* Status & waktu update */}
-                  <div className="flex items-center justify-between mt-2">
-                    <Badge
-                      variant="outline"
-                      className="text-xs capitalize px-2 py-0.5"
-                    >
-                      Status: {s.status}
-                    </Badge>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <div className="flex justify-between items-center pt-2">
+                    <Badge variant="outline">Status: {s.status}</Badge>
+                    <span className="flex items-center gap-1 text-xs">
                       <Clock size={12} />
-                      <span>Diperbarui: {formatDateTime(s.updatedAt)}</span>
-                    </div>
+                      {formatDateTime(s.updatedAt)}
+                    </span>
                   </div>
 
-                  {/* Button */}
                   <div className="pt-3 flex justify-end">
-                    <Link
-                      to={`${s.id}`}
-                      state={{
-                        clsOverride: {
-                          id: s.id,
-                          name: s.subjectName,
-                          room: s.classSectionCode,
-                          academicTerm: "",
-                          cohortYear: new Date().getFullYear(),
-                          studentsCount: 0,
-                          todayAttendance: {
-                            hadir: 0,
-                            online: 0,
-                            sakit: 0,
-                            izin: 0,
-                            alpa: 0,
-                          },
-                          materialsCount: 0,
-                          assignmentsCount: 0,
-                        },
-                      }}
-                    >
-                      <Button size="sm" className="flex items-center gap-2">
+                    <Link to={`${s.id}`}>
+                      <Button size="sm">
                         Buka Mapel <ChevronRight size={16} />
                       </Button>
                     </Link>
@@ -451,15 +338,11 @@ export default function TeacherCSST({ showBack = false, backTo }: Props) {
         </div>
 
         {filtered.length === 0 && (
-          <div className="p-10 text-center rounded-2xl border bg-background shadow-md">
-            <div className="flex justify-center mb-4">
-              <Search size={32} className="text-primary" />
-            </div>
-            <p className="font-semibold text-foreground mb-2">
-              Tidak ada mata pelajaran ditemukan
-            </p>
+          <div className="p-10 text-center rounded-xl border mt-6">
+            <Search size={32} className="mx-auto mb-3 text-primary" />
+            <p className="font-semibold">Tidak ada mata pelajaran</p>
             <p className="text-sm text-muted-foreground">
-              Coba ubah kata kunci atau filter untuk melihat hasil lainnya.
+              Coba ubah kata kunci pencarian.
             </p>
           </div>
         )}
