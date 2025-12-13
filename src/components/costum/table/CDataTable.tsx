@@ -7,6 +7,7 @@ import {
   Plus,
   Table as TableIcon,
   LayoutGrid,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +28,17 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+} from "@/components/ui/dropdown-menu";
+
 import CRowActions, { NO_ROW_CLICK_ATTR as RA_NO_CLICK } from "./CRowAction";
 import CMenuSearch from "../common/CMenuSearch";
 
@@ -35,6 +47,9 @@ import CMenuSearch from "../common/CMenuSearch";
 ========================= */
 export type Align = "left" | "center" | "right";
 export type ViewMode = "table" | "card";
+export type RowColorMode = "one" | "two" | "three";
+export type DensityMode = "comfortable" | "compact";
+export type TextMode = "wrap" | "truncate";
 
 export type CellMeta = {
   pageIndex: number;
@@ -92,14 +107,12 @@ export type DataTableProps<T> = {
   actions?: ActionsConfig<T>;
   renderActions?: (row: T, view: ViewMode) => React.ReactNode;
 
-
   stickyHeader?: boolean;
   zebra?: boolean;
 
   pageSize?: number;
   pageSizeOptions?: number[];
   onPageSizeChange?: (n: number) => void;
-
 
   defaultAlign?: Align;
 
@@ -120,9 +133,21 @@ export type DataTableProps<T> = {
   /** NEW — minimal lebar tabel saat scroll-X (default: 960) */
   minTableWidth?: number | string;
 
+  /** SETTINGS */
+  showRowNumber?: boolean; // default false
+  rowNumberHeader?: React.ReactNode; // default "#"
+  rowColorMode?: RowColorMode; // default "one"
+
+  densityMode?: DensityMode; // default "comfortable"
+  textMode?: TextMode; // default "wrap"
+  enableStickyHeaderSetting?: boolean; // default true
+  enableHoverSetting?: boolean; // default true
+  enableScrollXSetting?: boolean; // default true
+
+  persistSettings?: boolean; // default true
+
   className?: string;
 };
-
 
 /* =========================
    Component
@@ -154,7 +179,6 @@ export function CDataTable<T>(props: DataTableProps<T>) {
     renderCard,
 
     stickyHeader = false,
-    zebra = false,
 
     pageSize = 30,
     pageSizeOptions = [20, 30, 50],
@@ -276,31 +300,168 @@ export function CDataTable<T>(props: DataTableProps<T>) {
     [allowed, STORAGE_KEY, onViewModeChange]
   );
 
-  /* ========== Hover classes ========== */
-  const hoverCls = rowHover
+  /* ========== Table Settings (persist) ========== */
+  const persistSettings = props.persistSettings ?? true;
+  const SETTINGS_KEY = `${STORAGE_KEY}:settings`;
+
+  const defaultDensity: DensityMode = props.densityMode ?? "comfortable";
+  const defaultTextMode: TextMode = props.textMode ?? "wrap";
+  const defaultSticky = props.stickyHeader ?? stickyHeader;
+  const defaultHover = props.rowHover ?? rowHover;
+  const defaultScrollX = props.scrollX ?? scrollX;
+
+  const [showRowNumber, setShowRowNumber] = React.useState<boolean>(() => {
+    if (!persistSettings) return props.showRowNumber ?? false;
+    return safeLSGetBool(
+      `${SETTINGS_KEY}:showRowNumber`,
+      props.showRowNumber ?? false
+    );
+  });
+
+  const [rowColorMode, setRowColorMode] = React.useState<RowColorMode>(() => {
+    const def = props.rowColorMode ?? "one";
+    if (!persistSettings) return def;
+    const v =
+      (safeLSGet(`${SETTINGS_KEY}:rowColorMode`) as RowColorMode) || def;
+    return v === "one" || v === "two" || v === "three" ? v : def;
+  });
+
+  const [densityMode, setDensityMode] = React.useState<DensityMode>(() => {
+    if (!persistSettings) return defaultDensity;
+    const v =
+      (safeLSGet(`${SETTINGS_KEY}:densityMode`) as DensityMode) ||
+      defaultDensity;
+    return v === "comfortable" || v === "compact" ? v : defaultDensity;
+  });
+
+  const [textMode, setTextMode] = React.useState<TextMode>(() => {
+    if (!persistSettings) return defaultTextMode;
+    const v =
+      (safeLSGet(`${SETTINGS_KEY}:textMode`) as TextMode) || defaultTextMode;
+    return v === "wrap" || v === "truncate" ? v : defaultTextMode;
+  });
+
+  const [stickyHeaderSetting, setStickyHeaderSetting] = React.useState<boolean>(
+    () => {
+      if (!persistSettings) return defaultSticky;
+      return safeLSGetBool(`${SETTINGS_KEY}:stickyHeader`, defaultSticky);
+    }
+  );
+
+  const [hoverSetting, setHoverSetting] = React.useState<boolean>(() => {
+    if (!persistSettings) return defaultHover;
+    return safeLSGetBool(`${SETTINGS_KEY}:rowHover`, defaultHover);
+  });
+
+  const [scrollXSetting, setScrollXSetting] = React.useState<boolean>(() => {
+    if (!persistSettings) return defaultScrollX;
+    return safeLSGetBool(`${SETTINGS_KEY}:scrollX`, defaultScrollX);
+  });
+
+  React.useEffect(() => {
+    if (!persistSettings) return;
+    safeLSSetBool(`${SETTINGS_KEY}:showRowNumber`, showRowNumber);
+  }, [persistSettings, SETTINGS_KEY, showRowNumber]);
+
+  React.useEffect(() => {
+    if (!persistSettings) return;
+    safeLSSet(`${SETTINGS_KEY}:rowColorMode`, rowColorMode);
+  }, [persistSettings, SETTINGS_KEY, rowColorMode]);
+
+  React.useEffect(() => {
+    if (!persistSettings) return;
+    safeLSSet(`${SETTINGS_KEY}:densityMode`, densityMode);
+  }, [persistSettings, SETTINGS_KEY, densityMode]);
+
+  React.useEffect(() => {
+    if (!persistSettings) return;
+    safeLSSet(`${SETTINGS_KEY}:textMode`, textMode);
+  }, [persistSettings, SETTINGS_KEY, textMode]);
+
+  React.useEffect(() => {
+    if (!persistSettings) return;
+    safeLSSetBool(`${SETTINGS_KEY}:stickyHeader`, stickyHeaderSetting);
+  }, [persistSettings, SETTINGS_KEY, stickyHeaderSetting]);
+
+  React.useEffect(() => {
+    if (!persistSettings) return;
+    safeLSSetBool(`${SETTINGS_KEY}:rowHover`, hoverSetting);
+  }, [persistSettings, SETTINGS_KEY, hoverSetting]);
+
+  React.useEffect(() => {
+    if (!persistSettings) return;
+    safeLSSetBool(`${SETTINGS_KEY}:scrollX`, scrollXSetting);
+  }, [persistSettings, SETTINGS_KEY, scrollXSetting]);
+
+  /* ========== Effective values ========== */
+  const effectiveStickyHeader =
+    props.enableStickyHeaderSetting === false
+      ? props.stickyHeader ?? stickyHeader
+      : stickyHeaderSetting;
+
+  const effectiveHover =
+    props.enableHoverSetting === false
+      ? props.rowHover ?? rowHover
+      : hoverSetting;
+
+  const effectiveScrollX =
+    props.enableScrollXSetting === false
+      ? props.scrollX ?? scrollX
+      : scrollXSetting;
+
+  /* ========== Hover classes (respect setting) ========== */
+  const hoverCls = effectiveHover
     ? "transition-all duration-200 cursor-pointer hover:bg-accent/20 hover:shadow-sm"
     : "";
 
-  const cellHoverCls = rowHover
+  const cellHoverCls = effectiveHover
     ? "transition-colors group-hover/row:bg-accent/10"
     : "";
 
+  /* ========== Density + Text mode classes ========== */
+  const cellPaddingCls =
+    densityMode === "compact" ? "!px-3 !py-2" : "!px-4 !py-3";
+
+  const headerPaddingCls =
+    densityMode === "compact" ? "!px-3 !py-2" : "!px-4 !py-3";
+
+  const cellTextCls =
+    textMode === "truncate"
+      ? "whitespace-nowrap overflow-hidden text-ellipsis"
+      : "whitespace-normal break-words";
+
+  /* ========== Row color mode helper ========== */
+  const rowColorClsByIndex = React.useCallback(
+    (idx: number) => {
+      if (rowColorMode === "one") return "";
+
+      if (rowColorMode === "two") {
+        return idx % 2 === 1 ? "bg-muted/40 dark:bg-muted/20" : "bg-card";
+      }
+
+      const m = idx % 3;
+      if (m === 0) return "bg-card";
+      if (m === 1) return "bg-muted/40 dark:bg-muted/20";
+      return "bg-muted/60 dark:bg-muted/30";
+    },
+    [rowColorMode]
+  );
+
   /* ========== Controls ========== */
   const ControlsRow = (
-    <div className="w-full flex flex-col gap-3 sm:flex-row sm:items-center">
-      {/* LEFT: Search full-width */}
-      <div className="min-w-0 flex-1">
+    <div className="w-full flex flex-col gap-3 sm:flex-row sm:items-center px-2 lg:px-1">
+      {/* LEFT: Search */}
+      <div className="min-w-0 flex-1 sm:max-w-[640px]">
         <CMenuSearch
           value={query}
           onChange={handleQueryChange}
           placeholder={searchPlaceholder}
           className="h-10"
         />
-
       </div>
 
-      {/* RIGHT: default LEFT on mobile, shift RIGHT on >= sm */}
-      <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto sm:ml-auto sm:flex-nowrap">
+      {/* RIGHT */}
+      <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto sm:ml-auto sm:flex-nowrap pr-2 lg:pr-3">
         {viewModes.length > 1 && (
           <div className="flex rounded-md border shrink-0">
             <Button
@@ -313,7 +474,8 @@ export function CDataTable<T>(props: DataTableProps<T>) {
                 "rounded-none",
                 view === "table" && "bg-muted text-foreground"
               )}
-              onClick={() => changeView("table")}>
+              onClick={() => changeView("table")}
+            >
               <TableIcon className="h-4 w-4" />
             </Button>
             <Button
@@ -326,7 +488,8 @@ export function CDataTable<T>(props: DataTableProps<T>) {
                 "rounded-none",
                 view === "card" && "bg-muted text-foreground"
               )}
-              onClick={() => changeView("card")}>
+              onClick={() => changeView("card")}
+            >
               <LayoutGrid className="h-4 w-4" />
             </Button>
           </div>
@@ -341,7 +504,7 @@ export function CDataTable<T>(props: DataTableProps<T>) {
               onValueChange={(v) => {
                 const n = Number(v);
                 setLimit(n);
-                props.onPageSizeChange?.(n);  // ← penting
+                props.onPageSizeChange?.(n);
               }}
             >
               <SelectTrigger className="h-9 w-[84px] text-sm" data-interactive>
@@ -357,6 +520,128 @@ export function CDataTable<T>(props: DataTableProps<T>) {
             </Select>
           </div>
         ) : null}
+
+        {/* Settings */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              aria-label="Pengaturan tabel"
+              data-interactive
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent align="end" className="w-72">
+            <DropdownMenuLabel>Pengaturan tabel</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+
+            <DropdownMenuCheckboxItem
+              checked={showRowNumber}
+              onCheckedChange={(v) => setShowRowNumber(Boolean(v))}
+            >
+              Tampilkan nomor baris
+            </DropdownMenuCheckboxItem>
+
+            <DropdownMenuCheckboxItem
+              checked={effectiveStickyHeader}
+              onCheckedChange={(v) => setStickyHeaderSetting(Boolean(v))}
+              disabled={props.enableStickyHeaderSetting === false}
+            >
+              Sticky header
+            </DropdownMenuCheckboxItem>
+
+            <DropdownMenuCheckboxItem
+              checked={effectiveHover}
+              onCheckedChange={(v) => setHoverSetting(Boolean(v))}
+              disabled={props.enableHoverSetting === false}
+            >
+              Efek hover baris
+            </DropdownMenuCheckboxItem>
+
+            <DropdownMenuCheckboxItem
+              checked={effectiveScrollX}
+              onCheckedChange={(v) => setScrollXSetting(Boolean(v))}
+              disabled={props.enableScrollXSetting === false}
+            >
+              Scroll horizontal (X)
+            </DropdownMenuCheckboxItem>
+
+            <DropdownMenuSeparator />
+
+            <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+              Kepadatan (density)
+            </div>
+            <DropdownMenuRadioGroup
+              value={densityMode}
+              onValueChange={(v) => setDensityMode(v as DensityMode)}
+            >
+              <DropdownMenuRadioItem value="comfortable">
+                Normal
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="compact">
+                Padat
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+
+            <DropdownMenuSeparator />
+
+            <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+              Mode teks
+            </div>
+            <DropdownMenuRadioGroup
+              value={textMode}
+              onValueChange={(v) => setTextMode(v as TextMode)}
+            >
+              <DropdownMenuRadioItem value="wrap">
+                Wrap (bisa turun baris)
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="truncate">
+                Truncate (…)
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+
+            <DropdownMenuSeparator />
+
+            <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+              Mode warna baris
+            </div>
+            <DropdownMenuRadioGroup
+              value={rowColorMode}
+              onValueChange={(v) => setRowColorMode(v as RowColorMode)}
+            >
+              <DropdownMenuRadioItem value="one">1 warna</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="two">
+                2 warna (zebra)
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="three">
+                3 warna
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+
+            <DropdownMenuSeparator />
+
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full justify-start"
+              onClick={() => {
+                setShowRowNumber(props.showRowNumber ?? false);
+                setRowColorMode(props.rowColorMode ?? "one");
+                setDensityMode(props.densityMode ?? "comfortable");
+                setTextMode(props.textMode ?? "wrap");
+                setStickyHeaderSetting(props.stickyHeader ?? stickyHeader);
+                setHoverSetting(props.rowHover ?? rowHover);
+                setScrollXSetting(props.scrollX ?? scrollX);
+              }}
+            >
+              Reset pengaturan
+            </Button>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* Slot tambahan */}
         {rightSlot ?? rightControls}
@@ -402,7 +687,7 @@ export function CDataTable<T>(props: DataTableProps<T>) {
   const actionsHeaderLabel = actions?.headerLabel ?? "Aksi";
   const suppressView = Boolean(onRowClick);
 
-  const cardHoverCls = rowHover
+  const cardHoverCls = effectiveHover
     ? "transition-all duration-200 hover:bg-accent/40 hover:shadow-md hover:-translate-y-1 cursor-pointer"
     : "";
 
@@ -412,7 +697,8 @@ export function CDataTable<T>(props: DataTableProps<T>) {
 
   return (
     <div
-      className={cn("w-full flex flex-col gap-4 lg:gap-6 min-w-0", className)}>
+      className={cn("w-full flex flex-col gap-4 lg:gap-6 min-w-0", className)}
+    >
       {/* Header / Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="hidden md:flex items-center gap-2 font-semibold">
@@ -421,7 +707,8 @@ export function CDataTable<T>(props: DataTableProps<T>) {
               variant="ghost"
               size="icon"
               onClick={onBack}
-              aria-label="Kembali">
+              aria-label="Kembali"
+            >
               <ChevronLeft size={18} />
             </Button>
           )}
@@ -456,138 +743,163 @@ export function CDataTable<T>(props: DataTableProps<T>) {
             )}
           </div>
         ) : view === "table" ? (
-          /* ===== TABLE MODE ===== */
           <>
+            {/* ===== TABLE MODE (FINAL) ===== */}
             <div
               className={cn(
-                "relative w-full max-w-full rounded-xl border overflow-hidden",
-                scrollX && "overflow-x-auto [-webkit-overflow-scrolling:touch]"
+                "relative w-full max-w-full rounded-xl border overflow-auto",
+                effectiveScrollX && "overflow-x-auto"
               )}
-              // hilangkan gutter kanan di desktop
-              style={{ scrollbarGutter: "stable both-edges" as any }}>
-              {/* Spacer: FULL width, tapi masih punya minWidth untuk trigger scroll bila perlu */}
-              <div
-                className="block w-full align-top"
-                style={scrollX ? { minWidth: tableMinW } : undefined}>
-                <Table className="w-full table-fixed align-middle">
-                  <TableHeader
-                    className={cn(
-                      stickyHeader &&
-                      "sticky top-0 z-10 backdrop-blur supports-[backdrop-filter]:bg-transparent"
-                    )}>
-                    <TableRow className="bg-primary/10">
-                      {columns.map((col) => (
-                        <TableHead
-                          key={col.id}
-                          className={cn(
-                            "text-primary font-semibold px-4",
-                            col.headerClassName,
-                            alignToHeader(col.align ?? defaultAlign)
-                          )}
-                          style={col.minW ? { minWidth: col.minW } : undefined}>
-                          {col.header}
-                        </TableHead>
-                      ))}
-                      {hasActionsColumn && (
-                        <TableHead
-                          className={cn(
-                            "min-w-[80px] text-primary font-semibold",
-                            alignToHeader(defaultAlign)
-                          )}>
-                          {actionsHeaderLabel}
-                        </TableHead>
-                      )}
-                    </TableRow>
-                  </TableHeader>
+              style={{
+                scrollbarGutter: "stable both-edges" as any,
+                maxHeight: effectiveStickyHeader ? "65vh" : undefined,
+              }}
+            >
+              <Table
+                className="w-full table-fixed align-middle"
+                style={effectiveScrollX ? { minWidth: tableMinW } : undefined}
+              >
+                <TableHeader
+                  className={cn(
+                    effectiveStickyHeader && "sticky top-0 z-20 bg-background" // penting: bg solid biar ga tembus
+                  )}
+                >
+                  <TableRow className="bg-primary/10">
+                    {showRowNumber && (
+                      <TableHead
+                        className={cn(
+                          "w-[56px] min-w-[56px] text-primary font-semibold",
+                          headerPaddingCls,
+                          alignToHeader("center")
+                        )}
+                      >
+                        {props.rowNumberHeader ?? "#"}
+                      </TableHead>
+                    )}
 
-                  <TableBody>
-                    {pageRows.map((row, idx) => {
-                      const rid = getRowId(row);
-                      const meta: CellMeta = {
-                        pageIndex: idx,
-                        absoluteIndex: offset + idx,
-                        rowId: rid,
-                        isCard: false,
-                      };
-                      return (
-                        <TableRow
-                          key={rid}
-                          onClick={
-                            onRowClick
-                              ? (e) => {
+                    {columns.map((col) => (
+                      <TableHead
+                        key={col.id}
+                        className={cn(
+                          "text-primary font-semibold",
+                          headerPaddingCls,
+                          col.headerClassName,
+                          alignToHeader(col.align ?? defaultAlign)
+                        )}
+                        style={col.minW ? { minWidth: col.minW } : undefined}
+                      >
+                        {col.header}
+                      </TableHead>
+                    ))}
+
+                    {hasActionsColumn && (
+                      <TableHead
+                        className={cn(
+                          "min-w-[80px] text-primary font-semibold",
+                          headerPaddingCls,
+                          alignToHeader(defaultAlign)
+                        )}
+                      >
+                        {actionsHeaderLabel}
+                      </TableHead>
+                    )}
+                  </TableRow>
+                </TableHeader>
+
+                <TableBody zebra={false} hover={false}>
+                  {pageRows.map((row, idx) => {
+                    const rid = getRowId(row);
+                    const meta: CellMeta = {
+                      pageIndex: idx,
+                      absoluteIndex: offset + idx,
+                      rowId: rid,
+                      isCard: false,
+                    };
+
+                    return (
+                      <TableRow
+                        key={rid}
+                        className={cn(
+                          "group/row border-b border-border",
+                          rowColorClsByIndex(idx),
+                          hoverCls
+                        )}
+                        onClick={
+                          onRowClick
+                            ? (e) => {
                                 if (shouldIgnoreRowInteraction(e)) return;
                                 onRowClick(row);
                               }
-                              : undefined
-                          }
-                          className={cn(
-                            "group/row border-b border-border",
-                            zebra &&
-                            idx % 2 === 1 &&
-                            "bg-muted/30 dark:bg-muted/20",
-                            hoverCls,
-                            onRowClick && "cursor-pointer"
-                          )}
-                          role={onRowClick ? "button" : undefined}
-                          tabIndex={onRowClick ? 0 : undefined}
-                          onKeyDown={
-                            onRowClick
-                              ? (e) => {
-                                if (shouldIgnoreRowInteraction(e)) return;
-                                if (e.key === "Enter" || e.key === " ") {
-                                  e.preventDefault();
-                                  onRowClick?.(row);
-                                }
-                              }
-                              : undefined
-                          }>
-                          {columns.map((col) => (
-                            <TableCell
-                              key={col.id}
-                              className={cn(
-                                "px-4 whitespace-normal break-words align-top",
-                                col.className,
-                                alignToCell(col.align ?? defaultAlign),
-                                cellHoverCls
-                              )}>
-                              {col.cell
-                                ? col.cell(row, meta)
-                                : String((row as any)[col.id] ?? "")}
-                            </TableCell>
-                          ))}
+                            : undefined
+                        }
+                        role={onRowClick ? "button" : undefined}
+                        tabIndex={onRowClick ? 0 : undefined}
+                      >
+                        {showRowNumber && (
+                          <TableCell
+                            className={cn(
+                              "align-top text-muted-foreground",
+                              cellPaddingCls,
+                              alignToCell("center"),
+                              cellHoverCls
+                            )}
+                          >
+                            {offset + idx + 1}
+                          </TableCell>
+                        )}
 
-                          {hasActionsColumn && (
-                            <TableCell
-                              className={cn(
-                                alignToCell(defaultAlign),
-                                cellHoverCls
-                              )}>
-                              {actions ? (
-                                <CRowActions
-                                  row={row}
-                                  onView={actions.onView}
-                                  onEdit={actions.onEdit}
-                                  onDelete={actions.onDelete}
-                                  labels={actions.labels}
-                                  size={actions.size}
-                                  suppressView={suppressView}
+                        {columns.map((col) => (
+                          <TableCell
+                            key={col.id}
+                            className={cn(
+                              "align-top",
+                              cellPaddingCls,
+                              cellTextCls,
+                              col.className,
+                              alignToCell(col.align ?? defaultAlign),
+                              cellHoverCls
+                            )}
+                            title={
+                              textMode === "truncate" && !col.cell
+                                ? String((row as any)[col.id] ?? "")
+                                : undefined
+                            }
+                          >
+                            {col.cell
+                              ? col.cell(row, meta)
+                              : String((row as any)[col.id] ?? "")}
+                          </TableCell>
+                        ))}
 
-                                  /* Paksa dropdown di TABLE VIEW */
-                                  forceMenu={view === "table"}
-                                />
-                              ) : (
-                                renderActions?.(row, view)
-
-                              )}
-                            </TableCell>
-                          )}
-
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
+                        {hasActionsColumn && (
+                          <TableCell
+                            className={cn(
+                              cellPaddingCls,
+                              alignToCell(defaultAlign),
+                              cellHoverCls
+                            )}
+                          >
+                            {actions ? (
+                              <CRowActions
+                                row={row}
+                                onView={actions.onView}
+                                onEdit={actions.onEdit}
+                                onDelete={actions.onDelete}
+                                labels={actions.labels}
+                                size={actions.size}
+                                suppressView={Boolean(onRowClick)}
+                                forceMenu={view === "table"}
+                              />
+                            ) : (
+                              renderActions?.(row, view)
+                            )}
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </div>
 
             <PaginationFooter
@@ -601,8 +913,6 @@ export function CDataTable<T>(props: DataTableProps<T>) {
             />
           </>
         ) : (
-
-          /* ===== CARD MODE ===== */
           <>
             <div className={cn("grid", cardColsClass, cardGapClass)}>
               {pageRows.map((row, idx) => {
@@ -620,13 +930,16 @@ export function CDataTable<T>(props: DataTableProps<T>) {
                       renderCard(row)
                     ) : (
                       <div
-                        className={cn("rounded-xl border p-4 space-y-3", cardHoverCls)}
+                        className={cn(
+                          "rounded-xl border p-4 space-y-3",
+                          cardHoverCls
+                        )}
                         onClick={
                           onRowClick
                             ? (e) => {
-                              if (shouldIgnoreRowInteraction(e)) return;
-                              onRowClick(row);
-                            }
+                                if (shouldIgnoreRowInteraction(e)) return;
+                                onRowClick(row);
+                              }
                             : undefined
                         }
                         role={onRowClick ? "button" : undefined}
@@ -634,42 +947,58 @@ export function CDataTable<T>(props: DataTableProps<T>) {
                         onKeyDown={
                           onRowClick
                             ? (e) => {
-                              if (shouldIgnoreRowInteraction(e)) return;
-                              if (e.key === "Enter" || e.key === " ") {
-                                e.preventDefault();
-                                onRowClick(row);
+                                if (shouldIgnoreRowInteraction(e)) return;
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  onRowClick(row);
+                                }
                               }
-                            }
                             : undefined
                         }
                       >
+                        {showRowNumber && (
+                          <div className="text-xs text-muted-foreground">
+                            #{offset + idx + 1}
+                          </div>
+                        )}
+
                         {columns.map((c) => (
                           <div
                             key={c.id}
                             className="flex items-start justify-between gap-3 text-sm"
                           >
-                            <div className="text-muted-foreground">{c.header}</div>
-                            <div className="font-medium text-right">
-                              {c.cell ? c.cell(row, meta) : String((row as any)[c.id] ?? "")}
+                            <div className="text-muted-foreground">
+                              {c.header}
+                            </div>
+                            <div
+                              className={cn(
+                                "font-medium text-right",
+                                textMode === "truncate"
+                                  ? "truncate max-w-[60%]"
+                                  : ""
+                              )}
+                            >
+                              {c.cell
+                                ? c.cell(row, meta)
+                                : String((row as any)[c.id] ?? "")}
                             </div>
                           </div>
                         ))}
 
-                        {/* ACTIONS */}
                         <div className="pt-2 flex justify-end">
                           {renderActions
                             ? renderActions(row, view)
                             : actions && (
-                              <CRowActions
-                                row={row}
-                                onView={actions.onView}
-                                onEdit={actions.onEdit}
-                                onDelete={actions.onDelete}
-                                labels={actions.labels}
-                                size={actions.size}
-                                suppressView={suppressView}
-                              />
-                            )}
+                                <CRowActions
+                                  row={row}
+                                  onView={actions.onView}
+                                  onEdit={actions.onEdit}
+                                  onDelete={actions.onDelete}
+                                  labels={actions.labels}
+                                  size={actions.size}
+                                  suppressView={suppressView}
+                                />
+                              )}
                         </div>
                       </div>
                     )}
@@ -688,7 +1017,6 @@ export function CDataTable<T>(props: DataTableProps<T>) {
               onNext={onNext}
             />
           </>
-
         )}
       </div>
     </div>
@@ -722,7 +1050,8 @@ function PaginationFooter(props: {
           variant="outline"
           size="icon"
           disabled={!canPrev}
-          onClick={onPrev}>
+          onClick={onPrev}
+        >
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <Button
@@ -730,7 +1059,8 @@ function PaginationFooter(props: {
           variant="outline"
           size="icon"
           disabled={!canNext}
-          onClick={onNext}>
+          onClick={onNext}
+        >
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
@@ -740,9 +1070,6 @@ function PaginationFooter(props: {
 
 /* =========================
    Utils
-========================= */
-/* =========================
-   Utils (PERBAIKAN ALIGN)
 ========================= */
 function alignToHeader(a: Align = "left") {
   switch (a) {
@@ -756,7 +1083,6 @@ function alignToHeader(a: Align = "left") {
       return "text-left";
   }
 }
-
 function alignToCell(a: Align = "left") {
   switch (a) {
     case "left":
@@ -770,7 +1096,6 @@ function alignToCell(a: Align = "left") {
   }
 }
 
-
 function safeLSGet(key: string): string | null {
   try {
     if (typeof window === "undefined") return null;
@@ -783,13 +1108,19 @@ function safeLSSet(key: string, value: string) {
   try {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(key, value);
-  } catch { }
+  } catch {}
 }
-
+function safeLSGetBool(key: string, fallback: boolean) {
+  const v = safeLSGet(key);
+  if (v == null) return fallback;
+  return v === "1" || v === "true";
+}
+function safeLSSetBool(key: string, value: boolean) {
+  safeLSSet(key, value ? "1" : "0");
+}
 /* EXPORT HOVER STYLE AGAR BISA DIPAKAI DI HALAMAN LAIN */
 export const cardHover =
   "transition-all duration-200 hover:bg-accent/40 hover:shadow-md hover:-translate-y-1 cursor-pointer";
-
 export const rowHover =
   "transition-all duration-200 hover:bg-accent/20 cursor-pointer";
 

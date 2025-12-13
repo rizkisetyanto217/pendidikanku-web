@@ -547,7 +547,7 @@ const TeacherCSSTDetail: React.FC = () => {
           <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             <Card
               className={cn("cursor-pointer bg-card", cardHover)}
-              onClick={() => navigate("absensi")}
+              onClick={() => navigate("murid")}
             >
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="space-y-1">

@@ -25,6 +25,9 @@ export type NavChild = {
   end?: boolean;
   /** ABSOLUTE/relatif custom override — kalau diisi, pakai ini untuk navigasi */
   to?: string;
+
+  /** ✅ support nested */
+  children?: NavChild[];
 };
 
 export type NavItem = {
@@ -148,18 +151,47 @@ export const NAVS: NavDict = {
       icon: Wallet,
       children: [
         {
-          // SPP route existing: /sekolah/spp (di luar /keuangan)
           path: "spp",
           label: "SPP",
+          children: [
+            {
+              path: "list",
+              label: "Keuangan List",
+            },
+            {
+              path: "pengaturan",
+              label: "Pengaturan",
+            },
+          ],
         },
         {
-          // index keuangan -> /sekolah/keuangan
-          path: "non-spp",
-          label: "Lainnya (Non-SPP)",
-          end: true,
+          path: "lainnya",
+          label: "Lainnya",
+          children: [
+            {
+              path: "list",
+              label: "Keuangan List",
+            },
+            {
+              path: "pengaturan",
+              label: "Pengaturan",
+            },
+          ],
         },
-        // kalau nanti ada /sekolah/keuangan/pengaturan:
-        // { path: "pengaturan", label: "Pengaturan" }
+        {
+          path: "donasi",
+          label: "Donasi",
+          children: [
+            {
+              path: "list",
+              label: "Keuangan List",
+            },
+            {
+              path: "pengaturan",
+              label: "Pengaturan",
+            },
+          ],
+        },
       ],
     },
 

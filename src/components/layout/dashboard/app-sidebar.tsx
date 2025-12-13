@@ -111,6 +111,72 @@ function resolveNavKey(
   return "sekolah";
 }
 
+/* =========================================================
+   URL + NAV MAPPER (recursive / unlimited nesting)
+========================================================= */
+
+function trimSlashes(s: string) {
+  return s.replace(/^\/+|\/+$/g, "");
+}
+
+function joinUrl(base: string, path?: string) {
+  const b = trimSlashes(base);
+  const p = trimSlashes(path ?? "");
+  if (!p || p === ".") return "/" + b;
+  if (!b) return "/" + p;
+  return "/" + [b, p].filter(Boolean).join("/");
+}
+
+type NavMainNode = {
+  title: string;
+  url: string;
+  icon?: any;
+  end?: boolean;
+  items?: NavMainNode[];
+};
+
+type AnyNavChild = {
+  path: string;
+  label: string;
+  end?: boolean;
+  to?: string;
+  children?: AnyNavChild[];
+};
+
+function mapChildRecursive(
+  base: string,
+  parentUrl: string,
+  c: AnyNavChild
+): NavMainNode {
+  const url = c.to ? joinUrl(base, c.to) : joinUrl(parentUrl, c.path);
+
+  return {
+    title: c.label,
+    url,
+    end: c.end ?? false,
+    items: c.children?.map((cc) => mapChildRecursive(base, url, cc)),
+  };
+}
+
+function mapNavItemToMainNode(
+  base: string,
+  it: NavItem,
+  rootUrl: string
+): NavMainNode {
+  const parentUrl =
+    it.path === "" || it.path === "." ? rootUrl : joinUrl(rootUrl, it.path);
+
+  return {
+    title: it.label,
+    url: parentUrl,
+    icon: it.icon,
+    end: it.end ?? false,
+    items: (it.children as AnyNavChild[] | undefined)?.map((c) =>
+      mapChildRecursive(base, parentUrl, c)
+    ),
+  };
+}
+
 export function AppSidebar(props: AppSidebarProps) {
   const { role: pathRole, base, roleSegment } = useRoleAndBaseFromPath();
   const { setOpenMobile } = useSidebar();
@@ -199,38 +265,16 @@ export function AppSidebar(props: AppSidebarProps) {
     return MAP[raw] ?? raw;
   }, [membership]);
 
-  const items = rawNavItems
+  const items: NavMainNode[] = rawNavItems
     .filter((it) => {
       if (!applyHideDashboard) return true;
 
       const path = (it.path ?? "").toLowerCase();
 
-      // ❌ Jangan buang "dashboard" lagi
       // ✅ Cuma sembunyiin item yang path-nya kosong (root)
       return !(path === "" || path === ".");
     })
-    .map((it) => {
-      const targetParentUrl =
-        it.path === "" || it.path === "." ? `${base}` : `${base}/${it.path}`;
-
-      return {
-        title: it.label,
-        url: targetParentUrl,
-        icon: it.icon,
-        end: it.end ?? false,
-        items: it.children?.map((c) => {
-          const targetChildUrl = c.to
-            ? `${base}/${c.to.replace(/^\/+/, "")}`
-            : `${targetParentUrl}/${c.path.replace(/^\/+/, "")}`;
-
-          return {
-            title: c.label,
-            url: targetChildUrl,
-            end: c.end ?? false,
-          };
-        }),
-      };
-    });
+    .map((it) => mapNavItemToMainNode(base, it, base));
 
   // 📌 Projects masih dummy
   const projects = React.useMemo(

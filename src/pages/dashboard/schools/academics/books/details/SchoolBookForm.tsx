@@ -22,11 +22,11 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 
-/* Import komponen upload */
+/* Custom */
 import CPicturePreview from "@/components/costum/common/CPicturePreview";
 import CActionsButton from "@/components/costum/common/buttons/CActionsButton";
 
-/* Types */
+/* ===================== Types ===================== */
 export type BookAPI = {
   book_id: string;
   book_school_id: string;
@@ -36,17 +36,22 @@ export type BookAPI = {
   book_slug?: string | null;
   book_image_url?: string | null;
   book_image_object_key?: string | null;
+
+  book_purchase_url?: string | null;
+  book_publisher?: string | null;
+  book_publication_year?: number | null;
+
   book_created_at?: string;
   book_updated_at?: string;
   book_is_deleted?: boolean;
 };
 
 type BookDetailResponse = {
-  data?: BookAPI;
-  [key: string]: any;
+  success?: boolean;
+  message?: string;
+  data: BookAPI;
 };
 
-/* Helpers */
 function extractErrorMessage(err: any) {
   const d = err?.response?.data;
   if (!d) return err?.message || "Request error";
@@ -64,10 +69,30 @@ function extractErrorMessage(err: any) {
   }
 }
 
+/* ===================== Form Values ===================== */
+type BookFormValues = {
+  book_title: string;
+  book_author: string;
+  book_desc: string;
+  book_publisher: string;
+  book_publication_year: string; // string biar input bisa kosong
+  book_purchase_url: string;
+};
+
+const emptyValues: BookFormValues = {
+  book_title: "",
+  book_author: "",
+  book_desc: "",
+  book_publisher: "",
+  book_publication_year: "",
+  book_purchase_url: "",
+};
+
 const SchoolBookForm: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const params = useParams<{ schoolId?: string; id?: string }>();
+
   const schoolId = params.schoolId ?? "";
   const bookId = params.id;
   const isEditMode = Boolean(bookId && bookId !== "new");
@@ -75,7 +100,8 @@ const SchoolBookForm: React.FC = () => {
   const qc = useQueryClient();
   const { setHeader } = useDashboardHeader();
 
-  const stateBook = (location.state as { book?: BookAPI } | undefined)?.book;
+  // optional: kalau kamu navigate dari list sambil bawa state
+  const stateBook = (location.state as { book?: BookAPI } | null)?.book;
 
   useEffect(() => {
     setHeader({
@@ -88,15 +114,15 @@ const SchoolBookForm: React.FC = () => {
       ],
       showBack: true,
     });
-  }, [setHeader, isEditMode, schoolId]);
+  }, [setHeader, isEditMode]);
 
+  /* ===================== Query detail (edit only) ===================== */
   const detailQ = useQuery<BookAPI, Error>({
     queryKey: ["book-detail", bookId],
     enabled: isEditMode && !!bookId && !stateBook,
     queryFn: async () => {
       const res = await axios.get<BookDetailResponse>(`/u/books/${bookId}`);
-      const data = (res.data as any).data ?? (res.data as any);
-      return data as BookAPI;
+      return res.data.data;
     },
   });
 
@@ -106,86 +132,131 @@ const SchoolBookForm: React.FC = () => {
     return detailQ.data;
   }, [stateBook, detailQ.data, isEditMode]);
 
-  /* ================= FORM STATE ================= */
-  const [title, setTitle] = useState(stateBook?.book_title ?? "");
-  const [author, setAuthor] = useState(stateBook?.book_author ?? "");
-  const [desc, setDesc] = useState(stateBook?.book_desc ?? "");
-
+  /* ===================== Form State ===================== */
+  const [values, setValues] = useState<BookFormValues>(emptyValues);
   const [file, setFile] = useState<File | null>(null);
 
-  /** 
-   * PREVIEW:
-   * - jika edit mode → tampilkan gambar lama dari book_image_url
-   * - jika upload baru → tampilkan gambar baru
-   */
-  const [preview, setPreview] = useState<string | null>(
-    stateBook?.book_image_url ?? null
-  );
+  // preview:
+  // - edit mode: tampilkan image lama
+  // - kalau pilih file baru: tampilkan object URL
+  const [preview, setPreview] = useState<string | null>(null);
 
-  // Ambil data detail jika datang dari API
+  // reset saat ganti mode / route id
   useEffect(() => {
-    if (!book) return;
-    setTitle(book.book_title ?? "");
-    setAuthor(book.book_author ?? "");
-    setDesc(book.book_desc ?? "");
+    setValues(emptyValues);
+    setFile(null);
+    setPreview(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditMode, bookId]);
 
-    // Jika belum pilih file baru → gunakan gambar lama
+  // isi form saat edit dan book sudah ada
+  useEffect(() => {
+    if (!isEditMode) return;
+    if (!book) return;
+
+    setValues({
+      book_title: book.book_title ?? "",
+      book_author: (book.book_author ?? "") || "",
+      book_desc: (book.book_desc ?? "") || "",
+      book_publisher: (book.book_publisher ?? "") || "",
+      book_publication_year:
+        book.book_publication_year != null
+          ? String(book.book_publication_year)
+          : "",
+      book_purchase_url: (book.book_purchase_url ?? "") || "",
+    });
+
+    // kalau belum pilih file baru, pake cover lama
     if (!file) {
       setPreview(book.book_image_url ?? null);
     }
-  }, [book]);
+  }, [isEditMode, book, file]);
 
-  /** Handle file upload dari komponen CPicturePreview */
   const handleFileChange = (newFile: File | null) => {
     setFile(newFile);
 
     if (newFile) {
       setPreview(URL.createObjectURL(newFile));
+      return;
     }
+
+    // kalau user remove file:
+    // edit mode → balik ke gambar lama
+    // create mode → null
+    if (isEditMode && book?.book_image_url) setPreview(book.book_image_url);
+    else setPreview(null);
   };
 
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const canSubmit = values.book_title.trim().length > 0;
 
-  const canSubmit = title.trim().length > 0;
+  const publicationYearNum = useMemo(() => {
+    if (!values.book_publication_year.trim()) return null;
+    const n = Number(values.book_publication_year);
+    return Number.isFinite(n) ? n : NaN;
+  }, [values.book_publication_year]);
 
-  /* ================= MUTATIONS ================= */
+  /* ===================== Mutations ===================== */
   const createMutation = useMutation({
     mutationFn: async (fd: FormData) => {
-      const { data } = await axios.post(
-        `/api/a/${encodeURIComponent(schoolId)}/books`,
-        fd,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
+      // sesuai screenshot: POST api/a/books
+      const { data } = await axios.post(`/api/a/books`, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       return data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["books-list-public"] }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["books-list-public"] });
+    },
   });
 
   const updateMutation = useMutation({
     mutationFn: async (fd: FormData) => {
-      const { data } = await axios.patch(
-        `/api/a/books/${encodeURIComponent(bookId!)}`,
-        fd,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
+      // kalau backend kamu beda path, tinggal ganti di sini
+      const { data } = await axios.patch(`/api/a/books/${bookId}`, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       return data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["books-list-public"] }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["books-list-public"] });
+      await qc.invalidateQueries({ queryKey: ["book-detail", bookId] });
+    },
   });
+
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const handleBack = () => navigate(-1);
 
   const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
+    (e: React.FormEvent) => {
       e.preventDefault();
-      if (!canSubmit) return;
-
       setSubmitError(null);
 
+      if (!canSubmit) return;
+
+      // validasi publication year kalau diisi
+      if (publicationYearNum !== null && !Number.isFinite(publicationYearNum)) {
+        setSubmitError("Tahun terbit harus angka yang valid.");
+        return;
+      }
+
       const fd = new FormData();
-      fd.set("book_title", title.trim());
-      fd.set("book_author", author ?? "");
-      fd.set("book_desc", desc ?? "");
+
+      // sesuai keys form-data API
+      fd.set("book_title", values.book_title.trim());
+
+      if (values.book_author.trim())
+        fd.set("book_author", values.book_author.trim());
+      if (values.book_desc.trim()) fd.set("book_desc", values.book_desc.trim());
+      if (values.book_publisher.trim())
+        fd.set("book_publisher", values.book_publisher.trim());
+      if (values.book_purchase_url.trim())
+        fd.set("book_purchase_url", values.book_purchase_url.trim());
+
+      if (publicationYearNum !== null) {
+        fd.set("book_publication_year", String(publicationYearNum));
+      }
 
       if (file) {
         fd.set("file", file);
@@ -205,10 +276,20 @@ const SchoolBookForm: React.FC = () => {
         });
       }
     },
-    [canSubmit, title, author, desc, file, isEditMode, bookId, schoolId]
+    [
+      canSubmit,
+      publicationYearNum,
+      values,
+      file,
+      isEditMode,
+      bookId,
+      navigate,
+      schoolId,
+      createMutation,
+      updateMutation,
+    ]
   );
 
-  const isSubmitting = createMutation.isPending || updateMutation.isPending;
   const loadingDetail = isEditMode && !book && detailQ.isLoading;
   const detailError = isEditMode && !book && detailQ.isError;
 
@@ -262,7 +343,7 @@ const SchoolBookForm: React.FC = () => {
 
               <CardContent className="space-y-6">
                 <div className="grid md:grid-cols-12 gap-4">
-                  {/* ================= COVER UPLOAD ================= */}
+                  {/* Cover */}
                   <div className="md:col-span-4 space-y-3">
                     <Label>Cover Buku</Label>
                     <CPicturePreview
@@ -271,56 +352,131 @@ const SchoolBookForm: React.FC = () => {
                       onFileChange={handleFileChange}
                     />
                     <p className="text-xs text-muted-foreground">
-                      Kosongkan bila tidak ingin mengubah cover.
+                      {isEditMode
+                        ? "Kosongkan bila tidak ingin mengubah cover."
+                        : "Upload cover (opsional)."}
                     </p>
                   </div>
 
-                  {/* ================= DETAIL BUKU ================= */}
+                  {/* Fields */}
                   <div className="md:col-span-8 grid gap-3">
                     <div className="grid gap-1.5">
                       <Label htmlFor="book_title">Judul *</Label>
                       <Input
                         id="book_title"
                         required
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        placeholder="Contoh: Fiqih Ibadah Dasar"
+                        value={values.book_title}
+                        onChange={(e) =>
+                          setValues((v) => ({
+                            ...v,
+                            book_title: e.target.value,
+                          }))
+                        }
+                        placeholder="Contoh: Bahasa Indonesia Buku B Kelas 6"
                       />
                     </div>
 
-                    <div className="grid gap-1.5">
-                      <Label htmlFor="book_author">Penulis</Label>
-                      <Input
-                        id="book_author"
-                        value={author}
-                        onChange={(e) => setAuthor(e.target.value)}
-                        placeholder="Contoh: Ustadz Fulan"
-                      />
+                    <div className="grid md:grid-cols-2 gap-3">
+                      <div className="grid gap-1.5">
+                        <Label htmlFor="book_author">Penulis</Label>
+                        <Input
+                          id="book_author"
+                          value={values.book_author}
+                          onChange={(e) =>
+                            setValues((v) => ({
+                              ...v,
+                              book_author: e.target.value,
+                            }))
+                          }
+                          placeholder="Contoh: Salsa"
+                        />
+                      </div>
+
+                      <div className="grid gap-1.5">
+                        <Label htmlFor="book_publisher">Penerbit</Label>
+                        <Input
+                          id="book_publisher"
+                          value={values.book_publisher}
+                          onChange={(e) =>
+                            setValues((v) => ({
+                              ...v,
+                              book_publisher: e.target.value,
+                            }))
+                          }
+                          placeholder="Contoh: Harmoni buku"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-3">
+                      <div className="grid gap-1.5">
+                        <Label htmlFor="book_publication_year">
+                          Tahun Terbit
+                        </Label>
+                        <Input
+                          id="book_publication_year"
+                          type="number"
+                          inputMode="numeric"
+                          value={values.book_publication_year}
+                          onChange={(e) =>
+                            setValues((v) => ({
+                              ...v,
+                              book_publication_year: e.target.value,
+                            }))
+                          }
+                          placeholder="Contoh: 2022"
+                        />
+                      </div>
+
+                      <div className="grid gap-1.5">
+                        <Label htmlFor="book_purchase_url">URL Pembelian</Label>
+                        <Input
+                          id="book_purchase_url"
+                          value={values.book_purchase_url}
+                          onChange={(e) =>
+                            setValues((v) => ({
+                              ...v,
+                              book_purchase_url: e.target.value,
+                            }))
+                          }
+                          placeholder="Contoh: www.google.com"
+                        />
+                      </div>
                     </div>
 
                     <div className="grid gap-1.5">
                       <Label htmlFor="book_desc">Deskripsi</Label>
                       <Textarea
                         id="book_desc"
-                        value={desc}
-                        onChange={(e) => setDesc(e.target.value)}
+                        value={values.book_desc}
+                        onChange={(e) =>
+                          setValues((v) => ({
+                            ...v,
+                            book_desc: e.target.value,
+                          }))
+                        }
                         className="min-h-[120px]"
-                        placeholder="Ringkasan isi buku atau keterangan lain."
+                        placeholder="Buku pengantar untuk pelajaran bahasa indonesia buku ke-2"
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* Summary Info */}
+                {/* Ringkasan */}
                 <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs md:text-sm text-muted-foreground flex gap-2">
                   <Info className="h-4 w-4 mt-[2px]" />
                   <div>
                     <div className="font-medium">Ringkasan</div>
                     <div className="mt-1">
                       <span className="font-semibold">
-                        {title || "Judul belum diisi"}
+                        {values.book_title || "Judul belum diisi"}
                       </span>
-                      {author && <span> — {author}</span>}
+                      {values.book_author && (
+                        <span> — {values.book_author}</span>
+                      )}
+                      {values.book_publication_year && (
+                        <span> ({values.book_publication_year})</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -336,11 +492,13 @@ const SchoolBookForm: React.FC = () => {
               <CardFooter className="flex justify-end">
                 <CActionsButton
                   onCancel={handleBack}
-                  onSave={() =>
-                    document.getElementById("bookForm")?.dispatchEvent(
-                      new Event("submit", { cancelable: true, bubbles: true })
-                    )
-                  }
+                  onSave={() => {
+                    document
+                      .getElementById("bookForm")
+                      ?.dispatchEvent(
+                        new Event("submit", { cancelable: true, bubbles: true })
+                      );
+                  }}
                   loadingSave={isSubmitting}
                 />
               </CardFooter>

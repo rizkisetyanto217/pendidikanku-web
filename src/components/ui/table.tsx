@@ -1,5 +1,5 @@
-import * as React from "react"
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import { cn } from "@/lib/utils";
 
 /* ======================================================
    🧱 Komponen Tabel Theme-Aware + Zebra Row
@@ -16,8 +16,8 @@ const Table = React.forwardRef<
       {...props}
     />
   </div>
-))
-Table.displayName = "Table"
+));
+Table.displayName = "Table";
 
 /* ======================================================
    HEADER: Warna mengikuti CSS variable tema aktif
@@ -38,30 +38,33 @@ const TableHeader = React.forwardRef<
     )}
     {...props}
   />
-))
-TableHeader.displayName = "TableHeader"
+));
+TableHeader.displayName = "TableHeader";
 
 /* ======================================================
    BODY: Zebra stripe + hover
 ====================================================== */
-const TableBody = React.forwardRef<
-  HTMLTableSectionElement,
-  React.HTMLAttributes<HTMLTableSectionElement>
->(({ className, ...props }, ref) => (
-  <tbody
-    ref={ref}
-    className={cn(
-      // Zebra pattern otomatis
-      "[&_tr:nth-child(odd)]:bg-card [&_tr:nth-child(even)]:bg-muted/40",
-      // Hover lembut
-      "[&_tr:hover]:bg-accent/30",
-      "[&_tr:last-child]:border-0",
-      className
-    )}
-    {...props}
-  />
-))
-TableBody.displayName = "TableBody"
+type TableBodyProps = React.HTMLAttributes<HTMLTableSectionElement> & {
+  zebra?: boolean; // default true
+  hover?: boolean; // default true
+};
+
+const TableBody = React.forwardRef<HTMLTableSectionElement, TableBodyProps>(
+  ({ className, zebra = true, hover = true, ...props }, ref) => (
+    <tbody
+      ref={ref}
+      className={cn(
+        zebra &&
+          "[&_tr:nth-child(odd)]:bg-card [&_tr:nth-child(even)]:bg-muted/40",
+        hover && "[&_tr:hover]:bg-accent/30",
+        "[&_tr:last-child]:border-0",
+        className
+      )}
+      {...props}
+    />
+  )
+);
+TableBody.displayName = "TableBody";
 
 /* ======================================================
    FOOTER
@@ -78,8 +81,8 @@ const TableFooter = React.forwardRef<
     )}
     {...props}
   />
-))
-TableFooter.displayName = "TableFooter"
+));
+TableFooter.displayName = "TableFooter";
 
 /* ======================================================
    ROW
@@ -96,8 +99,8 @@ const TableRow = React.forwardRef<
     )}
     {...props}
   />
-))
-TableRow.displayName = "TableRow"
+));
+TableRow.displayName = "TableRow";
 
 /* ======================================================
    HEAD CELL
@@ -115,8 +118,8 @@ const TableHead = React.forwardRef<
     )}
     {...props}
   />
-))
-TableHead.displayName = "TableHead"
+));
+TableHead.displayName = "TableHead";
 
 /* ======================================================
    BODY CELL
@@ -134,8 +137,8 @@ const TableCell = React.forwardRef<
     )}
     {...props}
   />
-))
-TableCell.displayName = "TableCell"
+));
+TableCell.displayName = "TableCell";
 
 /* ======================================================
    CAPTION
@@ -149,8 +152,8 @@ const TableCaption = React.forwardRef<
     className={cn("mt-4 text-sm text-muted-foreground", className)}
     {...props}
   />
-))
-TableCaption.displayName = "TableCaption"
+));
+TableCaption.displayName = "TableCaption";
 
 /* ======================================================
    EXPORT ALL
@@ -164,4 +167,4 @@ export {
   TableRow,
   TableCell,
   TableCaption,
-}
+};

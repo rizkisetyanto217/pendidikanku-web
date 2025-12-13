@@ -1,140 +1,122 @@
 // src/pages/teacher/classes/TeacherCSSTStudentList.tsx
 import React, { useMemo, useState, useDeferredValue, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import type { AxiosError } from "axios";
+import axios from "@/lib/axios";
 
 /* ---------- shadcn/ui ---------- */
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 /* ---------- Icons ---------- */
-import {
-  Phone,
-  Users,
-  AlertTriangle,
-  NotebookPen,
-  ArrowLeft,
-} from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 /* ---------- DataTable ---------- */
 import {
   CDataTable,
   type ColumnDef,
-  type Align,
 } from "@/components/costum/table/CDataTable";
 
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
 
 /* =========================================================
-   TIPE
+   TYPES — API terbaru (compact) student_csst_*
 ========================================================= */
+type Gender = "male" | "female" | string;
+
+type ApiStudentCSSTItem = {
+  student_csst_id: string;
+  student_csst_student_id: string;
+  student_csst_csst_id: string;
+  student_csst_is_active: boolean;
+
+  student_csst_user_profile_name_cache?: string | null;
+  student_csst_user_profile_avatar_url_cache?: string | null; // ✅ ada, tapi kita TIDAK render
+  student_csst_school_student_code_cache?: string | null;
+  student_csst_user_profile_gender_cache?: Gender | null;
+
+  student_csst_created_at: string; // ✅ jadi "Bergabung"
+  student_csst_updated_at: string;
+};
+
+type ApiStudentCSSTListResponse = {
+  success: boolean;
+  message: string;
+  data: ApiStudentCSSTItem[];
+  pagination?: any;
+};
+
 type AnyRec = Record<string, any>;
 
-export type StudentSummary = {
-  id: string; // school_student_id
-  name: string; // nama siswa
-  [key: string]: any;
+/* =========================================================
+   UI MODEL — hanya yang dipakai di tabel
+========================================================= */
+type StudentRow = {
+  id: string; // student_id (buat route detail)
+  name: string;
+  code?: string | null;
+  gender?: string;
+  joinedAt?: string; // tampil dari created_at
+  isActive?: boolean;
 };
 
 /* =========================================================
-   UTIL CATATAN
+   HELPERS
 ========================================================= */
-function extractImportantNotes(s: StudentSummary): string[] {
-  const x = s as AnyRec;
-  const notes: string[] = [];
-
-  if (Array.isArray(x.importantNotes))
-    notes.push(...x.importantNotes.filter(Boolean));
-  if (typeof x.notes === "string" && x.notes.trim()) notes.push(x.notes.trim());
-  if (Array.isArray(x.notes)) notes.push(...x.notes.filter(Boolean));
-
-  if (Array.isArray(x.flags)) notes.push(...x.flags.filter(Boolean));
-  else if (x.flags && typeof x.flags === "object") {
-    Object.values(x.flags).forEach((v) => {
-      if (typeof v === "string" && v.trim()) notes.push(v.trim());
-    });
-  }
-
-  if (typeof x.warning === "string" && x.warning.trim())
-    notes.push(x.warning.trim());
-  if (x.healthNote?.trim) notes.push(x.healthNote.trim());
-  if (x.financeNote?.trim) notes.push(x.financeNote.trim());
-
-  return Array.from(
-    new Set(notes.map((n) => String(n).trim()).filter(Boolean))
-  );
+function genderToLP(g?: Gender | null) {
+  if (!g) return "";
+  const v = String(g).toLowerCase();
+  if (v === "male" || v === "laki-laki" || v === "l") return "L";
+  if (v === "female" || v === "perempuan" || v === "p") return "P";
+  return v;
 }
 
-function hasImportant(s: StudentSummary) {
-  return extractImportantNotes(s).length > 0;
+function fmtDateTime(iso?: string | null) {
+  if (!iso) return "-";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return String(iso);
+  return d.toLocaleString();
+}
+
+function extractErrorMessage(err: unknown): string {
+  const ax = err as AxiosError<any>;
+  const msgFromResp =
+    ax?.response?.data?.message ||
+    ax?.response?.data?.error ||
+    ax?.response?.statusText;
+  if (msgFromResp) return String(msgFromResp);
+  if (ax?.message) return ax.message;
+  return "Terjadi kesalahan saat memuat data.";
 }
 
 /* =========================================================
-   API: AMBIL SISWA BERDASARKAN CSST_ID
-   GET /u/student-class-section-subject-teachers/list?csst_id=...
+   API
 ========================================================= */
-
-
-
-
-
-/* ======================================================
-   DUMMY STUDENTS (untuk Wali Kelas)
-====================================================== */
-const DUMMY_STUDENTS: StudentSummary[] = [
-  {
-    id: "stu-1",
-    name: "Ahmad Fauzi",
-    gender: "L",
-    phone: "081234567890",
-    guardian: "Bpk. Fauzan",
-    importantNotes: ["Sering lupa buku", "Perlu perhatian tambahan"],
-  },
-  {
-    id: "stu-2",
-    name: "Aisyah Rahma",
-    gender: "P",
-    phone: "081312345678",
-    guardian: "Ibu Rani",
-    importantNotes: ["Alergi makanan tertentu"],
-  },
-  {
-    id: "stu-3",
-    name: "Muhammad Iqbal",
-    gender: "L",
-    phone: "08199887766",
-    guardian: "Bpk. Ilyas",
-  },
-  {
-    id: "stu-4",
-    name: "Siti Zulaikha",
-    gender: "P",
-    phone: "081567891234",
-    guardian: "Ibu Sarah",
-    notes: ["Perlu bimbingan membaca"],
-  },
-  {
-    id: "stu-5",
-    name: "Rizki Maulana",
-    gender: "L",
-    phone: "",
-    guardian: "Bpk. Hilmi",
-  },
-];
-
+function useStudentsByCSST(csstId?: string | null) {
+  return useQuery<ApiStudentCSSTItem[], AxiosError>({
+    queryKey: ["teacher-csst-students-compact", csstId ?? null],
+    enabled: !!csstId,
+    queryFn: async () => {
+      const res = await axios.get<ApiStudentCSSTListResponse>(
+        "/api/u/student-class-section-subject-teachers/list",
+        { params: { csst_id: csstId, mode: "compact" } }
+      );
+      return res.data?.data ?? [];
+    },
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+}
 
 /* =========================================================
    PAGE
 ========================================================= */
 const TeacherCSSTStudentList: React.FC = () => {
   const navigate = useNavigate();
-  const { classSectionId: csstId } = useParams();
+
+  // ✅ sesuai route: <Route path=":csstId">
+  const { csstId } = useParams<{ csstId: string }>();
 
   const { setHeader } = useDashboardHeader();
   useEffect(() => {
@@ -150,236 +132,110 @@ const TeacherCSSTStudentList: React.FC = () => {
     });
   }, [setHeader, csstId]);
 
-  const sectionKey = csstId;
+  const sectionKey = csstId ?? null;
+  const studentsQ = useStudentsByCSST(sectionKey);
 
-  console.log("[TeacherCSSTStudentList] route params =", {
-    csstId,
-    sectionKey,
-  });
+  const isLoading = studentsQ.isLoading;
+  const isError = studentsQ.isError;
+  const errorMsg = isError ? extractErrorMessage(studentsQ.error) : null;
 
-  const students = DUMMY_STUDENTS;
-  const isLoading = false;
-  const isError = false;
+  // ✅ mapping “seadanya” dari API compact
+  const rawRows: StudentRow[] = useMemo(() => {
+    const items = studentsQ.data ?? [];
+    return items.map((it) => ({
+      id: it.student_csst_student_id,
+      name: it.student_csst_user_profile_name_cache ?? "-",
+      code: it.student_csst_school_student_code_cache ?? null,
+      gender: genderToLP(it.student_csst_user_profile_gender_cache),
+      joinedAt: it.student_csst_created_at, // ✅ bergabung
+      isActive: !!it.student_csst_is_active,
+    }));
+  }, [studentsQ.data]);
 
-
-  const rawStudents: StudentSummary[] = students;
-
+  // search internal DataTable kamu tetap jalan, tapi kalau kamu mau hook q beneran,
+  // tinggal sambung dari CDataTable kalau ada event-nya.
   const [q] = useState("");
   const deferredQ = useDeferredValue(q);
-  const [onlyImportant, setOnlyImportant] = useState<"all" | "important">(
-    "all"
-  );
 
-  const normalized = useMemo(() => {
+  const rows = useMemo(() => {
     const k = deferredQ.trim().toLowerCase();
-    let list = rawStudents.map((s) => {
-      const anyS = s as AnyRec;
-      const gender = anyS.gender || "";
-      const phone = anyS.phone || "";
-      const guardian = anyS.parentName || "";
-      const notesArr = extractImportantNotes(s);
-      const __notes = notesArr.join(" ");
-      return {
-        ...s,
-        gender,
-        phone,
-        guardian,
-        __notes,
-        __hasImportant: notesArr.length > 0,
-      };
+    if (!k) return rawRows;
+
+    return rawRows.filter((r) => {
+      const hay = [r.name, r.code ?? "", r.gender ?? "", r.id]
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(k);
     });
+  }, [rawRows, deferredQ]);
 
-    if (k) {
-      list = list.filter(
-        (s) =>
-          s.name.toLowerCase().includes(k) ||
-          s.guardian.toLowerCase().includes(k) ||
-          s.__notes.toLowerCase().includes(k) ||
-          String(s.id).toLowerCase().includes(k)
-      );
-    }
-
-    if (onlyImportant === "important") {
-      list = list.filter((s) => s.__hasImportant);
-    }
-
-    list = [...list].sort(
-      (a, b) => Number(b.__hasImportant) - Number(a.__hasImportant)
-    );
-
-    console.log(
-      "[TeacherCSSTStudentList] normalized rows =",
-      list.length,
-      "items"
-    );
-
-    return list;
-  }, [rawStudents, deferredQ, onlyImportant]);
-
-  /* =========================================================
-     Builder path detail (relative)
-     /guru-mapel/:csstId/murid  → + /:id
-  ========================================================= */
   const toStudentDetailPath = (studentId: string) =>
     `${encodeURIComponent(studentId)}`;
 
-  /* =========================================================
-     Kolom
-  ========================================================= */
-  const columns: ColumnDef<
-    StudentSummary & {
-      gender: string;
-      phone: string;
-      guardian: string;
-      __notes: string;
-      __hasImportant: boolean;
-    }
-  >[] = [
-      {
-        id: "name",
-        header: "Nama",
-        minW: "220px",
-        cell: (s) => (
-          <div className="flex items-center gap-2">
-            <span className="font-medium">{s.name}</span>
-            {s.__hasImportant && (
-              <Badge variant="destructive" className="gap-1">
-                <AlertTriangle size={12} />
-                Penting
-              </Badge>
-            )}
-          </div>
-        ),
-      },
-      {
-        id: "gender",
-        header: "L/P",
-        cell: (s) =>
-          s.gender ? (
-            <Badge variant="outline" className="uppercase">
-              {s.gender}
-            </Badge>
-          ) : (
-            "-"
-          ),
-      },
-      {
-        id: "guardian",
-        header: "Wali",
-        minW: "180px",
-        cell: (s) =>
-          s.guardian ? (
-            <span className="inline-flex items-center gap-1">
-              <Users size={12} />
-              {s.guardian}
-            </span>
-          ) : (
-            "-"
-          ),
-      },
-      {
-        id: "notes",
-        header: "Catatan",
-        minW: "320px",
-        cell: (s) => {
-          const items = extractImportantNotes(s);
-          if (!items.length)
-            return <span className="text-muted-foreground">—</span>;
-          const [first, ...rest] = items;
-          return (
-            <div className="text-sm">
-              <div className="flex items-center gap-2 font-medium mb-0.5">
-                <NotebookPen size={14} />
-                <span>Keterangan penting</span>
-              </div>
-              <div className="text-muted-foreground">
-                {first}
-                {rest.length ? ` (+${rest.length} lagi)` : ""}
-              </div>
+  const columns: ColumnDef<StudentRow>[] = [
+    {
+      id: "name",
+      header: "Nama",
+      minW: "260px",
+      cell: (s) => (
+        <div className="space-y-0.5">
+          <div className="font-medium">{s.name}</div>
+          {s.code ? (
+            <div className="text-xs text-muted-foreground font-mono">
+              {s.code}
             </div>
-          );
-        },
-      },
-      {
-        id: "phone",
-        header: "Kontak",
-        align: "center" as Align,
-        cell: (s) => {
-          const anyS = s as AnyRec;
-          const waUrl = (anyS._waUrl || anyS._parentWaUrl) as string | undefined;
+          ) : null}
+        </div>
+      ),
+    },
+    {
+      id: "gender",
+      header: "L/P",
+      cell: (s) =>
+        s.gender ? (
+          <Badge variant="outline" className="uppercase">
+            {s.gender}
+          </Badge>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        ),
+    },
+    {
+      id: "joined",
+      header: "Bergabung",
+      minW: "220px",
+      cell: (s) => (
+        <span className="text-sm text-muted-foreground">
+          {fmtDateTime(s.joinedAt)}
+        </span>
+      ),
+    },
+    {
+      id: "status",
+      header: "Status",
+      cell: (s) =>
+        s.isActive ? (
+          <Badge variant="secondary">Aktif</Badge>
+        ) : (
+          <Badge variant="outline">Nonaktif</Badge>
+        ),
+    },
+  ];
 
-          if (waUrl) {
-            return (
-              <a href={waUrl} target="_blank" rel="noreferrer">
-                <Button variant="secondary" size="sm" className="gap-1">
-                  <Phone size={14} />
-                  WhatsApp
-                </Button>
-              </a>
-            );
-          }
-
-          return s.phone ? (
-            <a href={`tel:${s.phone}`}>
-              <Button variant="secondary" size="sm" className="gap-1">
-                <Phone size={14} />
-                Telp
-              </Button>
-            </a>
-          ) : (
-            <span className="text-muted-foreground">—</span>
-          );
-        },
-      },
-    ];
-
-  /* =========================================================
-     Stats di atas tabel
-  ========================================================= */
   const statsSlot = (
     <div className="flex flex-wrap items-center gap-3 text-sm">
       <div>
-        Total siswa: <span className="font-medium">{rawStudents.length}</span>
-      </div>
-      <div>
-        Dengan catatan penting:{" "}
-        <span className="font-medium">
-          {rawStudents.filter(hasImportant).length}
-        </span>
-      </div>
-
-      <div className="ml-auto flex items-center gap-2">
-        <span className="text-muted-foreground">Filter:</span>
-        <Select
-          value={onlyImportant}
-          onValueChange={(v: "all" | "important") => setOnlyImportant(v)}
-        >
-          <SelectTrigger className="w-[220px]">
-            <SelectValue placeholder="Filter catatan" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Semua siswa</SelectItem>
-            <SelectItem value="important">Hanya yang penting</SelectItem>
-          </SelectContent>
-        </Select>
+        Total siswa: <span className="font-medium">{rawRows.length}</span>
       </div>
     </div>
   );
 
-  /* =========================================================
-     RENDER
-  ========================================================= */
   return (
     <div className="w-full bg-background text-foreground">
       <main className="w-full">
         <div className="mx-auto flex flex-col gap-6">
-          {/* Top bar */}
           <div className="md:flex hidden items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate(-1)}
-            >
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
               <ArrowLeft size={20} />
             </Button>
             <h1 className="text-lg font-semibold md:flex-xl">Daftar Murid</h1>
@@ -387,18 +243,18 @@ const TeacherCSSTStudentList: React.FC = () => {
 
           <CDataTable
             controlsPlacement="above"
-            searchPlaceholder="Cari nama/wali/keterangan…"
+            searchPlaceholder="Cari nama / kode / id…"
             statsSlot={statsSlot}
             loading={isLoading && !!sectionKey}
             error={
-              isError
-                ? "Gagal memuat data murid."
-                : !sectionKey
-                  ? "CSST ID tidak ditemukan di URL."
-                  : null
+              !sectionKey
+                ? "CSST ID tidak ditemukan di URL."
+                : isError
+                ? errorMsg || "Gagal memuat data murid."
+                : null
             }
             columns={columns}
-            rows={normalized}
+            rows={rows}
             getRowId={(s: AnyRec) => s.id ?? s.name}
             pageSize={20}
             onRowClick={(row) => navigate(toStudentDetailPath(row.id))}

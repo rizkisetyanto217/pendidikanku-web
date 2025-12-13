@@ -24,6 +24,14 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+
+import { cn } from "@/lib/utils";
 
 /* Layout header */
 import { useDashboardHeader } from "@/components/layout/dashboard/DashboardLayout";
@@ -69,17 +77,16 @@ type AdminTermDetailResponse = {
 
 /* ===================== Const & Helpers ===================== */
 const USER_PREFIX = "/u";
-const ADMIN_PREFIX = "/a";
 const TERMS_QKEY = (schoolId?: string) =>
   ["academic-terms-merged", schoolId] as const;
 
 const dateShort = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleDateString("id-ID", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    })
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
     : "-";
 
 function normalizeAcademicYear(input: string) {
@@ -117,12 +124,45 @@ function toZDate(d: string) {
   return `${d}T00:00:00Z`;
 }
 
+/* ===== Date helpers (shadcn calendar) ===== */
+function parseYMD(s?: string): Date | undefined {
+  if (!s) return undefined;
+  // ambil yyyy-mm-dd aja
+  const ymd = s.includes("T") ? s.slice(0, 10) : s;
+  const m = ymd.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return undefined;
+  const y = Number(m[1]);
+  const mo = Number(m[2]) - 1;
+  const d = Number(m[3]);
+  const dt = new Date(Date.UTC(y, mo, d));
+  if (Number.isNaN(dt.getTime())) return undefined;
+  return dt;
+}
+function formatYMD(d?: Date): string {
+  if (!d) return "";
+  // pakai UTC biar stabil (ga geser hari karena timezone)
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 /* ========== Payload & mapping ========= */
-type TermPayload = {
+type TermFormValues = {
   academic_year: string;
   name: string;
   start_date: string; // yyyy-mm-dd
   end_date: string; // yyyy-mm-dd
+  angkatan: string;
+  is_active: boolean;
+  slug: string;
+};
+
+type TermPayload = {
+  academic_year: string;
+  name: string;
+  start_date: string;
+  end_date: string;
   angkatan: number;
   is_active: boolean;
   slug?: string;
@@ -156,14 +196,12 @@ function mapPayloadToApi(p: TermPayload) {
   };
 }
 
-/* ===================== Halaman Add/Edit ===================== */
-
+/* ===================== Component ===================== */
 const SchoolAcademicForms: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const params = useParams<{ id?: string }>();
 
-  // 🔐 user & school context
   const { data: currentUser } = useCurrentUser();
   const schoolId = currentUser?.membership?.school_id ?? "";
   const schoolSlug = currentUser?.membership?.school_slug ?? "";
@@ -173,8 +211,7 @@ const SchoolAcademicForms: React.FC = () => {
   const isEditMode = Boolean(params.id && params.id !== "new");
   const termId = params.id;
 
-  // data dari list (kalau datang via navigate state)
-  const stateTerm = (location.state as { term?: AcademicTerm })?.term;
+  const stateTerm = (location.state as { term?: AcademicTerm } | null)?.term;
 
   useEffect(() => {
     setHeader({
@@ -194,7 +231,6 @@ const SchoolAcademicForms: React.FC = () => {
 
   const qc = useQueryClient();
 
-  /* ========== Query detail kalau edit (fallback kalau tidak ada state) ========== */
   const detailQ = useQuery<AcademicTerm, Error>({
     queryKey: ["academic-term-detail", schoolId, termId],
     enabled: isEditMode && !!schoolId && !!termId && !stateTerm,
@@ -212,43 +248,43 @@ const SchoolAcademicForms: React.FC = () => {
     return detailQ.data;
   }, [stateTerm, detailQ.data, isEditMode]);
 
-  const [values, setValues] = useState<TermPayload>(() => {
-    const nowYear = new Date().getFullYear();
-    if (term) {
-      return {
-        academic_year: term.academic_year ?? "",
-        name: term.name ?? "",
-        start_date: term.start_date ? term.start_date.slice(0, 10) : "",
-        end_date: term.end_date ? term.end_date.slice(0, 10) : "",
-        angkatan: term.angkatan ?? nowYear,
-        is_active: term.is_active ?? false,
-        slug: term.slug ?? "",
-      };
-    }
-    return {
-      academic_year: `${nowYear}/${nowYear + 1}`,
+  const emptyValues: TermFormValues = useMemo(
+    () => ({
+      academic_year: "",
       name: "",
       start_date: "",
       end_date: "",
-      angkatan: nowYear,
+      angkatan: "",
       is_active: false,
       slug: "",
-    };
-  });
+    }),
+    []
+  );
 
-  // sinkronkan state form saat detail term baru datang
+  const [values, setValues] = useState<TermFormValues>(emptyValues);
+
   useEffect(() => {
+    if (!isEditMode) {
+      setValues(emptyValues);
+      return;
+    }
     if (!term) return;
+
     setValues({
       academic_year: term.academic_year ?? "",
       name: term.name ?? "",
       start_date: term.start_date ? term.start_date.slice(0, 10) : "",
       end_date: term.end_date ? term.end_date.slice(0, 10) : "",
-      angkatan: term.angkatan ?? new Date().getFullYear(),
-      is_active: term.is_active ?? false,
+      angkatan: Number.isFinite(term.angkatan) ? String(term.angkatan) : "",
+      is_active: Boolean(term.is_active),
       slug: term.slug ?? "",
     });
-  }, [term]);
+  }, [isEditMode, term, emptyValues]);
+
+  const angkatanNum = useMemo(() => {
+    const n = Number(values.angkatan);
+    return Number.isFinite(n) ? n : NaN;
+  }, [values.angkatan]);
 
   const canSubmit =
     values.academic_year.trim() &&
@@ -256,14 +292,13 @@ const SchoolAcademicForms: React.FC = () => {
     values.start_date &&
     values.end_date &&
     new Date(values.end_date) > new Date(values.start_date) &&
-    Number.isFinite(values.angkatan) &&
-    values.angkatan > 0;
+    Number.isFinite(angkatanNum) &&
+    angkatanNum > 0;
 
-  /* ========== Mutations ========== */
   const createMutation = useMutation({
     mutationFn: async (payload: TermPayload) => {
       const { data } = await axios.post(
-        `${ADMIN_PREFIX}/${encodeURIComponent(schoolId!)}/academic-terms`,
+        `/api/a/academic-terms`,
         mapPayloadToApi(payload)
       );
       return data;
@@ -286,7 +321,7 @@ const SchoolAcademicForms: React.FC = () => {
       payload: TermPayload;
     }) => {
       const { data } = await axios.patch(
-        `${ADMIN_PREFIX}/${encodeURIComponent(schoolId!)}/academic-terms/${id}`,
+        `/api/a/academic-terms/${id}`,
         mapPayloadToApi(payload)
       );
       return data;
@@ -301,7 +336,6 @@ const SchoolAcademicForms: React.FC = () => {
   });
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
-
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const handleSubmit = useCallback(
@@ -324,26 +358,20 @@ const SchoolAcademicForms: React.FC = () => {
         updateMutation.mutate(
           { id: termId, payload },
           {
-            onSuccess: () => {
+            onSuccess: () =>
               navigate(`/${schoolSlug}/sekolah/akademik/tahun-akademik`, {
                 replace: true,
-              });
-            },
-            onError: (err: any) => {
-              setSubmitError(extractErrorMessage(err));
-            },
+              }),
+            onError: (err: any) => setSubmitError(extractErrorMessage(err)),
           }
         );
       } else {
         createMutation.mutate(payload, {
-          onSuccess: () => {
+          onSuccess: () =>
             navigate(`/${schoolSlug}/sekolah/akademik/tahun-akademik`, {
               replace: true,
-            });
-          },
-          onError: (err: any) => {
-            setSubmitError(extractErrorMessage(err));
-          },
+            }),
+          onError: (err: any) => setSubmitError(extractErrorMessage(err)),
         });
       }
     },
@@ -360,24 +388,28 @@ const SchoolAcademicForms: React.FC = () => {
     ]
   );
 
-  const handleBack = () => {
+  const handleBack = () =>
     navigate(`/${schoolSlug}/sekolah/akademik/tahun-akademik`);
-  };
 
   const loadingDetail = isEditMode && !term && detailQ.isLoading;
   const detailError = isEditMode && !term && detailQ.isError;
+
+  // Date objects untuk Calendar
+  const startDateObj = useMemo(
+    () => parseYMD(values.start_date),
+    [values.start_date]
+  );
+  const endDateObj = useMemo(
+    () => parseYMD(values.end_date),
+    [values.end_date]
+  );
 
   return (
     <div className="w-full overflow-x-hidden bg-background text-foreground">
       <main className="w-full">
         <div className="mx-auto flex flex-col gap-4 lg:gap-6">
-          {/* Header minimal di dalam page */}
           <div className="md:flex hidden items-center gap-3">
-            <Button
-              onClick={handleBack}
-              variant="ghost"
-              size="icon"
-            >
+            <Button onClick={handleBack} variant="ghost" size="icon">
               <ArrowLeft size={20} />
             </Button>
             <div>
@@ -413,7 +445,6 @@ const SchoolAcademicForms: React.FC = () => {
             </div>
           )}
 
-          {/* Form */}
           <Card className="border">
             <form onSubmit={handleSubmit}>
               <CardHeader>
@@ -422,8 +453,8 @@ const SchoolAcademicForms: React.FC = () => {
                   {isEditMode ? "Form Edit" : "Form Tambah"} Tahun Akademik
                 </CardTitle>
               </CardHeader>
+
               <CardContent className="space-y-6">
-                {/* Tahun ajaran & Nama */}
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="academic_year">Tahun Ajaran</Label>
@@ -444,6 +475,7 @@ const SchoolAcademicForms: React.FC = () => {
                       <span className="font-mono">2025/2026</span>.
                     </p>
                   </div>
+
                   <div className="space-y-1.5">
                     <Label htmlFor="name">Nama Periode</Label>
                     <Input
@@ -457,54 +489,117 @@ const SchoolAcademicForms: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Tanggal mulai & akhir */}
+                {/* ====== Date Picker Shadcn ====== */}
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label htmlFor="start_date">Tanggal Mulai</Label>
-                    <Input
-                      id="start_date"
-                      type="date"
-                      value={values.start_date}
-                      onChange={(e) =>
-                        setValues((v) => ({
-                          ...v,
-                          start_date: e.target.value,
-                        }))
-                      }
-                    />
+                    <Label>Tanggal Mulai</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className={cn(
+                            // ✅ bikin tampilannya sama kayak Input shadcn
+                            "h-10 w-full justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm",
+                            "hover:bg-transparent hover:text-foreground",
+                            "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                            "disabled:cursor-not-allowed disabled:opacity-50",
+                            // kalau kosong, samain muted-nya
+                            !values.start_date && "text-muted-foreground"
+                          )}
+                        >
+                          {values.start_date
+                            ? dateShort(values.start_date)
+                            : "Pilih tanggal mulai"}
+                          <CalendarDays className="h-4 w-4 opacity-70" />
+                        </Button>
+                      </PopoverTrigger>
+
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={startDateObj}
+                          onSelect={(d) => {
+                            const next = formatYMD(d);
+
+                            setValues((prev) => {
+                              const shouldClearEnd =
+                                prev.end_date && next && prev.end_date < next;
+
+                              return {
+                                ...prev,
+                                start_date: next,
+                                end_date: shouldClearEnd ? "" : prev.end_date,
+                              };
+                            });
+                          }}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
+
                   <div className="space-y-1.5">
-                    <Label htmlFor="end_date">Tanggal Selesai</Label>
-                    <Input
-                      id="end_date"
-                      type="date"
-                      value={values.end_date}
-                      onChange={(e) =>
-                        setValues((v) => ({
-                          ...v,
-                          end_date: e.target.value,
-                        }))
-                      }
-                    />
+                    <Label>Tanggal Selesai</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-between font-normal",
+                            !values.end_date && "text-muted-foreground"
+                          )}
+                          disabled={!values.start_date} // optional: end baru bisa dipilih setelah start
+                        >
+                          {values.end_date
+                            ? dateShort(values.end_date)
+                            : "Pilih tanggal selesai"}
+                          <CalendarDays className="h-4 w-4 opacity-70" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={endDateObj}
+                          // optional: disable tanggal sebelum start_date
+                          disabled={(d) => {
+                            if (!values.start_date) return false;
+                            const min = parseYMD(values.start_date);
+                            if (!min) return false;
+                            // bandingkan UTC YMD
+                            return formatYMD(d) < formatYMD(min);
+                          }}
+                          onSelect={(d) => {
+                            const next = formatYMD(d);
+                            setValues((v) => ({ ...v, end_date: next }));
+                          }}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    {!values.start_date && (
+                      <p className="text-xs text-muted-foreground">
+                        Pilih tanggal mulai dulu ya.
+                      </p>
+                    )}
                   </div>
                 </div>
 
-                {/* Angkatan & status aktif */}
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="angkatan">Angkatan</Label>
                     <Input
                       id="angkatan"
                       type="number"
+                      placeholder="Contoh: 2025"
                       value={values.angkatan}
                       onChange={(e) =>
-                        setValues((v) => ({
-                          ...v,
-                          angkatan: Number(e.target.value || 0),
-                        }))
+                        setValues((v) => ({ ...v, angkatan: e.target.value }))
                       }
                     />
                   </div>
+
                   <div className="space-y-1.5">
                     <Label>Status</Label>
                     <div className="flex items-center gap-3 rounded-md border px-3 py-2">
@@ -541,29 +636,12 @@ const SchoolAcademicForms: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Slug optional */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="slug">Slug (opsional)</Label>
-                  <Input
-                    id="slug"
-                    placeholder="Contoh: ganjil-2025"
-                    value={values.slug ?? ""}
-                    onChange={(e) =>
-                      setValues((v) => ({ ...v, slug: e.target.value }))
-                    }
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Kalau dikosongkan, backend bisa membuat otomatis (jika kamu
-                    atur begitu).
-                  </p>
-                </div>
-
-                {/* Preview singkat */}
                 <div className="rounded-lg border bg-muted/40 px-3 py-3 space-y-2 text-sm">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Info size={14} />
                     <span className="font-medium">Ringkasan</span>
                   </div>
+
                   <div className="grid md:grid-cols-2 gap-2 text-xs md:text-sm">
                     <div className="space-y-1">
                       <div className="text-muted-foreground">Tahun Ajaran</div>
@@ -582,17 +660,15 @@ const SchoolAcademicForms: React.FC = () => {
                         </span>
                       </div>
                     </div>
+
                     <div className="space-y-1">
                       <div className="text-muted-foreground">Periode</div>
                       <div>
-                        {values.start_date && values.end_date ? (
-                          <>
-                            {dateShort(values.start_date)} —{" "}
-                            {dateShort(values.end_date)}
-                          </>
-                        ) : (
-                          "-"
-                        )}
+                        {values.start_date && values.end_date
+                          ? `${dateShort(values.start_date)} — ${dateShort(
+                              values.end_date
+                            )}`
+                          : "-"}
                       </div>
                       <div className="text-muted-foreground">
                         Angkatan:{" "}
@@ -611,14 +687,15 @@ const SchoolAcademicForms: React.FC = () => {
                   </div>
                 )}
               </CardContent>
+
               <CardFooter className="flex justify-end">
                 <CActionsButton
                   onCancel={handleBack}
-                  onSave={() => { }}         // akan di-trigger oleh submit form
+                  onSave={() => {}}
                   loadingSave={isSubmitting}
                 />
+                <button type="submit" className="hidden" aria-hidden="true" />
               </CardFooter>
-
             </form>
           </Card>
         </div>
